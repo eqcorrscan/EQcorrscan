@@ -616,9 +616,6 @@ def extract_detections(detections, templates, archive, arc_type,
     ...              for i, filename in enumerate(template_files)]
     >>> extracted = extract_detections(detections, templates,
     ...                                archive=archive, arc_type='day_vols')
-    Working on detections for day: 2012-03-26T00:00:00.000000Z
-    Cutting for detections at: 2012/03/26 09:15:00
-    Cutting for detections at: 2012/03/26 18:05:00
     >>> print(extracted[0].sort())
     2 Trace(s) in Stream:
     AF.EORO..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z |\
@@ -635,12 +632,6 @@ def extract_detections(detections, templates, archive, arc_type,
     >>> extracted = extract_detections(
     ...    detections, templates, archive=archive, arc_type='day_vols',
     ...    additional_stations=[('GOVA', 'SHZ')])
-    Adding additional stations
-    Added station GOVA.SHZ
-    Added station GOVA.SHZ
-    Working on detections for day: 2012-03-26T00:00:00.000000Z
-    Cutting for detections at: 2012/03/26 09:15:00
-    Cutting for detections at: 2012/03/26 18:05:00
     >>> print(extracted[0].sort())
     3 Trace(s) in Stream:
     AF.EORO..SHZ | 2012-03-26T09:14:15.000000Z - 2012-03-26T09:15:45.000000Z |\
@@ -653,14 +644,6 @@ def extract_detections(detections, templates, archive, arc_type,
     >>> extract_detections(detections, templates, archive=archive,
     ...                    arc_type='day_vols',
     ...                    additional_stations=[('GOVA', 'SHZ')], outdir='.')
-    Adding additional stations
-    Added station GOVA.SHZ
-    Added station GOVA.SHZ
-    Working on detections for day: 2012-03-26T00:00:00.000000Z
-    Cutting for detections at: 2012/03/26 09:15:00
-    Written file: ./temp1/2012-03-26_09-15-00.ms
-    Cutting for detections at: 2012/03/26 18:05:00
-    Written file: ./temp2/2012-03-26_18-05-00.ms
     """
     # Sort the template according to start-times, needed so that stachan[i]
     # corresponds to delays[i]
@@ -955,8 +938,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     ...                         'expected_tutorial_detections.txt')
     >>> detections = re_thresh_csv(path=det_file, old_thresh=8, new_thresh=10,
     ...                            chan_thresh=3)
-    Read in 22 detections
-    Left with 17 detections
+    >>> print(len(detections))
+    17
 
     .. Note::
         This is a legacy function, and will read detections from all versions.

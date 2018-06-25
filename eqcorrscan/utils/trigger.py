@@ -258,8 +258,8 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     >>> triggers = network_trigger(st=st, parameters=parameters,
     ...                            thr_coincidence_sum=5, moveout=30,
     ...                            max_trigger_length=60, despike=False)
-    Looking for coincidence triggers ...
-    Found 1 Coincidence triggers
+    >>> print(len(triggers))
+    1
     """
     triggers = []
     trace_ids = [tr.id for tr in st]
