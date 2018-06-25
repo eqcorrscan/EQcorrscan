@@ -11,7 +11,7 @@ import pytest
 import glob
 import os
 import numpy as np
-import warnings
+import logging
 import inspect
 import copy
 import shutil
@@ -20,19 +20,19 @@ from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
+from eqcorrscan.core import template_gen as template_gen_module
 from eqcorrscan.core.template_gen import (
     from_sac, _group_events, from_seishub, from_meta_file, from_client,
     multi_template_gen, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 slow = pytest.mark.skipif(
     not pytest.config.getoption("--runslow"),
     reason="need --runslow option to run"
 )
-
-warnings.simplefilter('always')
 
 
 class TestTemplateGeneration(unittest.TestCase):
@@ -53,7 +53,7 @@ class TestTemplateGeneration(unittest.TestCase):
                 templates = from_sac(
                     sac_files, lowcut=2.0, highcut=8.0, samp_rate=samp_rate,
                     filt_order=4, length=length, swin='all', prepick=0.1,
-                    debug=0, plot=False)
+                    plot=False)
                 self.assertEqual(len(templates), 1)
                 template = templates[0]
                 self.assertEqual(len(template), len(sactoevent(stream).picks))
@@ -97,7 +97,7 @@ class TestTemplateGeneration(unittest.TestCase):
         template = from_client(
             catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
             samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
-            swin='all', process_len=3600, debug=0, plot=False,
+            swin='all', process_len=3600, plot=False,
             delayed=False)[0]
         for tr in template:
             tr.stats.starttime.precision = 6
@@ -111,7 +111,7 @@ class TestTemplateGeneration(unittest.TestCase):
         template = from_client(
             catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
             samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
-            swin='P_all', process_len=3600, debug=0, plot=False,
+            swin='P_all', process_len=3600, plot=False,
             delayed=False)[0]
         for tr in template:
             tr.stats.starttime.precision = 6
@@ -260,9 +260,9 @@ class TestTemplateGeneration(unittest.TestCase):
                     samp_rate=20, filt_order=4, length=3, prepick=0.5,
                     swin='all', process_len=300)
             except URLError:
-                warnings.warn('Timed out connection to seishub')
+                pass
         else:
-            warnings.warn('URLError would not be caught on py2.')
+            pass
         if 'template' in locals():
             self.assertEqual(len(template), 3)
 
@@ -306,6 +306,10 @@ class TestTemplateGeneration(unittest.TestCase):
 class TestEdgeGen(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        log = logging.getLogger(template_gen_module.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
         cls.testing_path = os.path.dirname(
             os.path.abspath(inspect.getfile(inspect.currentframe())))
         cls.st = read(os.path.join(
@@ -317,6 +321,9 @@ class TestEdgeGen(unittest.TestCase):
             cls.testing_path, 'test_data', 'REA', 'TEST_',
             '15-0931-08L.S201309'))[0]
         cls.picks = event.picks
+
+    def setUp(self):
+        self._log_handler.reset()
 
     def test_undefined_phase_type(self):
         with self.assertRaises(AssertionError):
@@ -344,10 +351,8 @@ class TestEdgeGen(unittest.TestCase):
         template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
 
-    def test_debug_levels(self):
-        print(len(self.picks))
-        print(len(self.st))
-        template = _template_gen(self.picks, self.st.copy(), 10, debug=3)
+    def test_misc(self):
+        template = _template_gen(self.picks, self.st.copy(), 10)
         self.assertEqual(len(template), len(self.picks))
 
     def test_extract_from_stack(self):
@@ -389,11 +394,11 @@ class TestEdgeGen(unittest.TestCase):
         picks = copy.deepcopy(self.picks)
         for pick in picks:
             setattr(pick, 'phase_hint', None)
-        with warnings.catch_warnings(record=True) as w:
-            template = _template_gen(picks, self.st.copy(), 10)
+        template = _template_gen(picks, self.st.copy(), 10)
+        w = self.log_messages['warning']
         self.assertGreater(len(w), 0)
         self.assertEqual(len(template), 11)
-        _w = ' '.join([warning.message.__str__() for warning in w])
+        _w = ' '.join([warning for warning in w])
         self.assertTrue("no phase hint given" in _w)
 
     def test_no_station_code(self):

@@ -584,7 +584,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         assert _swin in ['P', 'all', 'S', 'P_all', 'S_all']
     for pick in picks_copy:
         if not pick.waveform_id:
-            Logger.wrning(
+            Logger.warning(
                 "Pick not associated with waveform, will not use it: "
                 "{0}".format(pick))
             picks_copy.remove(pick)
