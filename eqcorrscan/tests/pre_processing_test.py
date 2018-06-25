@@ -29,6 +29,13 @@ class TestPreProcessing(unittest.TestCase):
         cls.instart = cls.short_stream[0].stats.starttime
         cls.inend = cls.short_stream[0].stats.endtime
         cls.nchans = len(cls.short_stream)
+        cls.gap_starttime = cls.st[0].stats.starttime + 1800
+        cls.gap_endtime = cls.st[0].stats.starttime + 1900
+        tr1 = cls.st[0].copy().trim(
+            cls.st[0].stats.starttime, cls.gap_starttime)
+        tr2 = cls.st[0].copy().trim(
+            cls.gap_endtime, cls.st[0].stats.starttime + 3600)
+        cls.gappy_trace = tr1 + tr2
 
     def test_daylong_checks(self):
         """Test that the data are day-long."""
@@ -272,13 +279,7 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_masked_trace(self):
         """Test that processing a masked array works."""
-        st = self.st
-        gap_starttime = st[0].stats.starttime + 1800
-        gap_endtime = st[0].stats.starttime + 1900
-        tr1 = st[0].copy().trim(st[0].stats.starttime, gap_starttime)
-        tr2 = st[0].copy().trim(gap_endtime, st[0].stats.starttime + 3600)
-        tr = tr1 + tr2
-        print(tr)
+        tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
                             filt_order=3, samp_rate=1, debug=0,
                             starttime=False, clip=False, length=3600,
@@ -286,8 +287,11 @@ class TestPreProcessing(unittest.TestCase):
         self.assertEqual(processed.stats.npts, 3601)
         self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
         self.assertTrue(np.all(
-            processed.trim(gap_starttime, gap_endtime).data) == 0)
+            processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
 
+    def test_masked_trace_no_fill(self):
+        """Test that processing a masked array without filling gaps works."""
+        tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
                             filt_order=3, samp_rate=1, debug=0,
                             starttime=False, clip=False, length=3600,
@@ -296,13 +300,33 @@ class TestPreProcessing(unittest.TestCase):
         self.assertEqual(processed.stats.npts, 3601)
         self.assertTrue(isinstance(processed.data, np.ma.MaskedArray))
 
+    def test_masked_array_resample(self):
+        """Test that processing and resampling a masked array works."""
+        tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.2,
                             filt_order=3, samp_rate=0.5, debug=0,
                             starttime=False, clip=False, length=3600,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 1800)
         self.assertTrue(np.all(
-            processed.trim(gap_starttime, gap_endtime).data) == 0)
+            processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
+
+    def test_gap_overlength(self):
+        """ Test that gappy data that are too long are processed correctly."""
+        tr_after = self.gappy_trace.copy()
+        tr_after.stats.starttime += 3600
+        tr_before = self.gappy_trace.copy()
+        tr_before.stats.starttime -= 3600
+        tr = tr_before + self.gappy_trace + tr_after
+        processed = process(
+            tr=tr, lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1, debug=0,
+            starttime=self.gappy_trace.stats.starttime, clip=True, length=3600,
+            seisan_chan_names=True, ignore_length=False)
+        self.assertEqual(processed.stats.npts, 3600)
+        self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
+        self.assertTrue(np.all(
+            processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
+
 
 
 if __name__ == '__main__':

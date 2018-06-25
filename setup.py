@@ -315,12 +315,11 @@ def setup_package():
         build_requires = ['numpy>=1.6, <2.0']
 
     if not READ_THE_DOCS:
-        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18',
                             'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12',
                             'h5py']
     else:
-        install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
-                            'mock']
+        install_requires = ['matplotlib>=1.3.0', 'obspy>=1.0.3', 'mock']
     install_requires.extend(build_requires)
 
     setup_args = {
