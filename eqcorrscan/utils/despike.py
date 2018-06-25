@@ -114,8 +114,7 @@ def _median_window(window, window_start, multiplier, starttime, sampling_rate):
     Logger.debug(
         'Threshold for window is: ' + str(thresh) + '\nMedian is: ' +
         str(MAD) + '\nMax is: ' + str(np.max(window)))
-    peaks = find_peaks2_short(arr=window,
-                              thresh=thresh, trig_int=5, debug=0)
+    peaks = find_peaks2_short(arr=window, thresh=thresh, trig_int=5)
     if peaks:
         peaks = [(peak[0], peak[1] + window_start) for peak in peaks]
     else:
