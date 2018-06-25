@@ -103,11 +103,6 @@ in the tests directory.
     <obspy.core.stream.Stream object at ...>
     >>> groups = cluster(template_list=stream_list, show=False,
     ...                  corr_thresh=0.3, cores=2)
-    Computing the distance matrix using 2 cores
-    Computing linkage
-    Clustering
-    Found 9 groups
-    Extracting and grouping
 
 
 Stack waveforms (linear)
@@ -148,5 +143,3 @@ of the instantaneous phase.  In this manor coherent signals are amplified.
     >>> # groups[0] should contain 3 streams, which we can now stack
     >>> # Groups are returned as lists of tuples, of the stream and event index
     >>> stack = PWS_stack(streams=group_streams)
-    Computing instantaneous phase
-    Computing the phase stack

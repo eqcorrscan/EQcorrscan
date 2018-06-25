@@ -157,7 +157,6 @@ generate re-picked catalogues using lag-calc:
      >>> stream = stream.merge().sort(['station'])
      >>> repicked_catalog = party.lag_calc(stream, pre_processed=False,
      ...                                   shift_len=0.2, min_cc=0.4) # doctest:+ELLIPSIS
-     5 Trace(s) in Stream:...
 
 By using the above examples you can go from a standard catalog available from
 data centers, to a matched-filter detected and cross-correlation repicked
