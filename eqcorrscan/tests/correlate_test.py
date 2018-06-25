@@ -174,7 +174,7 @@ def array_ccs_low_amp(array_template, array_stream, pads):
         _log_handler.reset()
         cc, _ = time_func(
             func, name, array_template, array_stream * 10e-8, pads)
-        out[name] = (cc, log_messages['warning'])
+        out[name] = (cc, copy.deepcopy(log_messages['warning']))
     return out
 
 # stream fixtures
@@ -233,7 +233,7 @@ def gappy_stream_cc_output_dict(
         _log_handler.reset()
         cc_out = time_func(func, name, multichannel_templates,
                            gappy_multichannel_stream, cores=1)
-        out[name] = (cc_out, log_messages['warning'])
+        out[name] = (cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
 

@@ -176,8 +176,8 @@ class ClusteringTestWarnings(unittest.TestCase):
         client = Client("https://earthquake.usgs.gov")
         starttime = UTCDateTime("2002-01-01")
         endtime = UTCDateTime("2002-01-02")
-        cls.cat = client.get_events(starttime=starttime, endtime=endtime,
-                                    minmagnitude=6)
+        cls.cat = client.get_events(
+            starttime=starttime, endtime=endtime, minmagnitude=6)
 
     def setUp(self):
         self._log_handler.reset()

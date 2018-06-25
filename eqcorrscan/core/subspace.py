@@ -1018,7 +1018,7 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
             pool = Pool(processes=ncores)
             results = [pool.apply_async(
                 _detect, args=(detector, stream[0], threshold, trig_int,
-                               moveout, min_trig, False, False, 0))
+                               moveout, min_trig, False, False))
                        for detector in parameter_detectors]
             pool.close()
             _detections = [p.get() for p in results]

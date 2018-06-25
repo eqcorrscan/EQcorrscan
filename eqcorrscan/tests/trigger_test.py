@@ -45,7 +45,7 @@ class TestTriggerMethods(unittest.TestCase):
         # Test without despike
         triggers = _channel_loop(tr=tr, parameters=parameters,
                                  max_trigger_length=100,
-                                 despike=False, debug=0)
+                                 despike=False)
         self.assertEqual(len(triggers), 1)
         # Test with despike
         triggers = _channel_loop(tr=tr, parameters=parameters,
