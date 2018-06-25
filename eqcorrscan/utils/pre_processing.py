@@ -412,7 +412,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     tr = tr.detrend('simple')
     # Detrend data before filtering
     Logger.debug('I have {0} data points for {1} before processing'.format(
-        tr.npts, tr.id))
+        tr.stats.npts, tr.id))
 
     # Sanity check to ensure files are daylong
     padded = False
@@ -451,7 +451,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
                                  tr.stats.station + '.' + tr.stats.channel)
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
-                tr.npts))
+                tr.stats.npts))
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         Logger.debug('Resampling')
@@ -490,7 +490,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         post_pad_len = len(post_pad)
         Logger.info(
             "Taking only valid data between {0} and {1} samples".format(
-                pre_pad_len, tr.npts - post_pad_len))
+                pre_pad_len, tr.stats.npts - post_pad_len))
         # Re-apply the pads, taking only the data section that was valid
         tr.data = np.concatenate(
             [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
