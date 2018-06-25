@@ -72,8 +72,8 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
                          channel=tr.stats.channel)
         if len(tr2) > 0 and tr.stats.sampling_rate != \
                 tr2[0].stats.sampling_rate:
-            Logger.warning(
-                'Sampling rates do not match, not using {0}'.format(tr.id))
+            Logger.warning('Sampling rates do not match, not using: %s.%s'
+                           % (tr.stats.station, tr.stats.channel))
         if len(tr2) > 0 and allow_shift:
             index, corval = xcorr(tr, tr2[0],
                                   int(shift_len * tr.stats.sampling_rate))
@@ -153,7 +153,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
 
 def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
-            shift_len=0, save_corrmat=False, cores='all'):
+            shift_len=0, save_corrmat=False, cores='all', debug=1):
     """
     Cluster template waveforms based on average correlations.
 
@@ -189,6 +189,10 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :param cores:
         number of cores to use when computing the distance matrix, defaults to
         'all' which will work out how many cpus are available and hog them.
+    :type debug: int
+    :param debug:
+        Level of debugging from 1-5, higher is more output,
+        currently only level 1 implemented.
 
     :returns:
         List of groups. Each group is a list of
@@ -201,32 +205,40 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     # Extract only the Streams from stream_list
     stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
-    Logger.info('Computing the distance matrix using %i cores' % num_cores)
+    if debug >= 1:
+        Logger.info('Computing the distance matrix using %i cores' % num_cores)
     dist_mat = distance_matrix(stream_list, allow_shift, shift_len,
                                cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
-        Logger.info('Saved the distance matrix as dist_mat.npy')
+        if debug >= 1:
+            Logger.info('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    Logger.debug('Computing linkage')
+    if debug >= 1:
+        Logger.info('Computing linkage')
     Z = linkage(dist_vec)
     if show:
-        Logger.debug('Plotting the dendrogram')
+        if debug >= 1:
+            Logger.info('Plotting the dendrogram')
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
     # Get the indices of the groups
-    Logger.debug('Clustering')
+    if debug >= 1:
+        Logger.info('Clustering')
     indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
     # Indices start at 1...
     group_ids = list(set(indices))  # Unique list of group ids
-    Logger.info('Found {0} groups'.format(len(group_ids)))
+    if debug >= 1:
+        msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
+        Logger.info(msg)
     # Convert to tuple of (group id, stream id)
     indices = [(indices[i], i) for i in range(len(indices))]
     # Sort by group id
     indices.sort(key=lambda tup: tup[0])
     groups = []
-    Logger.info('Extracting and grouping')
+    if debug >= 1:
+        Logger.info('Extracting and grouping')
     for group_id in group_ids:
         group = []
         for ind in indices:
@@ -264,8 +276,9 @@ def group_delays(stream_list):
     stream_list.sort(key=lambda tup: tup[1])
     stream_list = [st[0] for st in stream_list]
     for i, st in enumerate(stream_list):
-        Logger.info(
-            'Working on waveform {0} of {1}'.format(i, len(stream_list)))
+        msg = ' '.join(['Working on waveform', str(i), 'of',
+                        str(len(stream_list))])
+        Logger.info(msg)
         # Calculate the delays
         starttimes = []
         chans = []
@@ -320,14 +333,6 @@ def group_delays(stream_list):
     return groups
 
 
-def SVD(stream_list, full=False):
-    """
-    Depreciated. Use svd.
-    """
-    Logger.warning('Depreciated, use svd instead.')
-    return svd(stream_list=stream_list, full=full)
-
-
 def svd(stream_list, full=False):
     """
     Compute the SVD of a number of templates.
@@ -369,8 +374,8 @@ def svd(stream_list, full=False):
             if len(tr) > 0:
                 tr = tr[0]
             else:
-                Logger.warning(
-                    'Stream does not contain %s' % '.'.join(list(stachan)))
+                Logger.warning('Stream does not contain %s'
+                               % '.'.join(list(stachan)))
                 continue
             lengths.append(len(tr.data))
         min_length = min(lengths)
@@ -401,14 +406,6 @@ def svd(stream_list, full=False):
         uvectors.append(u)
         del (chan_mat)
     return uvectors, svalues, svectors, stachans
-
-
-def empirical_SVD(stream_list, linear=True):
-    """
-    Depreciated. Use empirical_svd.
-    """
-    Logger.warning('Depreciated, use empirical_svd instead.')
-    return empirical_svd(stream_list=stream_list, linear=linear)
 
 
 def empirical_svd(stream_list, linear=True):
@@ -449,9 +446,8 @@ def empirical_svd(stream_list, linear=True):
                 if abs(len(tr.data) - min_length) > (0.1 * sr):
                     msg = 'More than 0.1 s length difference, align and fix'
                     raise IndexError(msg)
-                Logger.warning(
-                    '{0} is not the same length as others, '
-                    'trimming the end'.format(tr))
+                msg = ' is not the same length as others, trimming the end'
+                Logger.warning(str(tr) + msg)
                 tr.data = tr.data[0:min_length]
     if linear:
         first_subspace = stacking.linstack(stream_list)
@@ -464,15 +460,6 @@ def empirical_svd(stream_list, linear=True):
         second_subspace[i].stats.starttime += 0.5 * delta
 
     return [first_subspace, second_subspace]
-
-
-def SVD_2_stream(uvectors, stachans, k, sampling_rate):
-    """
-    Depreciated. Use svd_to_stream
-    """
-    Logger.warning('Depreciated, use svd_to_stream instead.')
-    return svd_to_stream(uvectors=uvectors, stachans=stachans, k=k,
-                         sampling_rate=sampling_rate)
 
 
 def svd_to_stream(uvectors, stachans, k, sampling_rate):
@@ -746,8 +733,9 @@ def extract_detections(detections, templates, archive, arc_type,
                           detection_day]
         del stachans, delays
         for detection in day_detections:
-            Logger.info('Cutting for detections at: ' +
-                        detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
+            Logger.info(
+                'Cutting for detections at: ' +
+                detection.detect_time.strftime('%Y/%m/%d %H:%M:%S'))
             detect_wav = st.copy()
             for tr in detect_wav:
                 t1 = UTCDateTime(detection.detect_time) - extract_len / 2
@@ -765,8 +753,8 @@ def extract_detections(detections, templates, archive, arc_type,
                 Logger.info(
                     'Written file: %s' % '/'.join(
                         [outdir, detection.template_name,
-                         detection.detect_time.strftime(
-                             '%Y-%m-%d_%H-%M-%S') + '.ms']))
+                         detection.detect_time.strftime('%Y-%m-%d_%H-%M-%S')
+                         + '.ms']))
             if not outdir:
                 detection_wavefiles.append(detect_wav)
             del detect_wav
