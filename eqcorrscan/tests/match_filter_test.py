@@ -155,7 +155,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False, debug=3)
+                     plotvar=False)
 
 
 @pytest.mark.network
@@ -197,7 +197,7 @@ class TestGeoNetCase(unittest.TestCase):
         print('Processing continuous data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1)
+            num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -318,7 +318,7 @@ class TestNCEDCCases(unittest.TestCase):
         print('Processing data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -575,7 +575,7 @@ class TestMatchObjects(unittest.TestCase):
         print('Processing data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         print('Reading party')
         cls.party = Party().read(
@@ -664,7 +664,7 @@ class TestMatchObjects(unittest.TestCase):
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent', debug=0)
+            xcorr_func='fftw', concurrency='concurrent')
         self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
@@ -1001,17 +1001,15 @@ class TestMatchObjects(unittest.TestCase):
         self.assertTrue(self.party[2] == self.party[t_name])
 
 
-def test_match_filter(
-        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
-        threshold=10, template_excess=False, stream_excess=False):
+def test_match_filter(plotvar=False, extract_detections=False,
+                      threshold_type='MAD', threshold=10,
+                      template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
 
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz to use
-    :type debug: int
-    :param debug: Debug level, higher the number the more output.
     """
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
@@ -1049,7 +1047,7 @@ def test_match_filter(
     detections = match_filter(
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
-        plotvar=plotvar, plotdir='.', cores=1, debug=debug, output_cat=False,
+        plotvar=plotvar, plotdir='.', cores=1, output_cat=False,
         extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]
@@ -1083,13 +1081,6 @@ def test_match_filter(
                 kfalse += 1
             print('Minimum difference in samples is: ' + str(min_diff))
     # print('Catalog created is of length: ' + str(len(out_cat)))
-    # Plot the detections
-    if debug > 3:
-        for i, template in enumerate(templates):
-            times = [d.detect_time.datetime for d in detections
-                     if d.template_name == template_names[i]]
-            print(times)
-            # plotting.detection_multiplot(data, template, times)
     # Set an 'acceptable' ratio of positive to false detections
     print(str(ktrue) + ' true detections and ' + str(kfalse) +
           ' false detections')

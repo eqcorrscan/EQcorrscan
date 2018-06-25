@@ -3655,7 +3655,7 @@ def extract_from_stream(stream, detections, pad=5.0, length=30.0):
             tr = stream.select(station=pick.waveform_id.station_code,
                                channel=pick.waveform_id.channel_code)
             if len(tr) == 0:
-                Logger.error('No data in stream for pick: {0}'.pick)
+                Logger.error('No data in stream for pick: {0}'.format(pick))
                 continue
             cut_stream += tr.slice(
                 starttime=pick.time - pad,
