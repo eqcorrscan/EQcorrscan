@@ -24,7 +24,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
+import logging
 import csv
 import glob
 import sys
@@ -40,6 +40,9 @@ from obspy.core.trace import Stats
 from eqcorrscan.core.match_filter import Detection, normxcorr2
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.template_gen import _template_gen
+
+
+Logger = logging.getLogger(__name__)
 
 
 class BrightnessError(Exception):
@@ -113,7 +116,7 @@ def _read_tt(path, stations, phase, phaseout='S', ps_ratio=1.68,
     # Read the files
     allnodes = []
     for gridfile in gridfiles:
-        print('     Reading slowness from: ' + gridfile)
+        Logger.info('Reading slowness from: ' + gridfile)
         f = open(gridfile, 'r')
         grid = csv.reader(f, delimiter=str(' '))
         traveltime = []
@@ -197,11 +200,11 @@ def _resample_grid(stations, nodes, lags, mindepth, maxdepth, corners):
                 resamp_nodes.append(node)
                 resamp_lags.append([lags[:, i]])
     # Reshape the lags
-    print(np.shape(resamp_lags))
+    Logger.debug(np.shape(resamp_lags))
     resamp_lags = np.reshape(resamp_lags, (len(resamp_lags), len(stations))).T
     # Resample the nodes - they are sorted in order of size with largest long
     # then largest lat, then depth.
-    print(' '.join(['Grid now has ', str(len(resamp_nodes)), 'nodes']))
+    Logger.info(' '.join(['Grid now has ', str(len(resamp_nodes)), 'nodes']))
     return stations, resamp_nodes, resamp_lags
 
 
@@ -255,14 +258,14 @@ def _rm_similarlags(stations, nodes, lags, threshold):
         sys.stdout.flush()
     nodes_out = [nodes[0]]
     node_indices = [0]
-    print("\n")
-    print(len(nodes))
+    Logger.debug(len(nodes))
     for i in range(1, len(nodes)):
         if np.all(netdif[i][node_indices]):
             node_indices.append(i)
             nodes_out.append(nodes[i])
     lags_out = lags.T[node_indices].T
-    print("Removed " + str(len(nodes) - len(nodes_out)) + " duplicate nodes")
+    Logger.info(
+        "Removed " + str(len(nodes) - len(nodes_out)) + " duplicate nodes")
     return stations, nodes_out, lags_out
 
 
@@ -319,17 +322,16 @@ def _node_loop(stations, lags, stream, clip_level,
              if stations[k] == tr.stats.station]
         # Check that there is only one matching station
         if len(j) > 1:
-            warnings.warn('Too many stations')
+            Logger.warning('Too many stations')
             j = [j[0]]
         if len(j) == 0:
-            warnings.warn('No station match')
+            Logger.warning('No station match')
             continue
         lag = lags[j[0]]
-        lagged_energy = np.square(
-            np.concatenate((tr.data,
-                            np.zeros(
-                                int(round(lag * tr.stats.sampling_rate)))))
-        )[int(round(lag * tr.stats.sampling_rate)):]
+        lagged_energy = np.square(np.concatenate(
+            (tr.data,
+             np.zeros(int(round(lag * tr.stats.sampling_rate))))))[
+                        int(round(lag * tr.stats.sampling_rate)):]
         # Clip energy
         lagged_energy = np.clip(
             lagged_energy, 0, clip_level * np.mean(lagged_energy))
@@ -445,17 +447,17 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     cum_net_resp = np.nan_to_num(cum_net_resp)  # Force no NaNs
     if np.isnan(cum_net_resp).any():
         raise ValueError("Nans present")
-    print('Mean of data is: ' + str(np.median(cum_net_resp)))
-    print('RMS of data is: ' + str(np.sqrt(np.mean(np.square(cum_net_resp)))))
-    print('MAD of data is: ' + str(np.median(np.abs(cum_net_resp))))
+    Logger.info('Mean of data is: ' + str(np.median(cum_net_resp)))
+    Logger.info('RMS of data is: ' + str(np.sqrt(np.mean(np.square(cum_net_resp)))))
+    Logger.info('MAD of data is: ' + str(np.median(np.abs(cum_net_resp))))
     if thresh_type == 'MAD':
         thresh = (np.median(np.abs(cum_net_resp)) * threshold)
     elif thresh_type == 'abs':
         thresh = threshold
     elif thresh_type == 'RMS':
         thresh = _rms(cum_net_resp) * threshold
-    print('Threshold is set to: ' + str(thresh))
-    print('Max of data is: ' + str(max(cum_net_resp)))
+    Logger.info('Threshold is set to: ' + str(thresh))
+    Logger.info('Max of data is: ' + str(max(cum_net_resp)))
     peaks = findpeaks.find_peaks2_short(cum_net_resp, thresh,
                                         length * samp_rate, debug=0)
     detections = []
@@ -475,7 +477,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
                           threshold_input=threshold))
     else:
         detections = []
-    print('I have found ' + str(len(peaks)) + ' possible detections')
+    Logger.info('I have found ' + str(len(peaks)) + ' possible detections')
     return detections
 
 
@@ -502,7 +504,7 @@ def coherence(stream_in, stations=['all'], clip=False):
     # First check that all channels in stream have data of the same length
     maxlen = np.max([len(tr.data) for tr in stream])
     if maxlen == 0:
-        warnings.warn('template without data')
+        Logger.warning('template without data')
         return 0.0, len(stream)
     if not stations[0] == 'all':
         for tr in stream:
@@ -510,9 +512,9 @@ def coherence(stream_in, stations=['all'], clip=False):
                 stream.remove(tr)  # Remove stations we don't want to use
     for tr in stream:
         if not len(tr.data) == maxlen and not len(tr.data) == 0:
-            warnings.warn(tr.stats.station + '.' + tr.stats.channel +
-                          ' is not the same length, padding \n' +
-                          'Length is ' + str(len(tr.data)) + ' samples')
+            Logger.warning(tr.stats.station + '.' + tr.stats.channel +
+                           ' is not the same length, padding \n' +
+                           'Length is ' + str(len(tr.data)) + ' samples')
             pad = np.zeros(maxlen - len(tr.data))
             if tr.stats.starttime.hour == 0:
                 tr.data = np.concatenate((pad, tr.data), axis=0)
@@ -631,7 +633,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         import matplotlib.pyplot as plt
         plt.ioff()
     from eqcorrscan.utils import plotting
-    from eqcorrscan.utils.debug_log import debug_print
     # Check that we actually have the correct stations
     realstations = []
     for station in stations:
@@ -658,7 +659,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             ' usage, or less precision, or reduce data volume')
     # Loop through each node in the input
     # Linear run
-    print('Computing the energy stacks')
+    Logger.info('Computing the energy stacks')
     # Parallel run
     num_cores = cores
     if num_cores > len(nodes):
@@ -675,22 +676,22 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                for i in range(len(nodes))]
     pool.close()
     if not mem_issue:
-        print('Computing the cumulative network response from memory')
+        Logger.info('Computing the cumulative network response from memory')
         energy = [p.get() for p in results]
         pool.join()
         energy.sort(key=lambda tup: tup[0])
         energy = [node[1] for node in energy]
         energy = np.concatenate(energy, axis=0)
-        print(energy.shape)
+        Logger.debug(energy.shape)
     else:
         pool.join()
         del results
     # Now compute the cumulative network response and then detect possible
     # events
     if not mem_issue:
-        print(energy.shape)
+        Logger.debug(energy.shape)
         indices = np.argmax(energy, axis=0)  # Indices of maximum energy
-        print(indices.shape)
+        Logger.debug(indices.shape)
         cum_net_resp = np.array([np.nan] * len(indices))
         cum_net_resp[0] = energy[indices[0]][0]
         peak_nodes = [nodes[indices[0]]]
@@ -699,9 +700,9 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             peak_nodes.append(nodes[indices[i]])
         del energy, indices
     else:
-        print('Reading the temp files and computing network response')
+        Logger.info('Reading the temp files and computing network response')
         node_splits = int(len(nodes) // num_cores)
-        print(node_splits)
+        Logger.debug(node_splits)
         indices = []
         for i in range(num_cores):
             indices.append(list(np.arange(node_splits * i,
@@ -716,12 +717,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         results = [p.get() for p in results]
         pool.join()
         responses = [result[0] for result in results]
-        print(np.shape(responses))
+        Logger.debug(np.shape(responses))
         node_indices = [result[1] for result in results]
         cum_net_resp = np.array(responses)
         indices = np.argmax(cum_net_resp, axis=0)
-        print(indices.shape)
-        print(cum_net_resp.shape)
+        Logger.debug(indices.shape)
+        Logger.debug(cum_net_resp.shape)
         cum_net_resp = np.array([cum_net_resp[indices[i]][i]
                                  for i in range(len(indices))])
         peak_nodes = [nodes[node_indices[indices[i]][i]]
@@ -738,7 +739,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         cum_net_trace.sort(['network', 'station', 'channel'])
 
     # Find detection within this network response
-    print('Finding detections in the cumulative network response')
+    Logger.info('Finding detections in the cumulative network response')
     detections = _find_detections(cum_net_resp, peak_nodes, threshold,
                                   thresh_type, stream[0].stats.sampling_rate,
                                   realstations, gap)
@@ -747,12 +748,12 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     nodesout = []
     good_detections = []
     if detections:
-        print('Converting detections into templates')
+        Logger.info('Converting detections into templates')
         # Generate a catalog of detections
         # detections_cat = Catalog()
         for j, detection in enumerate(detections):
-            debug_print('Converting for detection %i of %i'
-                        % (j, len(detections)), 3, debug)
+            Logger.info('Converting for detection %i of %i' %
+                        (j, len(detections)), 3, debug)
             # Create an event for each detection
             event = Event()
             # Set up some header info for the event
@@ -791,7 +792,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                             time=tr.stats.starttime + detect_lag +
                             detection.detect_time + pre_pick,
                             onset='emergent', evalutation_mode='automatic'))
-            debug_print('Generating template for detection: %i' % j, 0, debug)
+            Logger.info('Generating template for detection: %i' % j, 0, debug)
             template = _template_gen(
                 picks=event.picks, st=copy_of_stream, length=template_length,
                 swin='all')
@@ -806,11 +807,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             coherent = False
             if temp_coher > coh_thresh:
                 template.write(template_name, format="MSEED")
-                print('Written template as: ' + template_name)
-                print('---------------------------------coherence LEVEL: ' +
+                Logger.info('Written template as: ' + template_name)
+                Logger.info('---------------------------------coherence LEVEL: ' +
                       str(temp_coher))
                 coherent = True
-                debug_print('Template was incoherent, coherence level: ' +
+                Logger.info('Template was incoherent, coherence level: ' +
                             str(temp_coher), 0, debug)
                 coherent = False
             del copy_of_stream, tr, template
@@ -818,7 +819,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                 templates.append(obsread(template_name))
                 nodesout += [node]
                 good_detections.append(detection)
-            debug_print('No template for you', 0, debug)
+            Logger.error('No template for you', 0, debug)
             # detections_cat += event
     if plotvar:
         good_detections = [(cum_net_trace[-1].stats.starttime +

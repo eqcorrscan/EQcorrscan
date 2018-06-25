@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 import scipy
-import warnings
+import logging
 
 from multiprocessing import Pool, cpu_count
 from collections import Counter
@@ -26,7 +26,9 @@ from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
 from eqcorrscan.utils.plotting import plot_repicked, detection_multiplot
-from eqcorrscan.utils.debug_log import debug_print
+
+
+Logger = logging.getLogger(__name__)
 
 
 class LagCalcError(Exception):
@@ -78,18 +80,18 @@ def _xcorr_interp(ccc, dt):
     if num_samples < 5:
         msg = "Less than 5 samples selected for fit to cross " + \
               "correlation: %s" % num_samples
-        warnings.warn(msg)
+        Logger.warning(msg)
     coeffs, residual = scipy.polyfit(
         cc_t[first_sample:last_sample + 1],
         cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
     # check results of fit
     if coeffs[0] >= 0:
         msg = "Fitted parabola opens upwards!"
-        warnings.warn(msg)
+        Logger.warning(msg)
     if residual > 0.1:
         msg = "Residual in quadratic fit to cross correlation maximum " + \
               "larger than 0.1: %s" % residual
-        warnings.warn(msg)
+        Logger.warning(msg)
     # X coordinate of vertex of parabola gives time shift to correct
     # differential pick time. Y coordinate gives maximum correlation
     # coefficient.
@@ -160,30 +162,30 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        debug_print('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan),
+        Logger.info('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan),
                     3, debug)
         image = detection.select(station=temp_sta, channel=temp_chan)
         if len(image) == 0 or sum(image[0].data) == 0:
-            print('No match in image.')
+            Logger.error('No match in image.')
             continue
         if interpolate:
             try:
                 ccc = normxcorr2(tr.data, image[0].data)
             except Exception:
-                print('Could not calculate cc')
-                print('Image is %i long' % len(image[0].data))
-                print('Template is %i long' % len(tr.data))
+                Logger.error('Could not calculate cc')
+                Logger.error('Image is %i long' % len(image[0].data))
+                Logger.error('Template is %i long' % len(tr.data))
                 continue
             try:
                 shift, cc_max = _xcorr_interp(ccc=ccc, dt=image[0].stats.delta)
             except IndexError:
-                print('Could not interpolate ccc, not smooth')
+                Logger.error('Could not interpolate ccc, not smooth')
                 ccc = normxcorr2(tr.data, image[0].data)
                 cc_max = np.amax(ccc)
                 shift = np.argmax(ccc) * image[0].stats.delta
             # Convert the maximum cross-correlation time to an actual time
             if math.isnan(cc_max):
-                print('Problematic trace, no cross correlation possible')
+                Logger.error('Problematic trace, no cross correlation possible')
                 continue
             else:
                 picktime = image[0].stats.starttime + shift
@@ -192,22 +194,22 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             try:
                 ccc = normxcorr2(tr.data, image[0].data)
             except Exception:
-                print('Could not calculate cc')
-                print('Image is %i long' % len(image[0].data))
-                print('Template is %i long' % len(tr.data))
+                Logger.error('Could not calculate cc')
+                Logger.error('Image is %i long' % len(image[0].data))
+                Logger.error('Template is %i long' % len(tr.data))
                 continue
             cc_max = np.amax(ccc)
             if math.isnan(cc_max):
-                print('Problematic trace, no cross correlation possible')
+                Logger.error('Problematic trace, no cross correlation possible')
                 continue
             else:
                 picktime = image[0].stats.starttime + (
                     np.argmax(ccc) * image[0].stats.delta)
-        debug_print('Maximum cross-corr=%s' % cc_max, 3, debug)
+        Logger.info('Maximum cross-corr=%s' % cc_max, 3, debug)
         checksum += cc_max
         used_chans += 1
         if cc_max < min_cc:
-            debug_print('Correlation below threshold, not used', 3, debug)
+            Logger.info('Correlation below threshold, not used', 3, debug)
             continue
         cccsum += cc_max
         # Perhaps weight each pick by the cc val or cc val^2?
@@ -217,7 +219,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         # Only take the S-pick with the best correlation
         elif temp_chan[-1] in horizontal_chans:
             phase = 'S'
-            debug_print('Making S-pick on: %s.%s.%s' %
+            Logger.info('Making S-pick on: %s.%s.%s' %
                         (temp_net, temp_sta, temp_chan), 4, debug)
             if temp_sta not in s_stachans.keys():
                 s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
@@ -248,7 +250,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                    % (pre_lag_ccsum, checksum))
             raise LagCalcError(msg)
     else:
-        warnings.warn('Cannot check if cccsum is better, used %i channels '
+        Logger.warning('Cannot check if cccsum is better, used %i channels '
                       'for detection, but %i are used here'
                       % (detect_chans, used_chans))
     return i, event
@@ -305,7 +307,7 @@ def _day_loop(detection_streams, template, min_cc, detections,
         num_cores = len(detection_streams)
     if parallel:
         pool = Pool(processes=num_cores)
-        debug_print('Made pool of %i workers' % num_cores, 4, debug)
+        Logger.info('Made pool of %i workers' % num_cores, 4, debug)
         # Parallel generation of events for each detection:
         # results will be a list of (i, event class)
         results = [pool.apply_async(
@@ -394,18 +396,18 @@ def _prepare_data(detect_data, detections, template, delays,
                 msg = ('No data in %s.%s for detection at time %s' %
                        (tr.stats.station, tr.stats.channel,
                         detection.detect_time))
-                warnings.warn(msg)
+                Logger.warning(msg)
                 detect_stream.remove(tr)
             elif tr.stats.endtime - tr.stats.starttime < (
                         2 * shift_len) + template_len:
                 msg = ("Insufficient data for %s.%s will not use."
                        % (tr.stats.station, tr.stats.channel))
-                warnings.warn(msg)
+                Logger.warning(msg)
                 detect_stream.remove(tr)
             elif np.ma.is_masked(tr.data):
                 msg = ("Masked data found for %s.%s, will not use."
                        % (tr.stats.station, tr.stats.channel))
-                warnings.warn(msg)
+                Logger.warning(msg)
                 detect_stream.remove(tr)
         # Check for duplicate traces
         stachans = [(tr.stats.station, tr.stats.channel)
@@ -579,7 +581,7 @@ def lag_calc(detections, detect_data, template_names, templates,
     # Segregate detections by template, then feed to day_loop
     initial_cat = Catalog()
     for template in zipped_templates:
-        print('Running lag-calc for template %s' % template[0])
+        Logger.info('Running lag-calc for template %s' % template[0])
         template_detections = [detection for detection in detections
                                if detection.template_name == template[0]]
         t_delays = [d for d in delays if d[0] == template[0]][0][1]
@@ -603,8 +605,8 @@ def lag_calc(detections, detect_data, template_names, templates,
                     break
             detection.detect_time = detection.detect_time - earlier
             if earlier > 0:
-                print('Adjusting ' + detection.id + ' by ' + str(earlier))
-        debug_print(
+                Logger.info('Adjusting ' + detection.id + ' by ' + str(earlier))
+        Logger.info(
             'There are %i detections' % len(template_detections), 2, debug)
         detect_streams = _prepare_data(
             detect_data=detect_data, detections=template_detections,
@@ -645,7 +647,7 @@ def lag_calc(detections, detect_data, template_names, templates,
         if len(event) == 1:
             output_cat.append(event[0])
         elif len(event) == 0:
-            print('No picks made for detection: \n%s' % det.__str__())
+            Logger.error('No picks made for detection: \n%s' % det.__str__())
         else:
             raise NotImplementedError('Multiple events with same id,'
                                       ' should not happen')
