@@ -126,7 +126,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
     :type num_cores: int
-    :param num_cores: 
+    :param num_cores:
         Number of cores to try and use, if False and parallel=True, will use
         either all your cores, or as many traces as in the data (whichever is
         smaller).
