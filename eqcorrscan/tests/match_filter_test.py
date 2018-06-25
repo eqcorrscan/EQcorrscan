@@ -640,6 +640,18 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key], 6)
             # self.assertEqual(fam.template, check_fam.template)
 
+    def test_tribe_detect_save_progress(self):
+        """Test the detect method on Tribe objects"""
+        party = self.tribe.detect(
+            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            save_progress=True)
+        self.assertEqual(len(party), 4)
+        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
+        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
+        self.assertEqual(party, saved_party)
+        os.remove("eqcorrscan_temporary_party.tgz")
+
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
         Padding may also result in error at correlation stage due to poor
@@ -691,6 +703,19 @@ class TestMatchObjects(unittest.TestCase):
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
         self.assertEqual(len(party), 4)
+
+    @pytest.mark.flaky(reruns=2)
+    def test_client_detect_save_progress(self):
+        """Test the client_detect method."""
+        client = Client('NCEDC')
+        party = self.tribe.copy().client_detect(
+            client=client, starttime=self.t1, endtime=self.t2,
+            threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            daylong=False, plotvar=False, save_progress=True)
+        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
+        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
+        self.assertEqual(party, saved_party)
+        os.remove("eqcorrscan_temporary_party.tgz")
 
     def test_party_io(self):
         """Test reading and writing party objects."""

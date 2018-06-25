@@ -41,9 +41,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import warnings
 import numpy as np
+import warnings
 import copy
+import os
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
@@ -77,7 +78,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False, debug=0,
                  return_event=False, min_snr=None, parallel=False,
-                 **kwargs):
+                 save_progress=False, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -124,6 +125,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         the whole window given.
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
+    :type save_progress: bool
+    :param save_progress:
+        Whether to save the resulting party at every data step or not.
+        Useful for long-running processes.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -215,13 +220,15 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
     assert method in ('from_client', 'from_seishub', 'from_meta_file',
                       'from_sac')
+    if not isinstance(swin, list):
+        swin = [swin]
     process = True
     if method in ['from_client', 'from_seishub']:
         catalog = kwargs.get('catalog', Catalog())
         data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
         sub_catalogs = _group_events(
-            catalog=catalog, process_len=process_len, data_pad=data_pad)
+            catalog=catalog, process_len=process_len)
         if method == 'from_client':
             client = FDSNClient(kwargs.get('client_id', None))
             available_stations = []
@@ -256,12 +263,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     temp_list = []
     process_lengths = []
 
-    if swin in ["P_all", "S_all"]:
+    if "P_all" in swin or "S_all" in swin or all_horiz:
         all_channels = True
     else:
         all_channels = False
     for sub_catalog in sub_catalogs:
         if method in ['from_seishub', 'from_client']:
+            debug_print("Downloading data", 1, debug)
             st = _download_from_client(
                 client=client, client_type=client_map[method],
                 catalog=sub_catalog, data_pad=data_pad,
@@ -299,7 +307,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         for event in sub_catalog:
             stations, channels, st_stachans = ([], [], [])
             if len(event.picks) == 0:
-                warnings.warn('No picks for event %s' % event.resource_id)
+                debug_print('No picks for event {0}'.format(event.resource_id),
+                            2, debug)
                 continue
             use_event = True
             # Check that the event is within the data
@@ -311,14 +320,15 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                                  str(data_end)), 0, debug)
                     use_event = False
             if not use_event:
-                warnings.warn('Event is not within data time-span')
+                debug_print('Event is not within data time-span', 2, debug)
                 continue
             # Read in pick info
             debug_print("I have found the following picks", 0, debug)
             for pick in event.picks:
                 if not pick.waveform_id:
-                    print('Pick not associated with waveforms, will not use.')
-                    print(pick)
+                    debug_print(
+                        'Pick not associated with waveforms, will not use:'
+                        ' {0}'.format(pick), 1, debug)
                     continue
                 debug_print(pick, 0, debug)
                 stations.append(pick.waveform_id.station_code)
@@ -334,6 +344,14 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 min_snr=min_snr)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
+        if save_progress:
+            if not os.path.isdir("eqcorrscan_temporary_templates"):
+                os.makedirs("eqcorrscan_temporary_templates")
+            for template in temp_list:
+                template.write(
+                    "eqcorrscan_temporary_templates{0}{1}.ms".format(
+                        os.path.sep, template[0].stats.starttime),
+                    format="MSEED")
         del st
     if return_event:
         return temp_list, catalog, process_lengths
@@ -414,9 +432,9 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
         if Z_include and len(delay) == 0:
             delay = [d[2] for d in delays if d[0] == tr.stats.station]
         if len(delay) == 0:
-            msg = ' '.join(['No matching template channel found for stack',
-                            'channel', tr.stats.station, tr.stats.channel])
-            warnings.warn(msg)
+            debug_print("No matching template channel found for stack channel"
+                        " {0}.{1}".format(tr.stats.station, tr.stats.channel),
+                        2, 3)
             new_template.remove(tr)
         else:
             for d in delay:
@@ -438,8 +456,9 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     for event in catalog:
         for pick in event.picks:
             if not pick.waveform_id:
-                print('Pick not associated with waveforms, will not use.')
-                print(pick)
+                debug_print(
+                    "Pick not associated with waveforms, will not use:"
+                    " {0}".format(pick), 1, debug)
                 continue
             if all_channels:
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
@@ -470,17 +489,24 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
             st += client.get_waveforms(net, sta, loc, chan,
                                        starttime, endtime)
         except Exception:
-            warnings.warn('Found no data for this station')
+            debug_print('Found no data for this station', 2, debug)
             dropped_pick_stations += 1
     if not st and dropped_pick_stations == len(event.picks):
         raise Exception('No data available, is the server down?')
     st.merge()
-    # clients download chunks, we need to assert that the data are
+    # clients download chunks, we need to check that the data are
     # the desired length
     for tr in st:
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
+        if tr.stats.endtime - tr.stats.starttime < 0.8 * process_len:
+            debug_print(
+                "Data for {0}.{1} is {2} hours long, which is less than 80 "
+                "percent of the desired length, will not pad".format(
+                    tr.stats.station, tr.stats.channel,
+                    (tr.stats.endtime - tr.stats.starttime) / 3600), 4, debug)
+            st.remove(tr)
     return st
 
 
@@ -558,90 +584,96 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     from eqcorrscan.core.bright_lights import _rms
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
-    assert swin in ['P', 'all', 'S', 'P_all', 'S_all']
+    if not isinstance(swin, list):
+        swin = [swin]
+    for _swin in swin:
+        assert _swin in ['P', 'all', 'S', 'P_all', 'S_all']
     for pick in picks_copy:
         if not pick.waveform_id:
-            print('Pick not associated with waveform, will not use it.')
-            print(pick)
+            debug_print(
+                "Pick not associated with waveform, will not use it: "
+                "{0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
-        if not pick.waveform_id.station_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
-            picks_copy.remove(pick)
-            continue
-        if not pick.waveform_id.channel_code:
-            print('Pick not associated with a station, will not use it.')
-            print(pick)
+        if not pick.waveform_id.station_code or not \
+                pick.waveform_id.channel_code:
+            debug_print(
+                "Pick not associated with a channel, will not use it:"
+                " {0}".format(pick), 1, debug)
             picks_copy.remove(pick)
             continue
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
         if np.all(tr.data.astype(np.float16) == 0):
-            warnings.warn('Trace is all zeros at float16 level,'
-                          'either gain or check. Not using in template.')
-            print(tr)
+            debug_print("Trace is all zeros at float16 level, either gain or "
+                        "check. Not using in template: {0}".format(tr), 4,
+                        debug)
             st.remove(tr)
-    if plot:
-        stplot = st.copy()
     # Get the earliest pick-time and use that if we are not using delayed.
     picks_copy.sort(key=lambda p: p.time)
     first_pick = picks_copy[0]
+    if plot:
+        stplot = st.slice(first_pick.time - 20,
+                          first_pick.time + length + 90).copy()
     # Work out starttimes
     starttimes = []
-    for tr in st:
-        starttime = {'station': tr.stats.station, 'channel': tr.stats.channel,
-                     'picks': []}
-        station_picks = [pick for pick in picks_copy
-                         if pick.waveform_id.station_code == tr.stats.station]
-        if swin == 'P_all':
-            p_pick = [pick for pick in station_picks
-                      if pick.phase_hint.upper()[0] == 'P']
-            if len(p_pick) == 0:
-                continue
-            starttime.update({'picks': p_pick})
-        if swin == 'S_all':
-            s_pick = [pick for pick in station_picks
-                      if pick.phase_hint.upper()[0] == 'S']
-            if len(s_pick) == 0:
-                continue
-            starttime.update({'picks': s_pick})
-        if swin == 'all':
-            if all_horiz and tr.stats.channel[-1] in ['1', '2', '3', 'N', 'E']:
-                # Get all picks on horizontal channels
-                channel_pick = [
-                    pick for pick in station_picks
-                    if pick.waveform_id.channel_code[-1] in
-                    ['1', '2', '3', 'N', 'E']]
-            else:
-                channel_pick = [
-                    pick for pick in station_picks
-                    if pick.waveform_id.channel_code == tr.stats.channel]
-            if len(channel_pick) == 0:
-                continue
-            starttime.update({'picks': channel_pick})
-        if swin == 'P':
-            p_pick = [pick for pick in station_picks
-                      if pick.phase_hint.upper()[0] == 'P' and
-                      pick.waveform_id.channel_code == tr.stats.channel]
-            if len(p_pick) == 0:
-                continue
-            starttime.update({'picks': p_pick})
-        if swin == 'S':
-            if tr.stats.channel[-1] in ['Z', 'U']:
-                continue
-            s_pick = [pick for pick in station_picks
-                      if pick.phase_hint.upper()[0] == 'S']
-            if not all_horiz:
-                s_pick = [pick for pick in s_pick
-                          if pick.waveform_id.channel_code == tr.stats.channel]
-            starttime.update({'picks': s_pick})
-            if len(starttime['picks']) == 0:
-                continue
-        if not delayed:
-            starttime.update({'picks': [first_pick]})
-        starttimes.append(starttime)
+    for _swin in swin:
+        for tr in st:
+            starttime = {'station': tr.stats.station,
+                         'channel': tr.stats.channel, 'picks': []}
+            station_picks = [pick for pick in picks_copy
+                             if pick.waveform_id.station_code ==
+                             tr.stats.station]
+            if _swin == 'P_all':
+                p_pick = [pick for pick in station_picks
+                          if pick.phase_hint.upper()[0] == 'P']
+                if len(p_pick) == 0:
+                    continue
+                starttime.update({'picks': p_pick})
+            elif _swin == 'S_all':
+                s_pick = [pick for pick in station_picks
+                          if pick.phase_hint.upper()[0] == 'S']
+                if len(s_pick) == 0:
+                    continue
+                starttime.update({'picks': s_pick})
+            elif _swin == 'all':
+                if all_horiz and tr.stats.channel[-1] in ['1', '2', '3',
+                                                          'N', 'E']:
+                    # Get all picks on horizontal channels
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code[-1] in
+                        ['1', '2', '3', 'N', 'E']]
+                else:
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code == tr.stats.channel]
+                if len(channel_pick) == 0:
+                    continue
+                starttime.update({'picks': channel_pick})
+            elif _swin == 'P':
+                p_pick = [pick for pick in station_picks
+                          if pick.phase_hint.upper()[0] == 'P' and
+                          pick.waveform_id.channel_code == tr.stats.channel]
+                if len(p_pick) == 0:
+                    continue
+                starttime.update({'picks': p_pick})
+            elif _swin == 'S':
+                if tr.stats.channel[-1] in ['Z', 'U']:
+                    continue
+                s_pick = [pick for pick in station_picks
+                          if pick.phase_hint.upper()[0] == 'S']
+                if not all_horiz:
+                    s_pick = [pick for pick in s_pick
+                              if pick.waveform_id.channel_code ==
+                              tr.stats.channel]
+                starttime.update({'picks': s_pick})
+                if len(starttime['picks']) == 0:
+                    continue
+            if not delayed:
+                starttime.update({'picks': [first_pick]})
+            starttimes.append(starttime)
     # Cut the data
     st1 = Stream()
     for _starttime in starttimes:
@@ -656,11 +688,12 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:
-                msg = ('Pick for ' + pick.waveform_id.station_code + '.' +
-                       pick.waveform_id.channel_code + ' has no phase ' +
-                       'hint given, you should not use this template for ' +
-                       'cross-correlation re-picking!')
-                warnings.warn(msg)
+                warnings.warn(
+                    "Pick for {0}.{1} has no phase hint given, you should not "
+                    "use this template for cross-correlation"
+                    " re-picking!".format(
+                        pick.waveform_id.station_code,
+                        pick.waveform_id.channel_code))
             starttime = pick.time - prepick
             debug_print(
                 "Cutting " + tr.stats.station + '.' + tr.stats.channel, 0,
@@ -669,8 +702,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
             if len(tr_cut.data) == 0:
-                print('No data provided for %s.%s starting at %s' %
-                      (tr.stats.station, tr.stats.channel, str(starttime)))
+                debug_print(
+                    "No data provided for {0}.{1} starting at {2}".format(
+                        tr.stats.station, tr.stats.channel, starttime), 3,
+                    debug)
                 continue
             # Ensure that the template is the correct length
             if len(tr_cut.data) == (tr_cut.stats.sampling_rate *
@@ -682,8 +717,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 debug)
             if min_snr is not None and \
                max(tr_cut.data) / noise_amp < min_snr:
-                print('Signal-to-noise ratio below threshold for %s.%s' %
-                      (tr_cut.stats.station, tr_cut.stats.channel))
+                debug_print(
+                    "Signal-to-noise ratio below threshold for {0}.{1}".format(
+                        tr_cut.stats.station, tr_cut.stats.channel), 3, debug)
                 continue
             st1 += tr_cut
             used_tr = True
@@ -691,16 +727,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             debug_print('No pick for ' + tr.stats.station + '.' +
                         tr.stats.channel, 0, debug)
     if plot:
-        background = stplot.trim(
-            st1.sort(['starttime'])[0].stats.starttime - 10,
-            st1.sort(['starttime'])[-1].stats.endtime + 10)
-        tplot(st1, background=background, picks=picks_copy,
+        tplot(st1, background=stplot, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime))
         del stplot
     return st1
 
 
-def _group_events(catalog, process_len, data_pad):
+def _group_events(catalog, process_len):
     """
     Internal function to group events into sub-catalogs based on process_len.
 
@@ -708,10 +741,6 @@ def _group_events(catalog, process_len, data_pad):
     :type catalog: obspy.core.event.Catalog
     :param process_len: Length in seconds that data will be processed in
     :type process_len: int
-    :param data_pad: Length of data (in seconds) required before and after \
-        any event for processing, use to reduce edge-effects of filtering on \
-        the templates.
-    :type data_pad: int
 
     :return: List of catalogs
     :rtype: list
@@ -721,11 +750,13 @@ def _group_events(catalog, process_len, data_pad):
         return [catalog]
     sub_catalogs = []
     # Sort catalog by date
-    catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
+    catalog.events = sorted(
+        catalog.events,
+        key=lambda e: (e.preferred_origin() or e.origins[0]).time)
     sub_catalog = Catalog([catalog[0]])
     for event in catalog[1:]:
-        if (event.origins[0].time + data_pad) - \
-                (sub_catalog[0].origins[0].time - data_pad) < process_len:
+        origin_time = (event.preferred_origin() or event.origins[0]).time
+        if origin_time - sub_catalog[0].origins[0].time < process_len:
             sub_catalog.append(event)
         else:
             sub_catalogs.append(sub_catalog)
