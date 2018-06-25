@@ -308,6 +308,15 @@ class TestGappyData(unittest.TestCase):
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
 
+    def test_gappy_data_removal(self):
+        party = self.tribe.client_detect(
+            client=self.client, starttime=self.starttime,
+            endtime=self.endtime, threshold=8,
+            threshold_type="MAD", trig_int=2, plotvar=False,
+            parallel_process=False, min_gap=1)
+        self.assertEqual(len(party), 0)
+
+
 
 @pytest.mark.network
 class TestNCEDCCases(unittest.TestCase):
