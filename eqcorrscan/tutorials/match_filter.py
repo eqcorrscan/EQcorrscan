@@ -6,6 +6,7 @@ then you will need to before you can run this script.
 """
 
 import glob
+import logging
 
 from multiprocessing import cpu_count
 from obspy.clients.fdsn import Client
@@ -14,6 +15,11 @@ from obspy import UTCDateTime, Stream, read
 from eqcorrscan.utils import pre_processing
 from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
 def run_tutorial(plot=False, process_len=3600):
@@ -93,7 +99,7 @@ def run_tutorial(plot=False, process_len=3600):
         print('Processing the seismic data')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=2, num_cores=ncores, starttime=t1, endtime=t2)
+            num_cores=ncores, starttime=t1, endtime=t2)
         # Convert from list to stream
         st = Stream(st)
 
@@ -101,7 +107,7 @@ def run_tutorial(plot=False, process_len=3600):
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=plot, plotdir='.', cores=ncores, debug=1,
+            plotvar=plot, plotdir='.', cores=ncores,
             plot_format='png')
 
         # Now lets try and work out how many unique events we have just to

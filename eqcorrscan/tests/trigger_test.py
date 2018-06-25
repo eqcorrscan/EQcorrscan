@@ -50,27 +50,27 @@ class TestTriggerMethods(unittest.TestCase):
         # Test with despike
         triggers = _channel_loop(tr=tr, parameters=parameters,
                                  max_trigger_length=100,
-                                 despike=True, debug=0)
+                                 despike=True)
         self.assertEqual(len(triggers), 1)
         # Test with no filter
         parameters[0]['lowcut'] = None
         parameters[0]['highcut'] = None
         triggers = _channel_loop(tr=tr, parameters=parameters,
                                  max_trigger_length=100,
-                                 despike=False, debug=0)
+                                 despike=False)
         self.assertEqual(len(triggers), 1)
         # Test with lowpass
         parameters[0]['highcut'] = 20
         triggers = _channel_loop(tr=tr, parameters=parameters,
                                  max_trigger_length=100,
-                                 despike=False, debug=0)
+                                 despike=False)
         self.assertEqual(len(triggers), 1)
         # Test with highpass
         parameters[0]['highcut'] = None
         parameters[0]['lowcut'] = 2
         triggers = _channel_loop(tr=tr, parameters=parameters,
                                  max_trigger_length=100,
-                                 despike=False, debug=0)
+                                 despike=False)
         self.assertEqual(len(triggers), 1)
 
     def test_main_trigger_routine(self):

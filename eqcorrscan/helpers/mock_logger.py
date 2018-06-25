@@ -42,6 +42,6 @@ class MockLoggingHandler(logging.Handler):
         self.acquire()
         try:
             for message_list in self.messages.values():
-                message_list.clear()
+                message_list[:] = []
         finally:
             self.release()

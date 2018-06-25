@@ -493,7 +493,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         slavestream += read(wavbase + os.sep + wavefile)
                     except IOError:
                         Logger.error('No waveform found: %s' %
-                                    (wavbase + os.sep + wavefile))
+                                     (wavbase + os.sep + wavefile))
                         continue
             # Write out the header line
             event_text = '#' + str(master_event_id).rjust(10) +\

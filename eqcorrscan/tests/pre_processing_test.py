@@ -319,6 +319,5 @@ class TestPreProcessing(unittest.TestCase):
             processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
 
 
-
 if __name__ == '__main__':
     unittest.main()

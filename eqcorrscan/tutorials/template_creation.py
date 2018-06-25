@@ -3,6 +3,8 @@ Simple tutorial detailing how to generate a series of templates from catalog\
 data available online.
 """
 
+import logging
+
 from obspy.clients.fdsn import Client
 from obspy import read_events
 from obspy.core.event import Catalog
@@ -10,10 +12,15 @@ from obspy.core.event import Catalog
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.core import template_gen
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
-def mktemplates(network_code='GEONET',
-                publicIDs=['2016p008122', '2016p008353', '2016p008155',
-                           '2016p008194'], plot=True):
+
+def mktemplates(
+        network_code='GEONET', plot=True,
+        publicIDs=['2016p008122', '2016p008353', '2016p008155','2016p008194']):
     """Functional wrapper to make templates"""
     # We want to download some QuakeML files from the New Zealand GeoNet
     # network, GeoNet currently doesn't support FDSN event queries, so we
@@ -54,7 +61,7 @@ def mktemplates(network_code='GEONET',
     templates = template_gen.template_gen(
         method='from_client', catalog=catalog, client_id=network_code,
         lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4, length=3.0,
-        prepick=0.15, swin='all', process_len=3600, debug=0, plot=plot)
+        prepick=0.15, swin='all', process_len=3600, plot=plot)
 
     # We now have a series of templates! Using Obspy's Stream.write() method we
     # can save these to disk for later use.  We will do that now for use in the
