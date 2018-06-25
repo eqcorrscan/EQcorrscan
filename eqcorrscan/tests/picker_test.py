@@ -41,5 +41,5 @@ class PickerTests(unittest.TestCase):
                                '2013-09-01-0410-35.DFDPC_024_00'))
         event = cross_net(stream=st)
         self.assertEqual(len(event.picks), 24)
-        event = cross_net(stream=st, env=False, debug=3)
+        event = cross_net(stream=st, env=False)
         self.assertEqual(len(event.picks), 24)
