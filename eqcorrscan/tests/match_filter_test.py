@@ -272,7 +272,6 @@ class TestGeoNetCase(unittest.TestCase):
         self.assertEqual(len(party), 16)
 
 
-@pytest.mark.network
 class TestGappyData(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
@@ -303,6 +302,7 @@ class TestGappyData(unittest.TestCase):
             threshold_type="MAD", trig_int=2, plotvar=False,
             parallel_process=False)
         for family in party:
+            print(len(family))
             self.assertTrue(len(family) in [92, 13])
             for detection in family:
                 self.assertFalse(
