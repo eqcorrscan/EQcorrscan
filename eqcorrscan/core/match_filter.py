@@ -664,10 +664,6 @@ class Party(object):
 
         >>> party = Party().read()
         >>> party.write('test_tar_write', format='tar')
-        Writing family 0
-        Writing family 1
-        Writing family 2
-        Writing family 3
         Party of 4 Families.
         >>> party.write('test_csv_write.csv', format='csv')
         Party of 4 Families.
