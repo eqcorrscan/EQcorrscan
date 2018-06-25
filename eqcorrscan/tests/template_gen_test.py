@@ -278,8 +278,7 @@ class TestTemplateGeneration(unittest.TestCase):
            (86400, [5, 60, 300])]:
             for data_pad in pads:
                 sub_catalogs = _group_events(
-                    catalog=catalog, process_len=process_len,
-                    data_pad=data_pad)
+                    catalog=catalog, process_len=process_len)
                 k_events = 0
                 for sub_catalog in sub_catalogs:
                     min_time = min([event.origins[0].time
