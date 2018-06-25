@@ -179,7 +179,6 @@ class ClusteringTestWarnings(unittest.TestCase):
         cls.cat = client.get_events(starttime=starttime, endtime=endtime,
                                     minmagnitude=6)
 
-
     def setUp(self):
         self._log_handler.reset()
 

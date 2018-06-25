@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import copy
 import itertools
-import warnings
+import logging
 from collections import defaultdict
 from functools import wraps
 
@@ -16,10 +16,15 @@ from obspy import Trace, Stream
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
 from eqcorrscan.utils.timer import time_func
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
 
+log = logging.getLogger(corr.__name__)
+_log_handler = MockLoggingHandler(level='DEBUG')
+log.addHandler(_log_handler)
+log_messages = _log_handler.messages
 
 # -------------------------- helper functions
 
@@ -166,10 +171,10 @@ def array_ccs_low_amp(array_template, array_stream, pads):
     for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
         print("Running {0} with low-variance".format(name))
-        with warnings.catch_warnings(record=True) as w:
-            cc, _ = time_func(
-                func, name, array_template, array_stream * 10e-8, pads)
-            out[name] = (cc, w)
+        _log_handler.reset()
+        cc, _ = time_func(
+            func, name, array_template, array_stream * 10e-8, pads)
+        out[name] = (cc, log_messages['warning'])
     return out
 
 # stream fixtures
@@ -225,10 +230,10 @@ def gappy_stream_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        with warnings.catch_warnings(record=True) as w:
-            cc_out = time_func(func, name, multichannel_templates,
-                               gappy_multichannel_stream, cores=1)
-            out[name] = (cc_out, w)
+        _log_handler.reset()
+        cc_out = time_func(func, name, multichannel_templates,
+                           gappy_multichannel_stream, cores=1)
+        out[name] = (cc_out, log_messages['warning'])
     return out
 
 
@@ -270,8 +275,7 @@ class TestArrayCorrelateFunctions:
             assert np.median(cc) != 0.0
             if name == 'fftw':
                 assert len(warning) == 1
-                assert issubclass(warning[-1].category, UserWarning)
-                assert "Low variance found" in str(warning[-1].message)
+                assert "Low variance found" in warning[-1]
 
 
 @pytest.mark.serial
@@ -305,8 +309,7 @@ class TestStreamCorrelateFunctions:
             if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
                                 'fftw_concurrent']:
                 assert len(warning) == 1
-                assert issubclass(warning[-1].category, UserWarning)
-                assert "are there zeros" in str(warning[-1].message)
+                assert "are there zeros" in warning[-1]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
