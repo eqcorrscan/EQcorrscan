@@ -162,7 +162,7 @@ def template_remove(tr, template, cc_thresh, windowlength,
     :param windowlength: Length of window to look for spikes in in seconds.
     :type interp_len: float
     :param interp_len: Window length to remove and fill in seconds.
- 
+
     :returns: tr, works in place.
     :rtype: :class:`obspy.core.trace.Trace`
     """

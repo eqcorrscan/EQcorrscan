@@ -214,7 +214,7 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
-                Logger.warning('Cannot make a bulk synthetic with this fixed ' +
+                Logger.warning('Cannot make a bulk synthetic with this fixed '
                                'length for station ' + station)
             elif phaseout == 'all':
                 tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
