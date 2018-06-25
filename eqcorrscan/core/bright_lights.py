@@ -448,7 +448,8 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     if np.isnan(cum_net_resp).any():
         raise ValueError("Nans present")
     Logger.info('Mean of data is: ' + str(np.median(cum_net_resp)))
-    Logger.info('RMS of data is: ' + str(np.sqrt(np.mean(np.square(cum_net_resp)))))
+    Logger.info('RMS of data is: ' +
+                str(np.sqrt(np.mean(np.square(cum_net_resp)))))
     Logger.info('MAD of data is: ' + str(np.median(np.abs(cum_net_resp))))
     if thresh_type == 'MAD':
         thresh = (np.median(np.abs(cum_net_resp)) * threshold)
@@ -459,7 +460,7 @@ def _find_detections(cum_net_resp, nodes, threshold, thresh_type,
     Logger.info('Threshold is set to: ' + str(thresh))
     Logger.info('Max of data is: ' + str(max(cum_net_resp)))
     peaks = findpeaks.find_peaks2_short(cum_net_resp, thresh,
-                                        length * samp_rate, debug=0)
+                                        length * samp_rate)
     detections = []
     if peaks:
         for peak in peaks:
@@ -541,8 +542,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                template_length, template_saveloc, coherence_thresh,
                coherence_stations=['all'], coherence_clip=False,
                gap=2.0, clip_level=100, instance=0, pre_pick=0.2,
-               plotvar=False, plotsave=True, cores=1, debug=0,
-               mem_issue=False):
+               plotvar=False, plotsave=True, cores=1, mem_issue=False):
     """
     Calculate the brightness function for a single day.
 
@@ -617,8 +617,6 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         of matplotlib, so if is set to `False` you will see NO PLOTS!
     :type cores: int
     :param cores: Number of cores to use, defaults to 1.
-    :type debug: int
-    :param debug: Debug level from 0-5, higher is more output.
     :type mem_issue: bool
     :param mem_issue:
         Set to True to write temporary variables to disk rather than store in
@@ -753,7 +751,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         # detections_cat = Catalog()
         for j, detection in enumerate(detections):
             Logger.info('Converting for detection %i of %i' %
-                        (j, len(detections)), 3, debug)
+                        (j, len(detections)))
             # Create an event for each detection
             event = Event()
             # Set up some header info for the event
@@ -792,7 +790,7 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
                             time=tr.stats.starttime + detect_lag +
                             detection.detect_time + pre_pick,
                             onset='emergent', evalutation_mode='automatic'))
-            Logger.info('Generating template for detection: %i' % j, 0, debug)
+            Logger.info('Generating template for detection: {0}'.format(j))
             template = _template_gen(
                 picks=event.picks, st=copy_of_stream, length=template_length,
                 swin='all')
@@ -808,18 +806,17 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
             if temp_coher > coh_thresh:
                 template.write(template_name, format="MSEED")
                 Logger.info('Written template as: ' + template_name)
-                Logger.info('---------------------------------coherence LEVEL: ' +
-                      str(temp_coher))
+                Logger.info('coherence level: {0}'.format(temp_coher))
                 coherent = True
                 Logger.info('Template was incoherent, coherence level: ' +
-                            str(temp_coher), 0, debug)
+                            str(temp_coher))
                 coherent = False
             del copy_of_stream, tr, template
             if coherent:
                 templates.append(obsread(template_name))
                 nodesout += [node]
                 good_detections.append(detection)
-            Logger.error('No template for you', 0, debug)
+            Logger.error('No template for you')
             # detections_cat += event
     if plotvar:
         good_detections = [(cum_net_trace[-1].stats.starttime +
