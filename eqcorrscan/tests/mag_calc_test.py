@@ -12,7 +12,7 @@ import numpy as np
 import os
 import datetime as dt
 import glob
-import warnings
+import logging
 
 from obspy.core.util import NamedTemporaryFile
 from obspy import UTCDateTime, read, read_events
@@ -20,10 +20,12 @@ from obspy.clients.fdsn import Client
 from obspy.clients.iris import Client as OldIris_Client
 from obspy.io.nordic.core import readwavename
 
+from eqcorrscan.utils import mag_calc
 from eqcorrscan.utils.mag_calc import dist_calc, _sim_WA, _max_p2t
 from eqcorrscan.utils.mag_calc import _GSE2_PAZ_read, _find_resp, _pairwise
 from eqcorrscan.utils.mag_calc import svd_moments, amp_pick_event
 from eqcorrscan.utils.clustering import svd
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
 class TestMagCalcMethods(unittest.TestCase):
@@ -217,6 +219,10 @@ class TestMagCalcMethods(unittest.TestCase):
 class TestAmpPickEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        log = logging.getLogger(mag_calc.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         sfile = os.path.join(cls.testing_path, 'REA', 'TEST_',
@@ -226,6 +232,9 @@ class TestAmpPickEvent(unittest.TestCase):
         cls.datapath = os.path.join(cls.testing_path, 'WAV', 'TEST_')
         cls.st = read(os.path.join(cls.datapath, cls.wavfiles[0]))
         cls.respdir = cls.testing_path
+
+    def setUp(self):
+        self._log_handler.reset()
 
     def test_amp_pick_event(self):
         """Test the main amplitude picker."""
@@ -241,16 +250,14 @@ class TestAmpPickEvent(unittest.TestCase):
         self.assertEqual(len(picked_event.amplitudes), 1)
 
     def test_amp_pick_missing_channel(self):
-        warnings.simplefilter("always")
-        with warnings.catch_warnings(record=True) as w:
-            picked_event = amp_pick_event(
-                event=self.event.copy(), st=self.st.copy()[0:-4],
-                respdir=self.respdir, remove_old=True)
-            missed = False
-            for m in w:
-                if 'no station and channel match' in str(m.message):
-                    missed = True
-            self.assertTrue(missed)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy()[0:-4],
+            respdir=self.respdir, remove_old=True)
+        missed = False
+        for warning in self.log_messages['warning']:
+            if 'no station and channel match' in warning:
+                missed = True
+        self.assertTrue(missed)
         self.assertEqual(len(picked_event.amplitudes), 1)
 
     def test_amp_pick_not_varwin(self):
