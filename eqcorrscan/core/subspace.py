@@ -699,8 +699,8 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
     for st in streams:
         for tr in st:
             if not len(tr) / tr.stats.sampling_rate == first_length:
-                msg = 'All channels of all streams must be the same length'
-                raise IOError(msg)
+                raise IOError(
+                    'All channels of all streams must be the same length')
     for st in streams:
         if not parallel:
             processed_stream = Stream()
@@ -785,9 +785,8 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
             tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=sampling_rate, seisan_chan_names=False)
     else:
-        msg = ('Multiple channels for ' + stachan[0] + '.' +
-               stachan[1] + ' in a single design stream.')
-        raise IOError(msg)
+        raise IOError('Multiple channels for {0}.{1} in a single design '
+                      'stream.'.format(stachan[0], stachan[1]))
     return i, tr
 
 
