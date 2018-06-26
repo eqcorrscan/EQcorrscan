@@ -74,24 +74,23 @@ def _xcorr_interp(ccc, dt):
         last_sample += 1
     num_samples = last_sample - first_sample + 1
     if num_samples < 3:
-        msg = "Less than 3 samples selected for fit to cross " + \
-              "correlation: %s" % num_samples
-        raise IndexError(msg)
+        raise IndexError(
+            "Less than 3 samples selected for fit to cross correlation: "
+            "{0}".format(num_samples))
     if num_samples < 5:
-        msg = "Less than 5 samples selected for fit to cross " + \
-              "correlation: %s" % num_samples
-        Logger.warning(msg)
+        Logger.warning(
+            "Less than 5 samples selected for fit to cross correlation: "
+            "{0}".format(num_samples))
     coeffs, residual = scipy.polyfit(
         cc_t[first_sample:last_sample + 1],
         cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
     # check results of fit
     if coeffs[0] >= 0:
-        msg = "Fitted parabola opens upwards!"
-        Logger.warning(msg)
+        Logger.warning("Fitted parabola opens upwards!")
     if residual > 0.1:
-        msg = "Residual in quadratic fit to cross correlation maximum " + \
-              "larger than 0.1: %s" % residual
-        Logger.warning(msg)
+        Logger.warning(
+            "Residual in quadratic fit to cross correlation maximum larger "
+            "than 0.1: {0}".format(residual))
     # X coordinate of vertex of parabola gives time shift to correct
     # differential pick time. Y coordinate gives maximum correlation
     # coefficient.
@@ -168,9 +167,9 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             try:
                 ccc = normxcorr2(tr.data, image[0].data)
             except Exception:
-                Logger.error('Could not calculate cc')
-                Logger.error('Image is %i long' % len(image[0].data))
-                Logger.error('Template is %i long' % len(tr.data))
+                Logger.error(
+                    'Could not calculate cc, Image is {0} long, Template is '
+                    '{1} long'.format(len(image[0].data), len(tr.data)))
                 continue
             try:
                 shift, cc_max = _xcorr_interp(ccc=ccc, dt=image[0].stats.delta)
@@ -191,9 +190,9 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             try:
                 ccc = normxcorr2(tr.data, image[0].data)
             except Exception:
-                Logger.error('Could not calculate cc')
-                Logger.error('Image is %i long' % len(image[0].data))
-                Logger.error('Template is %i long' % len(tr.data))
+                Logger.error(
+                    'Could not calculate cc, Image is {0} long, Template is '
+                    '{1} long'.format(len(image[0].data), len(tr.data)))
                 continue
             cc_max = np.amax(ccc)
             if math.isnan(cc_max):
@@ -389,21 +388,21 @@ def _prepare_data(detect_data, detections, template, delays,
                 template_len).copy())
         for tr in detect_stream:
             if len(tr.data) == 0:
-                msg = ('No data in %s.%s for detection at time %s' %
-                       (tr.stats.station, tr.stats.channel,
+                Logger.warning(
+                    'No data in {0}.{1} for detection at time {2}'.format(
+                        tr.stats.station, tr.stats.channel,
                         detection.detect_time))
-                Logger.warning(msg)
                 detect_stream.remove(tr)
             elif tr.stats.endtime - tr.stats.starttime < (
                         2 * shift_len) + template_len:
-                msg = ("Insufficient data for %s.%s will not use."
-                       % (tr.stats.station, tr.stats.channel))
-                Logger.warning(msg)
+                Logger.warning(
+                    "Insufficient data for {0}.{1} will not use.".format(
+                        tr.stats.station, tr.stats.channel))
                 detect_stream.remove(tr)
             elif np.ma.is_masked(tr.data):
-                msg = ("Masked data found for %s.%s, will not use."
-                       % (tr.stats.station, tr.stats.channel))
-                Logger.warning(msg)
+                Logger.warning(
+                    "Masked data found for {0}.{1}, will not use.".format(
+                        tr.stats.station, tr.stats.channel))
                 detect_stream.remove(tr)
         # Check for duplicate traces
         stachans = [(tr.stats.station, tr.stats.channel)
@@ -411,9 +410,9 @@ def _prepare_data(detect_data, detections, template, delays,
         c_stachans = Counter(stachans)
         for key in c_stachans.keys():
             if c_stachans[key] > 1:
-                msg = ('Multiple channels for %s.%s, likely a data issue'
-                       % (key[0], key[1]))
-                raise LagCalcError(msg)
+                raise LagCalcError(
+                    'Multiple channels for {0}.{1}, likely a data '
+                    'issue'.format(key[0], key[1]))
         if plot:
             background = detect_data.slice(
                 starttime=detection.detect_time - (shift_len + 5),
