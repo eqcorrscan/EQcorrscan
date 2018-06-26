@@ -503,6 +503,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     st.merge()
     # clients download chunks, we need to check that the data are
     # the desired length
+    final_channels = []
     for tr in st:
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
@@ -513,10 +514,11 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 "percent of the desired length, will not pad".format(
                     tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600), 4, debug)
-            st.remove(tr)
-        if not pre_processing._check_daylong(tr):
+        elif not pre_processing._check_daylong(tr):
             print("Data are mostly zeros, removing trace: {0}".format(tr.id))
-            st.remove(tr)
+        else:
+            final_channels.append(tr)
+    st.traces = final_channels
     return st
 
 
