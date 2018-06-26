@@ -228,7 +228,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
         sub_catalogs = _group_events(
-            catalog=catalog, process_len=process_len)
+            catalog=catalog, process_len=process_len, template_length=length,
+            data_pad=data_pad)
         if method == 'from_client':
             client = FDSNClient(kwargs.get('client_id', None))
             available_stations = []
@@ -720,7 +721,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     return st1
 
 
-def _group_events(catalog, process_len):
+def _group_events(catalog, process_len, template_length, data_pad):
     """
     Internal function to group events into sub-catalogs based on process_len.
 
@@ -743,7 +744,11 @@ def _group_events(catalog, process_len):
     sub_catalog = Catalog([catalog[0]])
     for event in catalog[1:]:
         origin_time = (event.preferred_origin() or event.origins[0]).time
-        if origin_time - sub_catalog[0].origins[0].time < process_len:
+        last_pick = sorted(event.picks, key=lambda p: p.time)[-1]
+        max_diff = (
+            process_len - (last_pick.time - origin_time) - template_length)
+        max_diff -= 2 * data_pad
+        if origin_time - sub_catalog[0].origins[0].time < max_diff:
             sub_catalog.append(event)
         else:
             sub_catalogs.append(sub_catalog)
