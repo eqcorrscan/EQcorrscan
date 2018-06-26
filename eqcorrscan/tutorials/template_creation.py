@@ -20,7 +20,8 @@ logging.basicConfig(
 
 def mktemplates(
         network_code='GEONET', plot=True,
-        publicIDs=['2016p008122', '2016p008353', '2016p008155','2016p008194']):
+        publicIDs=['2016p008122', '2016p008353',
+                   '2016p008155', '2016p008194']):
     """Functional wrapper to make templates"""
     # We want to download some QuakeML files from the New Zealand GeoNet
     # network, GeoNet currently doesn't support FDSN event queries, so we
