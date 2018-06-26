@@ -170,8 +170,8 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
             parameter = par
             break
     else:
-        msg = 'No parameters set for station ' + str(tr.stats.station)
-        Logger.warning(msg)
+        Logger.warning(
+            'No parameters set for station ' + str(tr.stats.station))
         return []
 
     triggers = []
@@ -267,9 +267,9 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     if not parallel:
         # Don't run in parallel
         for tr in st:
-            triggers += _channel_loop(tr=tr, parameters=parameters,
-                                      max_trigger_length=max_trigger_length,
-                                      despike=despike)
+            triggers += _channel_loop(
+                tr=tr, parameters=parameters,
+                max_trigger_length=max_trigger_length, despike=despike)
     else:
         # Needs to be pickleable
         parameters = [par.__dict__ for par in parameters]

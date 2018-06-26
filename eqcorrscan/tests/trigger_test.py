@@ -96,6 +96,11 @@ class TestTriggerMethods(unittest.TestCase):
                                    thr_coincidence_sum=5, moveout=30,
                                    max_trigger_length=60, despike=False)
         self.assertEqual(len(triggers), 1)
+        triggers = network_trigger(st=st, parameters=parameters,
+                                   thr_coincidence_sum=5, moveout=30,
+                                   max_trigger_length=60, despike=False,
+                                   parallel=False)
+        self.assertEqual(len(triggers), 1)
 
 
 if __name__ == '__main__':
