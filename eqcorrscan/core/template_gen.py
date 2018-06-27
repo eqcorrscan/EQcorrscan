@@ -80,7 +80,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False,
                  return_event=False, min_snr=None, parallel=False,
-                 save_progress=False, **kwargs):
+                 num_cores=False, save_progress=False, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -125,6 +125,11 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         the whole window given.
     :type parallel: bool
     :param parallel: Whether to process data in parallel or not.
+    :type num_cores: int
+    :param num_cores:
+        Number of cores to try and use, if False and parallel=True, will use
+        either all your cores, or as many traces as in the data (whichever is
+        smaller).
     :type save_progress: bool
     :param save_progress:
         Whether to save the resulting party at every data step or not.
@@ -296,12 +301,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate,
-                    parallel=parallel, starttime=UTCDateTime(starttime))
+                    parallel=parallel, starttime=UTCDateTime(starttime),
+                    num_cores=num_cores)
             else:
                 st = pre_processing.shortproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, parallel=parallel,
-                    samp_rate=samp_rate)
+                    samp_rate=samp_rate, num_cores=num_cores)
         data_start = min([tr.stats.starttime for tr in st])
         data_end = max([tr.stats.endtime for tr in st])
 
@@ -495,6 +501,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     st.merge()
     # clients download chunks, we need to check that the data are
     # the desired length
+    final_channels = []
     for tr in st:
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
@@ -505,7 +512,12 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 "percent of the desired length, will not use".format(
                     tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600))
-            st.remove(tr)
+        elif not pre_processing._check_daylong(tr):
+            Logger.warning(
+                "Data are mostly zeros, removing trace: {0}".format(tr.id))
+        else:
+            final_channels.append(tr)
+    st.traces = final_channels
     return st
 
 

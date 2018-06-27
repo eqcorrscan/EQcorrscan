@@ -6,6 +6,8 @@
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
+* Removed gap-threshold of twice the template length in `Tribe.client_detect`, see
+  issue #224.
 * Bug-fix: give multi_find_peaks a cores kwarg to limit thread
   usage.
 * Check for the same value in a row in continuous data when computing
