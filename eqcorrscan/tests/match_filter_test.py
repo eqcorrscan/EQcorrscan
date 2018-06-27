@@ -25,6 +25,7 @@ from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
 from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
+from eqcorrscan.utils.catalog_utils import filter_picks
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -269,6 +270,52 @@ class TestGeoNetCase(unittest.TestCase):
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
         self.assertEqual(len(party), 16)
+
+
+class TestGappyData(unittest.TestCase):
+    @classmethod
+    @pytest.mark.flaky(reruns=2)
+    def setUpClass(cls):
+        cls.client = Client("GEONET")
+        cls.starttime = UTCDateTime(2016, 11, 13, 23)
+        cls.endtime = UTCDateTime(2016, 11, 14)
+        catalog = cls.client.get_events(
+            starttime=UTCDateTime(2016, 11, 13, 23, 30),
+            endtime=UTCDateTime(2016, 11, 13, 23, 31))
+        catalog = filter_picks(catalog=catalog, stations=['KHZ'])
+        cls.tribe = Tribe().construct(
+            method="from_client", lowcut=2, highcut=8, samp_rate=20,
+            filt_order=4, length=10, prepick=0.5, catalog=catalog,
+            client_id="GEONET", process_len=3600, swin="P")
+        cls.st = cls.client.get_waveforms(
+            station="KHZ", network="NZ", channel="HH?", location="10",
+            starttime=cls.starttime, endtime=cls.endtime)
+
+    def test_gappy_data(self):
+        gaps = self.st.get_gaps()
+        self.assertEqual(len(gaps), 3)
+        start_gap = gaps[0][4]
+        end_gap = gaps[0][5]
+        party = self.tribe.client_detect(
+            client=self.client, starttime=self.starttime,
+            endtime=self.endtime, threshold=12,
+            threshold_type="MAD", trig_int=2, plotvar=False,
+            parallel_process=False)
+        for family in party:
+            print(len(family))
+            self.assertTrue(len(family) in [11, 1])
+            for detection in family:
+                self.assertFalse(
+                    start_gap <= detection.detect_time <= end_gap)
+
+    def test_gappy_data_removal(self):
+        party = self.tribe.client_detect(
+            client=self.client, starttime=self.starttime,
+            endtime=self.endtime, threshold=8,
+            threshold_type="MAD", trig_int=2, plotvar=False,
+            parallel_process=False, min_gap=1)
+        self.assertEqual(len(party), 0)
+
 
 
 @pytest.mark.network
