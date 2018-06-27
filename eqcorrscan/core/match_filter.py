@@ -2693,8 +2693,8 @@ class Tribe(object):
                             tr_stats = (tr.stats.network, tr.stats.station,
                                         tr.stats.location, tr.stats.channel)
                             if tr_stats in gappy_channels:
-                                Logger.warning( 
-                                "Removing gappy channel: {0}".format(tr))
+                                Logger.warning(
+                                    "Removing gappy channel: {0}".format(tr))
                             else:
                                 _st += tr
                         st = _st
