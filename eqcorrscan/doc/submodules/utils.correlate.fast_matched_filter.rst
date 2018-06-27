@@ -49,13 +49,23 @@ write a function like:
 
     import numpy as np
 
-    from eqcorrscan.utils.correlate import register_array_xcorr
+    from eqcorrscan.utils.correlate import (
+        register_array_xcorr, numpy_normxcorr)
 
     def flatten_data(templates, stream):
         """
         Helper function to convert to fast-matched-filter's
         require input shapes.
         """
+        # Use channel_weights to define relative weighting
+        # for specific channel ID's
+        # channel_weights = {'NZ.FOZ.10.HHZ': 0.5}
+        channel_weights = {}
+        # Set a default weight for everything else.
+        default_weight = 1.0
+
+        # Ensure stream is zero mean
+        stream.detrend()
         # Do some reshaping
         stream.sort(['network', 'station', 'location', 'channel'])
         t_starts = []
@@ -65,89 +75,63 @@ write a function like:
         stations = list(set([tr.stats.station for tr in template
                              for template in templates]))
         channels = {}
+        n_components = 0
         for station in stations:
-            channels.update({station: list(set(
-                [tr.stats.channel for tr in template.select(station=station)
-                 for template in templates]))})
-        template_array = []
-        stream_array = []
-        pad_array = []
-        for template in templates:
-            sta_array = []
-            pads = []
+            n_station_components = 0
+            for template in templates:
+                unique_station_channels = set(
+                    [tr.stats.channel for tr in template.select(station=station)])
+                # Need to do this to allow for multiple template waveforms from 
+                # the same chanel
+                station_channels = []
+                for channel in unique_station_channels:
+                    _st = template.select(station=station, channel=channel)
+                    for i, _tr in enumerate(_st):
+                        station_channels.append((_tr.stats.channel, i))
+                if len(station_channels) > n_station_components:
+                    channels.update({station: station_channels})
+                if len(station_channels) > n_components:
+                    n_components = len(station_channels)
+        template_array = np.zeros((
+            len(templates), 
+            len(stations),
+            n_components, 
+            templates[0][0].stats.npts))
+        stream_array = np.empty((
+            len(stations),
+            n_components,
+            stream[0].stats.npts))
+        pad_array = np.zeros((
+            len(templates),
+            len(stations),
+            n_components))
+        weight_array = np.ones_like(pad_array)
+        for i, template in enumerate(templates):
             t_start = template.sort(['starttime'])[0].stats.starttime
-            for station in stations:
-                chan_array = []
-                chan_pad_array = []
-                for channel in channels[station]:
-                    chan = template.select(station=station, channel=channel)
-                    if len(chan) == 0:
-                        print("Padding template {0}.{1} with zeros".format(
-                              station, channel))
-                        chan = template.select(station=station)
-                        if len(chan) == 0:
-                            chan = template[0].copy()
-                        else:
-                            chan = chan[0].copy()
-                        chan.data = np.zeros(len(chan.data))
-                    else:
-                        chan = chan[0]
-                    chan_array.append(chan.data - np.mean(chan.data))
-                    chan_pad_array.append(
-                        int((chan.stats.starttime - t_start) *
-                            chan.stats.sampling_rate))
-                pads.append(chan_pad_array)
-                sta_array.append(chan_array)
-            template_array.append(sta_array)
-            pad_array.append(pads)
-        for station in stations:
-            chan_array = []
-            for channel in channels[station]:
-                chan = stream.select(station=station, channel=channel)
-                if len(chan) == 0:
-                    print("Padding continuous data {0}.{1} with zeros".format(
-                        station, channel))
-                    chan = stream[0].copy()
-                    chan.data = np.zeros(len(chan.data))
-                else:
-                    chan = chan[0]
-                    chan = chan.data
-                    chan -= np.mean(chan)
-                    chan_array.append(chan)
-            stream_array.append(chan_array)
+            for j, station in enumerate(stations):
+                for k, channel in enumerate(channels[station]):
+                    chan = template.select(
+                        station=station, channel=channel[0])[channel[1]]
+                    template_array[i][j][k] = chan.data - chan.data.mean()
+                    pad_array[i][j][k] = int(
+                        (chan.stats.starttime - t_start) *
+                        chan.stats.sampling_rate)
+                    try:
+                        weight = channel_weights[chan.id]
+                    except KeyError:
+                        weight = default_weight
+                    weight_array[i][j][k] = weight
+        for j, station in enumerate(stations):
+            for k, channel in enumerate(channels[station]):
+                chan = stream.select(
+                    station=station, channel=channel[0])[0]
+                stream_array[j][k] = chan.data - chan.data.mean()
         template_array = np.ascontiguousarray(
             template_array, dtype=np.float32)
         stream_array = np.ascontiguousarray(stream_array, dtype=np.float32)
-        pad_array = np.ascontiguousarray(pad_array, dtype=np.float32)
-        return template_array, stream_array, pad_array
-
-
-    def get_weights(templates, stream):
-        """
-        Get the weighting array - note that your could define
-        default weights here for some stations.
-        """
-        # Use channel_weights to define relative weighting
-        # for specific channel ID's
-        channel_weights = {'NZ.FOZ.10.HHZ': 0.5}
-        # Set a default weight for everything else.
-        default_weight = 1.0
-
-        weights = []
-        i = 0
-        while i < len(templates):
-            template_weights = []
-            for station in set([tr.stats.station for tr in stream]):
-                station_weights = []
-                for tr in stream.select(station=station):
-                    try:
-                        station_weights.append(channel_weights[tr.id])
-                    except KeyError:
-                        station_weights.append(default_weight)
-                template_weights.append(station_weights)
-            weights.append(template_weights)
-            i += 1
-        return np.ascontiguousarray(weights, dtype=np.float32)
+        pad_array = np.ascontiguousarray(pad_array, dtype=np.int32)
+        weight_array = np.ascontiguousarray(weight_array, dtype=np.float32)
+        return template_array, stream_array, pad_array, weight_array
 
 
     @register_array_xcorr("fmf")
@@ -189,11 +173,13 @@ write a function like:
         except ImportError:
             raise ImportError("FastMatchedFilter is not available")
 
-        t_arr, d_arr, pads = flatten_data(templates, stream)
-        weights = get_weights(templates, stream)
+        Logger.info("Flattening data")
+        t_arr, d_arr, pads, weights = flatten_data(templates, stream)
+        Logger.info("Running cross-correlations")
         cccsums = fmf(
             templates=t_arr, weights=weights, moveouts=pads,
-            data=d_arr, step=1, arch='cpu')
+            data=d_arr, step=1, arch='gpu')
+        Logger.info("Correlations finished")
         # set arch='gpu' if you want to use the gpu and it
         # is available.
         no_chans = []
