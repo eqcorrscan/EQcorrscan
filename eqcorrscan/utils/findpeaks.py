@@ -131,9 +131,9 @@ def find_peaks2_short(arr, thresh, trig_int, starttime=False,
     Logger.debug("Threshold: {0}\tMax: {1}".format(thresh, max(image)))
     image[image < thresh] = 0
     if len(image[image > thresh]) == 0:
-        Logger.info("No values over threshold {0}".format(thresh))
+        Logger.debug("No values over threshold {0}".format(thresh))
         return []
-    Logger.info('Found {0} samples above the threshold'.format(
+    Logger.debug('Found {0} samples above the threshold'.format(
         len(image[image > thresh])))
     initial_peaks = []
     # Find the peaks
@@ -200,7 +200,7 @@ def multi_find_peaks(arr, thresh, trig_int, starttime=False,
     else:
         if cores is None:
             cores = arr.shape[0]
-        with pool_boy(Pool=Pool, traces=cores) as pool:
+        with pool_boy(Pool=Pool, traces=arr.shape[0], cores=cores) as pool:
             params = ((sub_arr, arr_thresh, trig_int,
                        False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
