@@ -232,10 +232,6 @@ To get around memory limitations you can:
 * Reduce your sampling rate.  Obviously this needs to be at-least twice as large
   as your upper frequency filter, but much above this is wasted data.
 
-As an example of this: we run 100, 5-channel templates sampled at 20 Hz through
-day-long data on a 128GB RAM machine without issue, however, running 200 templates
-is too much memory.
-
 The three threshold parameters
 ------------------------------
 

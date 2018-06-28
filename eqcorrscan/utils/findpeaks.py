@@ -75,11 +75,13 @@ def find_peaks2_short(arr, thresh, trig_int, starttime=False,
     :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and \
-        peaks will not be found in.
+    :param thresh:
+        The threshold below which will be considered noise and peaks will
+        not be found in.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,\
-        if multiple peaks within this window this code will find the highest.
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
@@ -173,8 +175,9 @@ def multi_find_peaks(arr, thresh, trig_int, starttime=False,
         The threshold below which will be considered noise and peaks will not
         be found in. One threshold per array.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,\
-        if multiple peaks within this window this code will find the highest.
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
@@ -185,7 +188,8 @@ def multi_find_peaks(arr, thresh, trig_int, starttime=False,
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
     :type cores: int
-    :param cores: Number of processes to spool for parallel peak finding.
+    :param cores:
+        Maximum number of processes to spin up for parallel peak-finding
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays

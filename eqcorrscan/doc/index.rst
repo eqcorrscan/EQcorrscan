@@ -9,7 +9,7 @@ EQcorrscan
 
 A Python package for the detection and analysis of repeating and near-repeating seismicity.
 EQcorrscan contains an efficient, multi-parallel,
-:doc:`matched-filter </submodules/core.match_filter>` detection routine, as well as
+:doc:`matched-filter </submodules/core.match_filter>` detection routine (template-matching), as well as
 routines to implement :doc:`subspace </submodules/core.subspace>` detection,
 and detection based on :doc:`brightness </submodules/core.bright_lights>`.
 
