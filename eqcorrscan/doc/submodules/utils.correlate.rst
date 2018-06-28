@@ -71,6 +71,23 @@ There are currently 3 different correlations functions currently included in EQc
 
 Number 3 is the default.
 
+Using Fast Matched Filter within EQcorrscan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|FMF| provides fast time-domain correlations for both CPU and GPU
+architectures.  For massively multi-threaded environment this runs faster than
+the frequency-domain routines mative to EQcorrscan (when more than 40 CPU cores, 
+or an NVIDIA GPU card is available) with less memory consumption. Documentation
+on how to call Fast Matched Filter from within EQcorrscan is provided here: 
+fast_matched_filter_
+
+.. _fast_matched_filter: utils.correlate.fast_matched_filter.html
+
+.. |FMF| raw:: html
+
+    <a href="https://github.com/beridel/fast_matched_filter" target="_blank">Fast Matched Filter</a>
+
+
 Switching which correlation function is used
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

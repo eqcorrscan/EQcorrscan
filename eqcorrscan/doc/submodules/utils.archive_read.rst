@@ -24,4 +24,3 @@ archive_read
 
        _check_available_data
        _get_station_file
-       _parallel_checking_loop

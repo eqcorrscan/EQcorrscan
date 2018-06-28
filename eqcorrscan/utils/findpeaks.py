@@ -211,7 +211,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
                 starttime=starttime, samp_rate=samp_rate,
                 full_peaks=full_peaks))
     else:
-        if not cores:
+        if cores is None:
             cores = arr.shape[0]
         with pool_boy(Pool=Pool, traces=cores) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
