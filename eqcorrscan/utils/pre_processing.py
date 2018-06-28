@@ -397,7 +397,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     else:
         day = tr.stats.starttime.date
 
-    Logger.info('Working on: {0}'.format(tr.id))
+    Logger.debug('Working on: {0}'.format(tr.id))
     # Check if the trace is gappy and pad if it is.
     gappy = False
     if isinstance(tr.data, np.ma.MaskedArray):
@@ -437,8 +437,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
             post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
             Logger.debug(str(tr))
-            Logger.info("Padding to day long with {0} s before and {1} s "
-                        "at end".format(pre_pad_secs, post_pad_secs))
+            Logger.debug("Padding to day long with {0} s before and {1} s "
+                         "at end".format(pre_pad_secs, post_pad_secs))
             tr.data = np.concatenate([pre_pad, tr.data, post_pad])
             # Use this rather than the expected pad because of rounding samples
             tr.stats.starttime -= len(pre_pad) * tr.stats.delta
@@ -483,13 +483,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             tr.stats.starttime))
 
     if padded:
-        Logger.info("Reapplying zero pads post processing")
+        Logger.debug("Reapplying zero pads post processing")
         Logger.debug(str(tr))
         pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
         post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
         pre_pad_len = len(pre_pad)
         post_pad_len = len(post_pad)
-        Logger.info(
+        Logger.debug(
             "Taking only valid data between {0} and {1} samples".format(
                 pre_pad_len, tr.stats.npts - post_pad_len))
         # Re-apply the pads, taking only the data section that was valid
