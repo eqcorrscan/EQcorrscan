@@ -2710,10 +2710,11 @@ class Tribe(object):
                     if not _check_daylong(tr):
                         st.remove(tr)
                         Logger.warning(
-                            "{0} contains more zeros than non-zero, removed".format(
-                                tr.id))
+                            "{0} contains more zeros than non-zero, "
+                            "removed".format(tr.id))
                 for tr in st:
-                    if tr.stats.endtime - tr.stats.starttime < 0.8 * data_length:
+                    if tr.stats.endtime - tr.stats.starttime < \
+                       0.8 * data_length:
                         st.remove(tr)
                         Logger.warning(
                             "{0} is less than 80% of the required length"
