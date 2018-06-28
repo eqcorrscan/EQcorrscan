@@ -32,6 +32,7 @@ import time
 import logging
 from collections import Counter
 from os.path import join
+from timeit import default_timer
 
 import numpy as np
 from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
@@ -44,7 +45,7 @@ from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.pre_processing import dayproc, shortproc
+from eqcorrscan.utils.pre_processing import dayproc, shortproc, _check_daylong
 
 
 Logger = logging.getLogger(__name__)
@@ -692,7 +693,7 @@ class Party(object):
                     all_cat.write(join(temp_dir, 'catalog.xml'),
                                   format='QUAKEML')
                 for i, family in enumerate(self.families):
-                    Logger.info('Writing family %i' % i)
+                    Logger.debug('Writing family %i' % i)
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
@@ -2324,7 +2325,7 @@ class Tribe(object):
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
                group_size=None, overlap="calculate", full_peaks=False,
-               save_progress=False):
+               save_progress=False, process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2490,7 +2491,7 @@ class Tribe(object):
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap,
-                full_peaks=full_peaks)
+                full_peaks=full_peaks, process_cores=process_cores, **kwargs)
             party += group_party
             if save_progress:
                 party.write("eqcorrscan_temporary_party")
@@ -2506,7 +2507,8 @@ class Tribe(object):
                       daylong=False, parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
                       group_size=None, return_stream=False,
-                      full_peaks=False, save_progress=False):
+                      full_peaks=False, save_progress=False,
+                      process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2678,7 +2680,9 @@ class Tribe(object):
                     starttime + (i * data_length) - (pad + buff),
                     starttime + ((i + 1) * data_length) + (pad + buff)))
             try:
+                Logger.info("Downloading data")
                 st = client.get_waveforms_bulk(bulk_info)
+                Logger.info("Downloaded data for {0} traces".format(len(st)))
                 # Get gaps and remove traces as necessary
                 if min_gap:
                     gaps = st.get_gaps(min_gap=min_gap)
@@ -2702,6 +2706,18 @@ class Tribe(object):
                 st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
+                for tr in st:
+                    if not _check_daylong(tr):
+                        st.remove(tr)
+                        Logger.warning(
+                            "{0} contains more zeros than non-zero, removed".format(
+                                tr.id))
+                for tr in st:
+                    if tr.stats.endtime - tr.stats.starttime < 0.8 * data_length:
+                        st.remove(tr)
+                        Logger.warning(
+                            "{0} is less than 80% of the required length"
+                            ", removed".format(tr.id))
                 if return_stream:
                     stream += st
                 party += self.detect(
@@ -2711,7 +2727,8 @@ class Tribe(object):
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
-                    overlap=None, full_peaks=full_peaks)
+                    overlap=None, full_peaks=full_peaks,
+                    process_cores=process_cores, **kwargs)
                 if save_progress:
                     party.write("eqcorrscan_temporary_party")
             except Exception as e:
@@ -3136,7 +3153,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
                   cores=None, ignore_length=False, overlap="calculate",
-                  full_peaks=False):
+                  full_peaks=False, process_cores=None, **kwargs):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -3230,9 +3247,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         raise NotImplementedError(
             "%s is not a recognised overlap type" % str(overlap))
     if not pre_processed:
+        if process_cores is None:
+            process_cores = cores
         st = _group_process(
             template_group=templates, parallel=parallel_process,
-            cores=cores, stream=stream, daylong=daylong,
+            cores=process_cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
         Logger.warning('Not performing any processing on the continuous data.')
@@ -3270,7 +3289,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plotvar=plotvar, cores=cores,
-                full_peaks=full_peaks)
+                full_peaks=full_peaks, peak_cores=process_cores, **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -3708,7 +3727,8 @@ def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plotvar, plotdir='.',
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
-                 extract_detections=False, arg_check=True, full_peaks=False):
+                 extract_detections=False, arg_check=True, full_peaks=False,
+                 peak_cores=None, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -3944,6 +3964,8 @@ def match_filter(template_names, template_list, st, threshold,
         parallel = True
     else:
         parallel = False
+    if peak_cores is None:
+        peak_cores = cores
     # Copy the stream here because we will muck about with it
     stream = st.copy()
     templates = copy.deepcopy(template_list)
@@ -3961,8 +3983,8 @@ def match_filter(template_names, template_list, st, threshold,
     longest_trace_length += 1
     for tr in stream:
         if not tr.stats.npts == longest_trace_length:
-            msg = 'Data are not equal length, padding short traces'
-            Logger.warning(msg)
+            Logger.info(
+                'Data for {0} is not as long as needed, padding'.format(tr.id))
             start_pad = np.zeros(int(tr.stats.sampling_rate *
                                      (tr.stats.starttime - min_start_time)))
             end_pad = np.zeros(int(tr.stats.sampling_rate *
@@ -3987,7 +4009,6 @@ def match_filter(template_names, template_list, st, threshold,
             msg = ('Template %s contains traces of differing length, this is '
                    'not currently supported' % _template_names[i])
             raise MatchFilterError(msg)
-    outtic = time.clock()
     Logger.debug('Ensuring all template channels have matches in'
                  ' continuous data')
     template_stachan = {}
@@ -4014,6 +4035,9 @@ def match_filter(template_names, template_list, st, threshold,
                              location=stachan[2], channel=stachan[3]):
             # Remove stachan from list of dictionary of template_stachans
             _template_stachan.pop(stachan)
+            Logger.info('Removing template channel {0}.{1}.{2}.{3} due to'
+                        ' no matches in continuous data'.format(
+                            stachan[0], stachan[1], stachan[2], stachan[3]))
             # Remove template traces rather than adding NaN data
             for template in templates:
                 if template.select(network=stachan[0], station=stachan[1],
@@ -4022,10 +4046,6 @@ def match_filter(template_names, template_list, st, threshold,
                             network=stachan[0], station=stachan[1],
                             location=stachan[2], channel=stachan[3]):
                         template.remove(tr)
-                        Logger.info(
-                            'Removing template channel %s.%s.%s.%s due to'
-                            ' no matches in continuous data' %
-                            (stachan[0], stachan[1], stachan[2], stachan[3]))
     template_stachan = _template_stachan
     # Remove un-needed channels from continuous data.
     for tr in stream:
@@ -4087,16 +4107,23 @@ def match_filter(template_names, template_list, st, threshold,
         Logger.debug(template.__str__())
     Logger.debug(stream.__str__())
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+    correlate_kwargs = {}
+    if xcorr_func == "fftw":
+        correlate_kwargs.update({
+            "cores_outer": kwargs.get("cores_outer" or 1)})
+    outtic = default_timer()
     [cccsums, no_chans, chans] = multichannel_normxcorr(
-        templates=templates, stream=stream, cores=cores)
+        templates=templates, stream=stream, cores=cores, **correlate_kwargs)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
-    outtoc = time.clock()
+    outtoc = default_timer()
     Logger.info(' '.join(['Looping over templates and streams took:',
                           str(outtoc - outtic), 's']))
-    Logger.info('The shape of the returned cccsums is: %s\n'
-                'This is from %i templates\nCorrelated with %i channels of '
-                'data' % (cccsums.shape, len(templates), len(stream)))
+    Logger.debug(
+        'The shape of the returned cccsums is: {0}'.format(cccsums.shape))
+    Logger.debug(
+        'This is from {0} templates correlated with {1} channels of '
+        'data'.format(len(templates), len(stream)))
     detections = []
     if output_cat:
         det_cat = Catalog()
@@ -4110,7 +4137,7 @@ def match_filter(template_names, template_list, st, threshold,
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
-        full_peaks=full_peaks, cores=cores)
+        full_peaks=full_peaks, cores=peak_cores)
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
