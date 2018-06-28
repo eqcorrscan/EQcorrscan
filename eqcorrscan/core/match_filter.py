@@ -2678,7 +2678,9 @@ class Tribe(object):
                     starttime + (i * data_length) - (pad + buff),
                     starttime + ((i + 1) * data_length) + (pad + buff)))
             try:
+                Logger.info("Downloading data")
                 st = client.get_waveforms_bulk(bulk_info)
+                Logger.debug("Downloaded {0} traces".format(len(st)))
                 # Get gaps and remove traces as necessary
                 if min_gap:
                     gaps = st.get_gaps(min_gap=min_gap)
