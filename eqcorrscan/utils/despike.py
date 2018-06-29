@@ -63,10 +63,13 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
     # Note - might be worth finding spikes in filtered data
     filt = tr.copy()
     filt.detrend('linear')
-    filt.filter('bandpass', freqmin=10.0,
-                freqmax=(tr.stats.sampling_rate / 2) - 1)
+    try:
+        filt.filter('bandpass', freqmin=10.0,
+                    freqmax=(tr.stats.sampling_rate / 2) - 1)
+    except Exception as e:
+        print("Could not filter due to error: {0}".format(e))
     data = filt.data
-    del(filt)
+    del filt
     # Loop through windows
     _windowlength = int(windowlength * tr.stats.sampling_rate)
     _interp_len = int(interp_len * tr.stats.sampling_rate)

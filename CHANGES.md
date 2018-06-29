@@ -1,6 +1,25 @@
 ## Current
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
+* Add better checks for timing in lag-calc functions (#207)
+* Removed gap-threshold of twice the template length in `Tribe.client_detect`, see
+  issue #224.
+* Bug-fix: give multi_find_peaks a cores kwarg to limit thread
+  usage.
+* Check for the same value in a row in continuous data when computing
+  correlations and zero resulting correlations where the whole window
+  is the same value repeated (#224, #230).
+* BUG-FIX: template generation `from_client` methods for swin=P_all or S_all
+  now download all channels and return them (as they should). See #235 and #206
+* Change from raising an error if data from a station are not long enough, to
+  logging a critical warning and not using the station.
+* Add ability to give multiple `swin` options as a list. Remains backwards
+  compatible with single `swin` arguments.
+* Add option to `save_progress` for long running `Tribe` methods. Files
+  are written to temporary files local to the caller.
+* Fix bug where if gaps overlapped the endtime set in pre_processing an error
+  was raised - happened when downloading data with a deliberate pad at either
+  end.
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
