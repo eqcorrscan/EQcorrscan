@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import copy
 import itertools
+import warnings
 from collections import defaultdict
 from functools import wraps
 
@@ -51,6 +52,7 @@ stas = ['COVA', 'FOZ', 'LARB', 'GOVA', 'MTFO', 'MTBA']
 n_templates = 20
 stream_len = 100000
 template_len = 200
+gap_start = 5000
 
 
 def generate_multichannel_stream():
@@ -60,6 +62,19 @@ def generate_multichannel_stream():
             stream += Trace(data=random.randn(stream_len))
             stream[-1].stats.channel = channel
             stream[-1].stats.station = station
+    return stream
+
+
+def generate_gappy_multichannel_stream():
+    stream = generate_multichannel_stream()
+    gappy_station = stream.select(station="COVA").copy()
+    for tr in stream.select(station="COVA"):
+        stream.remove(tr)
+    gappy_station = gappy_station.cutout(
+        stream[0].stats.starttime + gap_start,
+        stream[0].stats.starttime + gap_start + (template_len * 4)).merge(
+        fill_value=0)
+    stream += gappy_station
     return stream
 
 
@@ -150,11 +165,13 @@ def array_ccs_low_amp(array_template, array_stream, pads):
     out = {}
     for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
-        print("Running %s" % name)
-        cc, _ = time_func(
-            func, name, array_template, array_stream * 10e-8, pads)
-        out[name] = cc
+        print("Running {0} with low-variance".format(name))
+        with warnings.catch_warnings(record=True) as w:
+            cc, _ = time_func(
+                func, name, array_template, array_stream * 10e-8, pads)
+            out[name] = (cc, w)
     return out
+
 # stream fixtures
 
 
@@ -168,6 +185,12 @@ def multichannel_templates():
 def multichannel_stream():
     """ create a multichannel stream for tests """
     return generate_multichannel_stream()
+
+
+@pytest.fixture(scope='module')
+def gappy_multichannel_stream():
+    """ Create a multichannel stream with gaps (padded with zeros). """
+    return generate_gappy_multichannel_stream()
 
 
 # a dict of all registered stream functions (this is a bit long)
@@ -195,6 +218,27 @@ def stream_cc_dict(stream_cc_output_dict):
     return {name: result[0] for name, result in stream_cc_output_dict.items()}
 
 
+@pytest.fixture(scope='module')
+def gappy_stream_cc_output_dict(
+        multichannel_templates, gappy_multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    out = {}
+    for name, func in stream_funcs.items():
+        with warnings.catch_warnings(record=True) as w:
+            cc_out = time_func(func, name, multichannel_templates,
+                               gappy_multichannel_stream, cores=1)
+            out[name] = (cc_out, w)
+    return out
+
+
+@pytest.fixture(scope='module')
+def gappy_stream_cc_dict(gappy_stream_cc_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: (result[0][0], result[1])
+            for name, result in gappy_stream_cc_output_dict.items()}
+
+
 # ----------------------------------- tests
 
 
@@ -220,8 +264,14 @@ class TestArrayCorrelateFunctions:
     def test_non_zero_median(self, array_ccs_low_amp):
         """ Ensure that the median of correlations returned is non-zero,
         this happens with v.0.2.7 when the amplitudes are low."""
-        for name, cc in array_ccs_low_amp.items():
+        for name, value in array_ccs_low_amp.items():
+            cc = value[0]
+            warning = value[1]
             assert np.median(cc) != 0.0
+            if name == 'fftw':
+                assert len(warning) == 1
+                assert issubclass(warning[-1].category, UserWarning)
+                assert "Low variance found" in str(warning[-1].message)
 
 
 @pytest.mark.serial
@@ -239,6 +289,28 @@ class TestStreamCorrelateFunctions:
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             assert np.allclose(cc_1, cc, atol=self.atol)
+
+    def test_gappy_multi_channel_xcorr(self, gappy_stream_cc_dict):
+        """
+        test various correlation methods with multiple channels and a gap.
+        """
+        # get correlation results into a list
+        cc_names = list(gappy_stream_cc_dict.keys())
+        cc_list = [gappy_stream_cc_dict[cc_name][0] for cc_name in cc_names]
+        warning_list = [gappy_stream_cc_dict[cc_name][1]
+                        for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        for cc_name, warning in zip(cc_names, warning_list):
+            # fftw_multiprocess doesn't warn?
+            if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
+                                'fftw_concurrent']:
+                assert len(warning) == 1
+                assert issubclass(warning[-1].category, UserWarning)
+                assert "are there zeros" in str(warning[-1].message)
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            assert np.allclose(cc_1, cc, atol=self.atol * 10)
 
 
 class TestXcorrContextManager:

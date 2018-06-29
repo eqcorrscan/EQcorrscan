@@ -2341,7 +2341,7 @@ class Tribe(object):
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
                group_size=None, overlap="calculate", debug=0,
-               full_peaks=False):
+               full_peaks=False, save_progress=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2406,6 +2406,10 @@ class Tribe(object):
             4 and 5, detections will not be computed in parallel.
         :type full_peaks: bool
         :param full_peaks: See `eqcorrscan.utils.findpeak.find_peaks2_short`
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting party at every data step or not.
+            Useful for long-running processes.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -2509,6 +2513,8 @@ class Tribe(object):
                 ignore_length=ignore_length, overlap=overlap, debug=debug,
                 full_peaks=full_peaks)
             party += group_party
+            if save_progress:
+                party.write("eqcorrscan_temporary_party")
         if len(party) > 0:
             for family in party:
                 if family is not None:
@@ -2517,11 +2523,11 @@ class Tribe(object):
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
-                      threshold_type, trig_int, plotvar, daylong=False,
-                      parallel_process=True, xcorr_func=None,
+                      threshold_type, trig_int, plotvar, min_gap=None,
+                      daylong=False, parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
                       group_size=None, debug=0, return_stream=False,
-                      full_peaks=False):
+                      full_peaks=False, save_progress=False):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2547,6 +2553,10 @@ class Tribe(object):
         :type plotvar: bool
         :param plotvar:
             Turn plotting on or off, see warning about plotting below
+        :type min_gap: float
+        :param min_gap:
+            Minimum gap allowed in data - use to remove traces with known
+            issues
         :type daylong: bool
         :param daylong:
             Set to True to use the
@@ -2579,6 +2589,10 @@ class Tribe(object):
             consumption, if unset will use all templates.
         :type full_peaks: bool
         :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting party at every data step or not.
+            Useful for long-running processes.
 
         :type debug: int
         :param debug:
@@ -2692,24 +2706,24 @@ class Tribe(object):
             try:
                 st = client.get_waveforms_bulk(bulk_info)
                 # Get gaps and remove traces as necessary
-                gaps = st.get_gaps(
-                    min_gap=2 * self.templates[0].st[0].stats.npts /
-                    self.templates[0].st[0].stats.sampling_rate)
-                if len(gaps) > 0:
-                    print("Large gaps in downloaded data")
-                    st.merge()
-                    gappy_channels = list(set([(gap[0], gap[1], gap[2], gap[3])
-                                               for gap in gaps]))
-                    _st = Stream()
-                    for tr in st:
-                        tr_stats = (tr.stats.network, tr.stats.station,
-                                    tr.stats.location, tr.stats.channel)
-                        if tr_stats in gappy_channels:
-                            print("Removing gappy channel: %s" % str(tr))
-                        else:
-                            _st += tr
-                    st = _st
-                    st.split()
+                if min_gap:
+                    gaps = st.get_gaps(min_gap=min_gap)
+                    if len(gaps) > 0:
+                        print("Large gaps in downloaded data")
+                        st.merge()
+                        gappy_channels = list(
+                            set([(gap[0], gap[1], gap[2], gap[3])
+                                 for gap in gaps]))
+                        _st = Stream()
+                        for tr in st:
+                            tr_stats = (tr.stats.network, tr.stats.station,
+                                        tr.stats.location, tr.stats.channel)
+                            if tr_stats in gappy_channels:
+                                print("Removing gappy channel: %s" % str(tr))
+                            else:
+                                _st += tr
+                        st = _st
+                        st.split()
                 st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
@@ -2723,6 +2737,8 @@ class Tribe(object):
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
                     overlap=None, debug=debug, full_peaks=full_peaks)
+                if save_progress:
+                    party.write("eqcorrscan_temporary_party")
             except Exception as e:
                 print('Error, routine incomplete, returning incomplete Party')
                 print('Error: %s' % str(e))
@@ -2740,7 +2756,7 @@ class Tribe(object):
             return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  prepick, **kwargs):
+                  prepick, save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
@@ -2762,6 +2778,10 @@ class Tribe(object):
             Filter level (number of corners).
         :type prepick: float
         :param prepick: Pre-pick time in seconds
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting party at every data step or not.
+            Useful for long-running processes.
 
         .. Note::
             Methods: `from_contbase`, `from_sfile` and `from_sac` are not
@@ -2777,7 +2797,7 @@ class Tribe(object):
         templates, catalog, process_lengths = template_gen.template_gen(
             method=method, lowcut=lowcut, highcut=highcut,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
-            return_event=True, **kwargs)
+            return_event=True, save_progress=save_progress, **kwargs)
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()

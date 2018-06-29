@@ -16,7 +16,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
 import datetime as dt
 
 from multiprocessing import Pool, cpu_count
@@ -305,9 +304,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 # If the trace starts within 1 sample of the next day, use the
                 # next day as the startdate
                 startdates.append((tr.stats.starttime + 86400).date)
-                warnings.warn('%s starts within 1 sample of the next day, '
-                              'using this time %s' %
-                              (tr.id, (tr.stats.starttime + 86400).date))
+                debug_print(
+                    '{0} starts within 1 sample of the next day, using this '
+                    'time {1}'.format(
+                        tr.id, (tr.stats.starttime + 86400).date), 2, debug)
             else:
                 startdates.append(tr.stats.starttime.date)
         # Check that all traces start on the same date...
@@ -337,6 +337,9 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 samp_rate=samp_rate, debug=debug, starttime=starttime,
                 clip=True, length=86400, ignore_length=ignore_length,
                 seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+    for tr in st:
+        if len(tr.data) == 0:
+            st.remove(tr)
     if tracein:
         st.merge()
         return st[0]
@@ -431,11 +434,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
-            msg = ('Data for %s.%s is %i hours long, which is less than 0.8 '
-                   'of the desired length, will not pad' %
-                   (tr.stats.station, tr.stats.channel,
+            raise NotImplementedError(
+                "Data for {0}.{1} is {2} hours long, which is less than 80 "
+                "percent of the desired length, will not pad".format(
+                    tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600))
-            raise NotImplementedError(msg)
         # trim, then calculate length of any pads required
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
         pre_pad_secs = tr.stats.starttime - starttime
@@ -459,7 +462,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if not tr.stats.sampling_rate * length == tr.stats.npts:
                 raise ValueError('Data are not daylong for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
-
         debug_print('I now have %i data points after enforcing length'
                     % len(tr.data), 0, debug)
     # Check sampling rate and resample
@@ -481,15 +483,15 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         tr.data = highpass(tr.data, lowcut, tr.stats.sampling_rate,
                            filt_order, True)
     else:
-        warnings.warn('No filters applied')
+        debug_print('No filters applied', 2, debug)
     # Account for two letter channel names in s-files and therefore templates
     if seisan_chan_names:
         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
 
     # Sanity check the time header
     if tr.stats.starttime.day != day and clip:
-        warnings.warn("Time headers do not match expected date: " +
-                      str(tr.stats.starttime))
+        debug_print("Time headers do not match expected date: {0}".format(
+            tr.stats.starttime), 2, debug)
 
     if padded:
         debug_print("Reapplying zero pads post processing", 1, debug)
@@ -536,20 +538,35 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
 
     :type tr: :class:`osbpy.core.stream.Trace`
     :param tr: A trace that has had the gaps padded
-    :param gaps: List of dict of start-time and end-time as UTCDateTimes
+    :param gaps: List of dict of start-time and end-time as UTCDateTime objects
     :type gaps: list
 
     :return: :class:`obspy.core.stream.Trace`
     """
+    start_in, end_in = (tr.stats.starttime, tr.stats.endtime)
     for gap in gaps:
         stream = Stream()
-        stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
-        stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
+        if gap['starttime'] > tr.stats.starttime:
+            stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
+        if gap['endtime'] < tr.stats.endtime:
+            # Note this can happen when gaps are calculated for a trace that
+            # is longer than `length`, e.g. gaps are calculated pre-trim.
+            stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
         tr = stream.merge()[0]
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
         tr = tr.merge(fill_value=0)[0]
+        # Need to check length - if a gap happened overlapping the end or start
+        #  of the trace this will be lost.
+        if tr.stats.starttime != start_in:
+            # pad with zeros
+            tr.data = np.concatenate(
+                [np.zeros(int(tr.stats.starttime - start_in)), tr.data])
+            tr.stats.starttime = start_in
+        if tr.stats.endtime != end_in:
+            tr.data = np.concatenate(
+                [tr.data, np.zeros(int(end_in - tr.stats.endtime))])
     return tr
 
 

@@ -28,6 +28,7 @@ import contextlib
 import copy
 import ctypes
 import os
+import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -506,6 +507,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
     if threaded:
@@ -532,13 +535,14 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
                    np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
+    variance_warning = np.ascontiguousarray([0], dtype=np.intc)
 
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
-        used_chans_np, pads_np)
+        used_chans_np, pads_np, variance_warning)
     if ret < 0:
         raise MemoryError()
     elif ret not in [0, 999]:
@@ -547,9 +551,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         print('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        msg = ("Some correlations not computed, are there "
-               "zeros in data? If not, consider increasing gain.")
-        print(msg)
+        warnings.warn("Some correlations not computed, are there "
+                      "zeros in data? If not, consider increasing gain.")
+    if variance_warning[0] and variance_warning[0] > template_length:
+        warnings.warn(
+            "Low variance found in {0} positions, check result.".format(
+                variance_warning[0]))
 
     return ccc, used_chans
 
@@ -691,7 +698,9 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_int]
+        ctypes.c_int, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS'))]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -733,12 +742,14 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     pad_array_np = np.ascontiguousarray([pad_array[seed_id]
                                          for seed_id in seed_ids],
                                         dtype=np.intc)
+    variance_warnings = np.ascontiguousarray(
+        np.zeros(n_channels), dtype=np.intc)
 
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
-        cores_inner)
+        cores_inner, variance_warnings)
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
@@ -749,12 +760,15 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
               (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        msg = ("Some correlations not computed, are there "
-               "zeros in data? If not, consider increasing gain.")
-        print(msg)
+        warnings.warn("Some correlations not computed, are there "
+                      "zeros in data? If not, consider increasing gain.")
+    for i, variance_warning in enumerate(variance_warnings):
+        if variance_warning and variance_warning > template_len:
+            warnings.warn("Low variance found in {0} places for {1},"
+                          " check result.".format(variance_warning,
+                                                  seed_ids[i]))
 
     return cccs, used_chans
-
 
 # ------------------------------- stream_xcorr functions
 
