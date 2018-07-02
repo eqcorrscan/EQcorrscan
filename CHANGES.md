@@ -1,4 +1,10 @@
 ## Current
+* Implement reading Party objects from multiple files, including wildcard
+  expansion. This will only read template information if it was not 
+  previously read in (which is a little more efficient).
+* Allow reading of Party objects without reading the catalog files.
+
+## 0.3.1
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)

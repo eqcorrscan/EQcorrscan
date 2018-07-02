@@ -775,6 +775,47 @@ class TestMatchObjects(unittest.TestCase):
         finally:
             os.remove('test_party_out.tgz')
 
+    def test_party_io_list(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname=['test_party_out.tgz'])
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_wildcards(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname='test_party_*.tgz')
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_no_catalog(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(
+                fname='test_party_out.tgz', read_catalog=False)
+            self.assertEqual(len(party_back.get_catalog()), 0)
+            party_in = self.party.copy()
+            for family in party_in:
+                family.template.event = None
+                family.catalog = Catalog()
+                for detection in family:
+                    detection.event = None
+            self.assertEqual(party_in, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
         self.assertEqual(self.party.__repr__(), 'Party of 4 Families.')

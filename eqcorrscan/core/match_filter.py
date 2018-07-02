@@ -708,45 +708,72 @@ class Party(object):
             self.get_catalog().write(filename=filename, format=format)
         return self
 
-    def read(self, filename=None):
+    def read(self, filename=None, read_catalog=True):
         """
         Read a Party from a file.
 
         :type filename: str
-        :param filename: File to read from
+        :param filename:
+            File to read from - can be a list of files, and can contain
+            wildcards.
+        :type read_catalog: bool
+        :param read_catalog: Whether to read the catalog in or not.
 
         .. rubric:: Example
 
         >>> Party().read()
         Party of 4 Families.
         """
+        tribe = Tribe()
+        families = []
         if filename is None:
             # If there is no filename given, then read the example.
             filename = os.path.join(os.path.dirname(__file__),
                                     '..', 'tests', 'test_data',
                                     'test_party.tgz')
-        # First work out how many templates there are and get them.
-        tribe = Tribe()
-        with tarfile.open(filename, "r:*") as arc:
-            temp_dir = tempfile.mkdtemp()
-            arc.extractall(path=temp_dir, members=_safemembers(arc))
-        party_dir = glob.glob(temp_dir + os.sep + '*')[0]
-        tribe._read_from_folder(dirname=party_dir)
-        # Read in families here!
-        if os.path.isfile(party_dir + os.sep + 'catalog.xml'):
-            all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+        if isinstance(filename, list):
+            filenames = []
+            for _filename in filename:
+                # Expand wildcards
+                filenames.extend(glob.glob(_filename))
         else:
-            all_cat = Catalog()
-        for family_file in glob.glob(join(party_dir, '*_detections.csv')):
-            template = [t for t in tribe if _templates_match(t, family_file)]
-            if len(template) == 0:
-                raise MatchFilterError(
-                    'Missing template for detection file: ' + family_file)
-            family = Family(template=template[0])
-            family.detections.extend(_read_family(family_file, all_cat))
-            family.catalog = Catalog([d.event for d in family.detections])
-            self.families.append(family)
-        shutil.rmtree(temp_dir)
+            # Expand wildcards
+            filenames = glob.glob(filename)
+        for _filename in filenames:
+            with tarfile.open(_filename, "r:*") as arc:
+                temp_dir = tempfile.mkdtemp()
+                arc.extractall(path=temp_dir, members=_safemembers(arc))
+            # Read in the detections first, this way, if we read from multiple
+            # files then we can just read in extra templates as needed.
+            # Read in families here!
+            party_dir = glob.glob(temp_dir + os.sep + '*')[0]
+            tribe._read_from_folder(
+                dirname=party_dir, read_catalog=read_catalog)
+            if os.path.isfile(os.path.join(party_dir, 'catalog.xml')) and \
+                    read_catalog:
+                all_cat = read_events(party_dir + os.sep + 'catalog.xml')
+            else:
+                all_cat = Catalog()
+            for family_file in glob.glob(join(party_dir, '*_detections.csv')):
+                template = [
+                    t for t in tribe if _templates_match(t, family_file)]
+                family = Family(template=template[0] or Template())
+                new_family = True
+                if family.template.name in [f.template.name for f in families]:
+                    family = [
+                        f for f in families if
+                        f.template.name == family.template.name][0]
+                    new_family = False
+                family.detections.extend(_read_family(family_file, all_cat))
+                family.catalog = Catalog()
+                for detection in family.detections:
+                    if detection.event:
+                        family.catalog.append(detection.event)
+                if new_family:
+                    families.append(family)
+
+            shutil.rmtree(temp_dir)
+        self.families = families
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
@@ -918,7 +945,8 @@ class Party(object):
         """
         catalog = Catalog()
         for fam in self.families:
-            catalog += fam.catalog
+            if len(fam.catalog) != 0:
+                catalog.events.extend(fam.catalog.events)
         return catalog
 
     def min_chans(self, min_chans):
@@ -2274,20 +2302,26 @@ class Tribe(object):
         shutil.rmtree(temp_dir)
         return self
 
-    def _read_from_folder(self, dirname):
+    def _read_from_folder(self, dirname, read_catalog=True):
         """
         Internal folder reader.
 
         :type dirname: str
         :param dirname: Folder to read from.
+        :type read_catalog: bool
+        :param read_catalog: Whether to read the catalog or not.
         """
         templates = _par_read(dirname=dirname, compressed=False)
         t_files = glob.glob(dirname + os.sep + '*.ms')
-        if os.path.isfile(dirname + os.sep + 'tribe_cat.xml'):
+        if os.path.isfile(dirname + os.sep + 'tribe_cat.xml') and read_catalog:
             tribe_cat = read_events(dirname + os.sep + 'tribe_cat.xml')
         else:
             tribe_cat = Catalog()
+        previous_template_names = [t.name for t in self.templates]
         for template in templates:
+            if template.name in previous_template_names:
+                # Don't read in for templates that we already have.
+                continue
             for event in tribe_cat:
                 for comment in event.comments:
                     if comment.text == 'eqcorrscan_template_' + template.name:
@@ -3553,7 +3587,7 @@ def read_tribe(fname):
     return tribe
 
 
-def read_party(fname=None):
+def read_party(fname=None, read_catalog=True):
     """
     Read detections and metadata from a tar archive.
 
@@ -3561,10 +3595,13 @@ def read_party(fname=None):
     :param fname:
         Filename to read from, if this contains a single Family, then will
         return a party of length = 1
+    :type read_catalog: bool
+    :param read_catalog: Whether to read catalog files or not.
+
     :return: :class:`eqcorrscan.core.match_filter.Party`
     """
     party = Party()
-    party.read(filename=fname)
+    party.read(filename=fname, read_catalog=read_catalog)
     return party
 
 
@@ -4245,7 +4282,7 @@ if __name__ == "__main__":
 
     doctest.testmod()
     # List files to be removed after doctest
-    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.ml',
+    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.xml',
                'test_family.tgz', 'test_template.tgz', 'test_waveform.ms',
                'test_template_read.tgz', 'test_tribe.tgz']
     for f in cleanup:
