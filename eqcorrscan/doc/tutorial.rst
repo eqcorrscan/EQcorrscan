@@ -40,9 +40,8 @@ and are documented here with tutorials:
 
 The :doc:`utils </utils>` sub-module contains useful, but small functions.
 These functions are rarely cpu intensive, but perform vital operations, such
-as reading |Seisan| s-files (:doc:`sfile_util </submodules/utils.sfile_util>`),
-finding peaks in noisy data (:doc:`findpeaks </submodules/utils.findpeaks>`),
-converting a seisan database to hypoDD formatted files and computing cross-correlations between
+as finding peaks in noisy data (:doc:`findpeaks </submodules/utils.findpeaks>`),
+converting a database to hypoDD formatted files and computing cross-correlations between
 detections for |hypoDD| (a double difference relocation software)
 (:doc:`catalog_to_dd </submodules/utils.catalog_to_dd>`), calculating
 magnitudes (:doc:`mag_calc </submodules/utils.mag_calc>`),
@@ -73,10 +72,6 @@ through some of the key functionality of the EQcorrscan package.
 .. |HypoDD| raw:: html
 
     <a href="http://www.ldeo.columbia.edu/~felixw/hypoDD.html" target="_blank">HypoDD</a>
-
-.. |Seisan| raw:: html
-
-  <a href="http://seisan.info/" target="_blank">Seisan</a>
 
 .. |Obspy| raw:: html
 

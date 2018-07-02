@@ -39,6 +39,8 @@
 #endif
 // Define minimum variance to compute correlations - requires some signal
 #define ACCEPTED_DIFF 1e-15
+// Define difference to warn user on
+#define WARN_DIFF 1e-10
 
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*);
@@ -144,6 +146,9 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
+        if (var <= WARN_DIFF){
+            printf("Low variance, possible zeros, check result. Index: 0 Variance: %g\n", var);
+        }
     }
     // Center and divide by length to generate scaled convolution
     for(i = 1; i < (image_len - template_len + 1); ++i){
@@ -159,6 +164,9 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+            }
+            if (var <= WARN_DIFF){
+                printf("Low variance, possible zeros, check result. Index: %li Variance: %g\n", i, var);
             }
         }
     }
@@ -360,6 +368,9 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             c /= stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
         }
+        if (var[0] <= WARN_DIFF){
+            printf("Low variance, possible zeros, check result. Index: 0 Variance: %g\n", var[0]);
+        }
     } else {
         unused_corr = 1;
     }
@@ -383,6 +394,9 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
                 c /= stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+            }
+            if (var[i] <= WARN_DIFF){
+                printf("Low variance, possible zeros, check result. Index: %li Variance: %g\n", i, var[i]);
             }
         } else {
             unused_corr = 1;
@@ -628,7 +642,6 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         /* get the id of this thread */
         tid = omp_get_thread_num();
         #endif
-
         /* initialise memory to zero */
         memset(template_ext[tid], 0, (size_t) fft_len * n_templates * sizeof(float));
         memset(image_ext[tid], 0, (size_t) fft_len * sizeof(float));

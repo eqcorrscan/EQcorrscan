@@ -8,7 +8,7 @@ both in terms of overall speed, and in memory usage.  The time-domain is the
 most memory efficient but slowest routine (although fast for small cases of
 less than a few hundred correlations), the Numpy routine is fast, but memory
 inefficient due to a need to store large double-precision arrays for
-normalisation.  The fftw compiled routine is fastest and more memory efficient
+normalisation.  The fftw compiled routine is faster and more memory efficient
 than the Numpy routine.
 
 :copyright:
@@ -28,7 +28,6 @@ import contextlib
 import copy
 import ctypes
 import os
-import warnings
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -598,8 +597,8 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-# TODO: This should be turned back on when openMP loop is merged
-# @fftw_normxcorr.register('stream_xcorr')
+@fftw_normxcorr.register('stream_xcorr')
+@fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
 def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     """
@@ -739,7 +738,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
         cores_inner)
     if ret < 0:
-        raise MemoryError()
+        raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
         print('Error in C code (possible normalisation error)')
         print('Maximum cccs %f at %s' %

@@ -32,7 +32,7 @@ phase.dat
 eqcorrscan/utils/src/norm
 eqcorrscan/utils/src/multi_corr
 libfftw*.lib
-eqcorrscan/lib/*.pyd
-eqcorrscan/lib/*.def
-eqcorrscan/lib/*.dll
-eqcorrscan/lib/fftw3.h
+eqcorrscan/utils/lib/*.pyd
+eqcorrscan/utils/lib/*.def
+eqcorrscan/utils/lib/*.dll
+eqcorrscan/utils/lib/fftw3.h

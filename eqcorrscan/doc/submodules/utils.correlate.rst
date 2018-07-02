@@ -139,3 +139,20 @@ or within the scope of a context manager:
     ...                           1, False) # doctest:+ELLIPSIS
     calling custom xcorr function...
     >>> set_xcorr.revert()  # change it back to the previous state
+
+
+Notes on accuracy
+~~~~~~~~~~~~~~~~~
+To cope with floating-point rounding errors, correlations may not be
+calculated for data with low variance.  If you see a warning saying:
+*"Some correlations not computed, are there zeros in the data? If not
+consider increasing gain"*, check whether your data have zeros, and if not,
+but have low, but real amplitudes, multiply your data by some value.
+
+Warning
+~~~~~~~
+If data are padded with zeros prior to filtering then correlations may be
+incorrectly calculated where there are zeros. You should always pad after
+filtering.  If you see warnings saying *"Low variance, possible zeros, check
+result"*, you should check that you have padded correctly and check that
+correlations haven't been calculated when you don't expect them.
