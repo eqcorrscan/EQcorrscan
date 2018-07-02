@@ -1,4 +1,7 @@
 ## Current
+* Added parallel computation of differential traveltimes for hypoDD. Sped up   
+  catalog_to_dd-function by reading all events + waveforms just once and keeping
+  them in memory.
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
