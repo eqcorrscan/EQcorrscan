@@ -514,13 +514,15 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     if debug > 1:
                         print('Successfully read in waveformfile for ' + sfile)
                 except:
-                    raise IOError("Couldn't find wavefile")
+                    raise IOError("Couldn't find waveform file for " + sfile)
                     continue
         else:
             if wavpath:
                 stream = read(wavpath[0])
                 if debug > 1:
                     print('Successfully read in waveformfile for ' + sfile)
+        # Merge traces to take care of duplicates
+        stream.merge(method=1, fill_value=0, interpolation_samples=10)
         # First round of selection: check for stations that have an S-pick. 
         # Add all their traces trimmed to origin up to the S-pick plus a bit.
         for pick in event.picks:
