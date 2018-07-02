@@ -41,12 +41,13 @@ import glob
 import warnings
 import matplotlib.pyplot as plt
 
-from eqcorrscan.utils.debug_log import debug_print
-
-from obspy.core.event import Catalog
+from obspy import read, UTCDateTime
+from obspy.core.event import (
+    Catalog, Event, Origin, Magnitude, Pick, WaveformStreamID, Arrival,
+    OriginQuality)
 from obspy.core.trace import Trace
 from obspy.core.stream import Stream
-from obspy import read
+
 from obspy.signal.cross_correlation import xcorr_pick_correction
 try:
     from obspy.io.nordic.core import read_nordic, readheader, readwavename
@@ -54,6 +55,7 @@ except ImportError:
     raise ImportError("Needs obspy >= 1.1.0")
 
 from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.debug_log import debug_print
 
 
 def _cc_round(num, dp):
@@ -100,8 +102,6 @@ def _av_weight(W1, W2):
     >>> print(_av_weight(1, -9))
     0.3750
     """
-    import warnings
-
     if str(W1) in [' ', '']:
         W1 = 1
     elif str(W1) in ['-9', '9', '9.0', '-9.0']:
@@ -931,7 +931,6 @@ def read_phase(ph_file):
     >>> isinstance(catalog, Catalog)
     True
     """
-    from obspy.core.event import Catalog
     ph_catalog = Catalog()
     f = open(ph_file, 'r')
     # Topline of each event is marked by # in position 0
@@ -961,9 +960,6 @@ def _phase_to_event(event_text):
 
     :returns: obspy.core.event.Event
     """
-    from obspy.core.event import Event, Origin, Magnitude
-    from obspy.core.event import Pick, WaveformStreamID, Arrival, OriginQuality
-    from obspy import UTCDateTime
     ph_event = Event()
     # Extract info from header line
     # YR, MO, DY, HR, MN, SC, LAT, LON, DEP, MAG, EH, EZ, RMS, ID

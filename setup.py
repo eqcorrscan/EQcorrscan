@@ -15,9 +15,11 @@ import os
 import sys
 import shutil
 import glob
-import eqcorrscan
 
-VERSION = eqcorrscan.__version__
+with open("eqcorrscan/__init__.py", "r") as init_file:
+    version_line = [line for line in init_file
+                    if '__version__' in line][0]
+VERSION = version_line.split()[-1].split("'")[1]
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
@@ -313,12 +315,11 @@ def setup_package():
         build_requires = ['numpy>=1.6, <2.0']
 
     if not READ_THE_DOCS:
-        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18',
                             'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12',
                             'h5py']
     else:
-        install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
-                            'mock']
+        install_requires = ['matplotlib>=1.3.0', 'obspy>=1.0.3', 'mock']
     install_requires.extend(build_requires)
 
     setup_args = {

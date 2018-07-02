@@ -12,14 +12,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import ctypes
 import random
 import numpy as np
 
 from obspy import UTCDateTime
 from scipy import ndimage
 from multiprocessing import Pool
+from future.utils import native_str
+from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
+from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils.debug_log import debug_print
 
 
@@ -68,11 +72,13 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
-    :param thresh: The threshold below which will be considered noise and \
-        peaks will not be found in.
+    :param thresh:
+        The threshold below which will be considered noise and peaks will
+        not be found in.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,\
-        if multiple peaks within this window this code will find the highest.
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
     :type starttime: obspy.core.utcdatetime.UTCDateTime
@@ -164,7 +170,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
-                     samp_rate=1.0, parallel=True, full_peaks=False):
+                     samp_rate=1.0, parallel=True, full_peaks=False,
+                     cores=None):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -175,8 +182,9 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         The threshold below which will be considered noise and peaks will not
         be found in. One threshold per array.
     :type trig_int: int
-    :param trig_int: The minimum difference in samples between triggers,\
-        if multiple peaks within this window this code will find the highest.
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
     :type debug: int
     :param debug: Optional, debug level 0-5
     :type starttime: obspy.core.utcdatetime.UTCDateTime
@@ -188,6 +196,9 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
         Whether to compute in parallel or not - will use multiprocessing
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :type cores: int
+    :param cores:
+        Maximum number of processes to spin up for parallel peak-finding
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays
@@ -200,7 +211,9 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
                 starttime=starttime, samp_rate=samp_rate,
                 full_peaks=full_peaks))
     else:
-        with pool_boy(Pool=Pool, traces=arr.shape[0]) as pool:
+        if cores is None:
+            cores = arr.shape[0]
+        with pool_boy(Pool=Pool, traces=cores) as pool:
             params = ((sub_arr, arr_thresh, trig_int, debug,
                        False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
@@ -222,11 +235,6 @@ def decluster(peaks, index, trig_int):
 
     :return: list of tuples of (value, sample)
     """
-    from eqcorrscan.utils.libnames import _load_cdll
-    import ctypes
-    from future.utils import native_str
-    from itertools import compress
-
     utilslib = _load_cdll('libutils')
 
     length = np.int32(len(peaks))

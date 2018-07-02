@@ -14,6 +14,7 @@ import numpy as np
 import warnings
 import inspect
 import copy
+import shutil
 
 from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
@@ -23,7 +24,6 @@ from eqcorrscan.core.template_gen import (
     from_sac, _group_events, from_seishub, from_meta_file, from_client,
     multi_template_gen, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
 
@@ -88,9 +88,11 @@ class TestTemplateGeneration(unittest.TestCase):
     def test_not_delayed(self):
         """Test the method of template_gen without applying delays to
         channels."""
-        cat = get_geonet_events(
-            minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
-            startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 2))
+        client = Client("GEONET")
+        cat = client.get_events(
+            minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+            maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
+            endtime=UTCDateTime(2016, 5, 2))
         cat = filter_picks(catalog=cat, top_n_picks=5)
         template = from_client(
             catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
@@ -101,7 +103,21 @@ class TestTemplateGeneration(unittest.TestCase):
             tr.stats.starttime.precision = 6
         starttime = template[0].stats.starttime
         length = template[0].stats.npts
-        print(template)
+        self.assertEqual(len(template), 5)
+        for tr in template:
+            self.assertTrue(abs((tr.stats.starttime - starttime)) <=
+                            tr.stats.delta)
+            self.assertEqual(tr.stats.npts, length)
+        template = from_client(
+            catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
+            samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
+            swin='P_all', process_len=3600, debug=0, plot=False,
+            delayed=False)[0]
+        for tr in template:
+            tr.stats.starttime.precision = 6
+        starttime = template[0].stats.starttime
+        length = template[0].stats.npts
+        self.assertEqual(len(template), 15)
         for tr in template:
             self.assertTrue(abs((tr.stats.starttime - starttime)) <=
                             tr.stats.delta)
@@ -116,12 +132,7 @@ class TestTemplateGeneration(unittest.TestCase):
         """
         client = Client('GEONET')
         # get the events
-        catalog = Catalog()
-        data_stream = client._download(
-            'http://quakeml.geonet.org.nz/quakeml/1.2/2016p008194')
-        data_stream.seek(0, 0)
-        catalog += read_events(data_stream, format="quakeml")
-        data_stream.close()
+        catalog = client.get_events(eventid='2016p008194')
         # Select 3 channels to use and download
         sta_chans = [(pick.waveform_id.station_code,
                       pick.waveform_id.channel_code)
@@ -138,6 +149,34 @@ class TestTemplateGeneration(unittest.TestCase):
         # Test without an event
         templates = multi_template_gen(Catalog(), continuous_st, length=3)
         self.assertEqual(len(templates), 0)
+
+    @pytest.mark.network
+    def test_save_progress(self):
+        """ Test template creation with progress saving """
+        client = Client('GEONET')
+        catalog = client.get_events(
+            starttime=UTCDateTime(2016, 1, 4, 0, 50),
+            endtime=UTCDateTime(2016, 1, 4, 1, 20))
+        # Gets a catalog of 2 events separated by 127s
+        # Need a bigger gap to allow moveouts
+        catalog[0].origins[0].time -= 600
+        for pick in catalog[0].picks:
+            pick.time -= 600
+        catalog = filter_picks(catalog=catalog, top_n_picks=5)
+        templates = template_gen(
+            method="from_client", catalog=catalog, client_id="GEONET",
+            lowcut=2, highcut=5, samp_rate=20, filt_order=4, prepick=0.4,
+            process_len=600, swin="P", save_progress=True, length=2)
+        assert(os.path.isdir("eqcorrscan_temporary_templates"))
+        saved_templates = [
+            read(f) for f in sorted(
+                glob.glob("eqcorrscan_temporary_templates/*.ms"))]
+        # Writing to miniseed adds miniseed stats dict
+        for saved_template, template in zip(saved_templates, templates):
+            for saved_tr in saved_template:
+                tr = template.select(id=saved_tr.id)[0]
+                assert(np.allclose(saved_tr.data, tr.data, atol=0.01))
+        shutil.rmtree("eqcorrscan_temporary_templates")
 
     def test_all_phase_methods(self):
         sfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -240,7 +279,7 @@ class TestTemplateGeneration(unittest.TestCase):
             for data_pad in pads:
                 sub_catalogs = _group_events(
                     catalog=catalog, process_len=process_len,
-                    data_pad=data_pad)
+                    template_length=10, data_pad=data_pad)
                 k_events = 0
                 for sub_catalog in sub_catalogs:
                     min_time = min([event.origins[0].time

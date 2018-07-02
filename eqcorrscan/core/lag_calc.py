@@ -181,7 +181,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                 ccc = normxcorr2(tr.data, image[0].data)
                 cc_max = np.amax(ccc)
                 shift = np.argmax(ccc) * image[0].stats.delta
-            # Convert the maximum cross-correlation time to an actual time            
+            # Convert the maximum cross-correlation time to an actual time
             if math.isnan(cc_max):
                 print('Problematic trace, no cross correlation possible')
                 continue
@@ -246,8 +246,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
            checksum - pre_lag_ccsum < -(0.3 * pre_lag_ccsum):
             msg = ('lag-calc has decreased cccsum from %f to %f - '
                    % (pre_lag_ccsum, checksum))
-            warnings.warn(msg)
-            # raise LagCalcError(msg)
+            raise LagCalcError(msg)
     else:
         warnings.warn('Cannot check if cccsum is better, used %i channels '
                       'for detection, but %i are used here'
