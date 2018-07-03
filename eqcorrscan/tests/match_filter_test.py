@@ -687,6 +687,33 @@ class TestMatchObjects(unittest.TestCase):
                             det.__dict__[key], check_det.__dict__[key], 6)
             # self.assertEqual(fam.template, check_fam.template)
 
+    @pytest.mark.serial
+    def test_tribe_detect_parallel_process(self):
+        """Test the detect method on Tribe objects"""
+        party = self.tribe.detect(
+            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=True,
+            process_cores=2)
+        self.assertEqual(len(party), 4)
+        for fam, check_fam in zip(party, self.party):
+            for det, check_det in zip(fam.detections, check_fam.detections):
+                for key in det.__dict__.keys():
+                    if key == 'event':
+                        continue
+                    if isinstance(det.__dict__[key], float):
+                        if not np.allclose(det.__dict__[key],
+                                           check_det.__dict__[key], atol=0.1):
+                            print(key)
+                        self.assertTrue(np.allclose(
+                            det.__dict__[key], check_det.__dict__[key],
+                            atol=0.2))
+                    else:
+                        if not det.__dict__[key] == check_det.__dict__[key]:
+                            print(key)
+                        self.assertAlmostEqual(
+                            det.__dict__[key], check_det.__dict__[key], 6)
+            # self.assertEqual(fam.template, check_fam.template)
+
     def test_tribe_detect_save_progress(self):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
