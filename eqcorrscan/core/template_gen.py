@@ -700,6 +700,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                         pick.waveform_id.channel_code))
             starttime = pick.time - prepick
             Logger.debug("Cutting {0}".format(tr.id))
+            noise_amp = _rms(
+                tr.slice(starttime=starttime - 100, endtime=starttime).data)
             tr_cut = tr.slice(
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
@@ -718,17 +720,21 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             if min_snr is not None and \
                max(tr_cut.data) / noise_amp < min_snr:
                 Logger.warning(
-                    "Signal-to-noise ratio below threshold for {0}.{1}, "
+                    "Signal-to-noise ratio {0} below threshold for {1}.{2}, "
                     "not using".format(
-                        tr_cut.stats.station, tr_cut.stats.channel))
+                        max(tr_cut.data) / noise_amp, tr_cut.stats.station,
+                        tr_cut.stats.channel))
                 continue
             st1 += tr_cut
             used_tr = True
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
     if plot:
-        tplot(st1, background=stplot, picks=picks_copy,
-              title='Template for ' + str(st1[0].stats.starttime))
+        fig = tplot(
+            st1, background=stplot, picks=picks_copy,
+            title='Template for ' + str(st1[0].stats.starttime))
+        fig.savefig("Template_{0}.pdf".format(st1[0].stats.starttime))
+        fig.clear()
         del stplot
     return st1
 

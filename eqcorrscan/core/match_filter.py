@@ -749,7 +749,7 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 overlap='calculate'):
+                 overlap='calculate', process_cores=None):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -870,9 +870,11 @@ class Party(object):
             elif isinstance(overlap, float):
                 lap = overlap
             if not pre_processed:
+                if process_cores is None:
+                    process_cores = cores
                 processed_streams = _group_process(
-                    template_group=group, cores=cores, parallel=parallel,
-                    stream=stream.copy(), daylong=False,
+                    template_group=group, cores=process_cores,
+                    parallel=parallel, stream=stream.copy(), daylong=False,
                     ignore_length=False, overlap=lap)
                 processed_stream = Stream()
                 for p in processed_streams:

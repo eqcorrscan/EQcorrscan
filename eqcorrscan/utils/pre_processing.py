@@ -393,9 +393,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         if isinstance(starttime, dt.date) or isinstance(starttime,
                                                         dt.datetime):
             starttime = UTCDateTime(starttime)
-        day = starttime.date
-    else:
-        day = tr.stats.starttime.date
 
     Logger.debug('Working on: {0}'.format(tr.id))
     # Check if the trace is gappy and pad if it is.
@@ -476,11 +473,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     # Account for two letter channel names in s-files and therefore templates
     if seisan_chan_names:
         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-
-    # Sanity check the time header
-    if tr.stats.starttime.day != day and clip:
-        Logger.warning("Time headers do not match expected date: {0}".format(
-            tr.stats.starttime))
 
     if padded:
         Logger.debug("Reapplying zero pads post processing")

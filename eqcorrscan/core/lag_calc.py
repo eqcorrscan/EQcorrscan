@@ -158,7 +158,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        Logger.info('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
+        Logger.debug('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
         image = detection.select(station=temp_sta, channel=temp_chan)
         if len(image) == 0 or sum(image[0].data) == 0:
             Logger.error('No match in image.')
@@ -206,7 +206,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         checksum += cc_max
         used_chans += 1
         if cc_max < min_cc:
-            Logger.info('Correlation below threshold, not used')
+            Logger.debug('Correlation below threshold, not used')
             continue
         cccsum += cc_max
         # Perhaps weight each pick by the cc val or cc val^2?
@@ -216,7 +216,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         # Only take the S-pick with the best correlation
         elif temp_chan[-1] in horizontal_chans:
             phase = 'S'
-            Logger.info('Making S-pick on: {0}.{1}.{2}'.format(
+            Logger.debug('Making S-pick on: {0}.{1}.{2}'.format(
                 temp_net, temp_sta, temp_chan))
             if temp_sta not in s_stachans.keys():
                 s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
@@ -597,9 +597,9 @@ def lag_calc(detections, detect_data, template_names, templates,
                     break
             detection.detect_time = detection.detect_time - earlier
             if earlier > 0:
-                Logger.info(
+                Logger.debug(
                     'Adjusting {0} by {1}'.format(detection.id, earlier))
-        Logger.info(
+        Logger.debug(
             'There are %i detections' % len(template_detections))
         detect_streams = _prepare_data(
             detect_data=detect_data, detections=template_detections,
@@ -640,7 +640,7 @@ def lag_calc(detections, detect_data, template_names, templates,
         if len(event) == 1:
             output_cat.append(event[0])
         elif len(event) == 0:
-            Logger.error('No picks made for detection: \n%s' % det.__str__())
+            Logger.error('No picks made for detection: \n{0}'.format(det))
         else:
             raise NotImplementedError('Multiple events with same id,'
                                       ' should not happen')

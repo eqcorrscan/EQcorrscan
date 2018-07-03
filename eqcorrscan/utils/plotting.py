@@ -1222,9 +1222,8 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
     return fig
 
 
-def pretty_template_plot(template, size=(10.5, 7.5), save=False,
-                         savefile=None, title=False, background=False,
-                         picks=False):
+def pretty_template_plot(template, size=(10.5, 7.5), title=False,
+                         background=False, picks=False):
     """
     Plot of a single template, possibly within background data.
 
@@ -1232,10 +1231,6 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
     :param template: Template stream to plot
     :type size: tuple
     :param size: tuple of plot size
-    :type save: bool
-    :param save: if False will plot to screen, if True will save
-    :type savefile: str
-    :param savefile: String to save plot as, required if save=True.
     :type title: bool
     :param title: String if set will be the plot title
     :type background: obspy.core.stream.stream
@@ -1289,7 +1284,6 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         pretty_template_plot(template, background=st,
                              picks=event.picks)
     """
-    _check_save_args(save, savefile)
     fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1380,11 +1374,6 @@ def pretty_template_plot(template, size=(10.5, 7.5), save=False,
         plt.subplots_adjust(top=0.98)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
-    if not save:
-        plt.show()
-    else:
-        plt.savefig(savefile)
-        plt.close()
     return fig
 
 
