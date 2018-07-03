@@ -45,7 +45,7 @@ from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.debug_log import debug_print
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.pre_processing import dayproc, shortproc
+from eqcorrscan.utils.pre_processing import dayproc, shortproc, _check_daylong
 
 
 @contextlib.contextmanager
@@ -752,7 +752,7 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 overlap='calculate', debug=0):
+                 overlap='calculate', process_cores=None, debug=0):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -795,9 +795,13 @@ class Party(object):
         :param overlap:
             Either None, "calculate" or a float of number of seconds to
             overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calcualting cross-correlation sums. Setting
+            the delay-and-stack in calculating cross-correlation sums. Setting
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
         :type debug: int
         :param debug: Debug output level, 0-5 with 5 being the most output.
 
@@ -874,10 +878,12 @@ class Party(object):
             elif isinstance(overlap, float):
                 lap = overlap
             if not pre_processed:
+                if process_cores is None:
+                    process_cores = cores
                 processed_streams = _group_process(
-                    template_group=group, cores=cores, parallel=parallel,
-                    stream=stream.copy(), debug=debug, daylong=False,
-                    ignore_length=False, overlap=lap)
+                    template_group=group, cores=process_cores,
+                    parallel=parallel, stream=stream.copy(), debug=debug,
+                    daylong=False,  ignore_length=False, overlap=lap)
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
@@ -1407,7 +1413,7 @@ class Family(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 debug=0):
+                 process_cores=None, debug=0):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -1446,6 +1452,10 @@ class Family(object):
             To generate a plot for every detection or not, defaults to False
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
         :type debug: int
         :param debug: Debug output level, 0-5 with 5 being the most output.
 
@@ -1478,7 +1488,7 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, parallel=parallel,
-            debug=debug)
+            process_cores=process_cores, debug=debug)
 
 
 class Template(object):
@@ -2339,7 +2349,8 @@ class Tribe(object):
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
                group_size=None, overlap="calculate", debug=0,
-               full_peaks=False, save_progress=False):
+               full_peaks=False, save_progress=False,
+               process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2408,6 +2419,10 @@ class Tribe(object):
         :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -2509,7 +2524,7 @@ class Tribe(object):
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap, debug=debug,
-                full_peaks=full_peaks)
+                full_peaks=full_peaks, process_cores=process_cores, **kwargs)
             party += group_party
             if save_progress:
                 party.write("eqcorrscan_temporary_party")
@@ -2525,7 +2540,8 @@ class Tribe(object):
                       daylong=False, parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
                       group_size=None, debug=0, return_stream=False,
-                      full_peaks=False, save_progress=False):
+                      full_peaks=False, save_progress=False,
+                      process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2591,6 +2607,10 @@ class Tribe(object):
         :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
 
         :type debug: int
         :param debug:
@@ -2725,6 +2745,17 @@ class Tribe(object):
                 st.merge()
                 st.trim(starttime=starttime + (i * data_length) - pad,
                         endtime=starttime + ((i + 1) * data_length) + pad)
+                for tr in st:
+                    if not _check_daylong(tr):
+                        st.remove(tr)
+                        print("{0} contains more zeros than non-zero, "
+                              "removed".format(tr.id))
+                for tr in st:
+                    if tr.stats.endtime - tr.stats.starttime < \
+                       0.8 * data_length:
+                        st.remove(tr)
+                        print("{0} is less than 80% of the required length"
+                              ", removed".format(tr.id))
                 if return_stream:
                     stream += st
                 party += self.detect(
@@ -2734,7 +2765,8 @@ class Tribe(object):
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length, group_size=group_size,
-                    overlap=None, debug=debug, full_peaks=full_peaks)
+                    overlap=None, debug=debug, full_peaks=full_peaks,
+                    process_cores=process_cores, **kwargs)
                 if save_progress:
                     party.write("eqcorrscan_temporary_party")
             except Exception as e:
@@ -3158,7 +3190,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
                   cores=None, ignore_length=False, overlap="calculate",
-                  debug=0, full_peaks=False):
+                  debug=0, full_peaks=False, process_cores=None, **kwargs):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -3235,6 +3267,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         4 and 5, detections will not be computed in parallel.
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :type process_cores: int
+    :param process_cores:
+        Number of processes to use for pre-processing (if different to
+        `cores`).
 
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
@@ -3256,9 +3292,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         raise NotImplementedError(
             "%s is not a recognised overlap type" % str(overlap))
     if not pre_processed:
+        if process_cores is None:
+            process_cores = cores
         st = _group_process(
             template_group=templates, parallel=parallel_process, debug=debug,
-            cores=cores, stream=stream, daylong=daylong,
+            cores=process_cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
         warnings.warn('Not performing any processing on the continuous data.')
@@ -3296,7 +3334,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plotvar=plotvar, debug=debug, cores=cores,
-                full_peaks=full_peaks)
+                full_peaks=full_peaks, peak_cores=process_cores, **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -3737,7 +3775,7 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  debug=0, plot_format='png', output_cat=False,
                  output_event=True, extract_detections=False,
-                 arg_check=True, full_peaks=False):
+                 arg_check=True, full_peaks=False, peak_cores=None, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -3812,6 +3850,10 @@ def match_filter(template_names, template_list, st, threshold,
         certain of your arguments, then set to False.
     :type full_peaks: bool
     :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
+    :type peak_cores: int
+    :param peak_cores:
+        Number of processes to use for parallel peak-finding (if different to
+        `cores`).
 
     .. note::
         **Returns:**
@@ -4133,7 +4175,7 @@ def match_filter(template_names, template_list, st, threshold,
     debug_print(stream.__str__(), 3, debug)
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, chans] = multichannel_normxcorr(
-        templates=templates, stream=stream, cores=cores)
+        templates=templates, stream=stream, cores=cores, **kwargs)
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = time.clock()
@@ -4153,10 +4195,12 @@ def match_filter(template_names, template_list, st, threshold,
                       for cccsum in cccsums]
     else:
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
+    if peak_cores is None:
+        peak_cores = cores
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, debug=debug, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
-        full_peaks=full_peaks, cores=cores)
+        full_peaks=full_peaks, cores=peak_cores)
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             warnings.warn('Mean is not zero!  Check this!')
