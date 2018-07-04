@@ -2982,10 +2982,7 @@ class Detection(object):
                  chans=None, event=None, id=None):
         """Main class of Detection."""
         self.template_name = template_name
-        if not isinstance(detect_time, UTCDateTime):
-            self.detect_time = UTCDateTime(detect_time)
-        else:
-            self.detect_time = detect_time
+        self.detect_time = detect_time
         self.no_chans = int(no_chans)
         if not isinstance(chans, list):
             self.chans = [chans]
