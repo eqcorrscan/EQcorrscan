@@ -2982,9 +2982,15 @@ class Detection(object):
                  chans=None, event=None, id=None):
         """Main class of Detection."""
         self.template_name = template_name
-        self.detect_time = detect_time
-        self.no_chans = no_chans
-        self.chans = chans
+        if not isinstance(detect_time, UTCDateTime):
+            self.detect_time = UTCDateTime(detect_time)
+        else:
+            self.detect_time = detect_time
+        self.no_chans = int(no_chans)
+        if not isinstance(chans, list):
+            self.chans = [chans]
+        else:
+            self.chans = chans
         self.detect_val = np.float32(detect_val)
         self.threshold = np.float32(threshold)
         self.typeofdet = typeofdet

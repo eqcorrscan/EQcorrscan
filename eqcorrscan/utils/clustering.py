@@ -626,10 +626,14 @@ def extract_detections(detections, templates, archive, arc_type,
     >>> from obspy import read, UTCDateTime
     >>> import os
     >>> # Use some dummy detections, you would use real one
-    >>> detections = [Detection('temp1', UTCDateTime(2012, 3, 26, 9, 15), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0),
-    ...               Detection('temp2',UTCDateTime(2012, 3, 26, 18, 5), 2,
-    ...                         ['WHYM', 'EORO'], 2, 1.2, 'corr', 'MAD', 8.0)]
+    >>> detections = [Detection(
+    ...     template_name='temp1', detect_time=UTCDateTime(2012, 3, 26, 9, 15),
+    ...     no_chans=2, chans=['WHYM', 'EORO'], detect_val=2, threshold=1.2,
+    ...     typeofdet='corr', threshold_type='MAD', threshold_input=8.0),
+    ...               Detection(
+    ...     template_name='temp2', detect_time=UTCDateTime(2012, 3, 26, 18, 5),
+    ...     no_chans=2, chans=['WHYM', 'EORO'], detect_val=2, threshold=1.2,
+    ...     typeofdet='corr', threshold_type='MAD', threshold_input=8.0)]
     >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
     >>> archive = os.path.join(path_to_templates, 'day_vols')
     >>> template_files = [os.path.join(path_to_templates, 'temp1.ms'),
