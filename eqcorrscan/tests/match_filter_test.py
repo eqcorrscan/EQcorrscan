@@ -696,7 +696,7 @@ class TestMatchObjects(unittest.TestCase):
                         if not det.__dict__[key] == check_det.__dict__[key]:
                             print(key)
                         self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
+                            det.__dict__[key], check_det.__dict__[key], 3)
             # self.assertEqual(fam.template, check_fam.template)
 
     @pytest.mark.serial
@@ -723,7 +723,7 @@ class TestMatchObjects(unittest.TestCase):
                         if not det.__dict__[key] == check_det.__dict__[key]:
                             print(key)
                         self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
+                            det.__dict__[key], check_det.__dict__[key], 3)
             # self.assertEqual(fam.template, check_fam.template)
 
     def test_tribe_detect_save_progress(self):
@@ -777,7 +777,7 @@ class TestMatchObjects(unittest.TestCase):
                             atol=0.2))
                     else:
                         self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
+                            det.__dict__[key], check_det.__dict__[key], 3)
             # self.assertEqual(fam.template, check_fam.template)
 
     @pytest.mark.flaky(reruns=2)
