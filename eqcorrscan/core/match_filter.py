@@ -3090,23 +3090,21 @@ class Detection(object):
             and file doesn't exist, will create new file and warn.  If False
             will overwrite old files.
         """
+        mode = 'w'
         if append and os.path.isfile(fname):
-            f = open(fname, 'a')
-        else:
-            f = open(fname, 'w')
-            header = '; '.join(['Template name', 'Detection time (UTC)',
-                                'Number of channels', 'Channel list',
-                                'Detection value', 'Threshold',
-                                'Threshold type', 'Input threshold',
-                                'Detection type'])
-            f.write(header + '\n')  # Write a header for the file
-        print_str = '; '.join([self.template_name, str(self.detect_time),
-                               str(self.no_chans), str(self.chans),
-                               str(self.detect_val), str(self.threshold),
-                               self.threshold_type, str(self.threshold_input),
-                               self.typeofdet])
-        f.write(print_str + '\n')
-        f.close()
+            mode = 'a'
+        header = '; '.join(['Template name', 'Detection time (UTC)',
+                            'Number of channels', 'Channel list',
+                            'Detection value', 'Threshold',
+                            'Threshold type', 'Input threshold',
+                            'Detection type'])
+        print_str = "{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}\n".format(
+            self.template_name, self.detect_time, self.no_chans,
+            self.chans, self.detect_val, self.threshold,
+            self.threshold_type, self.threshold_input, self.typeofdet)
+        with open(fname, mode) as _f:
+            _f.write(header + '\n')  # Write a header for the file
+            _f.write(print_str)
 
     def _calculate_event(self, template=None, template_st=None):
         """

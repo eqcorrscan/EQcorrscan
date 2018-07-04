@@ -323,7 +323,6 @@ class TestNCEDCCases(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
-        print('\t\t\t Downloading data')
         client = Client('NCEDC')
         t1 = UTCDateTime(2004, 9, 28, 17)
         t2 = t1 + 3600
@@ -338,12 +337,10 @@ class TestNCEDCCases(unittest.TestCase):
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         cls.tribe = Tribe()
-        print('Constructing tribe')
         cls.tribe.construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=process_len)
-        print('Constructing templates')
         cls.templates = [t.st.copy() for t in cls.tribe]
         for template in cls.templates:
             template.sort()
@@ -358,18 +355,15 @@ class TestNCEDCCases(unittest.TestCase):
                       t1, t1 + process_len + 1)
                      for stachan in template_stachans]
         # Just downloading an hour of data
-        print('Downloading continuous data')
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
         cls.unproc_st = st.copy()
-        print('Processing data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             debug=0, num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
-        print('Set Up finished')
 
     def test_detection_extraction(self):
         # Test outputting the streams works
@@ -437,6 +431,8 @@ class TestNCEDCCases(unittest.TestCase):
 
     def test_read_write_detections(self):
         """Check that we can read and write detections accurately."""
+        if os.path.isfile("dets_out.txt"):
+            os.remove("dets_out.txt")
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
@@ -447,14 +443,13 @@ class TestNCEDCCases(unittest.TestCase):
             detection_dict.append(
                 {'template_name': detection.template_name,
                  'time': detection.detect_time,
-                 'cccsum': float(str(detection.detect_val)),
+                 'cccsum': detection.detect_val,
                  'no_chans': detection.no_chans,
                  'chans': detection.chans,
-                 'threshold': float(str(detection.threshold)),
+                 'threshold': detection.threshold,
                  'typeofdet': detection.typeofdet})
             detection.write(fname='dets_out.txt')
         detections_back = read_detections('dets_out.txt')
-        print(detection_dict)
         self.assertEqual(len(detections), len(detections_back))
         for detection in detections_back:
             d = {'template_name': detection.template_name,
@@ -464,7 +459,6 @@ class TestNCEDCCases(unittest.TestCase):
                  'chans': detection.chans,
                  'threshold': detection.threshold,
                  'typeofdet': detection.typeofdet}
-            print(d)
             self.assertTrue(d in detection_dict)
         os.remove('dets_out.txt')
 
