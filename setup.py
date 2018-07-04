@@ -327,7 +327,7 @@ def setup_package():
         'version': VERSION,
         'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
-        'url': 'https://github.com/calum-chamberlain/EQcorrscan',
+        'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
         'license': 'LGPL',
