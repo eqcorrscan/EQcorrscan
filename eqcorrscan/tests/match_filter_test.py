@@ -580,7 +580,6 @@ class TestMatchObjects(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
-        print('\t\t\t Downloading data')
         client = Client('NCEDC')
         cls.t1 = UTCDateTime(2004, 9, 28, 17)
         cls.t2 = cls.t1 + 3600
@@ -595,7 +594,6 @@ class TestMatchObjects(unittest.TestCase):
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
         cls.tribe = Tribe()
-        print('Constructing tribe')
         cls.tribe.construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
@@ -615,22 +613,24 @@ class TestMatchObjects(unittest.TestCase):
                       cls.t1, cls.t1 + process_len)
                      for stachan in template_stachans]
         # Just downloading an hour of data
-        print('Downloading continuous data')
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
         cls.unproc_st = st.copy()
-        print('Processing data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             debug=0, num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
-        print('Reading party')
         cls.party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
                 'test_data', 'test_party.tgz'))
         cls.family = cls.party.sort()[0].copy()
-        print('Set Up finished')
+
+    @classmethod
+    def tearDownClass(cls):
+        for f in ['eqcorrscan_temporary_party.tgz']:
+            if os.path.isfile(f):
+                os.remove(f)
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
@@ -672,6 +672,24 @@ class TestMatchObjects(unittest.TestCase):
             for det, check_det in zip(fam.detections, check_fam.detections):
                 for key in det.__dict__.keys():
                     if key == 'event':
+                        self.assertEqual(len(det.__dict__[key].picks),
+                                         len(check_det.__dict__[key].picks))
+                        # Check that the number of picks equals the number of
+                        # traces in the template
+                        self.assertEqual(len(det.__dict__[key].picks),
+                                         len(fam.template.st))
+                        min_template_time = min(
+                            [tr.stats.starttime for tr in fam.template.st])
+                        min_pick_time = min(
+                            [pick.time for pick in det.event.picks])
+                        for pick in det.event.picks:
+                            traces = fam.template.st.select(
+                                id=pick.waveform_id.get_seed_string())
+                            lags = []
+                            for tr in traces:
+                                lags.append(
+                                    tr.stats.starttime - min_template_time)
+                            self.assertTrue(pick.time - min_pick_time in lags)
                         continue
                     if isinstance(det.__dict__[key], float):
                         if not np.allclose(det.__dict__[key],
@@ -791,16 +809,19 @@ class TestMatchObjects(unittest.TestCase):
         self.assertEqual(party, saved_party)
         os.remove("eqcorrscan_temporary_party.tgz")
 
-    def test_party_io(self):
-        """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
-        try:
-            self.party.write(filename='test_party_out')
-            party_back = read_party(fname='test_party_out.tgz')
-            self.assertEqual(self.party, party_back)
-        finally:
-            os.remove('test_party_out.tgz')
+    def test_detection_regenerate_event(self):
+        template = self.party[0].template
+        test_detection = self.party[0][0]
+        test_detection_altered = test_detection.copy()
+        # Make sure they are equal going into this.
+        self.assertEqual(test_detection, test_detection_altered)
+        test_detection_altered._calculate_event(template=template)
+        self.assertEqual(test_detection, test_detection_altered)
+        test_detection_altered._calculate_event(template_st=template.st)
+        self.assertEqual(test_detection, test_detection_altered)
+        # Check that detection is left alone if wrong template given
+        test_detection_altered._calculate_event(
+            template=self.party[1].template)
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
@@ -945,62 +966,6 @@ class TestMatchObjects(unittest.TestCase):
         pre_picked_cat = day_party.get_catalog()
         self.assertEqual(len(pre_picked_cat), 4)
 
-    def test_family_methods(self):
-        """Test basic methods on Family objects."""
-        family = self.family.copy()
-        self.assertEqual(
-            family.__repr__(),
-            'Family of 1 detections from template 2004_09_28t17_15_26')
-
-    def test_family_addition(self):
-        """Test adding to the family."""
-        family = self.family.copy()
-        fam_copy = family.copy()
-        fam_copy.template.name = 'bob'
-        with self.assertRaises(NotImplementedError):
-            family += fam_copy
-        with self.assertRaises(NotImplementedError):
-            family += 'bob'
-
-    def test_family_equality(self):
-        """Test that when we check equality all is good."""
-        family = self.family.copy()
-        fam_copy = family.copy()
-        fam_copy.template.name = 'bob'
-        self.assertFalse(family == fam_copy)
-        self.assertTrue(family != fam_copy)
-        fam_copy.template = family.template
-        fam_copy.detections = []
-        self.assertFalse(family == fam_copy)
-
-    def test_family_slicing(self):
-        """Check getting items returns the expected result."""
-        family = self.family.copy()
-        self.assertTrue(isinstance(family[0], Detection))
-        self.assertTrue(isinstance(family[0:], list))
-
-    def test_family_sort(self):
-        """Test sorting of family objects."""
-        family = self.family.copy()
-        for i in np.arange(20):
-            randn_det = family.detections[0].copy()
-            randn_det.detect_time += np.random.rand() * i * 100
-            family.detections.append(randn_det)
-        sorted_dets = family.copy().detections
-        sorted_dets.sort(key=lambda x: x.detect_time)
-        self.assertEqual(family.sort().detections, sorted_dets)
-
-    def test_family_io(self):
-        """Test the write method of family."""
-        family = self.family.copy()
-        try:
-            family.write('test_family')
-            party_back = read_party('test_family.tgz')
-            self.assertEqual(len(party_back), 1)
-            self.assertEqual(party_back[0], family)
-        finally:
-            os.remove('test_family.tgz')
-
     def test_family_lag_calc(self):
         """Test the lag-calc method on family."""
         catalog = self.family.lag_calc(stream=self.st, pre_processed=True)
@@ -1073,6 +1038,114 @@ class TestMatchObjects(unittest.TestCase):
         t_name = self.tribe[2].name
         self.assertTrue(self.tribe[2] == self.tribe[t_name])
         self.assertTrue(self.party[2] == self.party[t_name])
+
+
+class TestMatchIO(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.party = Party().read(
+            filename=os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                'test_data', 'test_party.tgz'))
+        cls.family = cls.party.sort()[0].copy()
+
+    def test_party_io(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname='test_party_out.tgz')
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_no_catalog_writing(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(
+                filename='test_party_out', write_detection_catalog=False)
+            party_back = read_party(fname='test_party_out.tgz')
+            self.assertTrue(self.party.__eq__(party_back, verbose=True))
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_no_catalog_reading(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(
+                fname='test_party_out.tgz', read_detection_catalog=False)
+            # creation times will differ - hack around this to make comparison
+            # easier
+            for family in self.party:
+                family_back = party_back.select(family.template.name)
+                for detection_in, detection_back in zip(family, family_back):
+                    detection_in.event.creation_info.creation_time = \
+                        detection_back.event.creation_info.creation_time
+            self.assertTrue(self.party.__eq__(party_back, verbose=True))
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_family_methods(self):
+        """Test basic methods on Family objects."""
+        family = self.family.copy()
+        self.assertEqual(
+            family.__repr__(),
+            'Family of 1 detections from template 2004_09_28t17_15_26')
+
+    def test_family_addition(self):
+        """Test adding to the family."""
+        family = self.family.copy()
+        fam_copy = family.copy()
+        fam_copy.template.name = 'bob'
+        with self.assertRaises(NotImplementedError):
+            family += fam_copy
+        with self.assertRaises(NotImplementedError):
+            family += 'bob'
+
+    def test_family_equality(self):
+        """Test that when we check equality all is good."""
+        family = self.family.copy()
+        fam_copy = family.copy()
+        fam_copy.template.name = 'bob'
+        self.assertFalse(family == fam_copy)
+        self.assertTrue(family != fam_copy)
+        fam_copy.template = family.template
+        fam_copy.detections = []
+        self.assertFalse(family == fam_copy)
+
+    def test_family_slicing(self):
+        """Check getting items returns the expected result."""
+        family = self.family.copy()
+        self.assertTrue(isinstance(family[0], Detection))
+        self.assertTrue(isinstance(family[0:], list))
+
+    def test_family_sort(self):
+        """Test sorting of family objects."""
+        family = self.family.copy()
+        for i in np.arange(20):
+            randn_det = family.detections[0].copy()
+            randn_det.detect_time += np.random.rand() * i * 100
+            family.detections.append(randn_det)
+        sorted_dets = family.copy().detections
+        sorted_dets.sort(key=lambda x: x.detect_time)
+        self.assertEqual(family.sort().detections, sorted_dets)
+
+    def test_family_io(self):
+        """Test the write method of family."""
+        family = self.family.copy()
+        try:
+            family.write('test_family')
+            party_back = read_party('test_family.tgz')
+            self.assertEqual(len(party_back), 1)
+            self.assertEqual(party_back[0], family)
+        finally:
+            os.remove('test_family.tgz')
 
 
 def test_match_filter(
