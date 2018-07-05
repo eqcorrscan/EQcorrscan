@@ -317,7 +317,6 @@ class TestGappyData(unittest.TestCase):
         self.assertEqual(len(party), 0)
 
 
-
 @pytest.mark.network
 class TestNCEDCCases(unittest.TestCase):
     @classmethod
@@ -633,7 +632,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
         compare_families(
             party=party, party_in=self.party, float_tol=0.01,
             check_event=True)
-
 
     @pytest.mark.serial
     def test_tribe_detect_parallel_process(self):
@@ -1111,15 +1109,17 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         assert pick.time - min_pick_time in lags
                     continue
                 if isinstance(det.__dict__[key], float):
-                    if not np.allclose(det.__dict__[key],
-                                       check_det.__dict__[key], atol=float_tol):
+                    if not np.allclose(
+                            det.__dict__[key], check_det.__dict__[key],
+                            atol=float_tol):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
                         atol=0.01)
                 elif isinstance(det.__dict__[key], np.float32):
-                    if not np.allclose(det.__dict__[key],
-                                       check_det.__dict__[key], atol=float_tol):
+                    if not np.allclose(
+                            det.__dict__[key], check_det.__dict__[key],
+                            atol=float_tol):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
