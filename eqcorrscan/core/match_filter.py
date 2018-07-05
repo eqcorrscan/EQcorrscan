@@ -47,7 +47,8 @@ from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc, _check_daylong
 
-CAT_EXT_MAP = {"QUAKEML": "xml", "NORDIC": "out", "SC3ML": "xml"}
+CAT_EXT_MAP = {"QUAKEML": "xml", "SC3ML": "xml"} # , "NORDIC": "out"}
+# TODO: add in nordic support once bugs fixed upstream.
 
 
 @contextlib.contextmanager
@@ -1609,7 +1610,7 @@ class Template(object):
                         self.samp_rate, self.filt_order, self.process_length))
         return print_str
 
-    def __eq__(self, other, verbose=False):
+    def __eq__(self, other, verbose=False, shallow_event_check=False):
         """
         Check for Template equality, rich comparison operator '=='
 
@@ -1688,7 +1689,8 @@ class Template(object):
                 other_is_event = isinstance(other.event, Event)
                 if self_is_event and other_is_event:
                     if not _test_event_similarity(
-                            self.event, other.event, verbose=verbose):
+                            self.event, other.event, verbose=verbose,
+                            shallow=shallow_event_check):
                         return False
                 elif self_is_event and not other_is_event:
                     return False
@@ -3194,7 +3196,7 @@ def _templates_match(t, family_file):
     return t.name == family_file.split(os.sep)[-1].split('_detections.csv')[0]
 
 
-def _test_event_similarity(event_1, event_2, verbose=False):
+def _test_event_similarity(event_1, event_2, verbose=False, shallow=False):
     """
     Check the similarity of the components of obspy events, discounting
     resource IDs, which are not maintained in nordic files.
@@ -3215,6 +3217,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
         return False
     for ori_1, ori_2 in zip(event_1.origins, event_2.origins):
         for key in ori_1.keys():
+            if shallow and not hasattr(ori_2, key):
+                continue
             if key not in ["resource_id", "comments", "arrivals",
                            "method_id", "origin_uncertainty", "depth_type",
                            "quality", "creation_info", "evaluation_mode",
@@ -3224,7 +3228,7 @@ def _test_event_similarity(event_1, event_2, verbose=False):
                         print('%s is not the same as %s for key %s' %
                               (ori_1[key], ori_2[key], key))
                     return False
-            elif key == "arrivals":
+            elif key == "arrivals" and not shallow:
                 if len(ori_1[key]) != len(ori_2[key]):
                     if verbose:
                         print('Arrival: %i is not the same as %i for key %s' %
@@ -3256,6 +3260,8 @@ def _test_event_similarity(event_1, event_2, verbose=False):
     event_2.picks.sort(key=lambda p: p.time)
     for pick_1, pick_2 in zip(event_1.picks, event_2.picks):
         for key in pick_1.keys():
+            if shallow and not hasattr(pick_2, key):
+                continue
             if key not in ["resource_id", "waveform_id"]:
                 if pick_1[key] != pick_2[key]:
                     # Cope with a None set not being equal to a set, but still
@@ -3306,10 +3312,12 @@ def _test_event_similarity(event_1, event_2, verbose=False):
     event_1.amplitudes.sort(key=lambda a: a.generic_amplitude)
     event_2.amplitudes.sort(key=lambda a: a.generic_amplitude)
     for amp_1, amp_2 in zip(event_1.amplitudes, event_2.amplitudes):
+        if shallow:
+            continue
         # Assuming same ordering of amplitudes
         for key in amp_1.keys():
             if key not in ["resource_id", "pick_id", "waveform_id", "snr"]:
-                if not amp_1[key] == amp_2[key]:
+                if not amp_1[key] == amp_2[key] and amp_2[key] is not None:
                     if verbose:
                         print('Amplitude: %s is not the same as %s for key'
                               ' %s' % (amp_1[key], amp_2[key], key))

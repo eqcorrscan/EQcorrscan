@@ -838,16 +838,46 @@ class TestMatchObjectLight(unittest.TestCase):
         for template in self.tribe:
             self.assertTrue(isinstance(template, Template))
 
-    def test_tribe_io(self):
+    def test_tribe_io_qml(self):
         """Test reading and writing or Tribe objects using tar form."""
         try:
-            if os.path.isfile('test_tribe.tgz'):
-                os.remove('test_tribe.tgz')
-            self.tribe.write(filename='test_tribe')
-            tribe_back = read_tribe('test_tribe.tgz')
+            if os.path.isfile('test_tribe_QML.tgz'):
+                os.remove('test_tribe_QML.tgz')
+            self.tribe.write(
+                filename='test_tribe_QML', catalog_format="QUAKEML")
+            tribe_back = read_tribe('test_tribe_QML.tgz')
             self.assertEqual(self.tribe, tribe_back)
         finally:
-            os.remove('test_tribe.tgz')
+            os.remove('test_tribe_QML.tgz')
+
+    def test_tribe_io_sc3ml(self):
+        """Test reading and writing or Tribe objects using tar form."""
+        try:
+            if os.path.isfile('test_tribe_SC3ML.tgz'):
+                os.remove('test_tribe_SC3ML.tgz')
+            self.tribe.write(
+                filename='test_tribe_SC3ML', catalog_format="SC3ML")
+            tribe_back = read_tribe('test_tribe_SC3ML.tgz')
+            for template_in, template_back in zip(self.tribe, tribe_back):
+                assert template_in.__eq__(
+                    template_back, verbose=True, shallow_event_check=True)
+        finally:
+            os.remove('test_tribe_SC3ML.tgz')
+
+    # Requires bug-fixes in obspy to be deployed.
+    # def test_tribe_io_nordic(self):
+    #     """Test reading and writing or Tribe objects using tar form."""
+    #     try:
+    #         if os.path.isfile('test_tribe_nordic.tgz'):
+    #             os.remove('test_tribe_nordic.tgz')
+    #         self.tribe.write(
+    #             filename='test_tribe_nordic', catalog_format="NORDIC")
+    #         tribe_back = read_tribe('test_tribe_nordic.tgz')
+    #         for template_in, template_back in zip(self.tribe, tribe_back):
+    #             assert template_in.__eq__(
+    #                 template_back, verbose=True, shallow_event_check=True)
+    #     finally:
+    #         os.remove('test_tribe_nordic.tgz')
 
     def test_detection_regenerate_event(self):
         template = self.party[0].template

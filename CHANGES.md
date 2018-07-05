@@ -10,7 +10,8 @@
   of inner-cores (used for parallel fft calculation) and `cores_outer` sets
   the number of channels to process in parallel (which results in increased
   memory usage).
-* Allow Tribe and Party IO to use NORDIC, QUAKEML or SC3ML format for catalogs.
+* Allow Tribe and Party IO to use QUAKEML or SC3ML format for catalogs (NORDIC
+  to come once obspy updates).
 * Allow Party IO to not write detection catalogs if so desired, because 
   writing and reading large catalogs can be slow.
 * If detection-catalogs are not read in, then the detection events will be
