@@ -297,7 +297,7 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
         event_ids.append(master[0])
         event = read_nordic(sfile)[0]
         catalog += event
-    # Loop over all master-events        
+    # Loop over all master-events
     i = -1
     for master_event in catalog:
         i += 1
@@ -340,8 +340,8 @@ def write_catalog(event_list, max_sep=8, min_link=8, debug=0):
                                        master_ori_time, 3).rjust(6) +
                              '   ' + str(weight).ljust(5) +
                              pick.phase_hint + '\n')
-        # Use this tactic to only output unique event pairings                             
-        for j in range(i + 1, len(event_list)):            
+        # Use this tactic to only output unique event pairings
+        for j in range(i + 1, len(event_list)):
             slave_event = catalog[j]
             slave_event_id = event_ids[j]
             # Write out the header line
@@ -428,7 +428,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         Path to the seisan wave directory that the wavefiles in the S-files are
         stored
     :type extract_len: float
-    :param extract_len: 
+    :param extract_len:
         Length in seconds to extract around the pick
     :type pre_pick: float
     :param pre_pick:
@@ -467,20 +467,20 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     .. warning::
         In contrast to seisan's corr routine, but in accordance with the
         hypoDD manual, this outputs corrected differential time.
-        
+
     .. note::
-        This routine is now much quicker than before, but may require more 
+        This routine is now much quicker than before, but may require more
         memory. It now loads all event- and waveform-data in the beginning and
         is able to run the cross-correlation between one master-event and each
-        of its slaves across workers in parallel. However, if there are few 
-        waveforms for comparison across events, it may still be quicker to run 
+        of its slaves across workers in parallel. However, if there are few
+        waveforms for comparison across events, it may still be quicker to run
         the code in serial and avoid losing time creating the worker pool etc.
 
     .. note::
         Currently we have not implemented a method for taking
-        unassociated event objects and wavefiles.  As such if you have events \
-        with associated wavefiles you are advised to generate Sfiles for each \
-        event using the sfile_util module prior to this step. 
+        unassociated event objects and wavefiles.  As such if you have events
+        with associated wavefiles you are advised to generate Sfiles for each
+        event using the sfile_util module prior to this step.
 
     .. note::
         There is no provision to taper waveforms within these functions, if you
@@ -513,7 +513,8 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     stream += read(os.join(wavbase, wavefile))
                     if debug > 1:
                         print('Successfully read in waveformfile for ' + sfile)
-                except:
+                except Exception as e:
+                    print(e)
                     raise IOError("Couldn't find waveform file for " + sfile)
                     continue
         else:
@@ -523,61 +524,65 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                     print('Successfully read in waveformfile for ' + sfile)
         # Merge traces to take care of duplicates
         stream.merge(method=1, fill_value=0, interpolation_samples=10)
-        # First round of selection: check for stations that have an S-pick. 
+        # First round of selection: check for stations that have an S-pick.
         # Add all their traces trimmed to origin up to the S-pick plus a bit.
         for pick in event.picks:
             if not hasattr(pick, 'phase_hint') or \
                             len(pick.phase_hint) == 0:
-                if debug > 1 :
+                if debug > 1:
                     warnings.warn('No phase-hint for pick:')
                     print(pick)
                 continue
             if pick.phase_hint[0].upper() in ['S']:
                 if stream.select(station=pick.waveform_id.station_code):
-                    select_stream = stream.select(station=pick.waveform_id.\
-                                                  station_code)
+                    select_stream = stream.select(
+                        station=pick.waveform_id.station_code)
                     for trace in select_stream:
                         if trace not in append_stream:
                             try:
-                                starttime = event.origins[0].time \
-                                            - (extract_len + shift_len)
-                                endtime = pick.time + 2 * (extract_len \
-                                                           + shift_len)
+                                starttime = (
+                                    event.origins[0].time -
+                                    (extract_len + shift_len))
+                                endtime = (
+                                    pick.time + 2 * (extract_len + shift_len))
                                 trace.trim(starttime=starttime,
                                            endtime=endtime, pad=False)
-                            except:
+                            except Exception as e:
                                 if debug > 1:
+                                    print(e)
                                     msg = "Couldn't trim trace"
                                     warnings.warn(msg)
-                                continue        
+                                continue
                             append_stream += trace
-        # Second round: check for stations that have only a P-pick and no 
+        # Second round: check for stations that have only a P-pick and no
         # S-pick. Add those traces trimmed to the P-pick plus a bit.
         for pick in event.picks:
             if not hasattr(pick, 'phase_hint') or \
                             len(pick.phase_hint) == 0:
-                if debug > 1 :
+                if debug > 1:
                     warnings.warn('No phase-hint for pick:')
                     print(pick)
                 continue
             if pick.phase_hint[0].upper() in ['P']:
                 if stream.select(station=pick.waveform_id.station_code):
-                    select_stream = stream.select(station=pick.waveform_id.\
-                                                  station_code)
+                    select_stream = stream.select(
+                        station=pick.waveform_id.station_code)
                     for trace in select_stream:
                         if trace not in append_stream:
                             try:
-                                starttime = event.origins[0].time \
-                                            - (extract_len + shift_len)
-                                endtime = pick.time + 2 * (extract_len \
-                                                           + shift_len)
-                                trace.trim(starttime=starttime, 
+                                starttime = (
+                                    event.origins[0].time
+                                    - (extract_len + shift_len))
+                                endtime = (
+                                    pick.time + 2 * (extract_len + shift_len))
+                                trace.trim(starttime=starttime,
                                            endtime=endtime, pad=False)
-                            except:
+                            except Exception as e:
                                 if debug > 1:
+                                    print(e)
                                     msg = "Couldn't trim trace"
                                     warnings.warn(msg)
-                                continue        
+                                continue
                             append_stream += trace
         stream_list.append(append_stream)
     # Start a parallel pool and keep it open until the whole master-loop is
@@ -608,7 +613,7 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         corr_list_list = list()
         if parallel:
             # Parallel execution of the internal _slave_loop. Only send the
-            # function to a worker when the seperation distance between events
+            # function to a worker when the separation distance between events
             # is small enough.
             results = [pool.apply_async(
                     _slave_loop, (master_sfile, ),
@@ -646,22 +651,21 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                 slave_location = (slave_event.origins[0].latitude,
                                   slave_event.origins[0].longitude,
                                   slave_event.origins[0].depth / 1000.0)
-                if dist_calc(master_location,slave_location) <= max_sep:
+                if dist_calc(master_location, slave_location) <= max_sep:
                     event_text, event_text2, links, phases =\
-                        _slave_loop(master_sfile=master_sfile, 
-                                    master_event_id=master_event_id, 
-                                    master_event=master_event,
-                                    masterstream=masterstream,
-                                    slave_sfile=event_list[j][1],
-                                    slave_event_id=event_ids[j],
-                                    slave_event= catalog[j],
-                                    slavestream=stream_list[j],
-                                    max_sep=max_sep, pre_pick=pre_pick,
-                                    extract_len=extract_len,
-                                    shift_len=shift_len,
-                                    lowcut=lowcut, highcut=highcut,
-                                    cc_thresh=cc_thresh, plotvar=plotvar,
-                                    debug=debug)
+                        _slave_loop(
+                            master_sfile=master_sfile,
+                            master_event_id=master_event_id,
+                            master_event=master_event,
+                            masterstream=masterstream,
+                            slave_sfile=event_list[j][1],
+                            slave_event_id=event_ids[j],
+                            slave_event=catalog[j],
+                            slavestream=stream_list[j], max_sep=max_sep,
+                            pre_pick=pre_pick, extract_len=extract_len,
+                            shift_len=shift_len, lowcut=lowcut,
+                            highcut=highcut, cc_thresh=cc_thresh,
+                            plotvar=plotvar, debug=debug)
                     event_text_list.append(event_text)
                     event_text2_list.append(event_text2)
                     links_list.append(links)
@@ -682,15 +686,16 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     f2.close()
     return
 
-def _slave_loop(master_sfile, master_event_id, master_event, masterstream, 
-                slave_sfile, slave_event_id, slave_event, slavestream, 
-                max_sep, pre_pick, extract_len, shift_len, lowcut, highcut, 
+
+def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
+                slave_sfile, slave_event_id, slave_event, slavestream,
+                max_sep, pre_pick, extract_len, shift_len, lowcut, highcut,
                 cc_thresh, plotvar, debug):
     """
-    Inner loop for each slave event during crosscorrelation for hypoDD, 
-    performs correlation and determines pick  corrections.
+    Inner loop for each slave event during cross-correlation for hypoDD,
+    performs correlation and determines pick corrections.
 
-    Takes master- and slave-event information including waveforms and returns 
+    Takes master- and slave-event information including waveforms and returns
     the text that will then be written to dt.cc and dt.cc2-files for hypoDD.
     Only outputs text for correlations above cc_thresh.
 
@@ -698,56 +703,55 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
     :param master_sfile:
         Name of the sfile for the master event (String)
     :type master_event_id: int
-    :param master_event_id: 
+    :param master_event_id:
         hypoDD Event-ID (integer) for the master-event
     :type master_event: obspy.core.event.Event
-    :param master_event: 
+    :param master_event:
         Obspy-event object for the master-event.
     :type masterstream: obspy.core.stream.Stream
-    :param masterstream: 
+    :param masterstream:
         Obspy-stream object containing the waveforms of the master-event.
     :type slave_sfile: str
     :param slave_sfile:
         Name of the sfile for the slave event (String)
     :type slave_event_id: int
-    :param slave_event_id: 
+    :param slave_event_id:
         hypoDD Event-ID (integer) for the slave-event
     :type slave_event: obspy.core.event.Event
-    :param slave_event: 
+    :param slave_event:
         Obspy-event object for the master-event.
     :type slavestream: obspy.core.stream.Stream
-    :param slavestream: 
-        Obspy-stream object containing the waveforms of the slave-event.        
-    
+    :param slavestream:
+        Obspy-stream object containing the waveforms of the slave-event.
     :type extract_len: float
-    :param extract_len: 
+    :param extract_len:
         Length in seconds to extract around the pick
     :type pre_pick: float
-    :param pre_pick: 
+    :param pre_pick:
         Time before the pick to start the correlation window
     :type shift_len: float
-    :param shift_len: 
+    :param shift_len:
         Time to allow pick to vary
     :type lowcut: float
-    :param lowcut: 
+    :param lowcut:
         Lowcut in Hz - default=1.0
     :type highcut: float
-    :param highcut: 
+    :param highcut:
         Highcut in Hz - default=10.0
     :type max_sep: float
-    :param max_sep: 
+    :param max_sep:
         Maximum separation between event pairs in km
     :type min_link: int
-    :param min_link: 
+    :param min_link:
         Minimum links for an event to be paired
     :type cc_thresh: float
-    :param cc_thresh: 
+    :param cc_thresh:
         Threshold to include cross-correlation results.
     :type plotvar: bool
-    :param plotvar: 
+    :param plotvar:
         To show the pick-correction plots, defualts to False.
     :type debug: int
-    :param debug: 
+    :param debug:
         Variable debug levels from 0-5, higher=more output.
 
     .. warning::
@@ -756,15 +760,15 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
 
     .. note::
         This function was introduced to allow parallelization across all slave-
-        events for one master-event. This allows considerable speed-up, 
+        events for one master-event. This allows considerable speed-up,
         particularly when many waveforms with picks can be compared between
         events. If there are few waveforms for comparison, it may still be
         quicker to run the code serial and avoid losing time creating the
         worker pool etc.
-        
+
     :returns:
         Text to be printed to the files dt.cc and dt.cc2 for hypoDD, the number
-        of links and the number of phases shared between master and slave.        
+        of links and the number of phases shared between master and slave.
     :rtype: string, string, int, int
     """
     corr_list = []
@@ -798,7 +802,7 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
         for pick in master_picks:
             if not hasattr(pick, 'phase_hint') or \
                             len(pick.phase_hint) == 0:
-                if debug > 1 :
+                if debug > 1:
                     warnings.warn('No phase-hint for pick:')
                     print(pick)
                 continue
@@ -814,15 +818,14 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
                              p.waveform_id.station_code ==
                              pick.waveform_id.station_code]
             mastertr = Trace()
-            if masterstream.select(station=pick.waveform_id.station_code,
-                                   channel='*' +
-                                   pick.waveform_id.channel_code[-1]):
-                mastertr = masterstream.\
-                    select(station=pick.waveform_id.station_code,
-                           channel='*' +
-                           pick.waveform_id.channel_code[-1])[0]
+            if masterstream.select(
+                    station=pick.waveform_id.station_code,
+                    channel='*' + pick.waveform_id.channel_code[-1]):
+                mastertr = masterstream.select(
+                    station=pick.waveform_id.station_code,
+                    channel='*' + pick.waveform_id.channel_code[-1])[0]
             else:
-                if  debug > 0:
+                if debug > 0:
                     print('No waveform data for ' +
                           pick.waveform_id.station_code + '.' +
                           pick.waveform_id.channel_code)
@@ -833,22 +836,19 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
             # Loop through the matches
             for slave_pick in slave_matches:
                 slavetr = Trace()
-                if slavestream.select(station=slave_pick.waveform_id.
-                                      station_code,
-                                      channel='*' + pick.waveform_id.
-                                      channel_code[-1]):
-                    slavetr = slavestream.\
-                        select(station=slave_pick.waveform_id.station_code,
-                               channel='*' + pick.waveform_id.
-                               channel_code[-1])[0]
-                elif slavestream.select(station=slave_pick.waveform_id.
-                                      station_code,
-                                      channel='*' + slave_pick.waveform_id.
-                                      channel_code[-1]):
-                    slavetr = slavestream.\
-                        select(station=slave_pick.waveform_id.station_code,
-                               channel='*' + slave_pick.waveform_id.
-                               channel_code[-1])[0]
+                if slavestream.select(
+                        station=slave_pick.waveform_id.station_code,
+                        channel='*' + pick.waveform_id.channel_code[-1]):
+                    slavetr = slavestream.select(
+                        station=slave_pick.waveform_id.station_code,
+                        channel='*' + pick.waveform_id.channel_code[-1])[0]
+                elif slavestream.select(
+                        station=slave_pick.waveform_id.station_code,
+                        channel='*' + slave_pick.waveform_id.channel_code[-1]):
+                    slavetr = slavestream.select(
+                        station=slave_pick.waveform_id.station_code,
+                        channel='*' +
+                                slave_pick.waveform_id.channel_code[-1])[0]
                 else:
                     if debug > 0:
                         print('No slave data for ' +
@@ -858,26 +858,24 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
                               '.' + pick.waveform_id.channel_code +
                               ' ' + slave_sfile + ' ' + master_sfile)
                     break
-                # Correct sampling rate of the slave-trace if it differs for 
-                # the master-event (allows comparison between e.g. BH and HH if
-                # one is not present before/after).
+                # Correct sampling rate of the slave-trace if it differs for
+                # the master-event (allows comparison between e.g. BH and HH
+                # if one is not present before/after).
                 # Then correct the picks
-                try:                   
-                    if mastertr.stats.sampling_rate\
-                        != slavetr.stats.sampling_rate:
+                try:
+                    if not (mastertr.stats.sampling_rate ==
+                            slavetr.stats.sampling_rate):
                             slavetr2 = slavetr.copy()
-                            slavetr2.resample(mastertr.stats.sampling_rate, 
-                                             window='hanning', no_filter=False, 
-                                             strict_length=False)
+                            slavetr2.resample(
+                                mastertr.stats.sampling_rate, window='hanning',
+                                no_filter=False, strict_length=False)
                             slavetr = slavetr2
-                    correction, cc =\
-                        xcorr_pick_correction(
-                            pick.time, mastertr, slave_pick.time,
-                            slavetr, pre_pick, extract_len - pre_pick,
-                            shift_len, filter="bandpass",
-                            filter_options={'freqmin': lowcut,
-                                            'freqmax': highcut},
-                            plot=plotvar)
+                    correction, cc = xcorr_pick_correction(
+                        pick.time, mastertr, slave_pick.time, slavetr,
+                        pre_pick, extract_len - pre_pick, shift_len,
+                        filter="bandpass",
+                        filter_options={'freqmin': lowcut, 'freqmax': highcut},
+                        plot=plotvar)
                     # Get the differential travel time using the
                     # corrected time.
                     # Check that the correction is within the allowed shift
@@ -909,7 +907,8 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
                     elif debug > 0:
                         print('cc too low: %s' % cc)
                     corr_list.append(cc * cc)
-                except:
+                except Exception as e:
+                    print(e)
                     msg = "Couldn't compute correlation correction"
                     warnings.warn(msg)
                     continue
