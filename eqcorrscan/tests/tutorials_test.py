@@ -53,7 +53,8 @@ class TestTutorialScripts(unittest.TestCase):
             self.assertEqual(len(template), len(expected_template))
         # Run the matched-filter
         print("Running the match-filter")
-        tutorial_detections = match_filter.run_tutorial(plot=False)
+        tutorial_detections = match_filter.run_tutorial(
+            plot=False, num_cores=1)
         print("Match-filter ran")
         # It should make 20 detections in total...
         fname = os.path.join(self.testing_path,

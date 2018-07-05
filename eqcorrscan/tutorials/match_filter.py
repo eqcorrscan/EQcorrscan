@@ -16,7 +16,7 @@ from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
 
 
-def run_tutorial(plot=False, process_len=3600):
+def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
     """Main function to run the tutorial dataset."""
     # First we want to load our templates
     template_names = glob.glob('tutorial_template_*.ms')
@@ -73,19 +73,6 @@ def run_tutorial(plot=False, process_len=3600):
         st = client.get_waveforms_bulk(bulk_info)
         # Merge the stream, it will be downloaded in chunks
         st.merge(fill_value='interpolate')
-
-        # Set how many cores we want to parallel across, we will set this
-        # to four as this is the number of templates, if your machine has
-        # fewer than four cores/CPUs the multiprocessing will wait until there
-        # is a free core.
-        # Setting this to be higher than the number of templates will have no
-        # increase in speed as only detections for each template are computed
-        # in parallel.  It may also slow your processing by using more memory
-        # than needed, to the extent that swap may be filled.
-        if cpu_count() < len(templates):
-            ncores = cpu_count()
-        else:
-            ncores = len(templates)
 
         # Pre-process the data to set frequency band and sampling rate
         # Note that this is, and MUST BE the same as the parameters used for
