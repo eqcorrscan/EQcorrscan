@@ -101,7 +101,7 @@ def run_tutorial(plot=False, process_len=3600):
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=plot, plotdir='.', cores=ncores, debug=1,
+            plotvar=plot, plotdir='.', cores=ncores, debug=0,
             plot_format='png')
 
         # Now lets try and work out how many unique events we have just to

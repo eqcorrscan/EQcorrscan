@@ -36,8 +36,8 @@ class TestTutorialScripts(unittest.TestCase):
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
 
+    # @pytest.mark.flaky(reruns=2)
     @slow
-    @pytest.mark.flaky(reruns=2)
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
         print("Making templates")
@@ -49,8 +49,8 @@ class TestTutorialScripts(unittest.TestCase):
             expected_template = read(
                 os.path.join(self.testing_path,
                              'tutorial_template_' + str(template_no) + '.ms'))
-            self.assertTrue(len(template) > 1)
-            # self.assertEqual(template, expected_template)
+            # self.assertTrue(len(template) > 1)
+            self.assertEqual(template, expected_template)
         # Run the matched-filter
         print("Running the match-filter")
         tutorial_detections = match_filter.run_tutorial(plot=False)
@@ -86,8 +86,8 @@ class TestTutorialScripts(unittest.TestCase):
                               str(template_no) + '.ms'):
                 os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    # @pytest.mark.flaky(reruns=2)
     @slow
-    @pytest.mark.flaky(reruns=2)
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
