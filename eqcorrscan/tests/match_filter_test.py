@@ -586,8 +586,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             maxlongitude=-120.2, includearrivals=True)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
-        cls.tribe = Tribe()
-        cls.tribe.construct(
+        cls.tribe = Tribe().construct(
             method='from_client', catalog=catalog, client_id='NCEDC',
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=process_len)
@@ -631,42 +630,10 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
-        for fam, check_fam in zip(party, self.party):
-            for det, check_det in zip(fam.detections, check_fam.detections):
-                for key in det.__dict__.keys():
-                    if key == 'event':
-                        self.assertEqual(len(det.__dict__[key].picks),
-                                         len(check_det.__dict__[key].picks))
-                        # Check that the number of picks equals the number of
-                        # traces in the template
-                        self.assertEqual(len(det.__dict__[key].picks),
-                                         len(fam.template.st))
-                        min_template_time = min(
-                            [tr.stats.starttime for tr in fam.template.st])
-                        min_pick_time = min(
-                            [pick.time for pick in det.event.picks])
-                        for pick in det.event.picks:
-                            traces = fam.template.st.select(
-                                id=pick.waveform_id.get_seed_string())
-                            lags = []
-                            for tr in traces:
-                                lags.append(
-                                    tr.stats.starttime - min_template_time)
-                            self.assertTrue(pick.time - min_pick_time in lags)
-                        continue
-                    if isinstance(det.__dict__[key], float):
-                        if not np.allclose(det.__dict__[key],
-                                           check_det.__dict__[key], atol=0.1):
-                            print(key)
-                        self.assertTrue(np.allclose(
-                            det.__dict__[key], check_det.__dict__[key],
-                            atol=0.2))
-                    else:
-                        if not det.__dict__[key] == check_det.__dict__[key]:
-                            print(key)
-                        self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
-            # self.assertEqual(fam.template, check_fam.template)
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.01,
+            check_event=True)
+
 
     @pytest.mark.serial
     def test_tribe_detect_parallel_process(self):
@@ -676,24 +643,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=True,
             process_cores=2)
         self.assertEqual(len(party), 4)
-        for fam, check_fam in zip(party, self.party):
-            for det, check_det in zip(fam.detections, check_fam.detections):
-                for key in det.__dict__.keys():
-                    if key == 'event':
-                        continue
-                    if isinstance(det.__dict__[key], float):
-                        if not np.allclose(det.__dict__[key],
-                                           check_det.__dict__[key], atol=0.1):
-                            print(key)
-                        self.assertTrue(np.allclose(
-                            det.__dict__[key], check_det.__dict__[key],
-                            atol=0.2))
-                    else:
-                        if not det.__dict__[key] == check_det.__dict__[key]:
-                            print(key)
-                        self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
-            # self.assertEqual(fam.template, check_fam.template)
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.01,
+            check_event=False)
 
     def test_tribe_detect_save_progress(self):
         """Test the detect method on Tribe objects"""
@@ -731,22 +683,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
-        for fam, check_fam in zip(party, self.party):
-            for det, check_det in zip(fam.detections, check_fam.detections):
-                for key in det.__dict__.keys():
-                    if key == 'event':
-                        continue
-                    if isinstance(det.__dict__[key], float):
-                        if not np.allclose(det.__dict__[key],
-                                           check_det.__dict__[key], atol=0.1):
-                            print(key)
-                        self.assertTrue(np.allclose(
-                            det.__dict__[key], check_det.__dict__[key],
-                            atol=0.2))
-                    else:
-                        self.assertAlmostEqual(
-                            det.__dict__[key], check_det.__dict__[key], 6)
-            # self.assertEqual(fam.template, check_fam.template)
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.01,
+            check_event=False)
 
     @pytest.mark.flaky(reruns=2)
     @pytest.mark.network
@@ -1143,6 +1082,58 @@ class TestMatchObjectLight(unittest.TestCase):
             self.assertEqual(party_back[0], family)
         finally:
             os.remove('test_family.tgz')
+
+
+def compare_families(party, party_in, float_tol=0.001, check_event=True):
+    for fam, check_fam in zip(party, party_in):
+        for det, check_det in zip(fam.detections, check_fam.detections):
+            for key in det.__dict__.keys():
+                if key == 'event':
+                    if not check_event:
+                        continue
+                    assert (
+                        len(det.__dict__[key].picks) ==
+                        len(check_det.__dict__[key].picks))
+                    # Check that the number of picks equals the number of
+                    # traces in the template
+                    assert len(det.__dict__[key].picks) == len(fam.template.st)
+                    min_template_time = min(
+                        [tr.stats.starttime for tr in fam.template.st])
+                    min_pick_time = min(
+                        [pick.time for pick in det.event.picks])
+                    for pick in det.event.picks:
+                        traces = fam.template.st.select(
+                            id=pick.waveform_id.get_seed_string())
+                        lags = []
+                        for tr in traces:
+                            lags.append(
+                                tr.stats.starttime - min_template_time)
+                        assert pick.time - min_pick_time in lags
+                    continue
+                if isinstance(det.__dict__[key], float):
+                    if not np.allclose(det.__dict__[key],
+                                       check_det.__dict__[key], atol=float_tol):
+                        print(key)
+                    assert np.allclose(
+                        det.__dict__[key], check_det.__dict__[key],
+                        atol=0.01)
+                elif isinstance(det.__dict__[key], np.float32):
+                    if not np.allclose(det.__dict__[key],
+                                       check_det.__dict__[key], atol=float_tol):
+                        print(key)
+                    assert np.allclose(
+                        det.__dict__[key], check_det.__dict__[key],
+                        atol=0.01)
+                elif isinstance(det.__dict__[key], UTCDateTime):
+                    if not det.__dict__[key] == check_det.__dict__[key]:
+                        print(key)
+                    assert (
+                        abs(det.__dict__[key] -
+                            check_det.__dict__[key]) < 0.00001)
+                else:
+                    if not det.__dict__[key] == check_det.__dict__[key]:
+                        print(key)
+                    assert det.__dict__[key] == check_det.__dict__[key]
 
 
 def test_match_filter(
