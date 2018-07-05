@@ -630,7 +630,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
 
     @pytest.mark.serial
@@ -642,7 +642,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             process_cores=2)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     def test_tribe_detect_save_progress(self):
@@ -683,7 +683,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     @pytest.mark.flaky(reruns=2)
