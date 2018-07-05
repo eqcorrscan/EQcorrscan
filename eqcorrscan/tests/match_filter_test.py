@@ -1161,6 +1161,10 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert (
                         abs(det.__dict__[key] -
                             check_det.__dict__[key]) < 0.00001)
+                elif key == 'template_name':
+                    continue
+                    # Name relies on creation-time, which is checked elsewhere,
+                    # ignore it.
                 else:
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print(key)
