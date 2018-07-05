@@ -80,7 +80,7 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
         print('Processing the seismic data')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=2, num_cores=num_cores, starttime=t1, endtime=t2)
+            debug=0, num_cores=num_cores, starttime=t1, endtime=t2)
         # Convert from list to stream
         st = Stream(st)
 
