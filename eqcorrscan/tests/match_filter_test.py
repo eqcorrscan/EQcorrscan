@@ -569,8 +569,7 @@ class TestMatchCopy(unittest.TestCase):
         self.assertEqual(tribe, copied)
 
 
-@pytest.mark.network
-class TestMatchObjects(unittest.TestCase):
+class TestMatchObjectHeavy(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
@@ -625,36 +624,6 @@ class TestMatchObjects(unittest.TestCase):
         for f in ['eqcorrscan_temporary_party.tgz']:
             if os.path.isfile(f):
                 os.remove(f)
-
-    def test_tribe_internal_methods(self):
-        self.assertEqual(len(self.tribe), 4)
-        self.assertTrue(self.tribe == self.tribe)
-        self.assertFalse(self.tribe != self.tribe)
-
-    def test_tribe_add(self):
-        """Test add method"""
-        added = self.tribe.copy()
-        self.assertEqual(len(added + added[0]), 5)
-        added += added[-1]
-        self.assertEqual(len(added), 6)
-
-    def test_tribe_remove(self):
-        """Test remove method"""
-        removal = self.tribe.copy()
-        self.assertEqual(len(removal.remove(removal[0])), 3)
-        for template in self.tribe:
-            self.assertTrue(isinstance(template, Template))
-
-    def test_tribe_io(self):
-        """Test reading and writing or Tribe objects using tar form."""
-        try:
-            if os.path.isfile('test_tribe.tgz'):
-                os.remove('test_tribe.tgz')
-            self.tribe.write(filename='test_tribe')
-            tribe_back = read_tribe('test_tribe.tgz')
-            self.assertEqual(self.tribe, tribe_back)
-        finally:
-            os.remove('test_tribe.tgz')
 
     def test_tribe_detect(self):
         """Test the detect method on Tribe objects"""
@@ -736,7 +705,6 @@ class TestMatchObjects(unittest.TestCase):
         self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
-        os.remove("eqcorrscan_temporary_party.tgz")
 
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
@@ -781,6 +749,7 @@ class TestMatchObjects(unittest.TestCase):
             # self.assertEqual(fam.template, check_fam.template)
 
     @pytest.mark.flaky(reruns=2)
+    @pytest.mark.network
     def test_client_detect(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
@@ -791,6 +760,7 @@ class TestMatchObjects(unittest.TestCase):
         self.assertEqual(len(party), 4)
 
     @pytest.mark.flaky(reruns=2)
+    @pytest.mark.netork
     def test_client_detect_save_progress(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
@@ -802,6 +772,145 @@ class TestMatchObjects(unittest.TestCase):
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
         os.remove("eqcorrscan_temporary_party.tgz")
+
+    @pytest.mark.network
+    def test_party_lag_calc(self):
+        """Test the lag-calc method on Party objects."""
+        # Test the chained method
+        chained_cat = self.tribe.detect(
+            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False).lag_calc(
+            stream=self.unproc_st, pre_processed=False)
+        catalog = self.party.lag_calc(stream=self.unproc_st,
+                                      pre_processed=False)
+        self.assertEqual(len(catalog), 3)
+        # Check that the party is unaltered
+        self.assertEqual(self.party, read_party(
+            fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'test_data', 'test_party.tgz')))
+        for ev, chained_ev in zip(catalog, chained_cat):
+            for i in range(len(ev.picks)):
+                for key in ev.picks[i].keys():
+                    if key == 'resource_id':
+                        continue
+                    if key == 'comments':
+                        self.assertEqual(
+                            sorted(ev.picks,
+                                   key=lambda p: p.time)[i][key][0].text,
+                            sorted(chained_ev.picks,
+                                   key=lambda p: p.time)[i][key][0].text)
+                        continue
+                    if key == 'waveform_id':
+                        for _k in ['network_code', 'station_code',
+                                   'channel_code']:
+                            self.assertEqual(
+                                sorted(ev.picks,
+                                       key=lambda p: p.time)[i][key][_k],
+                                sorted(chained_ev.picks,
+                                       key=lambda p: p.time)[i][key][_k])
+                        continue
+                    self.assertEqual(
+                        sorted(ev.picks,
+                               key=lambda p: p.time)[i][key],
+                        sorted(chained_ev.picks,
+                               key=lambda p: p.time)[i][key])
+                self.assertEqual(ev.resource_id, chained_ev.resource_id)
+                self.assertEqual(ev.comments[0].text,
+                                 chained_ev.comments[0].text)
+
+    def test_party_lag_calc_preprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 3)
+
+    @pytest.mark.network
+    def test_day_long_methods(self):
+        """Conduct a test using day-long data."""
+        client = Client('NCEDC')
+        t1 = UTCDateTime(2004, 9, 28)
+        bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
+                     for stachan in self.template_stachans]
+        # Just downloading an hour of data
+        print('Downloading continuous day-long data')
+        st = client.get_waveforms_bulk(bulk_info)
+        st.merge(fill_value='interpolate')
+        # Hack day-long templates
+        daylong_tribe = self.onehztribe.copy()
+        for template in daylong_tribe:
+            template.process_length = 86400
+        # Aftershock sequence, with 1Hz data, lots of good correlations = high
+        # MAD!
+        day_party = daylong_tribe.detect(
+            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+            daylong=True, plotvar=False, parallel_process=False)
+        self.assertEqual(len(day_party), 4)
+        day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
+                                         parallel=False)
+        self.assertEqual(len(day_catalog), 3)
+        pre_picked_cat = day_party.get_catalog()
+        self.assertEqual(len(pre_picked_cat), 4)
+
+    def test_family_lag_calc(self):
+        """Test the lag-calc method on family."""
+        catalog = self.family.lag_calc(stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 1)
+
+    def test_template_detect(self):
+        """Test detect method on Template objects."""
+        test_template = self.family.template.copy()
+        party_t = test_template.detect(
+            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, overlap=None)
+        self.assertEqual(len(party_t), 1)
+
+    def test_template_construct_not_implemented(self):
+        """Test template construction."""
+        with self.assertRaises(NotImplementedError):
+            Template().construct(
+                method='from_client', client_id='NCEDC', name='bob',
+                lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
+                length=3.0, prepick=0.15, swin='all', process_len=6)
+
+
+class TestMatchObjectLight(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.party = Party().read(
+            filename=os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                'test_data', 'test_party.tgz'))
+        cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
+        cls.family = cls.party.sort()[0].copy()
+
+    def test_tribe_internal_methods(self):
+        self.assertEqual(len(self.tribe), 4)
+        self.assertTrue(self.tribe == self.tribe)
+        self.assertFalse(self.tribe != self.tribe)
+
+    def test_tribe_add(self):
+        """Test add method"""
+        added = self.tribe.copy()
+        self.assertEqual(len(added + added[0]), 5)
+        added += added[-1]
+        self.assertEqual(len(added), 6)
+
+    def test_tribe_remove(self):
+        """Test remove method"""
+        removal = self.tribe.copy()
+        self.assertEqual(len(removal.remove(removal[0])), 3)
+        for template in self.tribe:
+            self.assertTrue(isinstance(template, Template))
+
+    def test_tribe_io(self):
+        """Test reading and writing or Tribe objects using tar form."""
+        try:
+            if os.path.isfile('test_tribe.tgz'):
+                os.remove('test_tribe.tgz')
+            self.tribe.write(filename='test_tribe')
+            tribe_back = read_tribe('test_tribe.tgz')
+            self.assertEqual(self.tribe, tribe_back)
+        finally:
+            os.remove('test_tribe.tgz')
 
     def test_detection_regenerate_event(self):
         template = self.party[0].template
@@ -868,55 +977,6 @@ class TestMatchObjects(unittest.TestCase):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
 
-    def test_party_lag_calc(self):
-        """Test the lag-calc method on Party objects."""
-        # Test the chained method
-        chained_cat = self.tribe.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False).lag_calc(
-            stream=self.unproc_st, pre_processed=False)
-        catalog = self.party.lag_calc(stream=self.unproc_st,
-                                      pre_processed=False)
-        self.assertEqual(len(catalog), 3)
-        # Check that the party is unaltered
-        self.assertEqual(self.party, read_party(
-            fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.tgz')))
-        for ev, chained_ev in zip(catalog, chained_cat):
-            for i in range(len(ev.picks)):
-                for key in ev.picks[i].keys():
-                    if key == 'resource_id':
-                        continue
-                    if key == 'comments':
-                        self.assertEqual(
-                            sorted(ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text,
-                            sorted(chained_ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text)
-                        continue
-                    if key == 'waveform_id':
-                        for _k in ['network_code', 'station_code',
-                                   'channel_code']:
-                            self.assertEqual(
-                                sorted(ev.picks,
-                                       key=lambda p: p.time)[i][key][_k],
-                                sorted(chained_ev.picks,
-                                       key=lambda p: p.time)[i][key][_k])
-                        continue
-                    self.assertEqual(
-                        sorted(ev.picks,
-                               key=lambda p: p.time)[i][key],
-                        sorted(chained_ev.picks,
-                               key=lambda p: p.time)[i][key])
-                self.assertEqual(ev.resource_id, chained_ev.resource_id)
-                self.assertEqual(ev.comments[0].text,
-                                 chained_ev.comments[0].text)
-
-    def test_party_lag_calc_preprocessed(self):
-        """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
-        self.assertEqual(len(catalog), 3)
-
     def test_party_rethreshold(self):
         """Make sure that rethresholding removes the events we want it to."""
         party = self.party.copy()
@@ -933,37 +993,6 @@ class TestMatchObjects(unittest.TestCase):
             for d in family:
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(d.detect_val, d.threshold)
-
-    def test_day_long_methods(self):
-        """Conduct a test using day-long data."""
-        client = Client('NCEDC')
-        t1 = UTCDateTime(2004, 9, 28)
-        bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
-                     for stachan in self.template_stachans]
-        # Just downloading an hour of data
-        print('Downloading continuous day-long data')
-        st = client.get_waveforms_bulk(bulk_info)
-        st.merge(fill_value='interpolate')
-        # Hack day-long templates
-        daylong_tribe = self.onehztribe.copy()
-        for template in daylong_tribe:
-            template.process_length = 86400
-        # Aftershock sequence, with 1Hz data, lots of good correlations = high
-        # MAD!
-        day_party = daylong_tribe.detect(
-            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=True, plotvar=False, parallel_process=False)
-        self.assertEqual(len(day_party), 4)
-        day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
-                                         parallel=False)
-        self.assertEqual(len(day_catalog), 3)
-        pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 4)
-
-    def test_family_lag_calc(self):
-        """Test the lag-calc method on family."""
-        catalog = self.family.lag_calc(stream=self.st, pre_processed=True)
-        self.assertEqual(len(catalog), 1)
 
     def test_family_init(self):
         """Test generating a family with various things."""
@@ -993,6 +1022,12 @@ class TestMatchObjects(unittest.TestCase):
         test_template = self.family.template.copy()
         self.assertTrue('Template' in test_template.__repr__())
 
+    def test_slicing_by_name(self):
+        """Check that slicing by template name works as expected"""
+        t_name = self.tribe[2].name
+        self.assertTrue(self.tribe[2] == self.tribe[t_name])
+        self.assertTrue(self.party[2] == self.party[t_name])
+
     def test_template_io(self):
         """Test template read/write."""
         test_template = self.family.template.copy()
@@ -1010,38 +1045,6 @@ class TestMatchObjects(unittest.TestCase):
                 Template().read('test_template.tgz')
         finally:
             os.remove('test_template.tgz')
-
-    def test_template_detect(self):
-        """Test detect method on Template objects."""
-        test_template = self.family.template.copy()
-        party_t = test_template.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, overlap=None)
-        self.assertEqual(len(party_t), 1)
-
-    def test_template_construct(self):
-        """Test template construction."""
-        with self.assertRaises(NotImplementedError):
-            Template().construct(
-                method='from_client', client_id='NCEDC', name='bob',
-                lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4,
-                length=3.0, prepick=0.15, swin='all', process_len=6)
-
-    def test_slicing_by_name(self):
-        """Check that slicing by template name works as expected"""
-        t_name = self.tribe[2].name
-        self.assertTrue(self.tribe[2] == self.tribe[t_name])
-        self.assertTrue(self.party[2] == self.party[t_name])
-
-
-class TestMatchIO(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.party = Party().read(
-            filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
-                'test_data', 'test_party.tgz'))
-        cls.family = cls.party.sort()[0].copy()
 
     def test_party_io(self):
         """Test reading and writing party objects."""
