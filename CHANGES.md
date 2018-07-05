@@ -1,6 +1,8 @@
-## Current
+## Future
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
+
+## Current
 * Check quality of downloaded data in `Tribe.client_detect()` and remove it if it
   would otherwise result in errors.
 * Add `process_cores` argument to `Tribe.client_detect()` and `Tribe.detect()`
@@ -12,6 +14,18 @@
   of inner-cores (used for parallel fft calculation) and `cores_outer` sets
   the number of channels to process in parallel (which results in increased
   memory usage).
+* Allow Tribe and Party IO to use QUAKEML or SC3ML format for catalogs (NORDIC
+  to come once obspy updates).
+* Allow Party IO to not write detection catalogs if so desired, because 
+  writing and reading large catalogs can be slow.
+* If detection-catalogs are not read in, then the detection events will be
+  generated on the fly using `Detection._calculate_event`.
+* BUG-FIX: When one template in a set of templates had a channel repeated,
+  all detections had an extra, spurious pick in their event object. This
+  should no-longer happen.
+* Add `select` method to `Party` and `Tribe` to allow selection of a 
+  specific family/template.
+
 
 ## 0.3.1
 * Cleaned imports in utils modules
