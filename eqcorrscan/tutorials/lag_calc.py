@@ -69,9 +69,6 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
             template_names=template_names, template_list=templates, st=st,
             threshold=8.0, threshold_type='MAD', trig_int=6.0, plotvar=False,
             plotdir='.', cores=num_cores)
-        # Debug for travis OSX fails
-        for detection in detections:
-            assert detection.detect_val < detection.no_chans
         # Extract unique detections from set.
         unique_detections = []
         for master in detections:
