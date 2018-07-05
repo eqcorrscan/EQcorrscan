@@ -47,8 +47,8 @@ from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
 from eqcorrscan.utils.pre_processing import dayproc, shortproc, _check_daylong
 
-CAT_EXT_MAP = {"QUAKEML": "xml", "SC3ML": "xml"} # , "NORDIC": "out"}
-# TODO: add in nordic support once bugs fixed upstream.
+CAT_EXT_MAP = {"QUAKEML": "xml", "SC3ML": "xml"}  # , "NORDIC": "out"}
+# TODO: add in nordic support once bugs fixed upstream - 1.2.0 Obspy PR #2195
 
 
 @contextlib.contextmanager
