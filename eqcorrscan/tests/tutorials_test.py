@@ -40,7 +40,10 @@ class TestTutorialScripts(unittest.TestCase):
     @pytest.mark.flaky(reruns=2)
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
+        print("Making templates")
+        # Some output for travis to stop it from stalling
         mktemplates(plot=False)
+        print("Made templates")
         for template_no in range(4):
             template = read('tutorial_template_' + str(template_no) + '.ms')
             expected_template = read(
@@ -49,7 +52,9 @@ class TestTutorialScripts(unittest.TestCase):
             self.assertTrue(len(template) > 1)
             # self.assertEqual(template, expected_template)
         # Run the matched-filter
+        print("Running the match-filter")
         tutorial_detections = match_filter.run_tutorial(plot=False)
+        print("Match-filter run")
         # It should make 20 detections in total...
         fname = os.path.join(self.testing_path,
                              'expected_tutorial_detections.txt')
@@ -86,9 +91,10 @@ class TestTutorialScripts(unittest.TestCase):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
         min_mag = 4
+        print("Running lag-calc")
         detections, picked_catalog, templates, template_names = \
             lag_calc.run_tutorial(min_magnitude=min_mag, shift_len=shift_len)
-
+        print("Lag-calc ran")
         self.assertEqual(len(picked_catalog), len(detections))
         self.assertEqual(len(detections), 8)
         for event, detection in zip(picked_catalog, detections):
@@ -113,7 +119,9 @@ class TestTutorialScripts(unittest.TestCase):
     @pytest.mark.flaky(reruns=2)
     def test_subspace(self):
         """Test the subspace tutorial."""
+        print("Running subspace")
         detections = subspace.run_tutorial(plot=False)
+        print("Subspace ran")
         self.assertEqual(len(detections), 11)
 
 
