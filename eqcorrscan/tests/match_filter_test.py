@@ -656,6 +656,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
 
+    @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
         Padding may also result in error at correlation stage due to poor
@@ -697,7 +698,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(party), 4)
 
     @pytest.mark.flaky(reruns=2)
-    @pytest.mark.netork
+    @pytest.mark.network
     def test_client_detect_save_progress(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
