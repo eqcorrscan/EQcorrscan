@@ -95,6 +95,9 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     :return: peaks: Lists of tuples of peak values and locations.
     :rtype: list
     """
+    if not np.any(np.abs(arr) > thresh):
+        # Fast fail
+        return []
     if not starttime:
         starttime = UTCDateTime(0)
     peaks = find_peaks_c(
