@@ -17,24 +17,7 @@
  *
  * =====================================================================================
  */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#if defined(__linux__) || defined(__linux) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
-    #include <omp.h>
-    #ifndef N_THREADS
-        #define N_THREADS omp_get_max_threads()
-    #endif
-#endif
-
-int normxcorr_time_threaded(float*, int, float*, int, float*, int);
-
-int normxcorr_time(float*, int, float*, int, float*);
-
-int multi_normxcorr_time(float*, int, int, float*, int, float*);
-
-int multi_normxcorr_time_threaded(float*, int, int, float*, int, float*, int);
+#include <libutils.h>
 
 int normxcorr_time_threaded(float *template, int template_len, float *image, int image_len, float *ccc, int num_threads){
     // Time domain cross-correlation - requires zero-mean template

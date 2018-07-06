@@ -62,6 +62,61 @@ def is_prime(number):
         return False
 
 
+def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
+                        samp_rate=1.0, full_peaks=False):
+    """
+    Determine peaks in an array of data above a certain threshold.
+
+    Uses a mask to remove data below threshold and finds peaks in what is left.
+
+    :type arr: numpy.ndarray
+    :param arr: 1-D numpy array is required
+    :type thresh: float
+    :param thresh:
+        The threshold below which will be considered noise and peaks will
+        not be found in.
+    :type trig_int: int
+    :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
+    :type debug: int
+    :param debug: Optional, debug level 0-5
+    :type starttime: obspy.core.utcdatetime.UTCDateTime
+    :param starttime: Starttime for plotting, only used if debug > 2.
+    :type samp_rate: float
+    :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
+    :type full_peaks: bool
+    :param full_peaks:
+        If True, will remove the issue eluded to below, by declustering within
+        data-sections above the threshold, rather than just taking the peak
+        within that section. This will take more time. This defaults to True
+        for match_filter.
+
+    :return: peaks: Lists of tuples of peak values and locations.
+    :rtype: list
+    """
+    if not starttime:
+        starttime = UTCDateTime(0)
+    peaks = find_peaks_c(
+        array=arr, threshold=thresh, trigger_interval=trig_int)
+    if len(peaks) > 0:
+        peaks = decluster(peaks=np.array(list(zip(*peaks))[0]),
+                          index=np.array(list(zip(*peaks))[1]),
+                          trig_int=trig_int)
+        if debug >= 3:
+            from eqcorrscan.utils import plotting
+            _fname = ''.join([
+                'peaks_', starttime.datetime.strftime('%Y-%m-%d'), '.pdf'])
+            plotting.peaks_plot(
+                data=arr, starttime=starttime, samp_rate=samp_rate,
+                save=True, peaks=peaks, savefile=_fname)
+        peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
+        return peaks
+    else:
+        print('No peaks for you!')
+        return []
+
+
 def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       samp_rate=1.0, full_peaks=False):
     """
@@ -206,7 +261,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     peaks = []
     if not parallel:
         for sub_arr, arr_thresh in zip(arr, thresh):
-            peaks.append(find_peaks2_short(
+            peaks.append(find_peaks_compiled(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
                 starttime=starttime, samp_rate=samp_rate,
                 full_peaks=full_peaks))
@@ -217,15 +272,16 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
             params = ((sub_arr, arr_thresh, trig_int, debug,
                        False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
-            results = [pool.apply_async(find_peaks2_short, param)
+            results = [pool.apply_async(find_peaks_compiled, param)
                        for param in params]
             peaks = [res.get() for res in results]
     return peaks
 
 
-def decluster(peaks, index, trig_int):
+def decluster(peaks, index, trig_int, threshold=0):
     """
     Decluster peaks based on an enforced minimum separation.
+
     :type peaks: np.array
     :param peaks: array of peak values
     :type index: np.ndarray
@@ -237,13 +293,13 @@ def decluster(peaks, index, trig_int):
     """
     utilslib = _load_cdll('libutils')
 
-    length = np.int32(len(peaks))
-    utilslib.find_peaks.argtypes = [
+    length = np.int32(peaks.shape[0])
+    utilslib.decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=np.int64, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_float, ctypes.c_float,
+        ctypes.c_int, ctypes.c_float, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.find_peaks.restype = ctypes.c_int
@@ -252,15 +308,40 @@ def decluster(peaks, index, trig_int):
                         reverse=True)
     arr, inds = zip(*peaks_sort)
     arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.array(inds, dtype=np.float32) / trig_int
-    inds = np.ascontiguousarray(inds, dtype=np.float32)
+    inds = np.ascontiguousarray(inds, dtype=np.int64)
     out = np.zeros(len(arr), dtype=np.uint32)
-    ret = utilslib.find_peaks(
-        arr, inds, length, 0, np.float32(1), out)
+    ret = utilslib.decluster(
+        arr, inds, length, np.float32(threshold), trig_int, out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
     peaks_out = list(compress(peaks_sort, out))
     return peaks_out
+
+
+def find_peaks_c(array, threshold, trigger_interval):
+    """
+    Use a C func to find peaks in the array.
+
+    :param array:
+    :param threshold:
+    :param trigger_interval:
+    :return:
+    """
+    utilslib = _load_cdll('libutils')
+
+    length = np.int64(len(array))
+    utilslib.find_peaks.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long, ctypes.c_float, ctypes.c_long, ctypes.c_long]
+    utilslib.find_peaks.restype = ctypes.c_int
+    array = np.ascontiguousarray(array, np.float32)
+    ret = utilslib.find_peaks(
+        array, length, threshold, trigger_interval, 0)
+    if ret != 0:
+        raise MemoryError("Internal error")
+    peaks_locations = np.nonzero(array)
+    return list(zip(array[peaks_locations], peaks_locations[0]))
 
 
 def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):

@@ -17,17 +17,12 @@
  *
  * =====================================================================================
  */
+#include <libutils.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
- // Prototypes
-int find_peaks(float*, float*, int, float, float, unsigned int*);
 
 // Functions
 // Longs could be unsigned ints...
-int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int,
+int decluster(float *arr, long *indexes, int len, float thresh, long trig_int,
                unsigned int *out){
     // Takes a sorted array an the indexes
     int i, j, keep;
@@ -37,9 +32,9 @@ int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int
     for (i = 1; i < len; ++i){
         keep = 1;
         // Threshold is for absolute values
-//        if (-1 * thresh < arr[i] && arr[i] < thresh){
-//            break;
-//        }
+        if (fabs(arr[i]) < thresh){
+            break;
+        }
         for (j = 0; j < len; ++j){
             step = indexes[i] - indexes[j];
             if (step < 0){step *= -1;}
@@ -50,6 +45,75 @@ int find_peaks(float *arr, float *indexes, int len, float thresh, float trig_int
         }
         if (keep == 1){out[i] = 1;}
         else {out[i] = 0;}
+    }
+    return 0;
+}
+
+
+int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of_peaks){
+    // Find peaks in noisy data above some threshold and at-least
+    // trig-int samples apart. Sets all other values in array to 0
+    int above_threshold = 0, biggest_in_window_position = 0;
+    float biggest_in_window = 0, prev_value = 0, value, next_value;
+    int i;
+    int * peak_positions = (int *) calloc(len, sizeof(int));
+
+    // This tactic won't work if the threshold is low.
+    for (i = 0; i < len - 1; ++i){
+        value = arr[i];
+        next_value = arr[i + 1];
+        if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
+            above_threshold = 1;
+            if (fabs(value) > fabs(biggest_in_window)){
+                biggest_in_window = value;
+                biggest_in_window_position = i;
+            }
+        } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
+            // Start a new window
+            above_threshold = 1;
+            if (prev_value < fabs(value) && next_value < fabs(value)){
+                biggest_in_window = value;
+                biggest_in_window_position = i;
+            }
+        } else if (above_threshold && fabs(value) < thresh){
+            // We have dropped below the threshold
+            above_threshold = 0;
+            peak_positions[biggest_in_window_position] = 1;
+            biggest_in_window = 0;
+            biggest_in_window_position = 0;
+        }
+        prev_value = value;
+    }
+    // Do separately for the last value
+    i = len;
+    value = arr[-1];
+    next_value = 0;
+    if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
+        above_threshold = 1;
+        if (fabs(value) > fabs(biggest_in_window)){
+            biggest_in_window = value;
+            biggest_in_window_position = i;
+        }
+    } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
+        // Start a new window
+        above_threshold = 1;
+        if (prev_value < fabs(value) && next_value < fabs(value)){
+            biggest_in_window = value;
+            biggest_in_window_position = i;
+        }
+    } else if (above_threshold && fabs(value) < thresh){
+        // We have dropped below the threshold
+        above_threshold = 0;
+        peak_positions[biggest_in_window_position] = 1;
+    }
+    if (above_threshold){
+        peak_positions[biggest_in_window_position] = 1;
+    }
+    for (i = 0; i < len; ++i){
+        if (peak_positions[i] != 1){
+            arr[i] = 0;
+            number_of_peaks += 1;
+        }
     }
     return 0;
 }

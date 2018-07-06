@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from eqcorrscan.utils.findpeaks import (
-    find_peaks2_short, coin_trig, multi_find_peaks)
+    find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled)
 from eqcorrscan.utils.timer import time_func
 
 
@@ -93,13 +93,15 @@ class TestPeakFindSpeeds:
     @pytest.append_name(datasets_1d)
     def random(self):
         """ simple random array """
-        return np.random.randn(self.data_len)
+        arr = np.random.randn(self.data_len)
+        return arr, [], np.abs(arr).max() + 10
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets_1d)
     def noisy(self):
         """ noisy array """
-        return np.random.randn(self.data_len) ** 5
+        arr = np.random.randn(self.data_len) ** 5
+        return arr, [], np.abs(arr).max() + 10
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets_1d)
@@ -107,9 +109,10 @@ class TestPeakFindSpeeds:
         """ array with large spikes """
         arr = np.random.randn(self.data_len) ** 5
         spike_locs = np.random.randint(0, self.data_len, size=500)
+        threshold = np.abs(arr).max() + 20
         for spike_loc in spike_locs:
             arr[spike_loc] *= 1000
-        return arr
+        return arr, spike_locs, threshold
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets_1d)
@@ -119,9 +122,10 @@ class TestPeakFindSpeeds:
         spike_locs = np.append(
             spike_locs, np.random.randint(
                 2 * (self.data_len / 10), 4 * (self.data_len / 10), size=400))
+        threshold = np.abs(arr).max() + 20
         for spike_loc in spike_locs:
             arr[spike_loc] *= 1000
-        return arr
+        return arr, spike_locs, threshold
 
     @pytest.fixture(scope='class', params=datasets_1d)
     def dataset_1d(self, request):
@@ -133,7 +137,7 @@ class TestPeakFindSpeeds:
     @pytest.append_name(datasets_2d)
     def aggregated_1d_datasets(self, request):
         """ create a 2d numpy array of all the datasets """
-        return np.array([request.getfuncargvalue(x)
+        return np.array([request.getfuncargvalue(x)[0]
                          for x in self.datasets_1d])
 
     @pytest.fixture(scope='class')
@@ -152,12 +156,28 @@ class TestPeakFindSpeeds:
         """ test that findpeaks works on each of the arrays and print the
         time it took to run. Tests passes if no error is raised"""
         print('starting find_peak profiling on: ' + request.node.name)
-        threshold = np.median(dataset_1d)  # get threshold
+        threshold = dataset_1d[2]
+        print("Threshold: {0}".format(threshold))
         peaks = time_func(
-            find_peaks2_short, "find_peaks2_short", arr=dataset_1d,
-            thresh=threshold, trig_int=600, debug=0, starttime=False,
-            samp_rate=100)
+            find_peaks2_short, "find_peaks2_short", arr=dataset_1d[0],
+            thresh=threshold, trig_int=600, debug=2, starttime=False,
+            samp_rate=1.0)
         print('Found %i peaks' % len(peaks))
+        assert len(peaks) <= len(dataset_1d[1])
+        for peak in peaks:
+            assert abs(peak[0]) > threshold
+            assert peak[1] in dataset_1d[1]
+        # Run the prototype and check that is gets the same results!
+        proto_peaks = time_func(
+            find_peaks_compiled, "find_peaks_compiled", arr=dataset_1d[0],
+            thresh=threshold, trig_int=600, debug=2, starttime=False,
+            samp_rate=1.0)
+        print('Found %i peaks' % len(proto_peaks))
+        for peak in peaks:
+            assert abs(peak[0]) > threshold
+            assert peak[1] in dataset_1d[1]
+        assert len(peaks) <= len(dataset_1d[1])
+        assert np.allclose(peaks, proto_peaks, atol=0.001)
 
     def test_multi_find_peaks(self, dataset_2d, request):
         """ ensure the same results are returned for serial and parallel
