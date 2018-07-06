@@ -16,6 +16,7 @@ recursive-include eqcorrscan/doc *
 recursive-include eqcorrscan/core *.py
 recursive-include eqcorrscan/tests *.py
 include eqcorrscan/utils/src/libutils.def
+include eqcorrscan/utils/src/libutils.h
 recursive-include eqcorrscan/utils/src *.c
 
 # exclude rules
