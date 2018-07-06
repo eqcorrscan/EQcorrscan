@@ -67,25 +67,37 @@ class TestEdgeCases:
     """ A selection of weird datasets to find peaks in. """
     datasets = []
     data_len = 1000000
+    trig_int = 600
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets)
     def start_end_peaks(self):
         """ Array with peaks at first and last index. """
         end_arr = np.arange(self.data_len / 2)
-        return np.concatenate([end_arr[-1::], end_arr]), \
+        return np.concatenate([end_arr[::-1], end_arr]), \
             [0, self.data_len - 1], 10
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets)
     def not_below_threshold(self):
         """ An array that doesn't drop below the threshold. """
-        arr = np.random.randn(self.data_len) ** 5
+        arr = np.ones(self.data_len)
         spike_locs = np.random.randint(0, self.data_len, size=500)
-        threshold = np.abs(arr).max() - 20
+        threshold = 0.5
         for spike_loc in spike_locs:
-            arr[spike_loc] *= 1000
+            arr[spike_loc] *= 100 * np.random.randn()
         return arr, spike_locs, threshold
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets)
+    def nearby_peaks(self):
+        """ Peaks within trig-int of one-another - ensure highest is kept."""
+        arr = np.ones(self.data_len)
+        biggest_peak_loc = self.data_len // 2
+        arr[biggest_peak_loc] *= 1000
+        arr[biggest_peak_loc - (self.trig_int // 2)] *= 900
+        arr[biggest_peak_loc + (self.trig_int // 2)] *= 900
+        return arr, [biggest_peak_loc], 10
 
     @pytest.fixture(scope='class', params=datasets)
     def dataset(self, request):
@@ -99,21 +111,24 @@ class TestEdgeCases:
         print("Threshold: {0}".format(threshold))
         peaks = time_func(
             find_peaks2_short, "find_peaks2_short", arr=dataset[0],
-            thresh=threshold, trig_int=600, debug=2, starttime=False,
-            samp_rate=1.0)
+            thresh=threshold, trig_int=self.trig_int, debug=2,
+            starttime=False, samp_rate=1.0)
         print('Found %i peaks' % len(peaks))
         assert len(peaks) <= len(dataset[1])
         for peak in peaks:
-            assert abs(peak[0]) > threshold
-            assert peak[1] in dataset[1]
+            assert abs(peak[0]) > threshold  # Assert peak is above threshold
+            assert peak[0] == dataset[0][peak[1]]
+            assert peak[1] in dataset[1]  # Assert peak in expected peaks
+            # Assert that the correct value is given!
         # Run the prototype and check that is gets the same results!
         proto_peaks = time_func(
             find_peaks_compiled, "find_peaks_compiled", arr=dataset[0],
-            thresh=threshold, trig_int=600, debug=2, starttime=False,
-            samp_rate=1.0)
+            thresh=threshold, trig_int=self.trig_int, debug=2,
+            starttime=False, samp_rate=1.0)
         print('Found %i peaks' % len(proto_peaks))
         for peak in peaks:
             assert abs(peak[0]) > threshold
+            assert peak[0] == dataset[0][peak[1]]
             assert peak[1] in dataset[1]
         assert len(peaks) <= len(dataset[1])
         assert np.allclose(peaks, proto_peaks, atol=0.001)

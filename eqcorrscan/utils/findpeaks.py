@@ -98,6 +98,12 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     if not np.any(np.abs(arr) > thresh):
         # Fast fail
         return []
+    if not np.all(arr > thresh):
+        # everything is above the threshold - our fast peak-finding won't work
+        print("All of array is above the threshold, resorting to scipy")
+        return find_peaks2_short(
+            arr=arr, thresh=thresh, trig_int=trig_int, debug=debug,
+            starttime=starttime, samp_rate=samp_rate, full_peaks=full_peaks)
     if not starttime:
         starttime = UTCDateTime(0)
     if not full_peaks:
@@ -339,7 +345,9 @@ def _find_peaks_c(array, threshold, trigger_interval):
     array = np.ascontiguousarray(array, np.float32)
     ret = utilslib.find_peaks(
         array, length, threshold, np.int64(trigger_interval), 0)
-    if ret != 0:
+    if ret == 1:
+        raise NotImplementedError("All values above threshold.")
+    elif ret != 0:
         raise MemoryError("Internal error")
     peaks_locations = np.nonzero(array)
     return array[peaks_locations], peaks_locations[0]

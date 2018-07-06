@@ -57,6 +57,7 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
     float biggest_in_window = 0, prev_value = 0, value, next_value;
     int i;
     int * peak_positions = (int *) calloc(len, sizeof(int));
+    long number_above_threshold = 0;
 
     // This tactic won't work if the threshold is low.
     for (i = 0; i < len - 1; ++i){
@@ -64,6 +65,7 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
         next_value = arr[i + 1];
         if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
             above_threshold = 1;
+            number_above_threshold += 1;
             if (fabs(value) > fabs(biggest_in_window)){
                 biggest_in_window = value;
                 biggest_in_window_position = i;
@@ -71,6 +73,7 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
         } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
             // Start a new window
             above_threshold = 1;
+            number_above_threshold += 1;
             if (prev_value < fabs(value) && next_value < fabs(value)){
                 biggest_in_window = value;
                 biggest_in_window_position = i;
@@ -90,6 +93,7 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
     next_value = 0;
     if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
         above_threshold = 1;
+        number_above_threshold += 1;
         if (fabs(value) > fabs(biggest_in_window)){
             biggest_in_window = value;
             biggest_in_window_position = i;
@@ -97,6 +101,7 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
     } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
         // Start a new window
         above_threshold = 1;
+        number_above_threshold += 1;
         if (prev_value < fabs(value) && next_value < fabs(value)){
             biggest_in_window = value;
             biggest_in_window_position = i;
@@ -108,6 +113,9 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
     }
     if (above_threshold){
         peak_positions[biggest_in_window_position] = 1;
+    }
+    if (number_above_threshold == len){
+        return 1;
     }
     for (i = 0; i < len; ++i){
         if (peak_positions[i] != 1){
