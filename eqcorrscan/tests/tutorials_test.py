@@ -36,8 +36,8 @@ class TestTutorialScripts(unittest.TestCase):
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
 
+    # @pytest.mark.flaky(reruns=2)
     @slow
-    @pytest.mark.flaky(reruns=2)
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
         print("Making templates")
@@ -49,12 +49,13 @@ class TestTutorialScripts(unittest.TestCase):
             expected_template = read(
                 os.path.join(self.testing_path,
                              'tutorial_template_' + str(template_no) + '.ms'))
-            self.assertTrue(len(template) > 1)
-            # self.assertEqual(template, expected_template)
+            # self.assertTrue(len(template) > 1)
+            self.assertEqual(len(template), len(expected_template))
         # Run the matched-filter
         print("Running the match-filter")
-        tutorial_detections = match_filter.run_tutorial(plot=False)
-        print("Match-filter run")
+        tutorial_detections = match_filter.run_tutorial(
+            plot=False, num_cores=1)
+        print("Match-filter ran")
         # It should make 20 detections in total...
         fname = os.path.join(self.testing_path,
                              'expected_tutorial_detections.txt')
@@ -67,6 +68,7 @@ class TestTutorialScripts(unittest.TestCase):
         # expected_correlations = [round(detection.detect_val, 4) for detection
         #                          in expected_detections]
         for detection in tutorial_detections:
+            assert (detection.detect_val < detection.no_chans)
             detection.detect_time.precision = 3
             self.assertIn(detection.detect_time, expected_times,
                           msg='Detection at %s is not in expected detections'
@@ -85,18 +87,22 @@ class TestTutorialScripts(unittest.TestCase):
                               str(template_no) + '.ms'):
                 os.remove('tutorial_template_' + str(template_no) + '.ms')
 
+    # @pytest.mark.flaky(reruns=2)
     @slow
-    @pytest.mark.flaky(reruns=2)
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
         min_mag = 4
         print("Running lag-calc")
         detections, picked_catalog, templates, template_names = \
-            lag_calc.run_tutorial(min_magnitude=min_mag, shift_len=shift_len)
+            lag_calc.run_tutorial(min_magnitude=min_mag, shift_len=shift_len,
+                                  num_cores=1)
         print("Lag-calc ran")
         self.assertEqual(len(picked_catalog), len(detections))
         self.assertEqual(len(detections), 8)
+        # Debug for travis OSX fails
+        for detection in detections:
+            assert detection.detect_val < detection.no_chans
         for event, detection in zip(picked_catalog, detections):
             template = [t[0] for t in zip(templates, template_names)
                         if t[1] == detection.template_name][0]
