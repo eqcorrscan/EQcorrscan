@@ -63,6 +63,62 @@ class TestStandardPeakFinding:
         assert len(full_peak_array) == 315
 
 
+class TestEdgeCases:
+    """ A selection of weird datasets to find peaks in. """
+    datasets = []
+    data_len = 1000000
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets)
+    def start_end_peaks(self):
+        """ Array with peaks at first and last index. """
+        end_arr = np.arange(self.data_len / 2)
+        return np.concatenate([end_arr[-1::], end_arr]), \
+            [0, self.data_len - 1], 10
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets)
+    def not_below_threshold(self):
+        """ An array that doesn't drop below the threshold. """
+        arr = np.random.randn(self.data_len) ** 5
+        spike_locs = np.random.randint(0, self.data_len, size=500)
+        threshold = np.abs(arr).max() - 20
+        for spike_loc in spike_locs:
+            arr[spike_loc] *= 1000
+        return arr, spike_locs, threshold
+
+    @pytest.fixture(scope='class', params=datasets)
+    def dataset(self, request):
+        return request.getfuncargvalue(request.param)
+
+    def test_python_speed(self, dataset, request):
+        """ test that findpeaks works on each of the arrays and print the
+        time it took to run. Tests passes if no error is raised"""
+        print('starting find_peak profiling on: ' + request.node.name)
+        threshold = dataset[2]
+        print("Threshold: {0}".format(threshold))
+        peaks = time_func(
+            find_peaks2_short, "find_peaks2_short", arr=dataset[0],
+            thresh=threshold, trig_int=600, debug=2, starttime=False,
+            samp_rate=1.0)
+        print('Found %i peaks' % len(peaks))
+        assert len(peaks) <= len(dataset[1])
+        for peak in peaks:
+            assert abs(peak[0]) > threshold
+            assert peak[1] in dataset[1]
+        # Run the prototype and check that is gets the same results!
+        proto_peaks = time_func(
+            find_peaks_compiled, "find_peaks_compiled", arr=dataset[0],
+            thresh=threshold, trig_int=600, debug=2, starttime=False,
+            samp_rate=1.0)
+        print('Found %i peaks' % len(proto_peaks))
+        for peak in peaks:
+            assert abs(peak[0]) > threshold
+            assert peak[1] in dataset[1]
+        assert len(peaks) <= len(dataset[1])
+        assert np.allclose(peaks, proto_peaks, atol=0.001)
+
+
 class TestCoincidenceTrigger:
     # fixtures
     @pytest.fixture

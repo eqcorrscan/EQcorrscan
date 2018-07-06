@@ -317,7 +317,7 @@ def decluster(peaks, index, trig_int, threshold=0):
     inds = np.ascontiguousarray(inds, dtype=np.int64)
     out = np.zeros(len(arr), dtype=np.uint32)
     ret = utilslib.decluster(
-        arr, inds, length, np.float32(threshold), trig_int, out)
+        arr, inds, length, np.float32(threshold), np.int64(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
     peaks_out = list(compress(peaks_sort, out))
@@ -338,7 +338,7 @@ def _find_peaks_c(array, threshold, trigger_interval):
     utilslib.find_peaks.restype = ctypes.c_int
     array = np.ascontiguousarray(array, np.float32)
     ret = utilslib.find_peaks(
-        array, length, threshold, trigger_interval, 0)
+        array, length, threshold, np.int64(trigger_interval), 0)
     if ret != 0:
         raise MemoryError("Internal error")
     peaks_locations = np.nonzero(array)
