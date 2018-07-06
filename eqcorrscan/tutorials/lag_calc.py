@@ -3,6 +3,7 @@
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog
 from obspy import UTCDateTime
+from multiprocessing import cpu_count
 
 from eqcorrscan.core import template_gen, match_filter, lag_calc
 from eqcorrscan.utils import pre_processing, catalog_utils
@@ -10,6 +11,8 @@ from eqcorrscan.utils import pre_processing, catalog_utils
 
 def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     """Functional, tested example script for running the lag-calc tutorial."""
+    if num_cores > cpu_count():
+        num_cores = cpu_count()
     client = Client('NCEDC')
     t1 = UTCDateTime(2004, 9, 28)
     t2 = t1 + 86400
@@ -21,8 +24,8 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
     # We don't need all the picks, lets take the information from the
     # five most used stations - note that this is done to reduce computational
     # costs.
-    catalog = catalog_utils.filter_picks(catalog, channels=['EHZ'],
-                                         top_n_picks=5)
+    catalog = catalog_utils.filter_picks(
+        catalog, channels=['EHZ'], top_n_picks=5)
     # There is a duplicate pick in event 3 in the catalog - this has the effect
     # of reducing our detections - check it yourself.
     for pick in catalog[3].picks:
@@ -89,6 +92,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
             parallel=True, debug=3)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
+
 
 if __name__ == '__main__':
     from multiprocessing import cpu_count
