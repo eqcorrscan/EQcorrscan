@@ -185,15 +185,27 @@ class TestPeakFindSpeeds:
         print('starting find_peak profiling on: ' + request.node.name)
         arr = dataset_2d
         threshold = [10 * np.median(np.abs(x)) for x in dataset_2d]
-        print("Running serial loop")
-        serial_peaks = time_func(
-            multi_find_peaks, name="serial", arr=arr, thresh=threshold,
-            trig_int=600, parallel=False)
-        print("Running parallel loop")
-        parallel_peaks = time_func(
-            multi_find_peaks, name="parallel", arr=arr, thresh=threshold,
-            trig_int=600, parallel=True)
-        assert serial_peaks == parallel_peaks
+        print("Running serial C loop")
+        serial_c_peaks = time_func(
+            multi_find_peaks, name="serial-C", arr=arr, thresh=threshold,
+            trig_int=600, parallel=False, internal_func=find_peaks_compiled)
+        print("Running parallel C loop")
+        parallel_c_peaks = time_func(
+            multi_find_peaks, name="parallel-C", arr=arr, thresh=threshold,
+            trig_int=600, parallel=True, internal_func=find_peaks_compiled)
+
+        print("Running serial Python loop")
+        serial_py_peaks = time_func(
+            multi_find_peaks, name="serial-Python", arr=arr, thresh=threshold,
+            trig_int=600, parallel=False, internal_func=find_peaks2_short)
+        print("Running parallel Python loop")
+        parallel_py_peaks = time_func(
+            multi_find_peaks, name="parallel-Python", arr=arr, thresh=threshold,
+            trig_int=600, parallel=True, internal_func=find_peaks2_short)
+        assert serial_py_peaks == parallel_py_peaks
+        assert serial_c_peaks == parallel_c_peaks
+        for py, c in zip(serial_py_peaks, serial_c_peaks):
+            assert np.allclose(py, c, atol=0.01)
 
     def test_noisy_timings(self, noisy_multi_array):
         threshold = [np.median(np.abs(d)) for d in noisy_multi_array]

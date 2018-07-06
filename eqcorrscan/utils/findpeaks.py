@@ -100,12 +100,15 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
         return []
     if not starttime:
         starttime = UTCDateTime(0)
-    peaks = find_peaks_c(
-        array=arr, threshold=thresh, trigger_interval=trig_int)
-    if len(peaks) > 0:
-        peaks = decluster(peaks=np.array(list(zip(*peaks))[0]),
-                          index=np.array(list(zip(*peaks))[1]),
-                          trig_int=trig_int)
+    if not full_peaks:
+        peak_vals, peak_indices = _find_peaks_c(
+            array=arr, threshold=thresh, trigger_interval=trig_int)
+    else:
+        peak_vals = arr
+        peak_indices = np.arange(arr.shape[0])
+    if len(peak_vals) > 0:
+        peaks = decluster(peaks=np.array(peak_vals),
+                          index=np.array(peak_indices), trig_int=trig_int)
         if debug >= 3:
             from eqcorrscan.utils import plotting
             _fname = ''.join([
@@ -229,7 +232,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
 
 def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
                      samp_rate=1.0, parallel=True, full_peaks=False,
-                     cores=None):
+                     cores=None, internal_func=find_peaks_compiled):
     """
     Wrapper for find-peaks for multiple arrays.
 
@@ -264,7 +267,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     peaks = []
     if not parallel:
         for sub_arr, arr_thresh in zip(arr, thresh):
-            peaks.append(find_peaks_compiled(
+            peaks.append(internal_func(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
                 starttime=starttime, samp_rate=samp_rate,
                 full_peaks=full_peaks))
@@ -275,7 +278,7 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
             params = ((sub_arr, arr_thresh, trig_int, debug,
                        False, 1.0, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
-            results = [pool.apply_async(find_peaks_compiled, param)
+            results = [pool.apply_async(internal_func, param)
                        for param in params]
             peaks = [res.get() for res in results]
     return peaks
@@ -321,18 +324,13 @@ def decluster(peaks, index, trig_int, threshold=0):
     return peaks_out
 
 
-def find_peaks_c(array, threshold, trigger_interval):
+def _find_peaks_c(array, threshold, trigger_interval):
     """
     Use a C func to find peaks in the array.
-
-    :param array:
-    :param threshold:
-    :param trigger_interval:
-    :return:
     """
     utilslib = _load_cdll('libutils')
 
-    length = np.int64(len(array))
+    length = np.int64(array.shape[0])
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
                                flags=native_str('C_CONTIGUOUS')),
@@ -344,7 +342,7 @@ def find_peaks_c(array, threshold, trigger_interval):
     if ret != 0:
         raise MemoryError("Internal error")
     peaks_locations = np.nonzero(array)
-    return list(zip(array[peaks_locations], peaks_locations[0]))
+    return array[peaks_locations], peaks_locations[0]
 
 
 def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):

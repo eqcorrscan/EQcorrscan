@@ -115,5 +115,18 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
             number_of_peaks += 1;
         }
     }
+    free(peak_positions);
     return 0;
+}
+
+
+int multi_find_peaks(float *arr, long len, int n, float *thresholds,
+                     long trig_int, long *number_of_peaks, int threads){
+    int i, ret_val=0;
+
+    #pragma omp parallel for num_threads(threads)
+    for (i = 0; i < n; ++i){
+        ret_val += find_peaks(&arr[i * len], len, thresholds[i], trig_int, number_of_peaks[i]);
+    }
+    return ret_val;
 }
