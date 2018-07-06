@@ -630,7 +630,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
 
     @pytest.mark.serial
@@ -642,7 +642,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             process_cores=2)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     def test_tribe_detect_save_progress(self):
@@ -656,6 +656,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
 
+    @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
         Padding may also result in error at correlation stage due to poor
@@ -682,7 +683,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     @pytest.mark.flaky(reruns=2)
@@ -697,7 +698,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(party), 4)
 
     @pytest.mark.flaky(reruns=2)
-    @pytest.mark.netork
+    @pytest.mark.network
     def test_client_detect_save_progress(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
@@ -1182,6 +1183,10 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert (
                         abs(det.__dict__[key] -
                             check_det.__dict__[key]) < 0.00001)
+                elif key == 'template_name':
+                    continue
+                    # Name relies on creation-time, which is checked elsewhere,
+                    # ignore it.
                 else:
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print(key)
