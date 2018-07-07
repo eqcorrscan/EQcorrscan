@@ -64,13 +64,14 @@ def generate_dataset(n_templates, n_stations, n_channels, data_len,
     return dataset
 
 
-def run_correlation(func, threads, dataset, loops=3, timeout=600):
+def run_correlation(func, thread_kwargs, dataset, loops=3, timeout=600):
     """
     Run the given correlation function and profile time and memory usage.
 
     :param func:
         Callable correlation function with the standard EQcorrscan signature.
-    :param threads: Number of threads to run on for concurrent methods
+    :param thread_kwargs:
+        Dict of Number of threads to run on for concurrent methods
     :param dataset: Dictionary of dataset including templates and data
     :param loops: Number of loops to average over.
     :param timeout: Timeout limit for correlations - defaults to 600
@@ -88,7 +89,7 @@ def run_correlation(func, threads, dataset, loops=3, timeout=600):
                 interval=0.05, min_mem=MIN_MEM, timeout=timeout,
                 pid=os.getpid(), target=func,
                 target_args=(dataset['templates'], dataset['data']),
-                target_kwargs={'cores': threads}, verbose=False)
+                target_kwargs=thread_kwargs, verbose=False)
             mem_checker.stop()
         except MemoryError as e:
             overrun = True
@@ -117,13 +118,18 @@ def plot_profiles(times, memory_use):
     keys = sorted(list(times.keys()))
     methods = list(set([key.split('.')[0] for key in keys]))
     concurrencies = list(set([key.split('.')[1] for key in keys]))
+    threading = list(set([key.split('.')[2] for key in keys]))
     for method in methods:
         color = next(colors)
         markers = itertools.cycle((',', '+', '.', 'o', '*'))
         for concurrency in concurrencies:
-            key = method + '.' + concurrency
-            plt.scatter(memory_use[key], times[key], s=10 ** 2, c=color,
-                        marker=next(markers), label=key)
+            for thread in threading:
+                key = method + '.' + concurrency + '.' + thread
+                try:
+                    plt.scatter(memory_use[key], times[key], s=10 ** 2,
+                                c=color, marker=next(markers), label=key)
+                except KeyError:
+                    continue
     plt.xlabel('Memory use (GB)')
     plt.ylabel('Time (s)')
     plt.legend()
@@ -165,29 +171,41 @@ def run_profiling(n_templates, n_stations, n_channels, data_len,
     memory_use = {}
     best_time = {'None': np.inf}
     for corr_func in XCOR_FUNCS.keys():
-        if corr_func in ['default', 'numpy']:
+        if corr_func in ['default']:
+            # Default is fftw
             continue
         print("=" * 80)
         print(("Running %s" % corr_func).center(80))
         print("=" * 80)
         for method in XCORR_STREAM_METHODS:
-            if method in ['multiprocess', 'concurrent', 'stream_xcorr']:
+            threading_options = [{'cores': MAXTHREADS}]
+            if method == 'concurrent' and corr_func == 'fftw':
+                threading_options.append(
+                    {'cores': MAXTHREADS // 2, 'cores_outer': 2})
+            elif corr_func == 'fftw' and method in ['multiprocess',
+                                                    'multithread']:
+                # These are the same as concurrent
                 continue
-            try:
-                print(("Testing %s method" % method).center(80))
-                func = get_stream_xcorr(corr_func, method)
-                mem, avtime = run_correlation(
-                    func, MAXTHREADS, dataset, loops, timeout)
-                times.update({'.'.join([corr_func, method]): avtime})
-                memory_use.update({'.'.join([corr_func, method]): mem})
-                print(("Average time from %i loops: %f seconds" %
-                       (loops, avtime)).center(80))
-                print(("Average Max Memory: %f GB" % (mem)).center(80))
-                print('-' * 80)
-                if avtime < list(best_time.values())[0]:
-                    best_time = {'.'.join([corr_func, method]): avtime}
-            except MemoryError:
-                print("Exceeded maximum memory allowed")
+            elif corr_func == 'time_domain' and method == "multithread":
+                continue
+            for thread_kwargs in threading_options:
+                thread_str = '_'.join([str(n) for n in thread_kwargs.values()])
+                try:
+                    print(("Testing %s method" % method).center(80))
+                    func = get_stream_xcorr(corr_func, method)
+                    mem, avtime = run_correlation(
+                        func, thread_kwargs, dataset, loops, timeout)
+                    times.update({'.'.join([corr_func, method]): avtime})
+                    memory_use.update({'.'.join([corr_func, method]): mem})
+                    print(("Average time from %i loops: %f seconds" %
+                           (loops, avtime)).center(80))
+                    print(("Average Max Memory: %f GB" % (mem)).center(80))
+                    print('-' * 80)
+                    if avtime < list(best_time.values())[0]:
+                        best_time = {
+                            '.'.join([corr_func, method, thread_str]): avtime}
+                except MemoryError:
+                    print("Exceeded maximum memory allowed")
     plot_profiles(times, memory_use)
     # Write config to file
     best_correlation = CorrelationDefaults(corr_func=list(best_time.keys())[0])
