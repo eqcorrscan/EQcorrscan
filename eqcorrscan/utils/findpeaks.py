@@ -107,7 +107,7 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
         peak_indices = np.arange(arr.shape[0])
     if len(peak_vals) > 0:
         peaks = decluster(peaks=np.array(peak_vals),
-                          index=np.array(peak_indices), trig_int=trig_int)
+                          index=np.array(peak_indices), trig_int=trig_int + 1)
         if debug >= 3:
             from eqcorrscan.utils import plotting
             _fname = ''.join([
@@ -181,21 +181,20 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         [(1.0, 0), (1.0, 5), (1.0, 10)]
 
         This is rare and unlikely to happen for correlation cases, where
-        trigger intervals are usually large and thresholds high.
+        trigger intervals are usually relatively large and thresholds high.
 
     """
     if not starttime:
         starttime = UTCDateTime(0)
     # Set everything below the threshold to zero
     image = np.copy(arr)
-    image = np.abs(image)
     debug_print("Threshold: {0}\tMax: {1}".format(thresh, max(image)),
                 2, debug)
-    image[image < thresh] = 0
-    if len(image[image > thresh]) == 0:
+    image[np.abs(image) < thresh] = 0
+    if len(image[np.abs(image) > thresh]) == 0:
         debug_print("No values over threshold {0}".format(thresh), 0, debug)
         return []
-    if np.all(arr > thresh):
+    if np.all(np.abs(arr) > thresh):
         full_peaks = True
     debug_print('Found {0} samples above the threshold'.format(
         len(image[image > thresh])), 0, debug)
@@ -205,28 +204,32 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     peak_slices = ndimage.find_objects(labeled_image)
     for peak_slice in peak_slices:
         window = arr[peak_slice[0].start: peak_slice[0].stop]
-        if peak_slice[0].stop - peak_slice[0].start > trig_int and full_peaks:
+        if peak_slice[0].stop - peak_slice[0].start >= trig_int and full_peaks:
+            window_peaks, window_peak_indexes = ([], [])
+            for i in np.arange(peak_slice[0].start, peak_slice[0].stop):
+                if i == peak_slice[0].start:
+                    prev_value = 0
+                else:
+                    prev_value = arr[i - 1]
+                if i == peak_slice[0].stop - 1:
+                    next_value = 0
+                else:
+                    next_value = arr[i + 1]
+                # Check for consistent sign - either both greater or
+                # both smaller.
+                if (next_value - arr[i]) * (prev_value - arr[i]) > 0:
+                    window_peaks.append(arr[i])
+                    window_peak_indexes.append(i)
             peaks = decluster(
-                peaks=window, trig_int=trig_int,
-                index=np.arange(peak_slice[0].start, peak_slice[0].stop))
+                peaks=np.array(window_peaks), trig_int=trig_int + 1,
+                index=np.array(window_peak_indexes))
         else:
             peaks = [(window[np.argmax(abs(window))],
                       int(peak_slice[0].start + np.argmax(abs(window))))]
-        # Check that it is actually a peak
-        for peak in peaks:
-            if peak[1] == 0:
-                prev_value = 0
-            else:
-                prev_value = arr[peak[1] - 1]
-            if peak[1] == arr.shape[0] - 1:
-                next_value = 0
-            else:
-                next_value = arr[peak[1] + 1]
-            if abs(prev_value) < abs(arr[peak[1]]) > abs(next_value):
-                initial_peaks.append(peak)
+        initial_peaks.extend(peaks)
     peaks = decluster(peaks=np.array(list(zip(*initial_peaks))[0]),
                       index=np.array(list(zip(*initial_peaks))[1]),
-                      trig_int=trig_int)
+                      trig_int=trig_int + 1)
     if initial_peaks:
         if debug >= 3:
             from eqcorrscan.utils import plotting

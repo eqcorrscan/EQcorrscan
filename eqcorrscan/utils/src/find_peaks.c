@@ -24,7 +24,7 @@
 // Longs could be unsigned ints...
 int decluster(float *arr, long *indexes, int len, float thresh, long trig_int,
                unsigned int *out){
-    // Takes a sorted array an the indexes
+    // Takes a sorted array and the indexes
     int i, j, keep;
     float step;
     // Take first (highest) peak
@@ -60,8 +60,10 @@ int find_peaks(float *arr, long len, float thresh){
     for (i = 0; i < len - 1; ++i){
         value = arr[i];
         next_value = arr[i + 1];
-        if (fabs(value) > thresh && fabs(value) > fabs(prev_value) && fabs(value) > fabs(next_value)){
-            peak_positions[i] = 1;
+        if (fabs(value) > thresh){
+            if ((next_value - value) * (prev_value - value) > 0){
+                peak_positions[i] = 1;
+            }
         }
         prev_value = value;
     }
@@ -69,8 +71,10 @@ int find_peaks(float *arr, long len, float thresh){
     i = len - 1;
     value = arr[i];
     next_value = 0;
-    if (fabs(value) > thresh && fabs(value) > fabs(prev_value) && fabs(value) > fabs(next_value)){
+    if (fabs(value) > thresh){
+        if ((next_value - value) * (prev_value - value) > 0){
             peak_positions[i] = 1;
+        }
     }
     for (i = 0; i < len; ++i){
         if (peak_positions[i] != 1){

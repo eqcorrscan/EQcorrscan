@@ -21,6 +21,11 @@
   should no-longer happen.
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
+* Use a compiled C peak-finding function instead of scipy ndimage - speed-up
+  of about 2x in testing.
+* BUG-FIX: When `full_peaks=True` for `find_peaks2_short` values that were not
+  above their neighbours were returned. Now only values greater than their two
+  neighbours are returned.
 
 ## 0.3.1
 * Cleaned imports in utils modules
