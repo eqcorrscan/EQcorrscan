@@ -66,7 +66,7 @@ class TestStandardPeakFinding:
 class TestEdgeCases:
     """ A selection of weird datasets to find peaks in. """
     datasets = []
-    data_len = 1000000
+    data_len = 100000
     trig_int = 600
 
     @pytest.fixture(scope='class')
@@ -75,7 +75,7 @@ class TestEdgeCases:
         """ Array with peaks at first and last index. """
         end_arr = np.arange(self.data_len / 2)
         return np.concatenate([end_arr[::-1], end_arr]), \
-            [0, self.data_len - 1], 10
+            [0, self.data_len - 1], (self.data_len // 2) - 20
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets)
@@ -109,10 +109,21 @@ class TestEdgeCases:
         print('starting find_peak profiling on: ' + request.node.name)
         threshold = dataset[2]
         print("Threshold: {0}".format(threshold))
+        # Run the prototype and check that is gets the same results!
+        proto_peaks = time_func(
+            find_peaks_compiled, "find_peaks_compiled", arr=dataset[0],
+            thresh=threshold, trig_int=self.trig_int, debug=2,
+            starttime=False, samp_rate=1.0)
+        print('Found %i peaks' % len(proto_peaks))
+        for peak in proto_peaks:
+            assert abs(peak[0]) > threshold
+            assert np.allclose(peak[0], dataset[0][peak[1]], atol=0.001)
+            assert peak[1] in dataset[1]
+        assert len(proto_peaks) <= len(dataset[1])
         peaks = time_func(
             find_peaks2_short, "find_peaks2_short", arr=dataset[0],
             thresh=threshold, trig_int=self.trig_int, debug=2,
-            starttime=False, samp_rate=1.0)
+            starttime=False, samp_rate=1.0, full_peaks=True)
         print('Found %i peaks' % len(peaks))
         assert len(peaks) <= len(dataset[1])
         for peak in peaks:
@@ -120,17 +131,6 @@ class TestEdgeCases:
             assert peak[0] == dataset[0][peak[1]]
             assert peak[1] in dataset[1]  # Assert peak in expected peaks
             # Assert that the correct value is given!
-        # Run the prototype and check that is gets the same results!
-        proto_peaks = time_func(
-            find_peaks_compiled, "find_peaks_compiled", arr=dataset[0],
-            thresh=threshold, trig_int=self.trig_int, debug=2,
-            starttime=False, samp_rate=1.0)
-        print('Found %i peaks' % len(proto_peaks))
-        for peak in peaks:
-            assert abs(peak[0]) > threshold
-            assert peak[0] == dataset[0][peak[1]]
-            assert peak[1] in dataset[1]
-        assert len(peaks) <= len(dataset[1])
         assert np.allclose(peaks, proto_peaks, atol=0.001)
 
 
@@ -244,10 +244,10 @@ class TestPeakFindSpeeds:
             thresh=threshold, trig_int=600, debug=2, starttime=False,
             samp_rate=1.0)
         print('Found %i peaks' % len(proto_peaks))
-        for peak in peaks:
+        for peak in proto_peaks:
             assert abs(peak[0]) > threshold
             assert peak[1] in dataset_1d[1]
-        assert len(peaks) <= len(dataset_1d[1])
+        assert len(proto_peaks) <= len(dataset_1d[1])
         assert np.allclose(peaks, proto_peaks, atol=0.001)
 
     def test_multi_find_peaks(self, dataset_2d, request):
@@ -271,8 +271,9 @@ class TestPeakFindSpeeds:
             trig_int=600, parallel=False, internal_func=find_peaks2_short)
         print("Running parallel Python loop")
         parallel_py_peaks = time_func(
-            multi_find_peaks, name="parallel-Python", arr=arr, thresh=threshold,
-            trig_int=600, parallel=True, internal_func=find_peaks2_short)
+            multi_find_peaks, name="parallel-Python", arr=arr,
+            thresh=threshold, trig_int=600, parallel=True,
+            internal_func=find_peaks2_short)
         assert serial_py_peaks == parallel_py_peaks
         assert serial_c_peaks == parallel_c_peaks
         for py, c in zip(serial_py_peaks, serial_c_peaks):

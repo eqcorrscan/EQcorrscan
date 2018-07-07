@@ -44,9 +44,9 @@
 // find_peaks functions
 int decluster(float*, long*, int, float, long, unsigned int*);
 
-int findpeaks(float*, long, float, long, long);
+int findpeaks(float*, long, float);
 
-int multi_find_peaks(float*, long, int, float*, long, long*, int);
+int multi_find_peaks(float*, long, int, float*, int);
 
 // multi_corr functions
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*);

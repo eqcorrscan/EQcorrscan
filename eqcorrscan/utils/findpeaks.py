@@ -98,17 +98,10 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     if not np.any(np.abs(arr) > thresh):
         # Fast fail
         return []
-    if not np.all(arr > thresh):
-        # everything is above the threshold - our fast peak-finding won't work
-        print("All of array is above the threshold, resorting to scipy")
-        return find_peaks2_short(
-            arr=arr, thresh=thresh, trig_int=trig_int, debug=debug,
-            starttime=starttime, samp_rate=samp_rate, full_peaks=full_peaks)
     if not starttime:
         starttime = UTCDateTime(0)
     if not full_peaks:
-        peak_vals, peak_indices = _find_peaks_c(
-            array=arr, threshold=thresh, trigger_interval=trig_int)
+        peak_vals, peak_indices = _find_peaks_c(array=arr, threshold=thresh)
     else:
         peak_vals = arr
         peak_indices = np.arange(arr.shape[0])
@@ -202,6 +195,8 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     if len(image[image > thresh]) == 0:
         debug_print("No values over threshold {0}".format(thresh), 0, debug)
         return []
+    if np.all(arr > thresh):
+        full_peaks = True
     debug_print('Found {0} samples above the threshold'.format(
         len(image[image > thresh])), 0, debug)
     initial_peaks = []
@@ -217,7 +212,18 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         else:
             peaks = [(window[np.argmax(abs(window))],
                       int(peak_slice[0].start + np.argmax(abs(window))))]
-        initial_peaks.extend(peaks)
+        # Check that it is actually a peak
+        for peak in peaks:
+            if peak[1] == 0:
+                prev_value = 0
+            else:
+                prev_value = arr[peak[1] - 1]
+            if peak[1] == arr.shape[0] - 1:
+                next_value = 0
+            else:
+                next_value = arr[peak[1] + 1]
+            if abs(prev_value) < abs(arr[peak[1]]) > abs(next_value):
+                initial_peaks.append(peak)
     peaks = decluster(peaks=np.array(list(zip(*initial_peaks))[0]),
                       index=np.array(list(zip(*initial_peaks))[1]),
                       trig_int=trig_int)
@@ -330,7 +336,7 @@ def decluster(peaks, index, trig_int, threshold=0):
     return peaks_out
 
 
-def _find_peaks_c(array, threshold, trigger_interval):
+def _find_peaks_c(array, threshold):
     """
     Use a C func to find peaks in the array.
     """
@@ -340,14 +346,11 @@ def _find_peaks_c(array, threshold, trigger_interval):
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_long, ctypes.c_float, ctypes.c_long, ctypes.c_long]
+        ctypes.c_long, ctypes.c_float]
     utilslib.find_peaks.restype = ctypes.c_int
     array = np.ascontiguousarray(array, np.float32)
-    ret = utilslib.find_peaks(
-        array, length, threshold, np.int64(trigger_interval), 0)
-    if ret == 1:
-        raise NotImplementedError("All values above threshold.")
-    elif ret != 0:
+    ret = utilslib.find_peaks(array, length, threshold)
+    if ret != 0:
         raise MemoryError("Internal error")
     peaks_locations = np.nonzero(array)
     return array[peaks_locations], peaks_locations[0]

@@ -50,77 +50,31 @@ int decluster(float *arr, long *indexes, int len, float thresh, long trig_int,
 }
 
 
-int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of_peaks){
+int find_peaks(float *arr, long len, float thresh){
     // Find peaks in noisy data above some threshold and at-least
     // trig-int samples apart. Sets all other values in array to 0
-    int above_threshold = 0, biggest_in_window_position = 0;
-    float biggest_in_window = 0, prev_value = 0, value, next_value;
+    float prev_value = 0, value, next_value;
     int i;
     int * peak_positions = (int *) calloc(len, sizeof(int));
-    long number_above_threshold = 0;
 
-    // This tactic won't work if the threshold is low.
     for (i = 0; i < len - 1; ++i){
         value = arr[i];
         next_value = arr[i + 1];
-        if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
-            above_threshold = 1;
-            number_above_threshold += 1;
-            if (fabs(value) > fabs(biggest_in_window)){
-                biggest_in_window = value;
-                biggest_in_window_position = i;
-            }
-        } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
-            // Start a new window
-            above_threshold = 1;
-            number_above_threshold += 1;
-            if (prev_value < fabs(value) && next_value < fabs(value)){
-                biggest_in_window = value;
-                biggest_in_window_position = i;
-            }
-        } else if (above_threshold && fabs(value) < thresh){
-            // We have dropped below the threshold
-            above_threshold = 0;
-            peak_positions[biggest_in_window_position] = 1;
-            biggest_in_window = 0;
-            biggest_in_window_position = 0;
+        if (fabs(value) > thresh && fabs(value) > fabs(prev_value) && fabs(value) > fabs(next_value)){
+            peak_positions[i] = 1;
         }
         prev_value = value;
     }
     // Do separately for the last value
-    i = len;
-    value = arr[-1];
+    i = len - 1;
+    value = arr[i];
     next_value = 0;
-    if (fabs(value) > thresh && i - biggest_in_window_position < trig_int){
-        above_threshold = 1;
-        number_above_threshold += 1;
-        if (fabs(value) > fabs(biggest_in_window)){
-            biggest_in_window = value;
-            biggest_in_window_position = i;
-        }
-    } else if (fabs(value) > thresh && i - biggest_in_window_position > trig_int){
-        // Start a new window
-        above_threshold = 1;
-        number_above_threshold += 1;
-        if (prev_value < fabs(value) && next_value < fabs(value)){
-            biggest_in_window = value;
-            biggest_in_window_position = i;
-        }
-    } else if (above_threshold && fabs(value) < thresh){
-        // We have dropped below the threshold
-        above_threshold = 0;
-        peak_positions[biggest_in_window_position] = 1;
-    }
-    if (above_threshold){
-        peak_positions[biggest_in_window_position] = 1;
-    }
-    if (number_above_threshold == len){
-        return 1;
+    if (fabs(value) > thresh && fabs(value) > fabs(prev_value) && fabs(value) > fabs(next_value)){
+            peak_positions[i] = 1;
     }
     for (i = 0; i < len; ++i){
         if (peak_positions[i] != 1){
             arr[i] = 0;
-            number_of_peaks += 1;
         }
     }
     free(peak_positions);
@@ -128,13 +82,12 @@ int find_peaks(float *arr, long len, float thresh, long trig_int, long number_of
 }
 
 
-int multi_find_peaks(float *arr, long len, int n, float *thresholds,
-                     long trig_int, long *number_of_peaks, int threads){
+int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads){
     int i, ret_val=0;
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
-        ret_val += find_peaks(&arr[i * len], len, thresholds[i], trig_int, number_of_peaks[i]);
+        ret_val += find_peaks(&arr[i * len], len, thresholds[i]);
     }
     return ret_val;
 }
