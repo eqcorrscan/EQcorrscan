@@ -21,6 +21,10 @@
   should no-longer happen.
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
+* Add option to specify an inventory for processing to remove response information.
+  This option will remove the response using Obspy routines before applying
+  resampling and filtering.  It will also apply a static gain to ensure
+  floating point accuracy.
 
 ## 0.3.1
 * Cleaned imports in utils modules

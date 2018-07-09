@@ -1834,7 +1834,7 @@ class Template(object):
                pre_processed=False, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
                ignore_length=False, overlap="calculate", debug=0,
-               full_peaks=False):
+               full_peaks=False, **kwargs):
         """
         Detect using a single template within a continuous stream.
 
@@ -1968,7 +1968,7 @@ class Template(object):
             plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
-            overlap=overlap, debug=debug, full_peaks=full_peaks)
+            overlap=overlap, debug=debug, full_peaks=full_peaks, **kwargs)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -3450,7 +3450,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         st = _group_process(
             template_group=templates, parallel=parallel_process, debug=debug,
             cores=process_cores, stream=stream, daylong=daylong,
-            ignore_length=ignore_length, overlap=overlap)
+            ignore_length=ignore_length, overlap=overlap, **kwargs)
     else:
         warnings.warn('Not performing any processing on the continuous data.')
         st = [stream]
@@ -3498,7 +3498,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
 
 
 def _group_process(template_group, parallel, debug, cores, stream, daylong,
-                   ignore_length, overlap):
+                   ignore_length, overlap, **kwargs):
     """
     Process data into chunks based on template processing length.
 
@@ -3529,16 +3529,16 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
     """
     master = template_group[0]
     processed_streams = []
-    kwargs = {
+    process_kwargs = {
         'filt_order': master.filt_order,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
     # Check whether any processing actually needs to be done.
-    if kwargs['highcut'] is None and kwargs['lowcut'] is None:
+    if process_kwargs['highcut'] is None and process_kwargs['lowcut'] is None:
         st_samp_rates = set([tr.stats.sampling_rate for tr in stream])
         if len(st_samp_rates) == 1 and \
-           st_samp_rates.pop() == kwargs['samp_rate']:
+           st_samp_rates.pop() == process_kwargs['samp_rate']:
             return [stream]
     if daylong:
         if not master.process_length == 86400:
@@ -3546,7 +3546,7 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
                 'Processing day-long data, but template was cut from %i s long'
                 ' data, will reduce correlations' % master.process_length)
         func = dayproc
-        kwargs.update({'ignore_length': ignore_length})
+        process_kwargs.update({'ignore_length': ignore_length})
         # Check that data all start on the same day, otherwise strange
         # things will happen...
         starttimes = [tr.stats.starttime.date for tr in stream]
@@ -3567,16 +3567,19 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
     if n_chunks == 0:
         print('Data must be process_length or longer, not computing')
     for i in range(n_chunks):
-        kwargs.update(
+        process_kwargs.update(
             {'starttime': starttime + (i * (master.process_length - overlap))})
         if not daylong:
-            kwargs.update(
-                {'endtime': kwargs['starttime'] + master.process_length})
-            chunk_stream = stream.slice(starttime=kwargs['starttime'],
-                                        endtime=kwargs['endtime']).copy()
+            process_kwargs.update(
+                {'endtime':
+                     process_kwargs['starttime'] + master.process_length})
+            chunk_stream = stream.slice(
+                starttime=process_kwargs['starttime'],
+                endtime=process_kwargs['endtime']).copy()
         else:
             chunk_stream = stream.copy()
-        processed_streams.append(func(st=chunk_stream, **kwargs))
+        process_kwargs.update(**kwargs)
+        processed_streams.append(func(st=chunk_stream, **process_kwargs))
     return processed_streams
 
 

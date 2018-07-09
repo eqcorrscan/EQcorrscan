@@ -10,7 +10,7 @@ import unittest
 import os
 import numpy as np
 
-from obspy import read, Trace, UTCDateTime
+from obspy import read, Trace, UTCDateTime, read_inventory
 
 from eqcorrscan.utils.pre_processing import process, dayproc, shortproc
 from eqcorrscan.utils.pre_processing import _check_daylong
@@ -36,6 +36,9 @@ class TestPreProcessing(unittest.TestCase):
         tr2 = cls.st[0].copy().trim(
             cls.gap_endtime, cls.st[0].stats.starttime + 3600)
         cls.gappy_trace = tr1 + tr2
+        cls.inventory = read_inventory(os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            "SAMBA_inv.xml"))
 
     def test_daylong_checks(self):
         """Test that the data are day-long."""
@@ -122,6 +125,17 @@ class TestPreProcessing(unittest.TestCase):
             self.assertEqual(self.instart, tr.stats.starttime)
             self.assertEqual(self.inend, tr.stats.endtime)
 
+    def test_parallel_response_correction(self):
+        """Test the parallel implementation."""
+        processed = shortproc(
+            self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
+            samp_rate=1, debug=0, parallel=True, num_cores=2,
+            starttime=None, endtime=None, inventory=self.inventory)
+        self.assertEqual(len(processed), self.nchans)
+        for tr in processed:
+            self.assertEqual(self.instart, tr.stats.starttime)
+            self.assertEqual(self.inend, tr.stats.endtime)
+
     def test_parallel_core_unset(self):
         """Test the parallel implementation without num_cores set."""
         processed = shortproc(
@@ -181,6 +195,17 @@ class TestPreProcessing(unittest.TestCase):
                             filt_order=3, samp_rate=1,
                             starttime=self.day_start, debug=0, parallel=False,
                             num_cores=2)
+        self.assertEqual(len(processed), self.nchans)
+        for tr in processed:
+            self.assertEqual(UTCDateTime(self.day_start), tr.stats.starttime)
+            self.assertEqual(tr.stats.npts, 86400)
+
+    def test_dayproc_serial_response_removal(self):
+        """Test the serial implementation of dayproc."""
+        processed = dayproc(st=self.st.copy(), lowcut=0.1, highcut=0.4,
+                            filt_order=3, samp_rate=1,
+                            starttime=self.day_start, debug=0, parallel=False,
+                            num_cores=2, inventory=self.inventory)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
             self.assertEqual(UTCDateTime(self.day_start), tr.stats.starttime)
@@ -326,7 +351,6 @@ class TestPreProcessing(unittest.TestCase):
         self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
         self.assertTrue(np.all(
             processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
-
 
 
 if __name__ == '__main__':

@@ -56,7 +56,8 @@ def _check_daylong(tr):
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
               parallel=False, num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False, fill_gaps=True):
+              seisan_chan_names=False, fill_gaps=True, inventory=None,
+              **kwargs):
     """
     Basic function to bandpass and downsample.
 
@@ -94,11 +95,23 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         rather than SEED convention of three) - defaults to True.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type inventory: `obspy.core.inventory.Inventory`
+    :param inventory:
+        Inventory for response removal. Note all stations must have information
+        in the inventory.  If inventory is not specified no response removal
+        will be conducted. Using this will also apply a static gain shift to
+        ensure floating point accuracy in the correlations.
 
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        Note on response remove. Arguments for response removal can be passed
+        as keyword arguments. If they are not passed, then the default
+        parameters will be used:
+        tr.remove_response(
+            inventory=inventory, output="VEL", water_level=60, pre_filt=None,
+            zero_mean=True, taper=True, taper_fraction=0.05, plot=False)
 
     .. warning::
         If you intend to use this for processing templates you should consider
@@ -175,12 +188,14 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
             num_cores = cpu_count()
         if num_cores > len(st):
             num_cores = len(st)
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {
+        parallel_kwargs = {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
             'clip': False, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps})
+            'fill_gaps': fill_gaps, 'inventory': inventory}
+        parallel_kwargs.update(**kwargs)
+        pool = Pool(processes=num_cores)
+        results = [pool.apply_async(process, (tr,), **parallel_kwargs)
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -191,7 +206,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+                inventory=inventory, **kwargs)
     if tracein:
         st.merge()
         return st[0]
@@ -200,7 +216,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
 def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False, fill_gaps=True):
+            seisan_chan_names=False, fill_gaps=True, inventory=None, **kwargs):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -237,11 +253,23 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         rather than SEED convention of three) - defaults to True.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type inventory: `obspy.core.inventory.Inventory`
+    :param inventory:
+        Inventory for response removal. Note all stations must have information
+        in the inventory.  If inventory is not specified no response removal
+        will be conducted. Using this will also apply a static gain shift to
+        ensure floating point accuracy in the correlations.
 
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        Note on response remove. Arguments for response removal can be passed
+        as keyword arguments. If they are not passed, then the default
+        parameters will be used:
+        tr.remove_response(
+            inventory=inventory, output="VEL", water_level=60, pre_filt=None,
+            zero_mean=True, taper=True, taper_fraction=0.05, plot=False)
 
     .. warning::
         Will fail if data are less than 19.2 hours long - this number is
@@ -319,12 +347,15 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             num_cores = cpu_count()
         if num_cores > len(st):
             num_cores = len(st)
-        pool = Pool(processes=num_cores)
-        results = [pool.apply_async(process, (tr,), {
+        parallel_kwargs = {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
             'clip': True, 'ignore_length': ignore_length, 'length': 86400,
-            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
+            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps,
+            'inventory': inventory}
+        parallel_kwargs.update(**kwargs)
+        pool = Pool(processes=num_cores)
+        results = [pool.apply_async(process, (tr,), **parallel_kwargs)
                    for tr in st]
         pool.close()
         stream_list = [p.get() for p in results]
@@ -336,7 +367,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, debug=debug, starttime=starttime,
                 clip=True, length=86400, ignore_length=ignore_length,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+                inventory=inventory, **kwargs)
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
@@ -348,7 +380,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
 
 def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             starttime=False, clip=False, length=86400,
-            seisan_chan_names=False, ignore_length=False, fill_gaps=True):
+            seisan_chan_names=False, ignore_length=False, fill_gaps=True,
+            inventory=None, **kwargs):
     """
     Basic function to process data, usually called by dayproc or shortproc.
 
@@ -387,9 +420,24 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :param ignore_length: See warning in dayproc.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type inventory: `obspy.core.inventory.Inventory`
+    :param inventory:
+        Inventory for response removal. Note all stations must have information
+        in the inventory.  If inventory is not specified no response removal
+        will be conducted. Using this will also apply a static gain shift to
+        ensure floating point accuracy in the correlations.
+
 
     :return: Processed trace.
     :type: :class:`obspy.core.stream.Trace`
+
+    .. note::
+        Note on response remove. Arguments for response removal can be passed
+        as keyword arguments. If they are not passed, then the default
+        parameters will be used:
+        tr.remove_response(
+            inventory=inventory, output="VEL", water_level=60, pre_filt=None,
+            zero_mean=True, taper=True, taper_fraction=0.05, plot=False)
     """
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
@@ -464,6 +512,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
                                  tr.stats.station + '.' + tr.stats.channel)
         debug_print('I now have %i data points after enforcing length'
                     % len(tr.data), 0, debug)
+    if inventory is not None:
+        tr.remove_response(inventory=inventory, **kwargs)
+
+        tr.data *= 1e6
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         debug_print('Resampling', 1, debug)
