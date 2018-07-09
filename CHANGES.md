@@ -21,6 +21,7 @@
   should no-longer happen.
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
+* Add ability to "retry" downloading in `Tribe.client_detect`.
 
 ## 0.3.1
 * Cleaned imports in utils modules
