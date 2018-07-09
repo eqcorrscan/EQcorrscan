@@ -33,10 +33,9 @@ class TestCoreMethods(unittest.TestCase):
     Tests for internal _template_loop and normxcorr2 functions.
     """
     def test_detection_assertion(self):
-        with self.asserts(AssertionError):
-            detection = Detection(
-                typeofdet="corr", no_chans=3, detect_val=20)
-        
+        with self.assertRaises(AssertionError):
+            Detection(typeofdet="corr", no_chans=3, detect_val=20)
+
     def test_perfect_normxcorr2(self):
         """
         Simple test of normxcorr2 to ensure data are detected
