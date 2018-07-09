@@ -740,7 +740,7 @@ class Party(object):
             self.get_catalog().write(filename=filename, format=format)
         return self
 
-      def read(self, filename=None, read_detection_catalog=True):
+    def read(self, filename=None, read_detection_catalog=True):
         """
         Read a Party from a file.
 
