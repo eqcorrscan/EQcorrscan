@@ -34,7 +34,10 @@ class TestCoreMethods(unittest.TestCase):
     """
     def test_detection_assertion(self):
         with self.assertRaises(AssertionError):
-            Detection(typeofdet="corr", no_chans=3, detect_val=20)
+            Detection(
+                template_name='a', detect_time=UTCDateTime(), threshold=1.2,
+                threshold_input=8.0, threshold_type="MAD", typeofdet="corr",
+                no_chans=3, detect_val=20)
 
     def test_perfect_normxcorr2(self):
         """
