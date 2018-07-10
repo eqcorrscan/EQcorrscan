@@ -3003,6 +3003,8 @@ class Detection(object):
                        detect_time.strftime('%Y%m%d_%H%M%S%f'))
         if event is not None:
             event.resource_id = self.id
+        if self.typeofdet == 'corr':
+            assert abs(self.detect_val) <= self.no_chans
 
     def __repr__(self):
         """Simple print."""
