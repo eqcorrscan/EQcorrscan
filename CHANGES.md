@@ -3,6 +3,10 @@
   an argument for function calls.
 
 ## Current
+* Implement reading Party objects from multiple files, including wildcard
+  expansion. This will only read template information if it was not 
+  previously read in (which is a little more efficient).
+* Allow reading of Party objects without reading the catalog files.
 * Check quality of downloaded data in `Tribe.client_detect()` and remove it if it
   would otherwise result in errors.
 * Add `process_cores` argument to `Tribe.client_detect()` and `Tribe.detect()`
@@ -25,6 +29,7 @@
   should no-longer happen.
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
+* Add ability to "retry" downloading in `Tribe.client_detect`.
 
 
 ## 0.3.1

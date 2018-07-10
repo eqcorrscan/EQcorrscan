@@ -740,7 +740,9 @@ class Party(object):
         Read a Party from a file.
 
         :type filename: str
-        :param filename: File to read from
+        :param filename:
+            File to read from - can be a list of files, and can contain
+            wildcards.
         :type read_detection_catalog: bool
         :param read_detection_catalog:
             Whether to read the detection catalog or not, if False, catalog
@@ -751,40 +753,60 @@ class Party(object):
         >>> Party().read()
         Party of 4 Families.
         """
+        tribe = Tribe()
+        families = []
         if filename is None:
             # If there is no filename given, then read the example.
             filename = os.path.join(os.path.dirname(__file__),
                                     '..', 'tests', 'test_data',
                                     'test_party.tgz')
-        # First work out how many templates there are and get them.
-        tribe = Tribe()
-        with tarfile.open(filename, "r:*") as arc:
-            temp_dir = tempfile.mkdtemp()
-            arc.extractall(path=temp_dir, members=_safemembers(arc))
-        party_dir = glob.glob(temp_dir + os.sep + '*')[0]
-        tribe._read_from_folder(
-            dirname=party_dir, read_detection_catalog=read_detection_catalog)
-        # Read in families here!
-        det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
-        if len(det_cat_file) != 0:
-            try:
-                all_cat = read_events(det_cat_file[0])
-            except TypeError as e:
-                print(e)
-                pass
+        if isinstance(filename, list):
+            filenames = []
+            for _filename in filename:
+                # Expand wildcards
+                filenames.extend(glob.glob(_filename))
         else:
-            all_cat = Catalog()
-        for family_file in glob.glob(join(party_dir, '*_detections.csv')):
-            template = [t for t in tribe if _templates_match(t, family_file)]
-            if len(template) == 0:
-                raise MatchFilterError(
-                    'Missing template for detection file: ' + family_file)
-            family = Family(template=template[0])
-            family.detections.extend(_read_family(
-                fname=family_file, all_cat=all_cat, template=template[0]))
-            family.catalog = Catalog([d.event for d in family.detections])
-            self.families.append(family)
-        shutil.rmtree(temp_dir)
+            # Expand wildcards
+            filenames = glob.glob(filename)
+        for _filename in filenames:
+            with tarfile.open(_filename, "r:*") as arc:
+                temp_dir = tempfile.mkdtemp()
+                arc.extractall(path=temp_dir, members=_safemembers(arc))
+            # Read in the detections first, this way, if we read from multiple
+            # files then we can just read in extra templates as needed.
+            # Read in families here!
+            party_dir = glob.glob(temp_dir + os.sep + '*')[0]
+            tribe._read_from_folder(dirname=party_dir)
+            det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
+            if len(det_cat_file) != 0 and read_detection_catalog:
+                try:
+                    all_cat = read_events(det_cat_file[0])
+                except TypeError as e:
+                    print(e)
+                    pass
+            else:
+                all_cat = Catalog()
+            for family_file in glob.glob(join(party_dir, '*_detections.csv')):
+                template = [
+                    t for t in tribe if _templates_match(t, family_file)]
+                family = Family(template=template[0] or Template())
+                new_family = True
+                if family.template.name in [f.template.name for f in families]:
+                    family = [
+                        f for f in families if
+                        f.template.name == family.template.name][0]
+                    new_family = False
+                family.detections.extend(_read_family(
+                    fname=family_file, all_cat=all_cat, template=template[0]))
+                family.catalog = Catalog()
+                for detection in family.detections:
+                    if detection.event:
+                        family.catalog.append(detection.event)
+                if new_family:
+                    families.append(family)
+
+            shutil.rmtree(temp_dir)
+        self.families = families
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
@@ -960,7 +982,8 @@ class Party(object):
         """
         catalog = Catalog()
         for fam in self.families:
-            catalog += fam.catalog
+            if len(fam.catalog) != 0:
+                catalog.events.extend(fam.catalog.events)
         return catalog
 
     def min_chans(self, min_chans):
@@ -2352,7 +2375,7 @@ class Tribe(object):
         shutil.rmtree(temp_dir)
         return self
 
-    def _read_from_folder(self, dirname, read_detection_catalog=True):
+    def _read_from_folder(self, dirname):
         """
         Internal folder reader.
 
@@ -2366,7 +2389,11 @@ class Tribe(object):
             tribe_cat = read_events(tribe_cat_file[0])
         else:
             tribe_cat = Catalog()
+        previous_template_names = [t.name for t in self.templates]
         for template in templates:
+            if template.name in previous_template_names:
+                # Don't read in for templates that we already have.
+                continue
             for event in tribe_cat:
                 for comment in event.comments:
                     if comment.text == 'eqcorrscan_template_' + template.name:
@@ -2605,7 +2632,7 @@ class Tribe(object):
                       concurrency=None, cores=None, ignore_length=False,
                       group_size=None, return_stream=False,
                       full_peaks=False, save_progress=False,
-                      process_cores=None, **kwargs):
+                      process_cores=None, retries=3, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2679,6 +2706,11 @@ class Tribe(object):
         :param return_stream:
             Whether to also output the stream downloaded, useful if you plan
             to use the stream for something else, e.g. lag_calc.
+        :type retries: int
+        :param retries:
+            Number of attempts allowed for downloading - allows for transient
+            server issues.
+
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
             detections.
@@ -2780,48 +2812,59 @@ class Tribe(object):
                     chan_id[0], chan_id[1], chan_id[2], chan_id[3],
                     starttime + (i * data_length) - (pad + buff),
                     starttime + ((i + 1) * data_length) + (pad + buff)))
+            for retry_attempt in range(retries):
+                try:
+                    Logger.info("Downloading data")
+                    st = client.get_waveforms_bulk(bulk_info)
+                    Logger.info(
+                        "Downloaded data for {0} traces".format(len(st)))
+                    break
+                except Exception as e:
+                    Logger.error(e)
+                    continue
+            else:
+                raise MatchFilterError(
+                    "Could not download data after {0} attempts".format(
+                        retries))
+            # Get gaps and remove traces as necessary
+            if min_gap:
+                gaps = st.get_gaps(min_gap=min_gap)
+                if len(gaps) > 0:
+                    Logger.warning("Large gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(
+                        set([(gap[0], gap[1], gap[2], gap[3])
+                             for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            Logger.warning(
+                                "Removing gappy channel: {0}".format(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
+            st.merge()
+            st.trim(starttime=starttime + (i * data_length) - pad,
+                    endtime=starttime + ((i + 1) * data_length) + pad)
+            for tr in st:
+                if not _check_daylong(tr):
+                    st.remove(tr)
+                    Logger.warning(
+                        "{0} contains more zeros than non-zero, "
+                        "removed".format(tr.id))
+            for tr in st:
+                if tr.stats.endtime - tr.stats.starttime < \
+                   0.8 * data_length:
+                    st.remove(tr)
+                    Logger.warning(
+                        "{0} is less than 80% of the required length"
+                        ", removed".format(tr.id))
+            if return_stream:
+                stream += st
             try:
-                Logger.info("Downloading data")
-                st = client.get_waveforms_bulk(bulk_info)
-                Logger.info("Downloaded data for {0} traces".format(len(st)))
-                # Get gaps and remove traces as necessary
-                if min_gap:
-                    gaps = st.get_gaps(min_gap=min_gap)
-                    if len(gaps) > 0:
-                        Logger.warning("Large gaps in downloaded data")
-                        st.merge()
-                        gappy_channels = list(
-                            set([(gap[0], gap[1], gap[2], gap[3])
-                                 for gap in gaps]))
-                        _st = Stream()
-                        for tr in st:
-                            tr_stats = (tr.stats.network, tr.stats.station,
-                                        tr.stats.location, tr.stats.channel)
-                            if tr_stats in gappy_channels:
-                                Logger.warning(
-                                    "Removing gappy channel: {0}".format(tr))
-                            else:
-                                _st += tr
-                        st = _st
-                        st.split()
-                st.merge()
-                st.trim(starttime=starttime + (i * data_length) - pad,
-                        endtime=starttime + ((i + 1) * data_length) + pad)
-                for tr in st:
-                    if not _check_daylong(tr):
-                        st.remove(tr)
-                        Logger.warning(
-                            "{0} contains more zeros than non-zero, "
-                            "removed".format(tr.id))
-                for tr in st:
-                    if tr.stats.endtime - tr.stats.starttime < \
-                       0.8 * data_length:
-                        st.remove(tr)
-                        Logger.warning(
-                            "{0} is less than 80% of the required length"
-                            ", removed".format(tr.id))
-                if return_stream:
-                    stream += st
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
@@ -2985,6 +3028,8 @@ class Detection(object):
                        detect_time.strftime('%Y%m%d_%H%M%S%f'))
         if event is not None:
             event.resource_id = self.id
+        if self.typeofdet == 'corr':
+            assert abs(self.detect_val) <= self.no_chans
 
     def __repr__(self):
         """Simple print."""
@@ -4370,7 +4415,7 @@ if __name__ == "__main__":
 
     doctest.testmod()
     # List files to be removed after doctest
-    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.ml',
+    cleanup = ['test_tar_write.tgz', 'test_csv_write.csv', 'test_quakeml.xml',
                'test_family.tgz', 'test_template.tgz', 'test_waveform.ms',
                'test_template_read.tgz', 'test_tribe.tgz']
     for f in cleanup:
