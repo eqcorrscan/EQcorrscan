@@ -782,8 +782,8 @@ class Party(object):
             # Read in families here!
             party_dir = glob.glob(temp_dir + os.sep + '*')[0]
             tribe._read_from_folder(
-                dirname=party_dir, 
-                read__detection_catalog=read_detection_catalog)
+                dirname=party_dir,
+                read_detection_catalog=read_detection_catalog)
             det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
             if len(det_cat_file) != 0:
                 try:
@@ -2391,15 +2391,12 @@ class Tribe(object):
         shutil.rmtree(temp_dir)
         return self
 
-    def _read_from_folder(self, dirname, read_detection_catalog=True):
+    def _read_from_folder(self, dirname):
         """
         Internal folder reader.
 
         :type dirname: str
         :param dirname: Folder to read from.
-        :type read_detection_catalog: bool
-        :param read_detection_catalog: 
-            Whether to read the catalog of detections or not.
         """
         templates = _par_read(dirname=dirname, compressed=False)
         t_files = glob.glob(dirname + os.sep + '*.ms')
