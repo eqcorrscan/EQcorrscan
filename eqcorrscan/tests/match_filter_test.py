@@ -32,6 +32,13 @@ class TestCoreMethods(unittest.TestCase):
     """
     Tests for internal _template_loop and normxcorr2 functions.
     """
+    def test_detection_assertion(self):
+        with self.assertRaises(AssertionError):
+            Detection(
+                template_name='a', detect_time=UTCDateTime(), threshold=1.2,
+                threshold_input=8.0, threshold_type="MAD", typeofdet="corr",
+                no_chans=3, detect_val=20)
+
     def test_perfect_normxcorr2(self):
         """
         Simple test of normxcorr2 to ensure data are detected
@@ -630,7 +637,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
 
     @pytest.mark.serial
@@ -642,7 +649,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             process_cores=2)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     def test_tribe_detect_save_progress(self):
@@ -656,6 +663,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
 
+    @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
         Padding may also result in error at correlation stage due to poor
@@ -682,7 +690,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
-            party=party, party_in=self.party, float_tol=0.01,
+            party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
 
     @pytest.mark.flaky(reruns=2)
@@ -697,7 +705,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(party), 4)
 
     @pytest.mark.flaky(reruns=2)
-    @pytest.mark.netork
+    @pytest.mark.network
     def test_client_detect_save_progress(self):
         """Test the client_detect method."""
         client = Client('NCEDC')
@@ -818,6 +826,28 @@ class TestMatchObjectLight(unittest.TestCase):
                 'test_data', 'test_party.tgz'))
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
+
+    def test_party_io_list(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname=['test_party_out.tgz'])
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_wildcards(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname='test_party_*.tgz')
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
@@ -1145,7 +1175,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
-                        atol=0.01)
+                        atol=float_tol)
                 elif isinstance(det.__dict__[key], np.float32):
                     if not np.allclose(
                             det.__dict__[key], check_det.__dict__[key],
@@ -1153,13 +1183,17 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
-                        atol=0.01)
+                        atol=float_tol)
                 elif isinstance(det.__dict__[key], UTCDateTime):
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print(key)
                     assert (
                         abs(det.__dict__[key] -
                             check_det.__dict__[key]) < 0.00001)
+                elif key in ['template_name', 'id']:
+                    continue
+                    # Name relies on creation-time, which is checked elsewhere,
+                    # ignore it.
                 else:
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print(key)
