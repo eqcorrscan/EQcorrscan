@@ -2624,7 +2624,7 @@ class Tribe(object):
                       concurrency=None, cores=None, ignore_length=False,
                       group_size=None, debug=0, return_stream=False,
                       full_peaks=False, save_progress=False,
-                      process_cores=None, **kwargs):
+                      process_cores=None, retries=3, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -2694,7 +2694,6 @@ class Tribe(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
-
         :type debug: int
         :param debug:
             Debug level from 0-5 where five is more output, for debug levels
@@ -2703,6 +2702,11 @@ class Tribe(object):
         :param return_stream:
             Whether to also output the stream downloaded, useful if you plan
             to use the stream for something else, e.g. lag_calc.
+        :type retries: int
+        :param retries:
+            Number of attempts allowed for downloading - allows for transient
+            server issues.
+
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
             detections.
@@ -2804,43 +2808,53 @@ class Tribe(object):
                     chan_id[0], chan_id[1], chan_id[2], chan_id[3],
                     starttime + (i * data_length) - (pad + buff),
                     starttime + ((i + 1) * data_length) + (pad + buff)))
+            for retry_attempt in range(retries):
+                try:
+                    st = client.get_waveforms_bulk(bulk_info)
+                    break
+                except Exception as e:
+                    print(e)
+                    continue
+            else:
+                raise MatchFilterError(
+                    "Could not download data after {0} attempts".format(
+                        retries))
+            # Get gaps and remove traces as necessary
+            if min_gap:
+                gaps = st.get_gaps(min_gap=min_gap)
+                if len(gaps) > 0:
+                    print("Large gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(
+                        set([(gap[0], gap[1], gap[2], gap[3])
+                             for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            print("Removing gappy channel: %s" % str(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
+            st.merge()
+            st.trim(starttime=starttime + (i * data_length) - pad,
+                    endtime=starttime + ((i + 1) * data_length) + pad)
+            for tr in st:
+                if not _check_daylong(tr):
+                    st.remove(tr)
+                    print("{0} contains more zeros than non-zero, "
+                          "removed".format(tr.id))
+            for tr in st:
+                if tr.stats.endtime - tr.stats.starttime < \
+                   0.8 * data_length:
+                    st.remove(tr)
+                    print("{0} is less than 80% of the required length"
+                          ", removed".format(tr.id))
+            if return_stream:
+                stream += st
             try:
-                st = client.get_waveforms_bulk(bulk_info)
-                # Get gaps and remove traces as necessary
-                if min_gap:
-                    gaps = st.get_gaps(min_gap=min_gap)
-                    if len(gaps) > 0:
-                        print("Large gaps in downloaded data")
-                        st.merge()
-                        gappy_channels = list(
-                            set([(gap[0], gap[1], gap[2], gap[3])
-                                 for gap in gaps]))
-                        _st = Stream()
-                        for tr in st:
-                            tr_stats = (tr.stats.network, tr.stats.station,
-                                        tr.stats.location, tr.stats.channel)
-                            if tr_stats in gappy_channels:
-                                print("Removing gappy channel: %s" % str(tr))
-                            else:
-                                _st += tr
-                        st = _st
-                        st.split()
-                st.merge()
-                st.trim(starttime=starttime + (i * data_length) - pad,
-                        endtime=starttime + ((i + 1) * data_length) + pad)
-                for tr in st:
-                    if not _check_daylong(tr):
-                        st.remove(tr)
-                        print("{0} contains more zeros than non-zero, "
-                              "removed".format(tr.id))
-                for tr in st:
-                    if tr.stats.endtime - tr.stats.starttime < \
-                       0.8 * data_length:
-                        st.remove(tr)
-                        print("{0} is less than 80% of the required length"
-                              ", removed".format(tr.id))
-                if return_stream:
-                    stream += st
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
