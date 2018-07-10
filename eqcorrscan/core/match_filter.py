@@ -781,11 +781,9 @@ class Party(object):
             # files then we can just read in extra templates as needed.
             # Read in families here!
             party_dir = glob.glob(temp_dir + os.sep + '*')[0]
-            tribe._read_from_folder(
-                dirname=party_dir,
-                read_detection_catalog=read_detection_catalog)
+            tribe._read_from_folder(dirname=party_dir)
             det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
-            if len(det_cat_file) != 0:
+            if len(det_cat_file) != 0 and read_detection_catalog:
                 try:
                     all_cat = read_events(det_cat_file[0])
                 except TypeError as e:
