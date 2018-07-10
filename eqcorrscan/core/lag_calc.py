@@ -202,7 +202,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
             else:
                 picktime = image[0].stats.starttime + (
                     np.argmax(ccc) * image[0].stats.delta)
-        Logger.info('Maximum cross-corr={0}'.format(cc_max))
+        Logger.debug('Maximum cross-corr={0}'.format(cc_max))
         checksum += cc_max
         used_chans += 1
         if cc_max < min_cc:
