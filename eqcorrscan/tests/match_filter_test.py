@@ -827,6 +827,28 @@ class TestMatchObjectLight(unittest.TestCase):
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
 
+    def test_party_io_list(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname=['test_party_out.tgz'])
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
+    def test_party_io_wildcards(self):
+        """Test reading and writing party objects."""
+        if os.path.isfile('test_party_out.tgz'):
+            os.remove('test_party_out.tgz')
+        try:
+            self.party.write(filename='test_party_out')
+            party_back = read_party(fname='test_party_*.tgz')
+            self.assertEqual(self.party, party_back)
+        finally:
+            os.remove('test_party_out.tgz')
+
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
         self.assertTrue(self.tribe == self.tribe)
