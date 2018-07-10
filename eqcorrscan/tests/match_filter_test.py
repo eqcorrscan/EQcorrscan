@@ -1153,7 +1153,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
-                        atol=0.01)
+                        atol=float_tol)
                 elif isinstance(det.__dict__[key], np.float32):
                     if not np.allclose(
                             det.__dict__[key], check_det.__dict__[key],
@@ -1161,7 +1161,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         print(key)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
-                        atol=0.01)
+                        atol=float_tol)
                 elif isinstance(det.__dict__[key], UTCDateTime):
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print(key)
