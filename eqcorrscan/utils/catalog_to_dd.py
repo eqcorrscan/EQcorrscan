@@ -673,8 +673,8 @@ def _slave_loop(master_sfile, master_event_id, master_event, masterstream,
                 max_sep, pre_pick, extract_len, shift_len, lowcut, highcut,
                 cc_thresh, plotvar, debug):
     """
-    Inner loop for each slave event during crosscorrelation for hypoDD,
-    performs correlation and determines pick  corrections.
+    Inner loop for each slave event during cross-correlation for hypoDD,
+    performs correlation and determines pick corrections.
 
     Takes master- and slave-event information including waveforms and returns
     the text that will then be written to dt.cc and dt.cc2-files for hypoDD.
