@@ -78,8 +78,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False, debug=0,
                  return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, daylong=None,
-                 **kwargs):
+                 num_cores=False, save_progress=False, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -135,13 +134,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :param save_progress:
         Whether to save the resulting party at every data step or not.
         Useful for long-running processes.
-    :type daylong: bool
-    :param daylong:
-        Whether data should be processed as daylong starting at the start of a
-        day or not.  If not set, this will check whether data are close to
-        day-long and process them as if they are.  Note that this will trim the
-        data at day-breaks, set to False if you do not provide data split at
-        day-breaks!
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -294,18 +286,21 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         if process:
             data_len = max([len(tr.data) / tr.stats.sampling_rate
                             for tr in st])
-            if daylong is None and 80000 < data_len < 90000:
+            if 80000 < data_len < 90000:
                 daylong = True
-            else:
-                daylong = False
-            if daylong:
                 starttime = min([tr.stats.starttime for tr in st])
+                # Check if this is stupid:
+                if abs(starttime - UTCDateTime(starttime.date)) > 600:
+                    daylong = False
                 # Cope with the common starttime less than 1s before the
                 #  start of day.
                 if (starttime + 10).date > starttime.date:
                     starttime = (starttime + 10).date
                 else:
                     starttime = starttime.date
+            else:
+                daylong = False
+            if daylong:
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
