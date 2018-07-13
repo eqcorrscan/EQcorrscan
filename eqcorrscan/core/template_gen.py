@@ -78,7 +78,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False, debug=0,
                  return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, **kwargs):
+                 num_cores=False, save_progress=False, daylong=None,
+                 **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -134,6 +135,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :param save_progress:
         Whether to save the resulting party at every data step or not.
         Useful for long-running processes.
+    :type daylong: bool
+    :param daylong:
+        Whether data should be processed as daylong starting at the start of a
+        day or not.  If not set, this will check whether data are close to
+        day-long and process them as if they are.  Note that this will trim the
+        data at day-breaks, set to False if you do not provide data split at
+        day-breaks!
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -286,7 +294,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         if process:
             data_len = max([len(tr.data) / tr.stats.sampling_rate
                             for tr in st])
-            if 80000 < data_len < 90000:
+            if daylong is None and 80000 < data_len < 90000:
                 daylong = True
             else:
                 daylong = False

@@ -26,6 +26,8 @@
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
 * Add ability to "retry" downloading in `Tribe.client_detect`.
+* Allow users to pass data of day-long length that is *not* cut at the start
+  of a day.
 
 ## 0.3.1
 * Cleaned imports in utils modules
