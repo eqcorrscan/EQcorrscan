@@ -26,6 +26,10 @@
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
 * Add ability to "retry" downloading in `Tribe.client_detect`.
+* Change behaviour of template_gen for data that are daylong, but do not start
+  within 1 minute of a day-break - previous versions enforced padding to
+  start and end at day-breaks, which led to zeros in the data and undesirable 
+  behaviour.
 
 ## 0.3.1
 * Cleaned imports in utils modules
