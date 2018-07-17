@@ -437,10 +437,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
             raise NotImplementedError(
-                "Data for {0}.{1} is {2} hours long, which is less than 80 "
-                "percent of the desired length, will not pad".format(
+                "Data for {0}.{1} is {2:.2f} seconds long, which is less than "
+                "80 percent of the desired length ({3} seconds), will not "
+                "pad".format(
                     tr.stats.station, tr.stats.channel,
-                    (tr.stats.endtime - tr.stats.starttime) / 3600))
+                    tr.stats.endtime - tr.stats.starttime, length))
         # trim, then calculate length of any pads required
         pre_pad_secs = tr.stats.starttime - starttime
         post_pad_secs = (starttime + length) - tr.stats.endtime
