@@ -431,7 +431,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     padded = False
     if clip:
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
-    if float(tr.stats.npts / tr.stats.sampling_rate) != length:
+    if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\

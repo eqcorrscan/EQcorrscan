@@ -30,6 +30,9 @@
   within 1 minute of a day-break - previous versions enforced padding to
   start and end at day-breaks, which led to zeros in the data and undesirable 
   behaviour.
+* BUG-FIX: Normalisation errors not properly passed back from internal fftw
+  correlation functions, and first part of gaps incorrectly calculated correlations
+  for.
 
 ## 0.3.1
 * Cleaned imports in utils modules
