@@ -375,6 +375,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
             c /= stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+
         }
         if (var[0] <= WARN_DIFF){
             variance_warning[0] = 1;
@@ -402,7 +403,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     // Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
+        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 2) {
             double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
@@ -417,9 +418,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         }
     }
     if (unused_corr == 1){
-        if (status != 999){
-            // Output a known error code, if status is already at this level
-            // there are bigger problems!
+        if (status == 0){
             status = 999;
         }
     }
@@ -429,12 +428,12 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     free(mean);
     free(var);
     free(flatline_count);
-
     return status;
 }
 
 
 static inline int set_ncc(long t, long i, long template_len, long image_len, float value, int *used_chans, int *pad_array, float *ncc) {
+
     int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
@@ -446,6 +445,7 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
+            // printf("Error at template index: %i,  data index: %i\n", t, i);
             status = 1;
         }
         else if (value > 1.0) {
@@ -455,6 +455,7 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
             value = -1.0;
         }
 
+        // prev_ncc = ncc[ncc_index];
         #pragma omp atomic
         ncc[ncc_index] += value;
     }
@@ -509,7 +510,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         float *image, long image_len, float *ncc, long fft_len, int *used_chans, int *pad_array,
         int num_threads_outer, int num_threads_inner, int *variance_warning) {
     int i;
-    int r=0, inner_status=0;
+    int r=0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     float **template_ext = NULL;
     float **image_ext = NULL;
@@ -671,14 +672,21 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     // Conduct error handling
     for (i = 0; i < n_channels; ++i){
-        if (results[i] == 999 && r == 0){
+        if (results[i] != 999 && results[i] != 0){
+            // Some error internally, must catch this
+            r += results[i];
+        } else if (results[i] == 999 && r == 0){
+            // First time unused correlation raised and no prior errors
             r = results[i];
         } else if (r == 999 && results[i] == 999){
+            // Unused correlations raised multiple times
             r = 999;
         } else if (r == 999 && results[i] != 999){
-            r += inner_status;
+            // Some error internally.
+            r += results[i];
         } else if (r != 0){
-            r += inner_status;
+            // Any other error
+            r += results[i];
         }
     }
     free(results);
