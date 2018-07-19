@@ -37,9 +37,9 @@
     #endif
 #endif
 // Define minimum variance to compute correlations - requires some signal
-#define ACCEPTED_DIFF 1e-15
+#define ACCEPTED_DIFF 1e-10 //1e-15
 // Define difference to warn user on
-#define WARN_DIFF 1e-10
+#define WARN_DIFF 1e-8 //1e-10
 
 // find_peaks functions
 int decluster(float*, long*, int, float, long, unsigned int*);
