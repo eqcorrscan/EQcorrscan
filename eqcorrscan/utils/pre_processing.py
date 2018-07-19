@@ -429,18 +429,20 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     # Sanity check to ensure files are daylong
     padded = False
+    if clip:
+        tr = tr.trim(starttime, starttime + length, nearest_sample=True)
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
             raise NotImplementedError(
-                "Data for {0}.{1} is {2} hours long, which is less than 80 "
-                "percent of the desired length, will not pad".format(
+                "Data for {0}.{1} is {2:.2f} seconds long, which is less than "
+                "80 percent of the desired length ({3} seconds), will not "
+                "pad".format(
                     tr.stats.station, tr.stats.channel,
-                    (tr.stats.endtime - tr.stats.starttime) / 3600))
+                    tr.stats.endtime - tr.stats.starttime, length))
         # trim, then calculate length of any pads required
-        tr = tr.trim(starttime, starttime + length, nearest_sample=True)
         pre_pad_secs = tr.stats.starttime - starttime
         post_pad_secs = (starttime + length) - tr.stats.endtime
         if pre_pad_secs > 0 or post_pad_secs > 0:
