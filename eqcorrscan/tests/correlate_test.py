@@ -96,7 +96,17 @@ def read_gappy_real_template():
 
 
 def read_gappy_real_data():
-    return read("eqcorrscan/tests/test_data/DUWZ_test.ms")
+    from obspy.clients.fdsn import Client
+    from obspy import UTCDateTime
+    from eqcorrscan.utils.pre_processing import shortproc
+
+    client = Client("GEONET")
+    st = client.get_waveforms(
+        network="NZ", station="DUWZ", location="20", channel="BNZ",
+        starttime=UTCDateTime(2016, 12, 31, 23, 58),
+        endtime=UTCDateTime(2017, 1, 1, 0, 58))
+    st = shortproc(st=st, lowcut=2, highcut=20,filt_order=4, samp_rate=50)
+    return st
 
 
 # ----------------------------- module fixtures
