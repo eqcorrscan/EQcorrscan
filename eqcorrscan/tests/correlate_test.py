@@ -282,10 +282,10 @@ def gappy_real_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        with warnings.catch_warnings(record=True) as w:
-            cc_out = time_func(func, name, gappy_real_data_template,
-                               gappy_real_data, cores=1)
-            out[name] = (cc_out, w)
+        _log_handler.reset()
+        cc_out = time_func(func, name, gappy_real_data_template,
+                           gappy_real_data, cores=1)
+        out[name] = (cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
 
