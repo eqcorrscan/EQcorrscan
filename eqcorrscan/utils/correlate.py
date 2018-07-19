@@ -535,6 +535,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
     variance_warning = np.ascontiguousarray([0], dtype=np.intc)
 
+    # Check that stream is non-zero and above variance threshold
+    if not np.all(stream == 0) and np.var(stream) < 1e-8:
+        # Apply gain
+        stream *= 1e8
+        warnings.warn("Low variance found for, applying gain "
+                      "to stabilise correlations")
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -734,6 +740,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     template_array = np.ascontiguousarray([template_array[x]
                                            for x in seed_ids],
                                           dtype=np.float32)
+    for x in seed_ids:
+        # Check that stream is non-zero and above variance threshold
+        if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
+            # Apply gain
+            stream_array *= 1e8
+            warnings.warn("Low variance found for {0}, applying gain "
+                          "to stabilise correlations".format(x))
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
     cccs = np.zeros((n_templates, image_len - template_len + 1),

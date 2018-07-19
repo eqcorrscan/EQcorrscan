@@ -11,7 +11,7 @@ from functools import wraps
 
 import numpy as np
 import pytest
-from obspy import Trace, Stream
+from obspy import Trace, Stream, read
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
@@ -96,6 +96,27 @@ def generate_multichannel_templates():
     return templates
 
 
+def read_gappy_real_template():
+    return [read("eqcorrscan/tests/test_data/DUWZ_template.ms")]
+
+
+def read_gappy_real_data():
+    """ These data SUCK - gap followed by spike, and long period trend.
+    Super fugly"""
+    from obspy.clients.fdsn import Client
+    from obspy import UTCDateTime
+    from eqcorrscan.utils.pre_processing import shortproc
+
+    client = Client("GEONET")
+    st = client.get_waveforms(
+        network="NZ", station="DUWZ", location="20", channel="BNZ",
+        starttime=UTCDateTime(2016, 12, 31, 23, 58, 56),
+        endtime=UTCDateTime(2017, 1, 1, 0, 58, 56))
+    st = shortproc(
+        st=st.merge(), lowcut=2, highcut=20, filt_order=4, samp_rate=50)
+    return st
+
+
 # ----------------------------- module fixtures
 
 
@@ -129,7 +150,7 @@ def array_template():
 @pytest.fixture(scope='module')
 def array_stream(array_template):
     """
-    Return a stream genearted with randomn for testing normxcorr functions
+    Return a stream generated with random for testing normxcorr functions
     """
     stream = random.randn(10000) * 5
     # insert a template into the stream so cc == 1 at some place
@@ -198,6 +219,16 @@ def gappy_multichannel_stream():
     return generate_gappy_multichannel_stream()
 
 
+@pytest.fixture(scope='module')
+def gappy_real_data():
+    return read_gappy_real_data()
+
+
+@pytest.fixture(scope='module')
+def gappy_real_data_template():
+    return read_gappy_real_template()
+
+
 # a dict of all registered stream functions (this is a bit long)
 stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
                 for fname in corr.XCORR_FUNCS_ORIGINAL.keys()
@@ -242,6 +273,27 @@ def gappy_stream_cc_dict(gappy_stream_cc_output_dict):
     """ return just the cc arrays from the stream_cc functions """
     return {name: (result[0][0], result[1])
             for name, result in gappy_stream_cc_output_dict.items()}
+
+
+@pytest.fixture(scope='module')
+def gappy_real_cc_output_dict(
+        gappy_real_data_template, gappy_real_data):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    out = {}
+    for name, func in stream_funcs.items():
+        with warnings.catch_warnings(record=True) as w:
+            cc_out = time_func(func, name, gappy_real_data_template,
+                               gappy_real_data, cores=1)
+            out[name] = (cc_out, w)
+    return out
+
+
+@pytest.fixture(scope='module')
+def gappy_real_cc_dict(gappy_real_cc_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: (result[0][0], result[1])
+            for name, result in gappy_real_cc_output_dict.items()}
 
 
 # ----------------------------------- tests
@@ -313,8 +365,44 @@ class TestStreamCorrelateFunctions:
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
-            assert np.allclose(cc_1, cc, atol=self.atol * 10)
+            if not np.allclose(cc_1, cc, atol=self.atol * 10):
+                print("{0} does not match the master {1}".format(
+                    cc_name, cc_names[0]))
+                print(np.where((cc_1 - cc) > self.atol * 10))
+                np.save("cc.npy", cc)
+                np.save("cc_1.npy", cc_1)
+                assert np.allclose(cc_1, cc, atol=self.atol * 10)
 
+    def test_gappy_real_multi_channel_xcorr(self, gappy_real_cc_dict):
+        """
+        test various correlation methods with multiple channels and a gap.
+
+        This test used to fail internally when the variance threshold was too
+        low.
+        """
+        # get correlation results into a list
+        cc_names = list(gappy_real_cc_dict.keys())
+        cc_list = [gappy_real_cc_dict[cc_name][0] for cc_name in cc_names]
+        warning_list = [gappy_real_cc_dict[cc_name][1]
+                        for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        for cc_name, warning in zip(cc_names, warning_list):
+            # fftw_multiprocess doesn't warn?
+            if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
+                                'fftw_concurrent']:
+                assert len(warning) == 1
+                assert issubclass(warning[-1].category, UserWarning)
+                assert "are there zeros" in str(warning[-1].message)
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol * 100):
+                print("{0} does not match the master {1}".format(
+                    cc_name, cc_names[0]))
+                print(np.where((cc_1 - cc) > self.atol * 100))
+                np.save("cc.npy", cc)
+                np.save("cc_1.npy", cc_1)
+                assert np.allclose(cc_1, cc, atol=self.atol * 100)
 
 class TestXcorrContextManager:
     # fake_cache = copy.deepcopy(corr.XCOR_FUNCS)
