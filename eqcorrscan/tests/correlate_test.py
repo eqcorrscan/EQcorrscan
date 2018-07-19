@@ -218,6 +218,7 @@ def gappy_multichannel_stream():
 def gappy_real_data():
     return read_gappy_real_data()
 
+
 @pytest.fixture(scope='module')
 def gappy_real_data_template():
     return read_gappy_real_template()
