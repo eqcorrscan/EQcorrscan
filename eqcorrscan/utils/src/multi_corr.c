@@ -38,9 +38,9 @@
     #endif
 #endif
 // Define minimum variance to compute correlations - requires some signal
-#define ACCEPTED_DIFF 1e-15
+#define ACCEPTED_DIFF 1e-10 //1e-15
 // Define difference to warn user on
-#define WARN_DIFF 1e-10
+#define WARN_DIFF 1e-8 //1e-10
 
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*);

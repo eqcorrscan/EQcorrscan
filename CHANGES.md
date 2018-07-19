@@ -31,8 +31,9 @@
   start and end at day-breaks, which led to zeros in the data and undesirable 
   behaviour.
 * BUG-FIX: Normalisation errors not properly passed back from internal fftw
-  correlation functions, and first part of gaps incorrectly calculated correlations
-  for.
+  correlation functions, gaps not always properly handled during long-period
+  trends - variance threshold is now raised, and Python checks for low-variance
+  and applies gain to stabilise correlations if needed.
 
 ## 0.3.1
 * Cleaned imports in utils modules
