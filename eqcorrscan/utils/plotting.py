@@ -25,6 +25,7 @@ from copy import deepcopy
 from collections import Counter
 from itertools import cycle
 from scipy.linalg import diagsvd
+from scipy import fftpack
 from obspy import UTCDateTime, Stream, Catalog, Trace
 from obspy.signal.cross_correlation import xcorr
 
@@ -1215,6 +1216,86 @@ def threeD_seismplot(stations, nodes, save=False, savefile=None,
     else:
         plt.savefig(savefile)
         plt.close()
+    return fig
+
+
+def noise_plot(signal, noise, normalise=False):
+    """
+    Plot signal and noise fourier transforms and the difference.
+
+    :type signal: `obspy.core.stream.Stream`
+    :param signal: Stream of "signal" window
+    :type noise: `obspy.core.stream.Stream`
+    :param noise: Stream of the "noise" window.
+    :type normalise: bool
+    :param normalise: Whether to normalise the data before plotting or not.
+
+    :return: `matplotlib.pyplot.Figure`
+    """
+    import matplotlib.pyplot as plt
+
+    # Work out how many traces we can plot
+    n_traces = 0
+    for tr in signal:
+        try:
+            noise.select(id=tr.id)[0]
+        except IndexError:
+            continue
+        n_traces += 1
+
+    fig, axes = plt.subplots(n_traces, 2, sharex=True)
+    if len(signal) > 1:
+        axes = axes.ravel()
+    i = 0
+    lines = []
+    labels = []
+    for tr in signal:
+        try:
+            noise_tr = noise.select(id=tr.id)[0]
+        except IndexError:
+            continue
+        ax1 = axes[i]
+        ax2 = axes[i + 1]
+        fft_len = fftpack.next_fast_len(
+            max(noise_tr.stats.npts, tr.stats.npts))
+        if not normalise:
+            signal_fft = fftpack.rfft(tr.data, fft_len)
+            noise_fft = fftpack.rfft(noise_tr.data, fft_len)
+        else:
+            signal_fft = fftpack.rfft(tr.data / max(tr.data), fft_len)
+            noise_fft = fftpack.rfft(
+                noise_tr.data / max(noise_tr.data), fft_len)
+        frequencies = np.linspace(0, 1 / (2 * tr.stats.delta), fft_len // 2)
+        noise_line, = ax1.loglog(
+            frequencies, 2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2]),
+            'k', label="noise")
+        signal_line, = ax1.loglog(
+            frequencies, 2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2]),
+            'r', label="signal")
+        if "signal" not in labels:
+            labels.append("signal")
+            lines.append(signal_line)
+        if "noise" not in labels:
+            labels.append("noise")
+            lines.append(noise_line)
+
+        ax2.loglog(
+            frequencies,
+            (2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2])) /
+            (2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2])), 'k')
+        # ax2.loglog(
+        #     frequencies,
+        #     (2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2])) -
+        #     (2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2])), 'k')
+        ax2.yaxis.tick_right()
+        i += 2
+    axes[-1].set_xlabel("Frequency (Hz)")
+    axes[-2].set_xlabel("Frequency (Hz)")
+    axes[0].set_title("Spectra")
+    axes[1].set_title("Spectral ratio")
+    plt.figlegend(lines, labels, 'upper left')
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0)
     return fig
 
 

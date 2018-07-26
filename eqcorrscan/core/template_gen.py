@@ -596,6 +596,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     """
     from eqcorrscan.utils.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
+    from eqcorrscan.utils.plotting import noise_plot
     from eqcorrscan.core.bright_lights import _rms
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
@@ -744,6 +745,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     if plot:
         tplot(st1, background=stplot, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime))
+        fig = noise_plot(signal=st1, noise=stplot)
+        fig.show()
         del stplot
     return st1
 
