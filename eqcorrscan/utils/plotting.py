@@ -94,7 +94,7 @@ def chunk_data(tr, samp_rate, state='mean'):
 
 
 def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
-               savefile=None):
+               savefile=None, show=True):
     """
     Plot a template overlying an image aligned by correlation.
 
@@ -142,6 +142,8 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     plt.plot(x, template / abs(template).max(), 'r', lw=1.1, label='Template')
     plt.title('Shift=%s, Correlation=%s' % (shift, cc))
     fig = plt.gcf()
+    if show:
+        fig.show()
     if save:
         plt.savefig(savefile)
         plt.close()
@@ -149,7 +151,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
 
 
 def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
-                savefile=None):
+                savefile=None, show=True):
     """
     Plot a seismogram, correlogram and histogram.
 
@@ -180,7 +182,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     >>> tr = st[0]
     >>> ccc = normxcorr2(template=template.data, image=tr.data)
     >>> tr.data = tr.data[0:len(ccc[0])]
-    >>> triple_plot(cccsum=ccc, cccsum_hist=ccc, trace=tr,
+    >>> triple_plot(cccsum=ccc[0], cccsum_hist=ccc[0], trace=tr,
     ...             threshold=0.8) # doctest: +SKIP
 
 
@@ -221,10 +223,9 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
     fig = plt.gcf()
     fig.suptitle(trace.id)
     fig.canvas.draw()
-    if not save:
-        plt.show()
-        plt.close()
-    else:
+    if show:
+        fig.show()
+    if save:
         plt.savefig(savefile)
         plt.close()
     return fig

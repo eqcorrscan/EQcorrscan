@@ -54,7 +54,7 @@ class StreamPlottingMethods(unittest.TestCase):
         shift = shifts[1] * st[1].stats.sampling_rate
         cc = ccs[1]
         fig = xcorr_plot(template=st[1].data, image=st[0].data, shift=shift,
-                         cc=cc)
+                         cc=cc, show=False)
         return fig
 
     @pytest.mark.mpl_image_compare
@@ -66,7 +66,19 @@ class StreamPlottingMethods(unittest.TestCase):
             image=st[1].data.astype(np.float32))
         cc_vec = cc_vec[0]
         fig = xcorr_plot(
-            template=st[1].data[40:-40], image=st[0].data, cc_vec=cc_vec)
+            template=st[1].data[40:-40], image=st[0].data, cc_vec=cc_vec,
+            show=False)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_triple_plot(self):
+        template = self.st[0].copy().trim(self.st[0].stats.starttime + 8,
+                                          self.st[0].stats.starttime + 12)
+        tr = self.st[0]
+        ccc = normxcorr2(template=template.data, image=tr.data)
+        tr.data = tr.data[0:len(ccc[0])]
+        fig = triple_plot(cccsum=ccc[0], cccsum_hist=ccc[0], trace=tr,
+                          threshold=0.8, show=False)
         return fig
 
 

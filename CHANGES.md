@@ -34,6 +34,7 @@
   correlation functions, gaps not always properly handled during long-period
   trends - variance threshold is now raised, and Python checks for low-variance
   and applies gain to stabilise correlations if needed.
+* Plotting functions are now tested and have a more consistent interface.
 
 ## 0.3.1
 * Cleaned imports in utils modules
