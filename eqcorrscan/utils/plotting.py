@@ -19,7 +19,6 @@ import datetime as dt
 import copy
 import os
 
-import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
@@ -129,6 +128,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
 
     .. image:: ../../plots/xcorr_plot.png
     """
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     if cc is None or shift is None:
         if not isinstance(cc_vec, np.ndarray):
@@ -188,6 +188,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
     .. image:: ../../plots/triple_plot.png
     """
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     if len(cccsum) != len(trace.data):
         print('cccsum is: ' +
@@ -282,6 +283,7 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
         peaks_plot(data=data, starttime=UTCDateTime("2008001"),
                    samp_rate=10, peaks=peaks)
     """
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     npts = len(data)
     t = np.arange(npts, dtype=np.float32) / (samp_rate * 3600)
@@ -395,6 +397,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                               rate=True, show=True)
 
     """
+    import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import Detection
     _check_save_args(save, savefile)
     # Set up a default series of parameters for lines
@@ -410,9 +413,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         template_names = []
         for detection in detections:
             if not type(detection) == Detection:
-                msg = 'detection not of type: ' +\
-                    'eqcorrscan.core.match_filter.Detection'
-                raise IOError(msg)
+                raise IOError(
+                    'detection not of type: eqcorrscan.core.match_filter'
+                    '.Detection')
             dates.append(detection.detect_time.datetime)
             template_names.append(detection.template_name)
         _dates = []
@@ -517,15 +520,13 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             leg.get_frame().set_alpha(0.5)
     if save:
         plt.gcf().savefig(savefile)
-        plt.close()
-    else:
-        if show:
-            plt.show()
-    return ax
+    if show:
+        plt.show()
+    return plt.gcf()
 
 
-def threeD_gridplot(nodes, save=False, savefile=None):
-    r"""Plot in a series of grid points in 3D.
+def threeD_gridplot(nodes, save=False, savefile=None, show=True):
+    """Plot in a series of grid points in 3D.
 
     :type nodes: list
     :param nodes: List of tuples of the form (lat, long, depth)
@@ -549,6 +550,8 @@ def threeD_gridplot(nodes, save=False, savefile=None):
         nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
         threeD_gridplot(nodes=nodes)
     """
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     lats = []
     longs = []
@@ -565,9 +568,9 @@ def threeD_gridplot(nodes, save=False, savefile=None):
     ax.set_zlabel("Depth(km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
-    if not save:
-        plt.show()
-    else:
+    if show:
+        fig.show()
+    if save:
         plt.savefig(savefile)
         plt.close()
     return fig
@@ -576,8 +579,8 @@ def threeD_gridplot(nodes, save=False, savefile=None):
 def multi_event_singlechan(streams, catalog, station, channel,
                            clip=10.0, pre_pick=2.0,
                            freqmin=False, freqmax=False, realign=False,
-                           cut=(-3.0, 5.0), PWS=False, title=False,
-                           save=False, savefile=None):
+                           cut=(-3.0, 5.0), PWS=False, title=None,
+                           save=False, savefile=None, show=True):
     """
     Plot data from a single channel for multiple events.
 
@@ -658,6 +661,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     .. image:: ../../plots/multi_event_singlechan.png
     """
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     # Work out how many picks we should have...
     short_cat = Catalog()
@@ -741,15 +745,13 @@ def multi_event_singlechan(streams, catalog, station, channel,
         stack = 'linstack'
     for tr in traces:
         print(tr)
-    fig = multi_trace_plot(traces=traces, corr=True, stack=stack)
-    if title:
-        fig.suptitle(title)
+    fig = multi_trace_plot(traces=traces, corr=True, stack=stack, show=False)
+    fig.suptitle(title)
     plt.subplots_adjust(hspace=0)
-    if not save:
-        plt.show()
-    else:
+    if show:
+        fig.show()
+    if save:
         plt.savefig(savefile)
-        plt.close()
     return traces, short_cat, fig
 
 
@@ -776,13 +778,12 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :type title: str
     :param title: Title to plot
     """
+    import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import normxcorr2
     if stack in ['linstack', 'PWS']:
-        fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True,
-                                 figsize=size)
+        fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True, figsize=size)
     else:
-        fig, axes = plt.subplots(len(traces), 1, sharex=True,
-                                 figsize=size)
+        fig, axes = plt.subplots(len(traces), 1, sharex=True, figsize=size)
     if len(traces) > 1:
         axes = axes.ravel()
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
@@ -838,7 +839,7 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
 
 def detection_multiplot(stream, template, times, streamcolour='k',
                         templatecolour='r', save=False, savefile=None,
-                        size=(10.5, 7.5), title=None):
+                        size=(10.5, 7.5), title=None, show=True):
     """
     Plot a stream of data with a template on top of it at detection times.
 
@@ -911,6 +912,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                             times=times)
 
     """
+    import matplotlib.pyplot as plt
     _check_save_args(save, savefile)
     # Only take traces that match in both accounting for streams shorter than
     # templates
@@ -992,11 +994,10 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     plt.xticks(rotation=10)
     if title:
         plt.suptitle(title)
-    if not save:
-        plt.show()
-    else:
+    if show:
+        fig.show()
+    if save:
         plt.savefig(savefile)
-        plt.close()
     return fig
 
 

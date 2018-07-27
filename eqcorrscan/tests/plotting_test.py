@@ -10,9 +10,12 @@ from __future__ import unicode_literals
 import numpy as np
 import unittest
 import pytest
+import datetime as dt
 import os
+import glob
 
-from obspy import read, read_events, UTCDateTime
+from obspy import read, read_events, UTCDateTime, Catalog
+from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils.plotting import (
     _check_save_args, chunk_data, xcorr_plot, triple_plot, peaks_plot,
@@ -25,6 +28,41 @@ from eqcorrscan.utils.plotting import (
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2
+
+
+class MultiStreamMethods(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        sfiles = glob.glob(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'test_data/REA/TEST_/*.S??????'))
+        cls.catalog = Catalog()
+        cls.streams = []
+        for sfile in sfiles:
+            cls.catalog += read_events(sfile)
+            wavefile = readwavename(sfile)[0]
+            stream_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                'test_data/WAV/TEST_', wavefile)
+            stream = read(stream_path)
+            for tr in stream:
+                tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+            cls.streams.append(stream)
+
+    @pytest.mark.mpl_image_compare
+    def test_multi_event_singlechan(self):
+        _, _, fig = multi_event_singlechan(
+            streams=self.streams, catalog=self.catalog, station="GCSZ",
+            channel="EZ", show=False)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_multi_event_singlechan_realign(self):
+        _, _, fig = multi_event_singlechan(
+            streams=self.streams, catalog=self.catalog, station="GCSZ",
+            channel="EZ", show=False, realign=True, freqmin=2, freqmax=20,
+            PWS=True)
+        return fig
 
 
 class StreamPlottingMethods(unittest.TestCase):
@@ -98,7 +136,32 @@ class DataPlottingMethods(unittest.TestCase):
         fig = peaks_plot(data=data, starttime=UTCDateTime("2008001"),
                          samp_rate=10, peaks=peaks, show=False)
         return fig
-    
+
+    @pytest.mark.mpl_image_compare
+    def test_cumulative_detections(self):
+        dates = []
+        for i in range(3):
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+                          for n in np.random.randn(100)])
+        fig = cumulative_detections(dates, ['a', 'b', 'c'], show=False)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_cumulative_detections_rate(self):
+        dates = []
+        for i in range(3):
+            dates.append([dt.datetime(2012, 3, 26) + dt.timedelta(n)
+                          for n in np.random.randn(100)])
+        fig = cumulative_detections(dates, ['a', 'b', 'c'], show=False,
+                                    plot_grouped=True, rate=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_threeD_gridplot(self):
+        nodes = [(-43.5, 170.4, 4), (-43.3, 170.8, 12), (-43.4, 170.3, 8)]
+        fig = threeD_gridplot(nodes=nodes, show=False)
+        return fig
+
 
 if __name__ == "__main__":
     unittest.main()
