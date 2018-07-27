@@ -232,7 +232,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, save=False,
 
 
 def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
-               savefile=None):
+               savefile=None, show=True):
     """
     Plot peaks to check that the peak finding routine is running correctly.
 
@@ -260,8 +260,8 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     >>> from eqcorrscan.utils.plotting import peaks_plot
     >>> from obspy import UTCDateTime
     >>> data = np.random.randn(200)
-    >>> data[30]=100
-    >>> data[60]=40
+    >>> data[30] = 100
+    >>> data[60] = 40
     >>> threshold = 10
     >>> peaks = findpeaks.find_peaks2_short(data, threshold, 3)
     >>> peaks_plot(data=data, starttime=UTCDateTime("2008001"),
@@ -296,9 +296,9 @@ def peaks_plot(data, starttime, samp_rate, save=False, peaks=[(0, 0)],
     ax1.set_xlabel("Time after %s [hr]" % starttime.isoformat())
     ax1.axis('tight')
     fig.suptitle('Peaks')
-    if not save:
-        plt.show()
-    else:
+    if show:
+        fig.show()
+    if save:
         plt.savefig(savefile)
         plt.close()
     return fig

@@ -12,7 +12,7 @@ import unittest
 import pytest
 import os
 
-from obspy import read, read_events
+from obspy import read, read_events, UTCDateTime
 
 from eqcorrscan.utils.plotting import (
     _check_save_args, chunk_data, xcorr_plot, triple_plot, peaks_plot,
@@ -23,6 +23,7 @@ from eqcorrscan.utils.plotting import (
     subspace_detector_plot, subspace_fc_plot, _match_filter_plot,
     _plotting_decimation)
 from eqcorrscan.utils.stacking import align_traces
+from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2
 
 
@@ -81,6 +82,23 @@ class StreamPlottingMethods(unittest.TestCase):
                           threshold=0.8, show=False)
         return fig
 
+
+class DataPlottingMethods(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.data = np.random.randn(200)
+
+    @pytest.mark.mpl_image_compare
+    def test_peaks_plot(self):
+        data = self.data.copy()
+        data[30] = 100
+        data[60] = 40
+        threshold = 10
+        peaks = findpeaks.find_peaks2_short(data, threshold, 3)
+        fig = peaks_plot(data=data, starttime=UTCDateTime("2008001"),
+                         samp_rate=10, peaks=peaks, show=False)
+        return fig
+    
 
 if __name__ == "__main__":
     unittest.main()
