@@ -64,7 +64,7 @@ install:
   - source activate test-environment
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
-  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
+  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
   - pip freeze
   - conda list
   # done installing dependencies

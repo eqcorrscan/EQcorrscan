@@ -142,10 +142,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, save=False,
     plt.plot(x, template / abs(template).max(), 'r', lw=1.1, label='Template')
     plt.title('Shift=%s, Correlation=%s' % (shift, cc))
     fig = plt.gcf()
-    if not save:
-        plt.show()
-        plt.close()
-    else:
+    if save:
         plt.savefig(savefile)
         plt.close()
     return fig
@@ -1283,10 +1280,6 @@ def noise_plot(signal, noise, normalise=False):
             frequencies,
             (2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2])) /
             (2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2])), 'k')
-        # ax2.loglog(
-        #     frequencies,
-        #     (2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2])) -
-        #     (2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2])), 'k')
         ax2.yaxis.tick_right()
         i += 2
     axes[-1].set_xlabel("Frequency (Hz)")
@@ -1296,6 +1289,7 @@ def noise_plot(signal, noise, normalise=False):
     plt.figlegend(lines, labels, 'upper left')
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
+
     return fig
 
 
