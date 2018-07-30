@@ -60,7 +60,7 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy=1.14 scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
