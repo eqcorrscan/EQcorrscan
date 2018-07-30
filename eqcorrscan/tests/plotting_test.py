@@ -20,12 +20,10 @@ from obspy.signal import filter
 
 from eqcorrscan.utils.plotting import (
     chunk_data, xcorr_plot, triple_plot, peaks_plot,
-    cumulative_detections, threeD_gridplot, threeD_seismplot,
-    multi_event_singlechan, multi_trace_plot, detection_multiplot,
-    interev_mag, obspy_3d_plot, noise_plot, pretty_template_plot,
-    plot_repicked, NR_plot, svd_plot, plot_synth_real, freq_mag, spec_trace,
-    subspace_detector_plot, subspace_fc_plot, _match_filter_plot,
-    _plotting_decimation)
+    cumulative_detections, threeD_gridplot, multi_event_singlechan,
+    detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
+    pretty_template_plot, plot_repicked, NR_plot, svd_plot, plot_synth_real,
+    freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot)
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2

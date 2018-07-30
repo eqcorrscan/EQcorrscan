@@ -1565,7 +1565,7 @@ def NR_plot(stream, NR_stream, detections, false_detections=False,
     x = mdates.date2num(x)
     axes[-1].plot(x, y, 'k', linewidth=1.1)
     axes[-1].set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
-                       rotation=0)
+                        rotation=0)
     axes[-1].yaxis.set_ticks([])
     axes[-1].set_xlabel('Time')
     axes[-1].set_xlim(x[0], x[-1])
