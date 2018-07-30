@@ -13,6 +13,9 @@ import pytest
 import datetime as dt
 import os
 import glob
+import matplotlib
+
+matplotlib.use('Agg')
 
 from obspy import read, read_events, UTCDateTime, Catalog, Stream, Trace
 from obspy.io.nordic.core import readwavename
