@@ -1625,7 +1625,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
 
     >>> from obspy import read
     >>> import glob
-    >>> from eqcorrscan.utils.plotting import SVD_plot
+    >>> from eqcorrscan.utils.plotting import svd_plot
     >>> from eqcorrscan.utils.clustering import svd, svd_to_stream
     >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
     >>> streams = [read(w) for w in wavefiles[1:10]]
@@ -1716,8 +1716,9 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
     >>> real = real.select(
     ...    station='RJOB', channel='EHZ').detrend('simple').filter(
     ...       'bandpass', freqmin=2, freqmax=8)
-    >>> real.trim(starttime=real[0].stats.starttime + 4.9,
-    ...           endtime=real[0].stats.starttime + 6.9).detrend('simple')
+    >>> real = real.trim(
+    ...    starttime=real[0].stats.starttime + 4.9,
+    ...    endtime=real[0].stats.starttime + 6.9).detrend('simple')
     >>> plot_synth_real(real_template=real, synthetic=synth,
     ...                 size=(7, 4)) # doctest: +SKIP
 
