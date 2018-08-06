@@ -547,16 +547,22 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         P, S, P_all, S_all or all, defaults to all: see note in
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type prepick: float
-    :param prepick: Length in seconds to extract before the pick time \
-            default is 0.05 seconds
+    :param prepick:
+        Length in seconds to extract before the pick time default is 0.05
+        seconds.
     :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
+    :param all_horiz:
+        To use both horizontal channels even if there is only a pick on one
+        of them.  Defaults to False.
     :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
+    :param delayed:
+        If True, each channel will begin relative to it's own pick-time, if
+        set to False, each channel will begin at the same time.
     :type plot: bool
-    :param plot: To plot the template or not, default is True
+    :param plot:
+        To plot the template or not, default is False. Plots are saved as
+        `template-starttime_template.png` and `template-starttime_noise.png`,
+        where `template-starttime` is the start-time of the template
     :type min_snr: float
     :param min_snr:
         Minimum signal-to-noise ratio for a channel to be included in the
@@ -632,6 +638,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     if plot:
         stplot = st.slice(first_pick.time - 20,
                           first_pick.time + length + 90).copy()
+        noise = stplot.copy()
     # Work out starttimes
     starttimes = []
     for _swin in swin:
@@ -717,6 +724,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             tr_cut = tr.slice(
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
+            if plot:
+                noise.select(
+                    station=_starttime['station'],
+                    channel=_starttime['channel']).trim(
+                        noise[0].stats.starttime, starttime)
             if len(tr_cut.data) == 0:
                 debug_print(
                     "No data provided for {0}.{1} starting at {2}".format(
@@ -743,11 +755,14 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             debug_print('No pick for ' + tr.stats.station + '.' +
                         tr.stats.channel, 0, debug)
     if plot:
-        tplot(st1, background=stplot, picks=picks_copy,
-              title='Template for ' + str(st1[0].stats.starttime))
-        fig = noise_plot(signal=st1, noise=stplot)
-        fig.show()
-        del stplot
+        fig1 = tplot(st1, background=stplot, picks=picks_copy,
+                     title='Template for ' + str(st1[0].stats.starttime),
+                     show=False, return_figure=True)
+        fig2 = noise_plot(
+            signal=st1, noise=noise, show=False, return_figure=True)
+        fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
+        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime))
+        del(stplot, fig1, fig2)
     return st1
 
 
