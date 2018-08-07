@@ -1,3 +1,9 @@
+## Future
+* BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
+  the Earth when changing hemispheres. We now use the Haversine formula, which
+  should give better results at short distances, and does not use a flat-Earth
+  approximation, so is better suited to larger distances as well.
+
 ## Current
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not 

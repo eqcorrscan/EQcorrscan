@@ -25,6 +25,7 @@ import sys
 import copy
 import random
 import pickle
+import math
 
 from scipy.signal import iirfilter
 from collections import Counter
@@ -42,8 +43,10 @@ def dist_calc(loc1, loc2):
     """
     Function to calculate the distance in km between two points.
 
-    Uses the flat Earth approximation. Better things are available for this,
-    like `gdal <http://www.gdal.org/>`_.
+    Uses the
+    `haversine formula <https://en.wikipedia.org/wiki/Haversine_formula>`_
+    to calculate great circle distance at the Earth's surface, then uses
+    trig to include depth.
 
     :type loc1: tuple
     :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
@@ -53,13 +56,20 @@ def dist_calc(loc1, loc2):
     :returns: Distance between points in km.
     :rtype: float
     """
-    R = 6371.009  # Radius of the Earth in km
-    dlat = np.radians(abs(loc1[0] - loc2[0]))
-    dlong = np.radians(abs(loc1[1] - loc2[1]))
+    radius = 6371.009  # Radius of the Earth in km
+
+    lat_1, lat_2 = (math.radians(loc1[0]), math.radians(loc2[0]))
+    lon_1, lon_2 = (math.radians(loc1[1]), math.radians(loc2[1]))
+    dlat = abs(lat_1 - lat_2)
+    dlong = abs(lon_1 - lon_2)
     ddepth = abs(loc1[2] - loc2[2])
-    mean_lat = np.radians((loc1[0] + loc2[0]) / 2)
-    dist = R * np.sqrt(dlat ** 2 + (np.cos(mean_lat) * dlong) ** 2)
-    dist = np.sqrt(dist ** 2 + ddepth ** 2)
+
+    central_angle = 2 * math.asin(math.sqrt(
+        math.pow(math.sin(dlat / 2), 2) +
+        math.cos(lat_1) * math.cos(lat_2) * math.pow(math.sin(dlong / 2), 2)))
+
+    dist = radius * central_angle
+    dist = math.sqrt(dist ** 2 + ddepth ** 2)
     return dist
 
 

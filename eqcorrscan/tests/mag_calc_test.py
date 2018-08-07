@@ -41,6 +41,8 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertEqual(round(dist_calc((90, 90, 0), (90, 90, 10))), 10)
         self.assertEqual(round(dist_calc((90, 90, 0), (90, 89, 0))), 0)
         self.assertEqual(round(dist_calc((90, 90, 0), (89, 90, 0))), 111)
+        self.assertEqual(round(dist_calc((0, 180, 0), (0, -179, 0))), 111)
+        self.assertEqual(round(dist_calc((0, -180, 0), (0, 179, 0))), 111)
 
     @pytest.mark.network
     @pytest.mark.flaky(reruns=2)
