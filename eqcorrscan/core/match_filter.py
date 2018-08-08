@@ -474,11 +474,10 @@ class Party(object):
         else:
             for fam in self.families:
                 all_dets.extend(fam.detections)
-        ax = cumulative_detections(detections=all_dets,
-                                   plot_grouped=plot_grouped,
-                                   rate=rate,
-                                   **kwargs)
-        return ax
+        fig = cumulative_detections(detections=all_dets,
+                                    plot_grouped=plot_grouped,
+                                    rate=rate, **kwargs)
+        return fig
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """

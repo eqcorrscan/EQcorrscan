@@ -827,6 +827,23 @@ class TestMatchObjectLight(unittest.TestCase):
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
 
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_individual(self):
+        fig = self.party.plot(show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped(self):
+        fig = self.party.plot(
+            plot_grouped=True, show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped_rate(self):
+        fig = self.party.plot(
+            plot_grouped=True, rate=True, show=False, return_figure=True)
+        return fig
+
     def test_party_io_list(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_list.tgz'):

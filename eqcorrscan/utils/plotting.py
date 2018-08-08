@@ -324,15 +324,17 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type detections: list
     :param detections: List of :class:`eqcorrscan.core.match_filter.Detection`
     :type plot_grouped: bool
-    :param plot_grouped: Plot detections for each template individually, or \
-        group them all together - set to False (plot template detections \
-        individually) by default.
+    :param plot_grouped:
+        Plot detections for each template individually, or group them all
+        together - set to False (plot template detections individually) by
+        default.
     :type rate: bool
-    :param rate: Whether or not to plot the rate of detection per day. Only
-        works for plot_grouped=True
+    :param rate:
+        Whether or not to plot the rate of detection per day. Only works for
+        plot_grouped=True
     :type plot_legend: bool
-    :param plot_legend: Specify whether to plot legend of template names. \
-        Defaults to True.
+    :param plot_legend:
+        Specify whether to plot legend of template names. Defaults to True.
 
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -437,10 +439,11 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         template_dates.sort()
         plot_dates = deepcopy(template_dates)
         plot_dates.insert(0, min_date)
+        plot_dates.insert(-1, template_dates[-1])
         color = next(colors)
         if color == 'red':
             linestyle = next(linestyles)
-        counts = np.arange(-1, len(template_dates))
+        counts = np.arange(-1, len(template_dates) + 1)
         if rate:
             if not plot_grouped:
                 msg = 'Plotting rate only implemented for plot_grouped=True'
@@ -454,6 +457,8 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             else:
                 bins = (max_date - min_date).days // 7
                 ax.set_ylabel('Detections per week')
+            if len(plot_dates) <= 10:
+                bins = 1
             ax.hist(mdates.date2num(plot_dates), bins=bins,
                     label='Rate of detections', color='darkgrey',
                     alpha=0.5)
@@ -746,10 +751,10 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     """
     import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import normxcorr2
+    n_axes = len(traces)
     if stack in ['linstack', 'PWS']:
-        fig, axes = plt.subplots(len(traces) + 1, 1, sharex=True, figsize=size)
-    else:
-        fig, axes = plt.subplots(len(traces), 1, sharex=True, figsize=size)
+        n_axes += 1
+    fig, axes = plt.subplots(n_axes, 1, sharex=True, figsize=size)
     if len(traces) > 1:
         axes = axes.ravel()
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
@@ -957,11 +962,6 @@ def interev_mag(times, mags, size=(10.5, 7.5), **kwargs):
     :param times: list of the detection times, must be sorted the same as mags
     :type mags: list
     :param mags: list of magnitudes
-    :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
-    :type savefile: str
-    :param savefile: Filename to save to, required for save=True
     :type size: tuple
     :param size: Size of figure in inches.
 
@@ -1168,7 +1168,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     for tr in signal:
         try:
             noise.select(id=tr.id)[0]
-        except IndexError:
+        except IndexError:  # pragma: no cover
             continue
         n_traces += 1
 
@@ -1181,7 +1181,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     for tr in signal:
         try:
             noise_tr = noise.select(id=tr.id)[0]
-        except IndexError:
+        except IndexError:  # pragma: no cover
             continue
         ax1 = axes[i]
         ax2 = axes[i + 1]
