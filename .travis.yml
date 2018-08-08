@@ -76,7 +76,7 @@ script:
    - export MPLBACKEND=Agg
    - py.test --runslow -m "not serial and not network" -n 2
    - py.test -m "serial and not network" --cov-append
-   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py::TestTutorialScripts::test_subspace --cov-append
+   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
 #   - py.test -m "network" --cov-append -n 2
 
 after_success:
