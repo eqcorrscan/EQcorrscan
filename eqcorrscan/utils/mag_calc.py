@@ -56,20 +56,21 @@ def dist_calc(loc1, loc2):
     :returns: Distance between points in km.
     :rtype: float
     """
-    radius = 6371.009  # Radius of the Earth in km
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
 
-    lat_1, lat_2 = (math.radians(loc1[0]), math.radians(loc2[0]))
-    lon_1, lon_2 = (math.radians(loc1[1]), math.radians(loc2[1]))
-    dlat = abs(lat_1 - lat_2)
-    dlong = abs(lon_1 - lon_2)
-    ddepth = abs(loc1[2] - loc2[2])
+    utilslib = _load_cdll('libutils')
 
-    central_angle = 2 * math.asin(math.sqrt(
-        math.pow(math.sin(dlat / 2), 2) +
-        math.cos(lat_1) * math.cos(lat_2) * math.pow(math.sin(dlong / 2), 2)))
+    utilslib.dist_calc.argtypes = [
+        ctypes.c_float, ctypes.c_float, ctypes.c_float,
+        ctypes.c_float, ctypes.c_float, ctypes.c_float]
+    utilslib.dist_calc.restype = ctypes.c_float
 
-    dist = radius * central_angle
-    dist = math.sqrt(dist ** 2 + ddepth ** 2)
+    dist = utilslib.dist_calc(
+        float(math.radians(loc1[0])), float(math.radians(loc1[1])),
+        float(loc1[2]),
+        float(math.radians(loc2[0])), float(math.radians(loc2[1])),
+        float(loc2[2]))
     return dist
 
 

@@ -200,7 +200,9 @@ def get_extensions():
 
     sources = [os.path.join('eqcorrscan', 'utils', 'src', 'multi_corr.c'),
                os.path.join('eqcorrscan', 'utils', 'src', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c')]
+               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c'),
+               os.path.join('eqcorrscan', 'utils', 'src',
+                            'distance_cluster.c')]
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):

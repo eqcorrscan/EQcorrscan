@@ -791,11 +791,75 @@ def extract_detections(detections, templates, archive, arc_type,
         return
 
 
-def dist_mat_km(catalog):
+def dist_mat_km(catalog, num_threads=None):
     """
     Compute the distance matrix for all a catalog using epicentral separation.
 
     Will give physical distance in kilometers.
+
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+
+    :returns: distance matrix
+    :rtype: :class:`numpy.ndarray`
+    """
+    import ctypes
+    from eqcorrscan.utils.libnames import _load_cdll
+    from future.utils import native_str
+    from math import radians
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.distance_matrix.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
+    utilslib.distance_matrix.restype = ctypes.c_int
+
+    # Initialize square matrix
+    dist_mat = np.array([np.array([0.0] * len(catalog))] *
+                        len(catalog), dtype=np.float32)
+    latitudes, longitudes, depths = (
+        np.empty(len(catalog)), np.empty(len(catalog)), np.empty(len(catalog)))
+    for i, event in enumerate(catalog):
+        origin = event.preferred_origin() or event.origins[0]
+        latitudes[i] = radians(origin.latitude)
+        longitudes[i] = radians(origin.longitude)
+        depths[i] = origin.depth / 1000
+    depths = np.ascontiguousarray(depths, dtype=np.float32)
+    latitudes = np.ascontiguousarray(latitudes, dtype=np.float32)
+    longitudes = np.ascontiguousarray(longitudes, dtype=np.float32)
+
+    if num_threads is None:
+        # Testing showed that 400 events per thread was best on the i7.
+        num_threads = int(min(cpu_count(), len(catalog) // 400))
+    if num_threads == 0:
+        num_threads = 1
+
+    ret = utilslib.distance_matrix(
+        latitudes, longitudes, depths, len(catalog), dist_mat, num_threads)
+
+    if ret != 0:
+        raise Exception("Internal error while computing distance matrix")
+    # Fill distance matrix
+    for i in range(1, len(catalog)):
+        for j in range(i):
+            dist_mat[i, j] = dist_mat.T[i, j]
+    return dist_mat
+
+
+def dist_mat_time(catalog):
+    """
+    Compute the distance matrix for all a catalog using origin-time difference.
+
+    Will give temporal separation in seconds.
 
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog for which to compute the distance matrix
@@ -813,18 +877,12 @@ def dist_mat_km(catalog):
             master_ori = master.preferred_origin()
         else:
             master_ori = master.origins[-1]
-        master_tup = (master_ori.latitude,
-                      master_ori.longitude,
-                      master_ori.depth // 1000)
         for slave in catalog:
             if slave.preferred_origin():
                 slave_ori = slave.preferred_origin()
             else:
                 slave_ori = slave.origins[-1]
-            slave_tup = (slave_ori.latitude,
-                         slave_ori.longitude,
-                         slave_ori.depth // 1000)
-            mast_list.append(dist_calc(master_tup, slave_tup))
+            mast_list.append(abs(master_ori.time - slave_ori.time))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
             dist_mat[i, j] = mast_list[j]
@@ -837,7 +895,7 @@ def dist_mat_km(catalog):
 
 def space_cluster(catalog, d_thresh, show=True):
     """
-    Cluster a catalog by distance only.
+    Cluster a catalog by distance only. DEPRECEATED - use catalog_cluster
 
     Will compute the matrix of physical distances between events and utilize
     the :mod:`scipy.clustering.hierarchy` module to perform the clustering.
@@ -846,6 +904,31 @@ def space_cluster(catalog, d_thresh, show=True):
     :param catalog: Catalog of events to clustered
     :type d_thresh: float
     :param d_thresh: Maximum inter-event distance threshold
+
+    :returns: list of :class:`obspy.core.event.Catalog` objects
+    :rtype: list
+    """
+    warnings.warn(
+        "Depreciated, use `catalog_cluster` with `metric='distance'`")
+    return catalog_cluster(catalog=catalog, thresh=d_thresh, metric="distance",
+                           show=show)
+
+
+def catalog_cluster(catalog, thresh, metric="distance", show=True):
+    """
+    Cluster a catalog by distance only.
+
+    Will compute the matrix of physical distances between events and utilize
+    the :mod:`scipy.clustering.hierarchy` module to perform the clustering.
+
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog of events to clustered
+    :type thresh: float
+    :param thresh:
+        Maximum separation, either in km (`metric="distance"`) or in seconds
+        (`metric="time"`)
+    :type metric: str
+    :param metric: Either "distance" or "time"
 
     :returns: list of :class:`obspy.core.event.Catalog` objects
     :rtype: list
@@ -858,7 +941,7 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
-    >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
+    >>> groups = space_cluster(catalog=cat, thresh=2, show=False)
 
     >>> from eqcorrscan.utils.clustering import space_cluster
     >>> from obspy.clients.fdsn import Client
@@ -868,22 +951,26 @@ def space_cluster(catalog, d_thresh, show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=6)
-    >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
+    >>> groups = space_cluster(catalog=cat, thresh=1000, show=False)
     """
     # Compute the distance matrix and linkage
-    dist_mat = dist_mat_km(catalog)
+    if metric == "distance":
+        dist_mat = dist_mat_km(catalog)
+    elif metric == "time":
+        dist_mat = dist_mat_time(catalog)
+    else:
+        raise NotImplementedError("Only supports distance and time metrics")
     dist_vec = squareform(dist_mat)
     Z = linkage(dist_vec, method='average')
 
     # Cluster the linkage using the given threshold as the cutoff
-    indices = fcluster(Z, t=d_thresh, criterion='distance')
+    indices = fcluster(Z, t=thresh, criterion='distance')
     group_ids = list(set(indices))
     indices = [(indices[i], i) for i in range(len(indices))]
 
     if show:
         # Plot the dendrogram...if it's not way too huge
-        dendrogram(Z, color_threshold=d_thresh,
-                   distance_sort='ascending')
+        dendrogram(Z, color_threshold=thresh, distance_sort='ascending')
         plt.show()
 
     # Sort by group id
@@ -931,8 +1018,8 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     ...                         minmagnitude=6)
     >>> groups = space_time_cluster(catalog=cat, t_thresh=86400, d_thresh=1000)
     """
-    initial_spatial_groups = space_cluster(catalog=catalog, d_thresh=d_thresh,
-                                           show=False)
+    initial_spatial_groups = catalog_cluster(
+        catalog=catalog, thresh=d_thresh, metric="distance", show=False)
     # Need initial_spatial_groups to be lists at the moment
     initial_spatial_lists = []
     for group in initial_spatial_groups:
@@ -941,14 +1028,12 @@ def space_time_cluster(catalog, t_thresh, d_thresh):
     # time.
     groups = []
     for group in initial_spatial_lists:
-        for master in group:
-            for event in group:
-                if abs(event.preferred_origin().time -
-                       master.preferred_origin().time) > t_thresh:
-                    # If greater then just put event in on it's own
-                    groups.append([event])
-                    group.remove(event)
-        groups.append(group)
+        if len(group) > 1:
+            sub_time_cluster = catalog_cluster(
+                catalog=group, thresh=t_thresh, metric="time", show=False)
+            groups.extend(sub_time_cluster)
+        else:
+            groups.append(group)
     return [Catalog(group) for group in groups]
 
 

@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 
 import unittest
 import pytest
+import numpy as np
 import os
 import glob
 import warnings
@@ -18,12 +19,11 @@ from obspy import read
 from obspy.clients.fdsn.header import FDSNException
 
 from eqcorrscan.tutorials.template_creation import mktemplates
-from eqcorrscan.utils.clustering import cross_chan_coherence, distance_matrix
-from eqcorrscan.utils.clustering import cluster, group_delays, svd, SVD
-from eqcorrscan.utils.clustering import empirical_svd, empirical_SVD
-from eqcorrscan.utils.clustering import SVD_2_stream, svd_to_stream
-from eqcorrscan.utils.clustering import corr_cluster, dist_mat_km
-from eqcorrscan.utils.clustering import space_cluster, space_time_cluster
+from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.clustering import (
+    cross_chan_coherence, distance_matrix, cluster, group_delays, svd, SVD,
+    empirical_svd, empirical_SVD, SVD_2_stream, svd_to_stream, corr_cluster,
+    dist_mat_km, catalog_cluster, space_time_cluster)
 
 
 @pytest.mark.network
@@ -141,23 +141,174 @@ class ClusteringTests(unittest.TestCase):
         output = corr_cluster(trace_list=trace_list, thresh=0.7)
         self.assertFalse(output.all())
 
+
+class DistanceClusterTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        warnings.simplefilter("ignore")
+        client = Client("https://earthquake.usgs.gov")
+        starttime = UTCDateTime("2002-01-01")
+        endtime = UTCDateTime("2002-01-02")
+        cls.cat = client.get_events(starttime=starttime, endtime=endtime,
+                                    minmagnitude=4)
+        cls.distance_threshold = 1000
+        cls.time_threshold = 7200
+
     def test_dist_mat_km(self):
         """Test spacial clustering."""
         dist_mat = dist_mat_km(self.cat)
         self.assertEqual(len(dist_mat), len(self.cat))
+        # Diagonal should be zeros
+        self.assertTrue(np.all(dist_mat.diagonal() == 0))
+        # Should be symmetric
+        for i in range(len(self.cat)):
+            for j in range(len(self.cat)):
+                self.assertEqual(dist_mat[i, j], dist_mat[j, i])
+                master_ori = (
+                    self.cat[i].preferred_origin() or self.cat[i].origins[0])
+                slave_ori = (
+                    self.cat[j].preferred_origin() or self.cat[j].origins[0])
+                self.assertAlmostEqual(
+                    dist_mat[i, j], dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000)), 6)
 
     def test_space_cluster(self):
         """Test the wrapper around dist_mat_km."""
-        groups = space_cluster(catalog=self.cat, d_thresh=1000, show=False)
+        groups = catalog_cluster(
+            catalog=self.cat, thresh=self.distance_threshold,
+            metric="distance", show=False)
         self.assertEqual(len([ev for group in groups for ev in group]),
                          len(self.cat))
+        # Check that events within each group are within distance-threshold
+        for group in groups:
+            if len(group) > 1:
+                master_ori = group[0].preferred_origin() or group[0].origins[0]
+                for event in group[1:]:
+                    slave_ori = event.preferred_origin() or event.origins[0]
+                    self.assertLessEqual(dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000)), self.distance_threshold)
+        # Check that groups are separated by at least distance-threshold
+        for i, group in enumerate(groups):
+            for event in group:
+                master_ori = event.preferred_origin() or event.origins[0]
+                for j, other_group in enumerate(groups):
+                    if i == j:
+                        continue
+                    for other_event in other_group:
+                        slave_ori = (
+                            other_event.preferred_origin() or
+                            other_event.origins[0])
+                        self.assertGreater(dist_calc(
+                            (master_ori.latitude, master_ori.longitude,
+                             master_ori.depth / 1000),
+                            (slave_ori.latitude, slave_ori.longitude,
+                             slave_ori.depth / 1000)), self.distance_threshold)
+
+    def test_time_cluster(self):
+        """Test the wrapper around dist_mat_time."""
+        groups = catalog_cluster(
+            catalog=self.cat, thresh=self.time_threshold,
+            metric="time", show=False)
+        self.assertEqual(len([ev for group in groups for ev in group]),
+                         len(self.cat))
+        # Check that events within each group are within time-threshold
+        for group in groups:
+            if len(group) > 1:
+                master_ori = group[0].preferred_origin() or group[0].origins[0]
+                for event in group[1:]:
+                    slave_ori = event.preferred_origin() or event.origins[0]
+                    self.assertLessEqual(
+                        abs(master_ori.time - slave_ori.time),
+                        self.time_threshold)
+        # Check that groups are separated by at least time-threshold
+        for i, group in enumerate(groups):
+            master_times = []
+            for master in group:
+                master_ori = (
+                    master.preferred_origin() or master.origins[0])
+                master_times.append(master_ori.time)
+            master_times.sort()
+            master_median_time = master_times[0] + np.median(
+                [m - master_times[0] for m in master_times])
+            for j, other_group in enumerate(groups):
+                if i == j:
+                    continue
+                slave_times = []
+                for slave in other_group:
+                    slave_ori = (
+                        slave.preferred_origin() or slave.origins[0])
+                    slave_times.append(slave_ori.time)
+                slave_times.sort()
+                slave_median_time = slave_times[0] + np.median(
+                    [s - slave_times[0] for s in slave_times])
+                self.assertGreater(
+                    abs(master_median_time - slave_median_time),
+                    self.time_threshold)
 
     def test_space_time_cluster(self):
         """Test clustering in space and time."""
-        groups = space_time_cluster(catalog=self.cat, t_thresh=86400,
-                                    d_thresh=1000)
+        groups = space_time_cluster(
+            catalog=self.cat, t_thresh=self.time_threshold,
+            d_thresh=self.distance_threshold)
         self.assertEqual(len([ev for group in groups for ev in group]),
                          len(self.cat))
+        # Check that events within each group are within distance-threshold and
+        # time-threshold
+        for group in groups:
+            if len(group) > 1:
+                master_ori = group[0].preferred_origin() or group[0].origins[0]
+                for event in group[1:]:
+                    slave_ori = event.preferred_origin() or event.origins[0]
+                    self.assertLessEqual(dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000)), self.distance_threshold)
+                    self.assertLessEqual(abs(master_ori.time - slave_ori.time),
+                                         self.time_threshold)
+        # Check that groups are separated by at least distance-threshold,
+        # or, by some time.
+        for i, group in enumerate(groups):
+            master_times = []
+            for master in group:
+                master_ori = (
+                    master.preferred_origin() or master.origins[0])
+                master_times.append(master_ori.time)
+            master_times.sort()
+            master_median_time = master_times[0] + np.median(
+                [m - master_times[0] for m in master_times])
+            # Just use the origin of one event
+            master_orgin = group[0].preferred_origin() or group[0].origins[0]
+            for j, other_group in enumerate(groups):
+                if i == j:
+                    continue
+                slave_times = []
+                for slave in other_group:
+                    slave_ori = (
+                        slave.preferred_origin() or slave.origins[0])
+                    slave_times.append(slave_ori.time)
+                slave_times.sort()
+                slave_median_time = slave_times[0] + np.median(
+                    [s - slave_times[0] for s in slave_times])
+                for event in other_group:
+                    slave_ori = event.preferred_origin() or event.origins[0]
+                    separation = dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000))
+                    if separation < self.distance_threshold:
+                        self.assertGreater(
+                            abs(master_median_time - slave_median_time),
+                            self.time_threshold)
+                    else:
+                        self.assertGreater(separation, self.distance_threshold)
 
 
 @pytest.mark.network
