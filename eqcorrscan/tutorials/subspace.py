@@ -17,7 +17,7 @@ from eqcorrscan.utils.clustering import space_cluster
 from eqcorrscan.core import subspace
 
 
-def run_tutorial(plot=False, multiplex=True, return_streams=False):
+def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4):
     """
     Run the tutorial.
 
@@ -88,7 +88,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # two real detections.
     print("Computing detections")
     detections, det_streams = detector.detect(
-        st=st, threshold=0.3, trig_int=2, extract_detections=True)
+        st=st, threshold=0.3, trig_int=2, extract_detections=True,
+        cores=cores)
     if return_streams:
         return detections, det_streams
     else:
