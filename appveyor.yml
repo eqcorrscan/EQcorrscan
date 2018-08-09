@@ -52,7 +52,7 @@ install:
 
   # Install other pip dependancies
   - "pip install -U future"
-  - "pip install pytest==3.2.4 pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures codecov"
+  - "pip install pytest==3.2.4 pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures pytest-mpl codecov"
   # list package versions
   - "conda list"
   # Copy the windows fftw header file
