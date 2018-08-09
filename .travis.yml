@@ -60,11 +60,11 @@ install:
         PYFLAKES="pyflakes=0.9.0"
       fi
   - echo $PYTHON_VERSION
-  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy=1.14 scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
-  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
+  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
   - pip freeze
   - conda list
   # done installing dependencies
@@ -73,9 +73,10 @@ install:
   - python setup.py build_ext --inplace
 
 script:
+   - export MPLBACKEND=Agg
    - py.test --runslow -m "not serial and not network" -n 2
    - py.test -m "serial and not network" --cov-append
-   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py::TestTutorialScripts::test_subspace --cov-append
+   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
 #   - py.test -m "network" --cov-append -n 2
 
 after_success:

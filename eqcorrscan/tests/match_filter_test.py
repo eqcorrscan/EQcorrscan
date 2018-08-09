@@ -827,27 +827,46 @@ class TestMatchObjectLight(unittest.TestCase):
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
 
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_individual(self):
+        fig = self.party.plot(show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped(self):
+        fig = self.party.plot(
+            plot_grouped=True, show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped_rate(self):
+        fig = self.party.plot(
+            plot_grouped=True, rate=True, show=False, return_figure=True)
+        return fig
+
     def test_party_io_list(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_list.tgz'):
+            os.remove('test_party_list.tgz')
         try:
-            self.party.write(filename='test_party_out')
-            party_back = read_party(fname=['test_party_out.tgz'])
+            self.party.write(filename='test_party_list')
+            party_back = read_party(fname=['test_party_list.tgz'])
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_list.tgz'):
+                os.remove('test_party_list.tgz')
 
     def test_party_io_wildcards(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_walrus.tgz'):
+            os.remove('test_party_walrus.tgz')
         try:
-            self.party.write(filename='test_party_out')
-            party_back = read_party(fname='test_party_*.tgz')
+            self.party.write(filename='test_party_walrus')
+            party_back = read_party(fname='test_party_w*.tgz')
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_walrus.tgz'):
+                os.remove('test_party_walrus.tgz')
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
@@ -878,7 +897,8 @@ class TestMatchObjectLight(unittest.TestCase):
             tribe_back = read_tribe('test_tribe_QML.tgz')
             self.assertEqual(self.tribe, tribe_back)
         finally:
-            os.remove('test_tribe_QML.tgz')
+            if os.path.isfile('test_tribe_QML.tgz'):
+                os.remove('test_tribe_QML.tgz')
 
     def test_tribe_io_sc3ml(self):
         """Test reading and writing or Tribe objects using tar form."""
@@ -892,7 +912,8 @@ class TestMatchObjectLight(unittest.TestCase):
                 assert template_in.__eq__(
                     template_back, verbose=True, shallow_event_check=True)
         finally:
-            os.remove('test_tribe_SC3ML.tgz')
+            if os.path.isfile('test_tribe_SC3ML.tgz'):
+                os.remove('test_tribe_SC3ML.tgz')
 
     # Requires bug-fixes in obspy to be deployed.
     # def test_tribe_io_nordic(self):
@@ -1033,7 +1054,8 @@ class TestMatchObjectLight(unittest.TestCase):
             template_back = Template().read('test_template.tgz')
             self.assertEqual(test_template, template_back)
         finally:
-            os.remove('test_template.tgz')
+            if os.path.isfile('test_template.tgz'):
+                os.remove('test_template.tgz')
         # Make sure we raise a useful error when trying to read from a
         # tribe file.
         try:
@@ -1041,7 +1063,8 @@ class TestMatchObjectLight(unittest.TestCase):
             with self.assertRaises(IOError):
                 Template().read('test_template.tgz')
         finally:
-            os.remove('test_template.tgz')
+            if os.path.isfile('test_template.tgz'):
+                os.remove('test_template.tgz')
 
     def test_party_io(self):
         """Test reading and writing party objects."""
@@ -1052,28 +1075,32 @@ class TestMatchObjectLight(unittest.TestCase):
             party_back = read_party(fname='test_party_out.tgz')
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out.tgz'):
+                os.remove('test_party_out.tgz')
 
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_out_no_cat.tgz'):
+            os.remove('test_party_out_no_cat.tgz')
         try:
             self.party.write(
-                filename='test_party_out', write_detection_catalog=False)
-            party_back = read_party(fname='test_party_out.tgz')
+                filename='test_party_out_no_cat',
+                write_detection_catalog=False)
+            party_back = read_party(fname='test_party_out_no_cat.tgz')
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out_no_cat.tgz'):
+                os.remove('test_party_out_no_cat.tgz')
 
     def test_party_io_no_catalog_reading(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_out_no_cat2.tgz'):
+            os.remove('test_party_out_no_cat2.tgz')
         try:
-            self.party.write(filename='test_party_out')
+            self.party.write(filename='test_party_out_no_cat2')
             party_back = read_party(
-                fname='test_party_out.tgz', read_detection_catalog=False)
+                fname='test_party_out_no_cat2.tgz',
+                read_detection_catalog=False)
             # creation times will differ - hack around this to make comparison
             # easier
             for family in self.party:
@@ -1083,7 +1110,8 @@ class TestMatchObjectLight(unittest.TestCase):
                         detection_back.event.creation_info.creation_time
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out_no_cat2.tgz'):
+                os.remove('test_party_out_no_cat2.tgz')
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
@@ -1139,7 +1167,8 @@ class TestMatchObjectLight(unittest.TestCase):
             self.assertEqual(len(party_back), 1)
             self.assertEqual(party_back[0], family)
         finally:
-            os.remove('test_family.tgz')
+            if os.path.isfile('test_family.tgz'):
+                os.remove('test_family.tgz')
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
@@ -1189,7 +1218,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                         print(key)
                     assert (
                         abs(det.__dict__[key] -
-                            check_det.__dict__[key]) < 0.00001)
+                            check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
                     continue
                     # Name relies on creation-time, which is checked elsewhere,
