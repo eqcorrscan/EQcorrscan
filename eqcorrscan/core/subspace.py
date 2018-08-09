@@ -253,7 +253,7 @@ class Detector(object):
             return 100 * (percent_capture / len(self.sigma))
 
     def detect(self, st, threshold, trig_int, moveout=0, min_trig=0,
-               process=True, extract_detections=False):
+               process=True, extract_detections=False, cores=1):
         """
         Detect within continuous data using the subspace method.
 
@@ -281,6 +281,10 @@ class Detector(object):
         :param extract_detections:
             Whether to extract waveforms for each detection or not, if True
             will return detections and streams.
+        :type cores: int
+        :param cores: Number of threads to process data with.
+        :type debug: int
+        :param debug: Debug output level from 0-5.
 
         :return: list of :class:`eqcorrscan.core.match_filter.Detection`
         :rtype: list
@@ -314,7 +318,8 @@ class Detector(object):
         """
         return _detect(detector=self, st=st, threshold=threshold,
                        trig_int=trig_int, moveout=moveout, min_trig=min_trig,
-                       process=process, extract_detections=extract_detections)
+                       process=process, extract_detections=extract_detections,
+                       cores=cores)
 
     def write(self, filename):
         """
@@ -440,7 +445,7 @@ class Detector(object):
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
-            process=True, extract_detections=False):
+            process=True, extract_detections=False, cores=1):
     """
     Detect within continuous data using the subspace method.
 
@@ -481,7 +486,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
             highcut=detector.highcut, filt_order=detector.filt_order,
             sampling_rate=detector.sampling_rate, multiplex=detector.multiplex,
             stachans=detector.stachans, parallel=True, align=False,
-            shift_len=None, reject=False)
+            shift_len=None, reject=False, cores=cores)
     else:
         # Check the sampling rate at the very least
         for tr in st:
@@ -642,7 +647,7 @@ def _det_stat_freq(det_freq, data_freq_sq, data_freq, w, Nc, ulen, mplen):
 
 def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                       multiplex, align, shift_len, reject, no_missed=True,
-                      stachans=None, parallel=False, plot=False):
+                      stachans=None, parallel=False, plot=False, cores=1):
     """
     Process stream data, internal function.
 
@@ -712,7 +717,7 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                 processed_stream += tr
             processed_streams.append(processed_stream)
         else:
-            pool = Pool(processes=cpu_count())
+            pool = Pool(processes=min(cores, cpu_count()))
             results = [pool.apply_async(
                 _internal_process, (st,),
                 {'lowcut': lowcut, 'highcut': highcut,

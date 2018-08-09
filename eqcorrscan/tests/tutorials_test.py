@@ -126,7 +126,7 @@ class TestTutorialScripts(unittest.TestCase):
     def test_subspace(self):
         """Test the subspace tutorial."""
         print("Running subspace")
-        detections = subspace.run_tutorial(plot=False)
+        detections = subspace.run_tutorial(plot=False, cores=1)
         print("Subspace ran")
         self.assertEqual(len(detections), 11)
 

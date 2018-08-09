@@ -475,11 +475,10 @@ class Party(object):
         else:
             for fam in self.families:
                 all_dets.extend(fam.detections)
-        ax = cumulative_detections(detections=all_dets,
-                                   plot_grouped=plot_grouped,
-                                   rate=rate,
-                                   **kwargs)
-        return ax
+        fig = cumulative_detections(detections=all_dets,
+                                    plot_grouped=plot_grouped,
+                                    rate=rate, **kwargs)
+        return fig
 
     def rethreshold(self, new_threshold, new_threshold_type='MAD'):
         """
@@ -4159,25 +4158,24 @@ def match_filter(template_names, template_list, st, threshold,
         ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
         calling custom xcorr function...
     """
-    _spike_test(st)
     import matplotlib
     matplotlib.use('Agg', warn=False)
     from eqcorrscan.utils.plotting import _match_filter_plot
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
-        if not type(template_names) == list:
+        if not isinstance(template_names, list):
             raise MatchFilterError('template_names must be of type: list')
-        if not type(template_list) == list:
+        if not isinstance(template_list, list):
             raise MatchFilterError('templates must be of type: list')
         if not len(template_list) == len(template_names):
             raise MatchFilterError('Not the same number of templates as names')
         for template in template_list:
-            if not type(template) == Stream:
+            if not isinstance(template, Stream):
                 msg = 'template in template_list must be of type: ' + \
                       'obspy.core.stream.Stream'
                 raise MatchFilterError(msg)
-        if not type(st) == Stream:
+        if not isinstance(st, Stream):
             msg = 'st must be of type: obspy.core.stream.Stream'
             raise MatchFilterError(msg)
         if str(threshold_type) not in [str('MAD'), str('absolute'),
@@ -4195,6 +4193,7 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
+    _spike_test(st)
     if cores is not None:
         parallel = True
     else:

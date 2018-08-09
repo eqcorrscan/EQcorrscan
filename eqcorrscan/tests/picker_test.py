@@ -43,3 +43,7 @@ class PickerTests(unittest.TestCase):
         self.assertEqual(len(event.picks), 24)
         event = cross_net(stream=st, env=False)
         self.assertEqual(len(event.picks), 24)
+
+
+if __name__ == "__main__":
+    unittest.main()

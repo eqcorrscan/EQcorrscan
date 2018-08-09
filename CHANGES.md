@@ -38,6 +38,11 @@
   correlation functions, gaps not always properly handled during long-period
   trends - variance threshold is now raised, and Python checks for low-variance
   and applies gain to stabilise correlations if needed.
+* Plotting functions are now tested and have a more consistent interface:
+  * All plotting functions accept the keyword arguments `save`, `savefile`,
+    `show`, `return_figure` and `title`.
+  * All plotting functions return a figure.
+  * `SVD_plot` renamed to `svd_plot`
 
 
 ## 0.3.1
