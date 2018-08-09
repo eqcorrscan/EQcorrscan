@@ -2786,8 +2786,8 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
-        buff = 300  # Apply a buffer, often data downloaded is not the correct
-        #  length
+        buff = 300
+        # Apply a buffer, often data downloaded is not the correct length
         data_length = max([t.process_length for t in self.templates])
         pad = 0
         for template in self.templates:
@@ -3489,13 +3489,13 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     if not pre_processed:
         if process_cores is None:
             process_cores = cores
-        st = _group_process(
+        streams = _group_process(
             template_group=templates, parallel=parallel_process, debug=debug,
             cores=process_cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, overlap=overlap)
     else:
         warnings.warn('Not performing any processing on the continuous data.')
-        st = [stream]
+        streams = [stream]
     detections = []
     party = Party()
     if group_size is not None:
@@ -3504,7 +3504,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             n_groups += 1
     else:
         n_groups = 1
-    for st_chunk in st:
+    for st_chunk in streams:
         debug_print(
             'Computing detections between %s and %s' %
             (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime), 0, debug)
@@ -3576,12 +3576,8 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'debug': debug,
         'parallel': parallel, 'num_cores': cores}
-    # Check whether any processing actually needs to be done.
-    if kwargs['highcut'] is None and kwargs['lowcut'] is None:
-        st_samp_rates = set([tr.stats.sampling_rate for tr in stream])
-        if len(st_samp_rates) == 1 and \
-           st_samp_rates.pop() == kwargs['samp_rate']:
-            return [stream]
+    # Processing always needs to be run to account for gaps - pre-process will
+    # check whether filtering and resampling needs to be done.
     if daylong:
         if not master.process_length == 86400:
             warnings.warn(
@@ -3618,6 +3614,9 @@ def _group_process(template_group, parallel, debug, cores, stream, daylong,
                                         endtime=kwargs['endtime']).copy()
         else:
             chunk_stream = stream.copy()
+        for tr in chunk_stream:
+            tr.data = tr.data[0:int(
+                master.process_length * tr.stats.sampling_rate)]
         processed_streams.append(func(st=chunk_stream, **kwargs))
     return processed_streams
 

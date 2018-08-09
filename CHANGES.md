@@ -39,6 +39,13 @@
     `show`, `return_figure` and `title`.
   * All plotting functions return a figure.
   * `SVD_plot` renamed to `svd_plot`
+* Enforce pre-processing even when no filters or resampling is to be done
+  to ensure gaps are properly processed (when called from `Tribe.detect`,
+  `Template.detect` or `Tribe.client_detect`)
+* BUG-FIX in `Tribe.client_detect` where data were processed from data 
+  one sample too long resulting in minor differences in data processing
+  (due to difference in FFT length) and therefore minor differences 
+  in resulting correlations (~0.07 per channel).
 
 ## 0.3.1
 * Cleaned imports in utils modules

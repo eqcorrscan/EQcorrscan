@@ -310,7 +310,7 @@ class TestGappyData(unittest.TestCase):
             parallel_process=False)
         for family in party:
             print(len(family))
-            self.assertTrue(len(family) in [11, 1])
+            self.assertTrue(len(family) in [12, 1])
             for detection in family:
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
@@ -687,7 +687,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            debug=2)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -699,10 +700,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the client_detect method."""
         client = Client('NCEDC')
         party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
+            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
-        self.assertEqual(len(party), 4)
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.05,
+            check_event=False)
 
     @pytest.mark.flaky(reruns=2)
     @pytest.mark.network
@@ -710,13 +713,16 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the client_detect method."""
         client = Client('NCEDC')
         party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
+            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False, save_progress=True)
         self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
         os.remove("eqcorrscan_temporary_party.tgz")
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.05,
+            check_event=False)
 
     @pytest.mark.network
     def test_party_lag_calc(self):
