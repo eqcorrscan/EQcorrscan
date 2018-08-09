@@ -167,7 +167,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             flatline_count = 0;
         }
         stdev = sqrt(var);
-        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1) {
+        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 2) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -403,7 +403,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     // Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
+        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 2) {
             double stdev = sqrt(var[i]);
             for (t = 0; t < n_templates; ++t){
                 double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );

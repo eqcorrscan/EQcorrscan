@@ -295,12 +295,12 @@ class TestGappyData(unittest.TestCase):
             filt_order=4, length=10, prepick=0.5, catalog=catalog,
             client_id="GEONET", process_len=3600, swin="P")
         cls.st = cls.client.get_waveforms(
-            station="KHZ", network="NZ", channel="HH?", location="10",
+            station="KHZ", network="NZ", channel="HHZ", location="10",
             starttime=cls.starttime, endtime=cls.endtime)
 
     def test_gappy_data(self):
         gaps = self.st.get_gaps()
-        self.assertEqual(len(gaps), 3)
+        self.assertEqual(len(gaps), 1)
         start_gap = gaps[0][4]
         end_gap = gaps[0][5]
         party = self.tribe.client_detect(
@@ -309,7 +309,8 @@ class TestGappyData(unittest.TestCase):
             threshold_type="absolute", trig_int=2, plotvar=False,
             parallel_process=False)
         for family in party:
-            self.assertTrue(len(family) in [6, 1])
+            print(family)
+            self.assertTrue(len(family) in [5, 1])
             for detection in family:
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
