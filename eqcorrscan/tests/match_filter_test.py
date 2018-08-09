@@ -305,12 +305,11 @@ class TestGappyData(unittest.TestCase):
         end_gap = gaps[0][5]
         party = self.tribe.client_detect(
             client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=12,
-            threshold_type="MAD", trig_int=2, plotvar=False,
+            endtime=self.endtime, threshold=0.6,
+            threshold_type="absolute", trig_int=2, plotvar=False,
             parallel_process=False)
         for family in party:
-            print(len(family))
-            self.assertTrue(len(family) in [12, 1])
+            self.assertTrue(len(family) in [6, 1])
             for detection in family:
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
