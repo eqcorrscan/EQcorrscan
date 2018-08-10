@@ -180,9 +180,9 @@ can be as simple as:
      # Read in and process the daylong data
      st = read('continuous_data')
      # Use the same filtering and sampling parameters as your template!
-     st = pre_processing.dayproc(st, lowcut=2, highcut=10, filt_order=4,
-                                 samp_rate=50,
-                                 starttime=st[0].stats.starttime.date)
+     st = pre_processing.dayproc(
+         st, lowcut=2, highcut=10, filt_order=4, samp_rate=50,
+         starttime=st[0].stats.starttime.date)
      # Read in the templates
      templates = []
      template_names = ['template_1', 'template_2']
@@ -201,6 +201,45 @@ if this is set and the file already exists, it will just add on to the old file.
 
      for detection in detections:
           detection.write('my_first_detections.csv', append=True)
+
+
+Data gaps and how to handle them
+--------------------------------
+
+Data containing gaps can prove problematic for normalized cross-correlation. Because
+the correlations are normalized by the standard deviation of the data, if the standard
+deviation is low, floating-point rounding errors can occur. EQcorrscan tries to
+avoid this in two ways:
+
+1. In the 'eqcorrscan.utils.correlate` (fftw) functions, correlations are not computed
+   when the variance of the data window is less than 1e-10, or when there are fewer than
+   `template_len - 1` non-flat data values (e.g. at-least one sample that is not
+   in a gap), or when the mean of the data multiplied by the standard deviation
+   of the data is less than 1e-10.
+2. The `eqcorrscan.utils.pre_processing` functions fill gaps prior to processing,
+   process the data, then edit the data within the gaps to be zeros.  During processing
+   aliased signal will appear in the gaps, so it is important to remove those
+   artifacts to ensure that gaps contain zeros (which will be correctly identified
+   by the `eqcorrscan.utils.correlate` functions.
+
+As a caveat of point 1: if your data have very low variance, but real data, your data
+will be artificially gained by `eqcorrscan.utils.pre_processing` to ensure stable
+correlations.
+
+If you provide data with filled gaps (e.g. you used `st = st.merge(fill_value=0)` to
+either
+- `eqcorrscan.core.match_filter.Tribe.detect`,
+- `eqcorrscan.core.match_filter.Template.detect`,
+- `eqcorrscan.utils.pre_processing.shortproc` or
+- `eqcorrscan.utils.pre_processing.dayproc`
+
+Then you will end up with the *wrong* result from the correlation or match_filter
+functions. You should provide data with gaps maintained, but merged
+(e.g. run `st = st.merge()` before passing the data to those functions).
+
+If you have data that you know contains gaps that have been padded you must remove
+the pads and reinstate the gaps.
+
 
 
 Memory limitations and what to do about it
@@ -236,6 +275,7 @@ To get around memory limitations you can:
 The three threshold parameters
 ------------------------------
 
+EQcorrscan detects both positively and negatively correlated waveforms.
 The match-filter routine has three key threshold parameters:
 
 * **threshold_type** can either be MAD, abs or av_chan_corr.  MAD stands for Median Absolute
