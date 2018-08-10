@@ -216,22 +216,23 @@ avoid this in two ways:
    `template_len - 1` non-flat data values (e.g. at-least one sample that is not
    in a gap), or when the mean of the data multiplied by the standard deviation
    of the data is less than 1e-10.
-2. The `eqcorrscan.utils.pre_processing` functions fill gaps prior to processing,
+2. The :doc:`pre_processing <submodules/utils.pre_processing>` functions fill gaps prior to processing,
    process the data, then edit the data within the gaps to be zeros.  During processing
    aliased signal will appear in the gaps, so it is important to remove those
    artifacts to ensure that gaps contain zeros (which will be correctly identified
-   by the `eqcorrscan.utils.correlate` functions.
+   by the :doc:`correlate <submodules/utils.correlate>` functions.
 
 As a caveat of point 1: if your data have very low variance, but real data, your data
-will be artificially gained by `eqcorrscan.utils.pre_processing` to ensure stable
-correlations.
+will be artificially gained by :doc:`pre_processing <submodules/utils.pre_processing>`
+to ensure stable correlations.
 
 If you provide data with filled gaps (e.g. you used `st = st.merge(fill_value=0)` to
-either
-- `eqcorrscan.core.match_filter.Tribe.detect`,
-- `eqcorrscan.core.match_filter.Template.detect`,
-- `eqcorrscan.utils.pre_processing.shortproc` or
-- `eqcorrscan.utils.pre_processing.dayproc`
+either:
+
+* :doc:`Tribe.detect <submodules/core.match_filter.Tribe.detect>`,
+* :doc:`Template.detect <submodules/core.match_filter.Template.detect>`,
+* :doc:`shortproc <submodules/utils.pre_processing.shortproc>`,
+* :doc:`dayproc <submodules/utils.pre_processing.dayproc>`,
 
 Then you will end up with the *wrong* result from the correlation or match_filter
 functions. You should provide data with gaps maintained, but merged
