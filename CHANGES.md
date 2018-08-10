@@ -48,6 +48,8 @@
   in resulting correlations (~0.07 per channel).
   * Includes extra stability check in fftw_normxcorr which affects the
     last sample before a gap when that sample is near-zero.
+* KeyboardInterrupt (e.g. ctrl-c) should now be caught during python parallel
+  processes.
 
 ## 0.3.1
 * Cleaned imports in utils modules

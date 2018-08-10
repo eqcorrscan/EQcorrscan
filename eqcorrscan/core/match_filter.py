@@ -1927,14 +1927,20 @@ class Template(object):
 
         :returns: Family of detections.
 
-        .. warning::
-            Plotting within the match-filter routine uses the Agg backend
-            with interactive plotting turned off.  This is because the function
-            is designed to work in bulk.  If you wish to turn interactive
-            plotting on you must import matplotlib in your script first, when
-            you then import match_filter you will get the warning that this
-            call to matplotlib has no effect, which will mean that
-            match_filter has not changed the plotting behaviour.
+        .. Note::
+            `stream` must not be pre-processed. If your data contain gaps
+            you should *NOT* fill those gaps before using this method.
+            The pre-process functions (called within) will fill the gaps
+            internally prior to processing, process the data, then re-fill
+            the gaps with zeros to ensure correlations are not incorrectly
+            calculated within gaps. If your data have gaps you should pass a
+            merged stream without the `fill_value` argument
+            (e.g.: `stream = stream.merge()`).
+
+        .. Note::
+            Detections are not corrected for `pre-pick`, the
+            detection.detect_time corresponds to the beginning of the earliest
+            template channel at detection.
 
         .. note::
             **Data overlap:**
@@ -2538,20 +2544,23 @@ class Tribe(object):
             detections.
 
         .. Note::
-            `stream` must not be pre-processed.
+            `stream` must not be pre-processed. If your data contain gaps
+            you should *NOT* fill those gaps before using this method.
+            The pre-process functions (called within) will fill the gaps
+            internally prior to processing, process the data, then re-fill
+            the gaps with zeros to ensure correlations are not incorrectly
+            calculated within gaps. If your data have gaps you should pass a
+            merged stream without the `fill_value` argument
+            (e.g.: `stream = stream.merge()`).
+
+        .. Note::
+            Detections are not corrected for `pre-pick`, the
+            detection.detect_time corresponds to the beginning of the earliest
+            template channel at detection.
 
         .. warning::
             Picks included in the output Party.get_catalog() will not be
             corrected for pre-picks in the template.
-
-        .. warning::
-            Plotting within the match-filter routine uses the Agg backend
-            with interactive plotting turned off.  This is because the function
-            is designed to work in bulk.  If you wish to turn interactive
-            plotting on you must import matplotlib in your script first,
-            when you then import match_filter you will get the warning that
-            this call to matplotlib has no effect, which will mean that
-            match_filter has not changed the plotting behaviour.
 
         .. note::
             **Data overlap:**
@@ -2574,7 +2583,7 @@ class Tribe(object):
             length.
 
         .. Note::
-            If `stream` is long then processing length, this routine will
+            If `stream` is longer than processing length, this routine will
             ensure that data overlap between loops, which will lead to no
             missed detections at data start-stop points (see above note).
             This will result in end-time not being strictly
@@ -2736,6 +2745,11 @@ class Tribe(object):
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
             detections.
+
+        .. Note::
+            Detections are not corrected for `pre-pick`, the
+            detection.detect_time corresponds to the beginning of the earliest
+            template channel at detection.
 
         .. warning::
             Picks included in the output Party.get_catalog() will not be
@@ -3955,6 +3969,14 @@ def normxcorr2(template, image):
         New :class:`numpy.ndarray` of the correlation values for the
         correlation of the image with the template.
     :rtype: numpy.ndarray
+
+    .. note::
+        If your data contain gaps these must be padded with zeros before
+        using this function. The `eqcorrscan.utils.pre_processing` functions
+        will provide gap-filled data in the appropriate format.  Note that if
+        you pad your data with zeros before filtering or resampling the gaps
+        will not be all zeros after filtering. This will result in the
+        calculation of spurious correlations in the gaps.
     """
     array_xcorr = get_array_xcorr()
     # Check that we have been passed numpy arrays
@@ -4085,14 +4107,18 @@ def match_filter(template_names, template_list, st, threshold,
             above.
         :rtype: list
 
-    .. warning::
-        Plotting within the match-filter routine uses the Agg backend
-        with interactive plotting turned off.  This is because the function
-        is designed to work in bulk.  If you wish to turn interactive
-        plotting on you must import matplotlib in your script first, when you
-        them import match_filter you will get the warning that this call to
-        matplotlib has no effect, which will mean that match_filter has not
-        changed the plotting behaviour.
+    .. note::
+        If your data contain gaps these must be padded with zeros before
+        using this function. The `eqcorrscan.utils.pre_processing` functions
+        will provide gap-filled data in the appropriate format.  Note that if
+        you pad your data with zeros before filtering or resampling the gaps
+        will not be all zeros after filtering. This will result in the
+        calculation of spurious correlations in the gaps.
+
+    .. Note::
+        Detections are not corrected for `pre-pick`, the
+        detection.detect_time corresponds to the beginning of the earliest
+        template channel at detection.
 
     .. note::
         **Data overlap:**
@@ -4144,12 +4170,11 @@ def match_filter(template_names, template_list, st, threshold,
         with correlation values and channels used for the detection. Each
         channel used for the detection will have a corresponding
         :class:`obspy.core.event.Pick` which will contain time and
-        waveform information. **HOWEVER**, the user should note that, at
-        present, the pick times do not account for the
-        prepick times inherent in each template. For example, if a template
-        trace starts 0.1 seconds before the actual arrival of that phase,
-        then the pick time generated by match_filter for that phase will be
-        0.1 seconds early.
+        waveform information. **HOWEVER**, the user should note that
+        the pick times do not account for the prepick times inherent in
+        each template. For example, if a template trace starts 0.1 seconds
+        before the actual arrival of that phase, then the pick time generated
+        by match_filter for that phase will be 0.1 seconds early.
 
     .. Note::
         xcorr_func can be used as follows:
@@ -4182,8 +4207,6 @@ def match_filter(template_names, template_list, st, threshold,
         ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
         calling custom xcorr function...
     """
-    import matplotlib
-    matplotlib.use('Agg', warn=False)
     from eqcorrscan.utils.plotting import _match_filter_plot
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
