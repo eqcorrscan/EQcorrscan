@@ -39,6 +39,8 @@
     `show`, `return_figure` and `title`.
   * All plotting functions return a figure.
   * `SVD_plot` renamed to `svd_plot`
+* KeyboardInterrupt (e.g. ctrl-c) should now be caught during python parallel
+  processes.
 
 ## 0.3.1
 * Cleaned imports in utils modules

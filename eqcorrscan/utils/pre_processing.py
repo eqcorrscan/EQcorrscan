@@ -189,7 +189,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
             'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
@@ -339,7 +343,11 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
