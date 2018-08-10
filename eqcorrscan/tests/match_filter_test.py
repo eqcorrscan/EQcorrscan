@@ -307,13 +307,14 @@ class TestGappyData(unittest.TestCase):
             client=self.client, starttime=self.starttime,
             endtime=self.endtime, threshold=0.6,
             threshold_type="absolute", trig_int=2, plotvar=False,
-            parallel_process=False)
+            parallel_process=False, cores=1)
         for family in party:
             print(family)
-            self.assertTrue(len(family) in [5, 1])
             for detection in family:
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
+        for family in party:
+            self.assertTrue(len(family) in [5, 1])
 
     def test_gappy_data_removal(self):
         party = self.tribe.client_detect(

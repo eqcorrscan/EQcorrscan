@@ -167,7 +167,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             flatline_count = 0;
         }
         stdev = sqrt(var);
-        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 2) {
+        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1 && stdev * mean >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -403,11 +403,19 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     // Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 2) {
-            double stdev = sqrt(var[i]);
+        double stdev = sqrt(var[i]);
+        double meanstd = fabs(mean[i] * stdev);
+        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1 && meanstd >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
-                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
+                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
+//                if (17850 <= i && i <= 17860){
+//                    printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\t",
+//                           t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd);
+//                }
                 c /= stdev;
+//                if (17850 <= i && i <= 17860){
+//                    printf("Normalized Correlation: %g\n", c);
+//                }
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
             }
             if (var[i] <= WARN_DIFF){
@@ -415,6 +423,8 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             }
         } else {
             unused_corr = 1;
+//            printf("Ignored correlation: Index: %i\tVariance: %g\tFlatline: %i\tMean * STD: %g\n",
+//                   i, var[i], flatline_count[i], meanstd);
         }
     }
     if (unused_corr == 1){
@@ -454,7 +464,6 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         else if (value < -1.0) {
             value = -1.0;
         }
-
         // prev_ncc = ncc[ncc_index];
         #pragma omp atomic
         ncc[ncc_index] += value;

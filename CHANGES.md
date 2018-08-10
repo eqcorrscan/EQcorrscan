@@ -46,6 +46,8 @@
   one sample too long resulting in minor differences in data processing
   (due to difference in FFT length) and therefore minor differences 
   in resulting correlations (~0.07 per channel).
+  * Includes extra stability check in fftw_normxcorr which affects the
+    last sample before a gap when that sample is near-zero.
 
 ## 0.3.1
 * Cleaned imports in utils modules

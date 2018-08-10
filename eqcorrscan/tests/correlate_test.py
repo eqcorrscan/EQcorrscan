@@ -256,10 +256,13 @@ def gappy_stream_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        with warnings.catch_warnings(record=True) as w:
-            cc_out = time_func(func, name, multichannel_templates,
-                               gappy_multichannel_stream, cores=1)
-            out[name] = (cc_out, w)
+        for cores in [1, 2]:
+            # Check for same result both single and multi-threaded
+            print("Running {0} with {1} cores".format(name, cores))
+            with warnings.catch_warnings(record=True) as w:
+                cc_out = time_func(func, name, multichannel_templates,
+                                   gappy_multichannel_stream, cores=cores)
+                out["{0}.{1}".format(name, cores)] = (cc_out, w)
     return out
 
 
@@ -277,10 +280,12 @@ def gappy_real_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        with warnings.catch_warnings(record=True) as w:
-            cc_out = time_func(func, name, gappy_real_data_template,
-                               gappy_real_data, cores=1)
-            out[name] = (cc_out, w)
+        for cores in [1, 2]:
+            print("Running {0} with {1} cores".format(name, cores))
+            with warnings.catch_warnings(record=True) as w:
+                cc_out = time_func(func, name, gappy_real_data_template,
+                                   gappy_real_data, cores=cores)
+                out["{0}.{1}".format(name, cores)] = (cc_out, w)
     return out
 
 
