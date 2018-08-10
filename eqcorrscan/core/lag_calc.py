@@ -318,7 +318,11 @@ def _day_loop(detection_streams, template, min_cc, detections,
              'vertical_chans': vertical_chans})
                    for i in range(len(detection_streams))]
         pool.close()
-        events_list = [p.get() for p in results]
+        try:
+            events_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         events_list.sort(key=lambda tup: tup[0])  # Sort based on index.
     else:
