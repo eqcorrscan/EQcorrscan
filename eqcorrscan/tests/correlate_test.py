@@ -11,6 +11,7 @@ from functools import wraps
 
 import numpy as np
 import pytest
+from multiprocessing import cpu_count
 from obspy import Trace, Stream, read
 
 import eqcorrscan.utils.correlate as corr
@@ -237,9 +238,10 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        cc_out = time_func(func, name, multichannel_templates,
-                           multichannel_stream, cores=1)
-        out[name] = cc_out
+        for cores in [1, cpu_count() * 2]:
+            cc_out = time_func(func, name, multichannel_templates,
+                               multichannel_stream, cores=cores)
+            out["{0}.{1}".format(name, cores)] = cc_out
     return out
 
 
@@ -256,7 +258,7 @@ def gappy_stream_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        for cores in [1, 2]:
+        for cores in [1, cpu_count() * 2]:
             # Check for same result both single and multi-threaded
             print("Running {0} with {1} cores".format(name, cores))
             with warnings.catch_warnings(record=True) as w:
@@ -280,7 +282,7 @@ def gappy_real_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        for cores in [1, 2]:
+        for cores in [1, cpu_count() * 2]:
             print("Running {0} with {1} cores".format(name, cores))
             with warnings.catch_warnings(record=True) as w:
                 cc_out = time_func(func, name, gappy_real_data_template,

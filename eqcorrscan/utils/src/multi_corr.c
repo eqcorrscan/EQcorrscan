@@ -403,20 +403,25 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     // Center and divide by length to generate scaled convolution
     #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
-        double stdev = sqrt(var[i]);
-        double meanstd = fabs(mean[i] * stdev);
-        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1 && meanstd >= ACCEPTED_DIFF) {
-            for (t = 0; t < n_templates; ++t){
-                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
-//                if (17850 <= i && i <= 17860){
-//                    printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\t",
-//                           t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd);
-//                }
-                c /= stdev;
-//                if (17850 <= i && i <= 17860){
-//                    printf("Normalized Correlation: %g\n", c);
-//                }
-                status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
+            double stdev = sqrt(var[i]);
+            double meanstd = fabs(mean[i] * stdev);
+            if (meanstd >= ACCEPTED_DIFF){
+                for (t = 0; t < n_templates; ++t){
+                    double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
+//                  if (17850 <= i && i <= 17860){
+//                        printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\t",
+//                               t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd);
+//                  }
+                    c /= stdev;
+//                  if (17850 <= i && i <= 17860){
+//                        printf("Normalized Correlation: %g\n", c);
+//                  }
+                    status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+                }
+            }
+            else {
+                unused_corr = 1;
             }
             if (var[i] <= WARN_DIFF){
                 variance_warning[0] += 1;
@@ -548,7 +553,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
-        printf("Warning: requesting more threads than available - this could affect performance\n");
+        printf("Warning: requesting more threads than available - this could negatively impact performance\n");
     }
     #else
     /* threading/OpenMP is disabled */
