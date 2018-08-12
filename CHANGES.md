@@ -48,6 +48,10 @@
   in resulting correlations (~0.07 per channel).
   * Includes extra stability check in fftw_normxcorr which affects the
     last sample before a gap when that sample is near-zero.
+* BUG-FIX: fftw correlation dot product was not thread-safe on some systems.
+  The dot-product did not have the inner index protected as a private variable.
+  This did not appear to cause issues for Linux with Python 3.x or Windows, but
+  did cause issues for on Linux for Python 2.7 and Mac OS builds.
 * KeyboardInterrupt (e.g. ctrl-c) should now be caught during python parallel
   processes.
 

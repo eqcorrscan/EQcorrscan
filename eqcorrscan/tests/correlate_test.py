@@ -238,7 +238,16 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        for cores in [1, cpu_count() * 2]:
+        for cores in [1, cpu_count()]:
+            print("Running {0} with {1} cores".format(name, cores))
+            if "fftw" in name:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                cc_out = time_func(
+                    func, name, multichannel_templates, multichannel_stream,
+                    cores=1, cores_outer=cores)
+                out["{0}.{1}_outer".format(name, cores)] = cc_out
             cc_out = time_func(func, name, multichannel_templates,
                                multichannel_stream, cores=cores)
             out["{0}.{1}".format(name, cores)] = cc_out
@@ -258,9 +267,18 @@ def gappy_stream_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        for cores in [1, cpu_count() * 2]:
+        for cores in [1, cpu_count()]:
             # Check for same result both single and multi-threaded
             print("Running {0} with {1} cores".format(name, cores))
+            if "fftw" in name:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                with warnings.catch_warnings(record=True) as w:
+                    cc_out = time_func(
+                        func, name, multichannel_templates,
+                        gappy_multichannel_stream, cores=1, cores_outer=cores)
+                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
             with warnings.catch_warnings(record=True) as w:
                 cc_out = time_func(func, name, multichannel_templates,
                                    gappy_multichannel_stream, cores=cores)
@@ -282,8 +300,17 @@ def gappy_real_cc_output_dict(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
     for name, func in stream_funcs.items():
-        for cores in [1, cpu_count() * 2]:
+        for cores in [1, cpu_count()]:
             print("Running {0} with {1} cores".format(name, cores))
+            if "fftw" in name:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                with warnings.catch_warnings(record=True) as w:
+                    cc_out = time_func(
+                        func, name, gappy_real_data_template,
+                        gappy_real_data, cores=1, cores_outer=cores)
+                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
             with warnings.catch_warnings(record=True) as w:
                 cc_out = time_func(func, name, gappy_real_data_template,
                                    gappy_real_data, cores=cores)
