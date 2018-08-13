@@ -52,17 +52,14 @@ install:
   - conda config --add channels conda-forge
   - conda update -q conda
   - conda info -a
-  - |
-      if [[ "${py:0:1}" == "3" ]]; then
-        PYFLAKES="pyflakes=1.0.0"
-      else
-        PYFLAKES="pyflakes=0.9.0"
-      fi
   - echo $PYTHON_VERSION
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy=1.14 scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      conda install clangdev=4 openmp=4 libcxx=4;
+    fi
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
   - pip freeze
   - conda list
