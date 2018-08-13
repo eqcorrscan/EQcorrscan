@@ -58,7 +58,7 @@ install:
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      conda install clangdev=4 openmp=4 libcxx=4;
+      conda install clangdev=4 openmp=4 libcxx=4 toolchain toolchain_c_osx-64;
     fi
   - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
   - pip freeze
