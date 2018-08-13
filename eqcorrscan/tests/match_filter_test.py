@@ -1216,16 +1216,17 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     if not np.allclose(
                             det.__dict__[key], check_det.__dict__[key],
                             atol=float_tol):
-                        print(key)
+                        print("{0}: new: {1}\tcheck-against: {2}".format(
+                            key, det.__dict__[key], check_det.__dict__[key]))
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
                         atol=float_tol)
                 elif isinstance(det.__dict__[key], UTCDateTime):
                     if not det.__dict__[key] == check_det.__dict__[key]:
-                        print(key)
-                    assert (
-                        abs(det.__dict__[key] -
-                            check_det.__dict__[key]) <= 0.1)
+                        print("{0}: new: {1}\tcheck-against: {2}".format(
+                            key, det.__dict__[key], check_det.__dict__[key]))
+                    assert (abs(
+                        det.__dict__[key] - check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
                     continue
                     # Name relies on creation-time, which is checked elsewhere,
