@@ -31,9 +31,14 @@ install:
 #      export CXX=g++-6;
 #      brew install fftw;
 #      brew list;
+# Remove homebrew to avoid conflicts
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
+      curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall > ~/uninstall_homebrew;
+      chmod +x ~/uninstall_homebrew;
+      ~/uninstall_homebrew -fq;
+      rm ~/uninstall_homebrew;
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;
