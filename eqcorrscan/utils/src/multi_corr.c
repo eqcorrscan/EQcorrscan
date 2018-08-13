@@ -325,7 +325,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     fftwf_execute_dft_r2c(pb, image_ext, outb);
 
     //  Compute dot product
-//    #pragma omp parallel for num_threads(num_threads) private(i)
+    #pragma omp parallel for num_threads(num_threads) private(i)
     for (t = 0; t < n_templates; ++t){
         for (i = 0; i < N2; ++i)
         {
@@ -401,7 +401,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     }
 
     // Center and divide by length to generate scaled convolution
-    #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
+//    #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
         if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
             double stdev = sqrt(var[i]);
