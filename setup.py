@@ -204,7 +204,11 @@ def get_extensions():
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
-        extra_link_args = ['-lm', '-lgomp']
+        if get_build_platform().startswith('freebsd'):
+            # Clang uses libomp, not libgomp
+            extra_link_args = ['-lm', '-lomp']
+        else:
+            extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp']
         if all(arch not in get_build_platform()
                for arch in ['arm', 'aarch']):
