@@ -24,9 +24,6 @@ matrix:
 sudo: false
 
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      export OS="MacOSX";
-      export py=$PYTHON_VERSION;
 #      brew update;
 #      brew install libomp;
 #      brew install gcc6;
@@ -34,6 +31,9 @@ install:
 #      export CXX=g++-6;
 #      brew install fftw;
 #      brew list;
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      export OS="MacOSX";
+      export py=$PYTHON_VERSION;
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;
