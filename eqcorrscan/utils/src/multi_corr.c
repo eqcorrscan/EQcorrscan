@@ -401,7 +401,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     }
 
     // Center and divide by length to generate scaled convolution
-//    #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
+    #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
     for(i = 1; i < (image_len - template_len + 1); ++i){
         if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
             double stdev = sqrt(var[i]);

@@ -27,12 +27,12 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
-      brew update;
+#      brew update;
       brew install gcc6;
       export CC=gcc-6;
       export CXX=g++-6;
-      brew install fftw;
-      brew list;
+#      brew install fftw;
+#      brew list;
     else
       export OS="Linux";
       export py=$PYTHON_VERSION;
