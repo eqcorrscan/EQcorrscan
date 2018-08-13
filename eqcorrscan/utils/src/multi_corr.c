@@ -409,27 +409,33 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             if (meanstd >= ACCEPTED_DIFF){
                 for (t = 0; t < n_templates; ++t){
                     double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
-//                  if (4999 <= i && i <= 5001 && flatline_count[i] > 0){
-//                        printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\tFlatline: %i\t",
-//                               t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd, flatline_count[i]);
-//                  }
+                  if (55490 <= i && i <= 55510){
+                        printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\tFlatline: %i\t",
+                               t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd, flatline_count[i]);
+                  }
                     c /= stdev;
-//                  if (4999 <= i && i <= 5001 && flatline_count[i] > 0){
-//                        printf("Normalized Correlation: %g\n", c);
-//                  }
+                  if (55499 <= i && i <= 55510){
+                        printf("Normalized Correlation: %g\n", c);
+                  }
                     status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
                 }
             }
             else {
                 unused_corr = 1;
+                if (55499 <= i && i <= 55510){
+                    printf("Ignored correlation: Index: %i\tVariance: %g\tFlatline: %i\n",
+                           i, var[i], flatline_count[i]);
+                }
             }
             if (var[i] <= WARN_DIFF){
                 variance_warning[0] += 1;
             }
         } else {
             unused_corr = 1;
-//            printf("Ignored correlation: Index: %i\tVariance: %g\tFlatline: %i\tMean * STD: %g\n",
-//                   i, var[i], flatline_count[i], meanstd);
+            if (55499 <= i && i <= 55510){
+                printf("Ignored correlation: Index: %i\tVariance: %g\tFlatline: %i\n",
+                       i, var[i], flatline_count[i]);
+            }
         }
     }
     if (unused_corr == 1){
@@ -534,7 +540,6 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **outb = NULL;
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
-
 
     #ifdef N_THREADS
     /* num_threads_outer cannot be greater than the number of channels */
@@ -664,6 +669,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     px = fftwf_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
+    printf("Outer threads: %i\n", num_threads_outer);
     #pragma omp parallel for num_threads(num_threads_outer)
     for (i = 0; i < n_channels; ++i){
         int tid = 0; /* each thread has its own workspace */
@@ -672,6 +678,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         /* get the id of this thread */
         tid = omp_get_thread_num();
         #endif
+        printf("thread id: %i\n", tid);
         /* initialise memory to zero */
         memset(template_ext[tid], 0, (size_t) fft_len * n_templates * sizeof(float));
         memset(image_ext[tid], 0, (size_t) fft_len * sizeof(float));

@@ -1218,6 +1218,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                             atol=float_tol):
                         print("{0}: new: {1}\tcheck-against: {2}".format(
                             key, det.__dict__[key], check_det.__dict__[key]))
+                        print(det)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
                         atol=float_tol)
