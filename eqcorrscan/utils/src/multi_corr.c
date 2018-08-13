@@ -411,7 +411,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                     double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
                     c /= stdev;
                     if (fabs(c > 1.01)){
-                        printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\tFlatline: %i\t",
+                        printf("Template %i\tIndex: %i\tCorrelation: %g\tMean: %g\tVariance: %g\tStdev: %g\tMean * std: %g\tFlatline: %i\n",
                                t, i, ccc[(t * fft_len) + i + startind], mean[i], var[i], stdev, meanstd, flatline_count[i]);
                     }
                     status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);

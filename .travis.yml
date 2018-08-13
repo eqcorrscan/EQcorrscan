@@ -19,7 +19,7 @@ matrix:
     - os: osx
       osx_image: xcode8
       env:
-        - PYTHON_VERSION=3.5 MKL=0
+        - PYTHON_VERSION=3.5 MKL=1
 
 sudo: false
 
