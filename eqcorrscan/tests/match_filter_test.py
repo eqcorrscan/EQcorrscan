@@ -584,40 +584,42 @@ class TestMatchObjectHeavy(unittest.TestCase):
         cls.t1 = UTCDateTime(2004, 9, 28, 17)
         process_len = 3600
         cls.t2 = cls.t1 + process_len
-        # t1 = UTCDateTime(2004, 9, 28)
-        # t2 = t1 + 80000
-        # process_len = 80000
         catalog = client.get_events(
             starttime=cls.t1, endtime=cls.t2, minmagnitude=4,
             minlatitude=35.7, maxlatitude=36.1, minlongitude=-120.6,
             maxlongitude=-120.2, includearrivals=True)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
-        cls.tribe = Tribe().construct(
-            method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len)
-        cls.onehztribe = Tribe().construct(
-            method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
-            length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        # Download and process the day-long data
         template_stachans = []
-        for template in cls.tribe.templates:
-            for tr in template.st:
+        for event in catalog:
+            for pick in event.picks:
                 template_stachans.append(
-                    (tr.stats.network, tr.stats.station, tr.stats.channel))
+                    (pick.waveform_id.network_code,
+                     pick.waveform_id.station_code,
+                     pick.waveform_id.channel_code))
         cls.template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
                       cls.t1 - 5, cls.t2 + 5)
-                     for stachan in template_stachans]
+                     for stachan in cls.template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge()
         st.trim(cls.t1, cls.t2)
         for tr in st:
-            tr.data = tr.data[0:int(process_len * 100)]
+            tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
+            assert len(tr.data) == process_len * tr.stats.sampling_rate
+            assert tr.stats.starttime - cls.t1 < 0.1
         cls.unproc_st = st.copy()
+        cls.tribe = Tribe().construct(
+            method='from_meta_file', catalog=catalog, st=st.copy(),
+            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
+            length=3.0, prepick=0.15, swin='all', process_len=process_len,
+            debug=0)
+        print(cls.tribe)
+        cls.onehztribe = Tribe().construct(
+            method='from_meta_file', catalog=catalog, st=st.copy(),
+            lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
+            length=20.0, prepick=0.15, swin='all', process_len=process_len)
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             debug=0, num_cores=1, starttime=st[0].stats.starttime,
@@ -1188,6 +1190,8 @@ class TestMatchObjectLight(unittest.TestCase):
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
+    party.sort()
+    party_in.sort()
     for fam, check_fam in zip(party, party_in):
         for det, check_det in zip(fam.detections, check_fam.detections):
             for key in det.__dict__.keys():
