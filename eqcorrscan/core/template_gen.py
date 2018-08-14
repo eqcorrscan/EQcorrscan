@@ -244,8 +244,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     elif method == 'from_meta_file':
         if isinstance(kwargs.get('meta_file'), Catalog):
             catalog = kwargs.get('meta_file')
-        else:
+        elif kwargs.get('meta_file'):
             catalog = read_events(kwargs.get('meta_file'))
+        elif kwargs.get('catalog'):
+            catalog = kwargs.get('catalog')
         sub_catalogs = [catalog]
         st = kwargs.get('st', Stream())
         process = kwargs.get('process', True)
