@@ -9,7 +9,9 @@ except ImportError:
     from distutils.command.build_ext import build_ext
     using_setuptools = False
 
+from distutils import sysconfig
 from distutils.ccompiler import get_default_compiler
+from pkg_resources import get_build_platform
 
 import os
 import sys
@@ -186,7 +188,6 @@ def export_symbols(*path):
 
 def get_extensions():
     from distutils.extension import Extension
-    from pkg_resources import get_build_platform
 
     if READ_THE_DOCS:
         return []
@@ -262,6 +263,17 @@ class CustomBuildExt(build_ext):
         else:
             compiler = self.compiler
 
+        # Hack around OSX setting a -m flag
+        cfg_vars = sysconfig.get_config_vars()
+        if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
+            print(cfg_vars["CFLAGS"])
+            cflags = cfg_vars["CFLAGS"].split()
+            if "-m" in cflags:
+                cflags.remove("-m")
+            cflags = list(set(cflags))
+            cfg_vars["CFLAGS"] = " ".join(cflags)
+            print(cfg_vars["CFLAGS"])
+            os.environ["CFLAGS"] = " ".join(cflags)
         if compiler == 'msvc':
             # Add msvc specific hacks
 

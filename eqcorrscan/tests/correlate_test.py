@@ -227,7 +227,7 @@ def gappy_real_data_template():
 
 # a dict of all registered stream functions (this is a bit long)
 stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
-                for fname in corr.XCORR_FUNCS_ORIGINAL.keys()
+                for fname in sorted(corr.XCORR_FUNCS_ORIGINAL.keys())
                 for mname in corr.XCORR_STREAM_METHODS
                 if fname != 'default'}
 
@@ -244,7 +244,7 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
             cc_out = time_func(func, name, multichannel_templates,
                                multichannel_stream, cores=cores)
             out["{0}.{1}".format(name, cores)] = cc_out
-            if "fftw" in name:
+            if "fftw" in name and cores > 1:
                 print("Running outer core parallel")
                 # Make sure that using both parallel methods gives the same
                 # result
@@ -275,7 +275,7 @@ def gappy_stream_cc_output_dict(
                 cc_out = time_func(func, name, multichannel_templates,
                                    gappy_multichannel_stream, cores=cores)
                 out["{0}.{1}".format(name, cores)] = (cc_out, w)
-            if "fftw" in name:
+            if "fftw" in name and cores > 1:
                 print("Running outer core parallel")
                 # Make sure that using both parallel methods gives the same
                 # result
@@ -307,7 +307,7 @@ def gappy_real_cc_output_dict(
                 cc_out = time_func(func, name, gappy_real_data_template,
                                    gappy_real_data, cores=cores)
                 out["{0}.{1}".format(name, cores)] = (cc_out, w)
-            if "fftw" in name:
+            if "fftw" in name and cores > 1:
                 print("Running outer core parallel")
                 # Make sure that using both parallel methods gives the same
                 # result

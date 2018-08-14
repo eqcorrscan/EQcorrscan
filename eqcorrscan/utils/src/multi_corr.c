@@ -37,6 +37,11 @@
         #define N_THREADS omp_get_max_threads()
     #endif
 #endif
+#if defined(__linux__) || defined(__linux)
+    #define OUTER_SAFE 1
+#else
+    #define OUTER_SAFE 0
+#endif
 // Define minimum variance to compute correlations - requires some signal
 #define ACCEPTED_DIFF 1e-10 //1e-15
 // Define difference to warn user on
@@ -451,7 +456,6 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-            // printf("Error at template index: %i,  data index: %i\n", t, i);
             status = 1;
         }
         else if (value > 1.0) {
@@ -530,6 +534,13 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
 
+    /* Outer loop parallelism seems to cause issues on OSX */
+    if (OUTER_SAFE != 1 && num_threads_outer > 1){
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tOuter loop threading disabled for this system\n");
+        num_threads_inner *= num_threads_outer;
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tSetting inner threading to %i and outer threading to 1\n", num_threads_inner);
+        num_threads_outer = 1;
+    }
     if (num_threads_inner > 1) {
         /* initialise FFTW threads */
         fftwf_init_threads();
