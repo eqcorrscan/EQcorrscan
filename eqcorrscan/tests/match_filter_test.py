@@ -582,8 +582,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
     def setUpClass(cls):
         client = Client('NCEDC')
         cls.t1 = UTCDateTime(2004, 9, 28, 17)
-        cls.t2 = cls.t1 + 3600
         process_len = 3600
+        cls.t2 = cls.t1 + process_len
         # t1 = UTCDateTime(2004, 9, 28)
         # t2 = t1 + 80000
         # process_len = 80000
@@ -609,11 +609,14 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     (tr.stats.network, tr.stats.station, tr.stats.channel))
         cls.template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      cls.t1, cls.t1 + process_len)
+                      cls.t1 - 5, cls.t2 + 5)
                      for stachan in template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
+        st.trim(cls.t1, cls.t2)
+        for tr in st:
+            tr.data = tr.data[0:int(process_len * 100)]
         cls.unproc_st = st.copy()
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
