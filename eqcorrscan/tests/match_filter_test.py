@@ -745,6 +745,11 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(self.party, read_party(
             fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                'test_data', 'test_party.tgz')))
+        for ev1, ev2 in zip(catalog, chained_cat):
+            ev1.picks.sort(key=lambda p: p.time)
+            ev2.picks.sort(key=lambda p: p.time)
+        catalog.events.sort(key=lambda e: e.picks[0].time)
+        chained_cat.events.sort(key=lambda e: e.picks[0].time)
         for ev, chained_ev in zip(catalog, chained_cat):
             for i in range(len(ev.picks)):
                 for key in ev.picks[i].keys():
