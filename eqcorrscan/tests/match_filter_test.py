@@ -613,7 +613,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                      for stachan in template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
-        st.merge(fill_value='interpolate')
+        st.merge()
         st.trim(cls.t1, cls.t2)
         for tr in st:
             tr.data = tr.data[0:int(process_len * 100)]
@@ -749,11 +749,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     if key == 'resource_id':
                         continue
                     if key == 'comments':
-                        self.assertEqual(
-                            sorted(ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text,
-                            sorted(chained_ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text)
                         continue
                     if key == 'waveform_id':
                         for _k in ['network_code', 'station_code',
@@ -769,9 +764,20 @@ class TestMatchObjectHeavy(unittest.TestCase):
                                key=lambda p: p.time)[i][key],
                         sorted(chained_ev.picks,
                                key=lambda p: p.time)[i][key])
+                pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                pick_corrs = [float(p.comments[0].text.split("=")[-1])
+                              for p in pick_corrs]
+                chained_ev_pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                chained_ev_pick_corrs = [
+                    float(p.comments[0].text.split("=")[-1])
+                    for p in chained_ev_pick_corrs]
+                assert np.allclose(
+                    pick_corrs, chained_ev_pick_corrs, atol=0.001)
                 self.assertEqual(ev.resource_id, chained_ev.resource_id)
-                self.assertEqual(ev.comments[0].text,
-                                 chained_ev.comments[0].text)
+                assert np.allclose(
+                    float(ev.comments[0].text.split("=")[-1]),
+                    float(chained_ev.comments[0].text.split("=")[-1]),
+                    atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""

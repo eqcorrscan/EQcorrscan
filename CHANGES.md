@@ -54,6 +54,9 @@
   did cause issues for on Linux for Python 2.7 and Mac OS builds.
 * KeyboardInterrupt (e.g. ctrl-c) should now be caught during python parallel
   processes.
+* Stopped allowing outer-threading on OSX, clang openMP is not thread-safe
+  for how we have this set-up. Inner threading is faster and more memory
+  efficient anyway.
 
 ## 0.3.1
 * Cleaned imports in utils modules

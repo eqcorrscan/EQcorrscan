@@ -479,7 +479,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 channel_code, pick.waveform_id.location_code))
     starttime = UTCDateTime(
         catalog[0].origins[0].time - data_pad)
-    endtime = starttime + process_len
+    endtime = starttime + process_len + data_pad
     # Check that endtime is after the last event
     if not endtime > catalog[-1].origins[0].time + data_pad:
         raise TemplateGenError(
@@ -508,7 +508,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     # the desired length
     final_channels = []
     for tr in st:
-        tr.trim(starttime, endtime)
+        tr.trim(starttime + data_pad, endtime - data_pad)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         if tr.stats.endtime - tr.stats.starttime < 0.8 * process_len:
