@@ -725,7 +725,11 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                  'first_length': first_length, 'stachan': stachan,
                  'i': i}) for i, stachan in enumerate(input_stachans)]
             pool.close()
-            processed_stream = [p.get() for p in results]
+            try:
+                processed_stream = [p.get() for p in results]
+            except KeyboardInterrupt as e:  # pragma: no cover
+                pool.terminate()
+                raise e
             pool.join()
             processed_stream.sort(key=lambda tup: tup[0])
             processed_stream = Stream([p[1] for p in processed_stream])
@@ -1025,7 +1029,11 @@ def subspace_detect(detectors, stream, threshold, trig_int, moveout=0,
                                moveout, min_trig, False, False))
                        for detector in parameter_detectors]
             pool.close()
-            _detections = [p.get() for p in results]
+            try:
+                _detections = [p.get() for p in results]
+            except KeyboardInterrupt as e:  # pragma: no cover
+                pool.terminate()
+                raise e
             pool.join()
             for d in _detections:
                 if isinstance(d, list):

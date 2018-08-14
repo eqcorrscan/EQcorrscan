@@ -675,7 +675,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
     pool.close()
     if not mem_issue:
         Logger.info('Computing the cumulative network response from memory')
-        energy = [p.get() for p in results]
+        try:
+            energy = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         energy.sort(key=lambda tup: tup[0])
         energy = [node[1] for node in energy]
@@ -712,7 +716,11 @@ def brightness(stations, nodes, lags, stream, threshold, thresh_type,
         results = [pool.apply_async(_cum_net_resp, args=(indices[i], instance))
                    for i in range(num_cores)]
         pool.close()
-        results = [p.get() for p in results]
+        try:
+            results = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         responses = [result[0] for result in results]
         Logger.debug(np.shape(responses))

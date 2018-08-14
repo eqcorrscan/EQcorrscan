@@ -1,7 +1,6 @@
 """
-Utilities module whose functions are designed to do the basic \
-processing of the data using obspy modules (which also rely on scipy and \
-numpy).
+Utilities module whose functions are designed to do the basic processing of
+the data using obspy modules (which also rely on scipy and numpy).
 
 :copyright:
     EQcorrscan developers.
@@ -77,12 +76,13 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     :type samp_rate: float
     :param samp_rate: Sampling rate desired in Hz
     :type parallel: bool
-    :param parallel: Set to True to process traces in parallel, for small \
-        numbers of traces this is often slower than serial processing, \
-        defaults to False
+    :param parallel:
+        Set to True to process traces in parallel, for small numbers of traces
+        this is often slower than serial processing, defaults to False
     :type num_cores: int
-    :param num_cores: Control the number of cores for parallel processing, \
-        if set to False then this will use all the cores.
+    :param num_cores:
+        Control the number of cores for parallel processing, if set to False
+        then this will use all the cores available.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime:
         Desired data start time, will trim to this before processing
@@ -99,7 +99,13 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `st = st.merge()`).
 
     .. warning::
         If you intend to use this for processing templates you should consider
@@ -181,7 +187,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
@@ -237,7 +247,13 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `st = st.merge()`).
 
     .. warning::
         Will fail if data are less than 19.2 hours long - this number is
@@ -321,7 +337,11 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
@@ -382,6 +402,14 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
 
     :return: Processed trace.
     :type: :class:`obspy.core.stream.Trace`
+
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `tr = tr.merge()`).
     """
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
