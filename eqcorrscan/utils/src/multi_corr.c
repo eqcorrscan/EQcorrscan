@@ -37,10 +37,14 @@
         #define N_THREADS omp_get_max_threads()
     #endif
 #endif
-#if defined(__linux__) || defined(__linux)
-    #define OUTER_SAFE 1
+#ifndef OUTER_SAFE
+    #if defined(__linux__) || defined(__linux)
+        #define OUTER_SAFE 1
+    #else
+        #define OUTER_SAFE 0
+    #endif
 #else
-    #define OUTER_SAFE 0
+    #define OUTER_SAFE 1
 #endif
 // Define minimum variance to compute correlations - requires some signal
 #define ACCEPTED_DIFF 1e-10 //1e-15

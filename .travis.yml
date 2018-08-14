@@ -7,14 +7,14 @@ addons:
 
 matrix:
   include:
-#    - os: linux
-#      env: PYTHON_VERSION=2.7 MKL=0
-#    - os: linux
-#      env: PYTHON_VERSION=3.5 MKL=0
-#    - os: linux
-#      env: PYTHON_VERSION=3.6 MKL=0
-#    - os: linux
-#      env: PYTHON_VERSION=3.6 MKL=1
+    - os: linux
+      env: PYTHON_VERSION=2.7 MKL=0
+    - os: linux
+      env: PYTHON_VERSION=3.5 MKL=0
+    - os: linux
+      env: PYTHON_VERSION=3.6 MKL=0
+    - os: linux
+      env: PYTHON_VERSION=3.6 MKL=1
 
     - os: osx
       osx_image: xcode8
@@ -24,14 +24,6 @@ matrix:
 sudo: false
 
 install:
-#      brew update;
-#      brew install libomp;
-#      brew install gcc6;
-#      export CC=gcc-6;
-#      export CXX=g++-6;
-#      brew install fftw;
-#      brew list;
-# Remove homebrew to avoid conflicts
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       export OS="MacOSX";
       export py=$PYTHON_VERSION;
@@ -71,11 +63,11 @@ install:
 
 script:
    - export MPLBACKEND=Agg
-#   - py.test --runslow -m "not serial and not network" -n 2
+   - py.test --runslow -m "not serial and not network" -n 2
    - export OMP_NUM_THREADS=2;
    # These tests use multi-threading
    - py.test -m "serial and not network" --cov-append
-#   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
