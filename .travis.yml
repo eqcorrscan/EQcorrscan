@@ -15,7 +15,6 @@ matrix:
       env: PYTHON_VERSION=3.6 MKL=0
     - os: linux
       env: PYTHON_VERSION=3.6 MKL=1
-
     - os: osx
       osx_image: xcode8
       env:
