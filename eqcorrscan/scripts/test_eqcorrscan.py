@@ -95,7 +95,7 @@ def run_tests(arg_list):
     """
     Run the tests.
     """
-    arg_list.extend(["--doctest-modules", "-p", "no:warnings", "--runslow"])
+    arg_list.extend(["--doctest-modules", "--runslow"])
     arg_list.extend(
         ["--ignore", "EGG-INFO", "--ignore", "eqcorrscan/utils/lib"])
     with cd(PKG_PATH):
@@ -106,4 +106,3 @@ if __name__ == "__main__":
     arg_list = sys.argv[1:]
     download_test_data()
     run_tests(arg_list=arg_list)
-
