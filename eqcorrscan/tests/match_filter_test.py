@@ -1198,6 +1198,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
     party_in.sort()
     for fam, check_fam in zip(party, party_in):
+        fam.detections.sort(key=lambda d: d.detect_time)
+        check_fam.detections.sort(key=lambda d: d.detect_time)
         for det, check_det in zip(fam.detections, check_fam.detections):
             for key in det.__dict__.keys():
                 if key == 'event':

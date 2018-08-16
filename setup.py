@@ -381,7 +381,7 @@ def setup_package():
     else:
         setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
                                   'eqcorrscan.core', 'eqcorrscan.utils.lib',
-                                  'eqcorrscan.tutorials']
+                                  'eqcorrscan.tutorials', 'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
