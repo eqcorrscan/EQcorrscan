@@ -37,6 +37,13 @@ class EQcorrscanDeprecationWarning(UserWarning):
     pass
 
 
+if sys.version_info.major < 3:
+    warnings.warn(
+        "EQcorrscan will stop supporting Python 2.x in a forthcoming release."
+        " See https://github.com/eqcorrscan/EQcorrscan/issues/242 to read "
+        "more.", EQcorrscanDeprecationWarning)
+
+
 class EQcorrscanRestructureAndLoad(object):
     """
     Path finder and module loader for transitioning
