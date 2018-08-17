@@ -153,7 +153,7 @@ Running tests
 -------------
 
 One of the main goals of EQcorrscan is to improve reliability and reproducibility
-of earthquake detection.  To this end, EQcorrscan has a moderate test-base (you
+of earthquake detection.  To this end, EQcorrscan has a set of tests (you
 can check how much of our codebase if tested by looked at the badges in the
 |github| repository).  You can also run these tests yourself locally to ensure
 that everything runs as you would expect in your environment.  Although every
@@ -172,42 +172,14 @@ extras (pytest-pep8 and pytest-cov).  These can be installed by pip:
 
     pip install pytest pytest-pep8 pytest-cov
 
-You will also need to have a clone of the github repository:
+From version 0.3.2 onwards EQcorrscan includes a test script that will be installed
+onto your path when you install EQcorrscan.  This test-script will download the
+test data and run the tests (you no longer have to clone the git repository). Just run
+(from anywhere):
 
 .. code-block:: bash
 
-    git clone https://github.com/eqcorrscan/EQcorrscan.git
+    test_eqcorrscan.py
 
-You can then run the tests from within the repository directory:
-
-.. code-block:: bash
-
-    python setup.py test
-    
-Note that if you needed to prepend CC=gcc (if the default compiler is `clang`)
-then you will also need to here for the setup.py command.
-
-If this fails with an error like:
-
-.. code-block:: bash
-
-    error: invalid command 'pytest'
-
-If you already have an install of EQcorrscan then you can instead run the
-tests using the following:
-
-.. code-block:: bash
-
-    pip install requirements.txt
-    py.test
-
-Otherwise, if you have the pytest error and no previous install of EQcorrscan
-you can install from source and run the tests using:
-
-.. code-block:: bash
-
-    python setup.py install
-    py.test
-
-Tests will take about half an hour to run (as of v.0.3.0) and will provide
+Tests will take about half an hour to run (as of v.0.3.2) and will provide
 a coverage report at the end and notify you of any failures.

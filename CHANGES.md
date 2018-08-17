@@ -1,4 +1,4 @@
-## Current
+## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not 
   previously read in (which is a little more efficient).
