@@ -57,6 +57,10 @@
 * Stopped allowing outer-threading on OSX, clang openMP is not thread-safe
   for how we have this set-up. Inner threading is faster and more memory
   efficient anyway.
+* Added testing script (`test_eqcorrscan.py`, which will be installed to your
+  path on installation of EQcorrscan) that will download all the relevant 
+  data and run the tests on the installed package - no need to clone 
+  EQcorrscan to run tests!
 
 ## 0.3.1
 * Cleaned imports in utils modules
