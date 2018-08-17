@@ -37,10 +37,19 @@
         #define N_THREADS omp_get_max_threads()
     #endif
 #endif
+#ifndef OUTER_SAFE
+    #if defined(__linux__) || defined(__linux)
+        #define OUTER_SAFE 1
+    #else
+        #define OUTER_SAFE 0
+    #endif
+#else
+    #define OUTER_SAFE 1
+#endif
 // Define minimum variance to compute correlations - requires some signal
-#define ACCEPTED_DIFF 1e-15
+#define ACCEPTED_DIFF 1e-10 //1e-15
 // Define difference to warn user on
-#define WARN_DIFF 1e-10
+#define WARN_DIFF 1e-8 //1e-10
 
 // Prototypes
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*);
@@ -167,7 +176,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             flatline_count = 0;
         }
         stdev = sqrt(var);
-        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1) {
+        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1 && stdev * mean >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -325,7 +334,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     fftwf_execute_dft_r2c(pb, image_ext, outb);
 
     //  Compute dot product
-    #pragma omp parallel for num_threads(num_threads)
+    #pragma omp parallel for num_threads(num_threads) private(i)
     for (t = 0; t < n_templates; ++t){
         for (i = 0; i < N2; ++i)
         {
@@ -375,6 +384,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
             c /= stdev;
             status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+
         }
         if (var[0] <= WARN_DIFF){
             variance_warning[0] = 1;
@@ -404,10 +414,16 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     for(i = 1; i < (image_len - template_len + 1); ++i){
         if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
             double stdev = sqrt(var[i]);
-            for (t = 0; t < n_templates; ++t){
-                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
-                c /= stdev;
-                status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+            double meanstd = fabs(mean[i] * stdev);
+            if (meanstd >= ACCEPTED_DIFF){
+                for (t = 0; t < n_templates; ++t){
+                    double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
+                    c /= stdev;
+                    status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+                }
+            }
+            else {
+                unused_corr = 1;
             }
             if (var[i] <= WARN_DIFF){
                 variance_warning[0] += 1;
@@ -417,9 +433,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         }
     }
     if (unused_corr == 1){
-        if (status != 999){
-            // Output a known error code, if status is already at this level
-            // there are bigger problems!
+        if (status == 0){
             status = 999;
         }
     }
@@ -429,12 +443,12 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     free(mean);
     free(var);
     free(flatline_count);
-
     return status;
 }
 
 
 static inline int set_ncc(long t, long i, long template_len, long image_len, float value, int *used_chans, int *pad_array, float *ncc) {
+
     int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
@@ -454,7 +468,7 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         else if (value < -1.0) {
             value = -1.0;
         }
-
+        // prev_ncc = ncc[ncc_index];
         #pragma omp atomic
         ncc[ncc_index] += value;
     }
@@ -509,7 +523,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         float *image, long image_len, float *ncc, long fft_len, int *used_chans, int *pad_array,
         int num_threads_outer, int num_threads_inner, int *variance_warning) {
     int i;
-    int r=0, inner_status=0;
+    int r=0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     float **template_ext = NULL;
     float **image_ext = NULL;
@@ -520,11 +534,17 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
 
-
     #ifdef N_THREADS
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
 
+    /* Outer loop parallelism seems to cause issues on OSX */
+    if (OUTER_SAFE != 1 && num_threads_outer > 1){
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tOuter loop threading disabled for this system\n");
+        num_threads_inner *= num_threads_outer;
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tSetting inner threading to %i and outer threading to 1\n", num_threads_inner);
+        num_threads_outer = 1;
+    }
     if (num_threads_inner > 1) {
         /* initialise FFTW threads */
         fftwf_init_threads();
@@ -538,7 +558,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
-        printf("Warning: requesting more threads than available - this could affect performance\n");
+        printf("Warning: requesting more threads than available - this could negatively impact performance\n");
     }
     #else
     /* threading/OpenMP is disabled */
@@ -671,14 +691,21 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     // Conduct error handling
     for (i = 0; i < n_channels; ++i){
-        if (results[i] == 999 && r == 0){
+        if (results[i] != 999 && results[i] != 0){
+            // Some error internally, must catch this
+            r += results[i];
+        } else if (results[i] == 999 && r == 0){
+            // First time unused correlation raised and no prior errors
             r = results[i];
         } else if (r == 999 && results[i] == 999){
+            // Unused correlations raised multiple times
             r = 999;
         } else if (r == 999 && results[i] != 999){
-            r += inner_status;
+            // Some error internally.
+            r += results[i];
         } else if (r != 0){
-            r += inner_status;
+            // Any other error
+            r += results[i];
         }
     }
     free(results);
