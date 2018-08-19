@@ -40,6 +40,7 @@ Version 0.3.2
   trends - variance threshold is now raised, and Python checks for low-variance
   and applies gain to stabilise correlations if needed.
 * Plotting functions are now tested and have a more consistent interface:
+
   * All plotting functions accept the keyword arguments `save`, `savefile`,
     `show`, `return_figure` and `title`.
   * All plotting functions return a figure.
@@ -51,6 +52,7 @@ Version 0.3.2
   one sample too long resulting in minor differences in data processing
   (due to difference in FFT length) and therefore minor differences
   in resulting correlations (~0.07 per channel).
+
   * Includes extra stability check in fftw_normxcorr which affects the
     last sample before a gap when that sample is near-zero.
 * BUG-FIX: fftw correlation dot product was not thread-safe on some systems.
