@@ -7,7 +7,7 @@ We have a manuscript on the development of EQcorrscan, if you make use of EQcorr
 Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., [EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python.](https://pubs.geoscienceworld.org/ssa/srl/article/89/1/173/524875/eqcorrscan-repeating-and-near-repeating-earthquake) Seismological Research Letters *2017*
 
 If you want to you should also cite the version number:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1299484.svg)](https://doi.org/10.5281/zenodo.1299484)
+[![DOI](https://zenodo.org/badge/35918157.svg)](https://zenodo.org/badge/latestdoi/35918157)
 
 # Installation
 
