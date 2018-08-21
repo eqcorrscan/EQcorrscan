@@ -791,6 +791,71 @@ def extract_detections(detections, templates, archive, arc_type,
         return
 
 
+def dist_vec_km(catalog, master_index, num_threads=None):
+    """
+    Compute the distance vector for a catalog with one master event.
+
+    Will give physical distance in kilometers.
+
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+    :type master_index: int
+    :param master_index: Index of master in catalog
+
+    :returns: distance vector
+    :rtype: :class:`numpy.ndarray`
+    """
+    import ctypes
+    from eqcorrscan.utils.libnames import _load_cdll
+    from future.utils import native_str
+    from math import radians
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.distance_vector.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long, ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
+    utilslib.distance_vector.restype = ctypes.c_int
+
+    # Initialize square matrix
+    dist_vec = np.ascontiguousarray(np.empty(len(catalog), dtype=np.float32))
+    latitudes, longitudes, depths = (
+        np.empty(len(catalog), dtype=np.float32),
+        np.empty(len(catalog), dtype=np.float32),
+        np.empty(len(catalog), dtype=np.float32))
+    for i, event in enumerate(catalog):
+        origin = event.preferred_origin() or event.origins[0]
+        latitudes[i] = radians(origin.latitude)
+        longitudes[i] = radians(origin.longitude)
+        depths[i] = origin.depth / 1000
+    depths = np.ascontiguousarray(depths, dtype=np.float32)
+    latitudes = np.ascontiguousarray(latitudes, dtype=np.float32)
+    longitudes = np.ascontiguousarray(longitudes, dtype=np.float32)
+
+    if num_threads is None:
+        # Testing showed that 400 events per thread was best on the i7.
+        num_threads = int(min(cpu_count(), len(catalog) // 400))
+    if num_threads == 0:
+        num_threads = 1
+
+    ret = utilslib.distance_vector(
+        latitudes, longitudes, depths, len(catalog), master_index,
+        dist_vec, num_threads)
+
+    if ret != 0:  # pragma: no cover
+        raise Exception("Internal error while computing distance matrix")
+
+    return dist_vec
+
+
 def dist_mat_km(catalog, num_threads=None):
     """
     Compute the distance matrix for all a catalog using epicentral separation.
@@ -824,8 +889,7 @@ def dist_mat_km(catalog, num_threads=None):
     utilslib.distance_matrix.restype = ctypes.c_int
 
     # Initialize square matrix
-    dist_mat = np.array([np.array([0.0] * len(catalog))] *
-                        len(catalog), dtype=np.float32)
+    dist_mat = np.zeros((len(catalog), len(catalog)), dtype=np.float32)
     latitudes, longitudes, depths = (
         np.empty(len(catalog)), np.empty(len(catalog)), np.empty(len(catalog)))
     for i, event in enumerate(catalog):
@@ -846,7 +910,7 @@ def dist_mat_km(catalog, num_threads=None):
     ret = utilslib.distance_matrix(
         latitudes, longitudes, depths, len(catalog), dist_mat, num_threads)
 
-    if ret != 0:
+    if ret != 0:  # pragma: no cover
         raise Exception("Internal error while computing distance matrix")
     # Fill distance matrix
     for i in range(1, len(catalog)):

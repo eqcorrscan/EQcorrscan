@@ -10,3 +10,4 @@ EXPORTS
     multi_normxcorr_time_threaded
     dist_calc
     distance_matrix
+    distance_vector
