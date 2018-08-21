@@ -142,14 +142,20 @@ extras (pytest-pep8 and pytest-cov).  These can be installed by pip:
 
     pip install pytest pytest-pep8 pytest-cov
 
-From version 0.3.2 onwards EQcorrscan includes a test script that will be installed
-onto your path when you install EQcorrscan.  This test-script will download the
-test data and run the tests (you no longer have to clone the git repository). Just run
-(from anywhere):
+To test your installed version of EQcorrscan we provide a |test-script|.  For
+version<=0.3.2 you should download the script and run it. In later versions this
+script is included in the package.
+
+.. |test-script| raw:: html
+
+    <a href="https://gist.github.com/calum-chamberlain/0887455551862a363a43887f0195ec06" target="_blank">test-script</a>
+
+This test-script will download the test data and run the tests (you no longer
+have to clone the git repository). Just run (from anywhere):
 
 .. code-block:: bash
 
     test_eqcorrscan.py
 
-Tests will take about half an hour to run (as of v.0.3.2) and will provide
+Tests will take about half an hour to run (as of version 0.3.2) and will provide
 a coverage report at the end and notify you of any failures.
