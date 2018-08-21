@@ -295,25 +295,26 @@ class TestGappyData(unittest.TestCase):
             filt_order=4, length=10, prepick=0.5, catalog=catalog,
             client_id="GEONET", process_len=3600, swin="P")
         cls.st = cls.client.get_waveforms(
-            station="KHZ", network="NZ", channel="HH?", location="10",
+            station="KHZ", network="NZ", channel="HHZ", location="10",
             starttime=cls.starttime, endtime=cls.endtime)
 
     def test_gappy_data(self):
         gaps = self.st.get_gaps()
-        self.assertEqual(len(gaps), 3)
+        self.assertEqual(len(gaps), 1)
         start_gap = gaps[0][4]
         end_gap = gaps[0][5]
         party = self.tribe.client_detect(
             client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=12,
-            threshold_type="MAD", trig_int=2, plotvar=False,
-            parallel_process=False)
+            endtime=self.endtime, threshold=0.6,
+            threshold_type="absolute", trig_int=2, plotvar=False,
+            parallel_process=False, cores=1)
         for family in party:
-            print(len(family))
-            self.assertTrue(len(family) in [11, 1])
+            print(family)
             for detection in family:
                 self.assertFalse(
                     start_gap <= detection.detect_time <= end_gap)
+        for family in party:
+            self.assertTrue(len(family) in [5, 1])
 
     def test_gappy_data_removal(self):
         party = self.tribe.client_detect(
@@ -581,39 +582,44 @@ class TestMatchObjectHeavy(unittest.TestCase):
     def setUpClass(cls):
         client = Client('NCEDC')
         cls.t1 = UTCDateTime(2004, 9, 28, 17)
-        cls.t2 = cls.t1 + 3600
         process_len = 3600
-        # t1 = UTCDateTime(2004, 9, 28)
-        # t2 = t1 + 80000
-        # process_len = 80000
+        cls.t2 = cls.t1 + process_len
         catalog = client.get_events(
             starttime=cls.t1, endtime=cls.t2, minmagnitude=4,
             minlatitude=35.7, maxlatitude=36.1, minlongitude=-120.6,
             maxlongitude=-120.2, includearrivals=True)
         catalog = catalog_utils.filter_picks(
             catalog, channels=['EHZ'], top_n_picks=5)
-        cls.tribe = Tribe().construct(
-            method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len)
-        cls.onehztribe = Tribe().construct(
-            method='from_client', catalog=catalog, client_id='NCEDC',
-            lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
-            length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        # Download and process the day-long data
         template_stachans = []
-        for template in cls.tribe.templates:
-            for tr in template.st:
+        for event in catalog:
+            for pick in event.picks:
                 template_stachans.append(
-                    (tr.stats.network, tr.stats.station, tr.stats.channel))
+                    (pick.waveform_id.network_code,
+                     pick.waveform_id.station_code,
+                     pick.waveform_id.channel_code))
         cls.template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      cls.t1, cls.t1 + process_len)
-                     for stachan in template_stachans]
+                      cls.t1 - 5, cls.t2 + 5)
+                     for stachan in cls.template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
-        st.merge(fill_value='interpolate')
+        st.merge()
+        st.trim(cls.t1, cls.t2)
+        for tr in st:
+            tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
+            assert len(tr.data) == process_len * tr.stats.sampling_rate
+            assert tr.stats.starttime - cls.t1 < 0.1
         cls.unproc_st = st.copy()
+        cls.tribe = Tribe().construct(
+            method='from_meta_file', catalog=catalog, st=st.copy(),
+            lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
+            length=3.0, prepick=0.15, swin='all', process_len=process_len,
+            debug=0)
+        print(cls.tribe)
+        cls.onehztribe = Tribe().construct(
+            method='from_meta_file', catalog=catalog, st=st.copy(),
+            lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
+            length=20.0, prepick=0.15, swin='all', process_len=process_len)
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             debug=0, num_cores=1, starttime=st[0].stats.starttime,
@@ -687,7 +693,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            debug=2)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -699,10 +706,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the client_detect method."""
         client = Client('NCEDC')
         party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
+            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False)
-        self.assertEqual(len(party), 4)
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.05,
+            check_event=False)
 
     @pytest.mark.flaky(reruns=2)
     @pytest.mark.network
@@ -710,13 +719,16 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the client_detect method."""
         client = Client('NCEDC')
         party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
+            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plotvar=False, save_progress=True)
         self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
         os.remove("eqcorrscan_temporary_party.tgz")
+        compare_families(
+            party=party, party_in=self.party, float_tol=0.05,
+            check_event=False)
 
     @pytest.mark.network
     def test_party_lag_calc(self):
@@ -733,17 +745,17 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(self.party, read_party(
             fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                'test_data', 'test_party.tgz')))
+        for ev1, ev2 in zip(catalog, chained_cat):
+            ev1.picks.sort(key=lambda p: p.time)
+            ev2.picks.sort(key=lambda p: p.time)
+        catalog.events.sort(key=lambda e: e.picks[0].time)
+        chained_cat.events.sort(key=lambda e: e.picks[0].time)
         for ev, chained_ev in zip(catalog, chained_cat):
             for i in range(len(ev.picks)):
                 for key in ev.picks[i].keys():
                     if key == 'resource_id':
                         continue
                     if key == 'comments':
-                        self.assertEqual(
-                            sorted(ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text,
-                            sorted(chained_ev.picks,
-                                   key=lambda p: p.time)[i][key][0].text)
                         continue
                     if key == 'waveform_id':
                         for _k in ['network_code', 'station_code',
@@ -759,9 +771,20 @@ class TestMatchObjectHeavy(unittest.TestCase):
                                key=lambda p: p.time)[i][key],
                         sorted(chained_ev.picks,
                                key=lambda p: p.time)[i][key])
+                pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                pick_corrs = [float(p.comments[0].text.split("=")[-1])
+                              for p in pick_corrs]
+                chained_ev_pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                chained_ev_pick_corrs = [
+                    float(p.comments[0].text.split("=")[-1])
+                    for p in chained_ev_pick_corrs]
+                assert np.allclose(
+                    pick_corrs, chained_ev_pick_corrs, atol=0.001)
                 self.assertEqual(ev.resource_id, chained_ev.resource_id)
-                self.assertEqual(ev.comments[0].text,
-                                 chained_ev.comments[0].text)
+                assert np.allclose(
+                    float(ev.comments[0].text.split("=")[-1]),
+                    float(chained_ev.comments[0].text.split("=")[-1]),
+                    atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
@@ -827,27 +850,46 @@ class TestMatchObjectLight(unittest.TestCase):
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
 
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_individual(self):
+        fig = self.party.plot(show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped(self):
+        fig = self.party.plot(
+            plot_grouped=True, show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_party_plot_grouped_rate(self):
+        fig = self.party.plot(
+            plot_grouped=True, rate=True, show=False, return_figure=True)
+        return fig
+
     def test_party_io_list(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_list.tgz'):
+            os.remove('test_party_list.tgz')
         try:
-            self.party.write(filename='test_party_out')
-            party_back = read_party(fname=['test_party_out.tgz'])
+            self.party.write(filename='test_party_list')
+            party_back = read_party(fname=['test_party_list.tgz'])
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_list.tgz'):
+                os.remove('test_party_list.tgz')
 
     def test_party_io_wildcards(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_walrus.tgz'):
+            os.remove('test_party_walrus.tgz')
         try:
-            self.party.write(filename='test_party_out')
-            party_back = read_party(fname='test_party_*.tgz')
+            self.party.write(filename='test_party_walrus')
+            party_back = read_party(fname='test_party_w*.tgz')
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_walrus.tgz'):
+                os.remove('test_party_walrus.tgz')
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
@@ -878,7 +920,8 @@ class TestMatchObjectLight(unittest.TestCase):
             tribe_back = read_tribe('test_tribe_QML.tgz')
             self.assertEqual(self.tribe, tribe_back)
         finally:
-            os.remove('test_tribe_QML.tgz')
+            if os.path.isfile('test_tribe_QML.tgz'):
+                os.remove('test_tribe_QML.tgz')
 
     def test_tribe_io_sc3ml(self):
         """Test reading and writing or Tribe objects using tar form."""
@@ -892,7 +935,8 @@ class TestMatchObjectLight(unittest.TestCase):
                 assert template_in.__eq__(
                     template_back, verbose=True, shallow_event_check=True)
         finally:
-            os.remove('test_tribe_SC3ML.tgz')
+            if os.path.isfile('test_tribe_SC3ML.tgz'):
+                os.remove('test_tribe_SC3ML.tgz')
 
     # Requires bug-fixes in obspy to be deployed.
     # def test_tribe_io_nordic(self):
@@ -1033,7 +1077,8 @@ class TestMatchObjectLight(unittest.TestCase):
             template_back = Template().read('test_template.tgz')
             self.assertEqual(test_template, template_back)
         finally:
-            os.remove('test_template.tgz')
+            if os.path.isfile('test_template.tgz'):
+                os.remove('test_template.tgz')
         # Make sure we raise a useful error when trying to read from a
         # tribe file.
         try:
@@ -1041,7 +1086,8 @@ class TestMatchObjectLight(unittest.TestCase):
             with self.assertRaises(IOError):
                 Template().read('test_template.tgz')
         finally:
-            os.remove('test_template.tgz')
+            if os.path.isfile('test_template.tgz'):
+                os.remove('test_template.tgz')
 
     def test_party_io(self):
         """Test reading and writing party objects."""
@@ -1052,28 +1098,32 @@ class TestMatchObjectLight(unittest.TestCase):
             party_back = read_party(fname='test_party_out.tgz')
             self.assertEqual(self.party, party_back)
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out.tgz'):
+                os.remove('test_party_out.tgz')
 
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_out_no_cat.tgz'):
+            os.remove('test_party_out_no_cat.tgz')
         try:
             self.party.write(
-                filename='test_party_out', write_detection_catalog=False)
-            party_back = read_party(fname='test_party_out.tgz')
+                filename='test_party_out_no_cat',
+                write_detection_catalog=False)
+            party_back = read_party(fname='test_party_out_no_cat.tgz')
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out_no_cat.tgz'):
+                os.remove('test_party_out_no_cat.tgz')
 
     def test_party_io_no_catalog_reading(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_out.tgz'):
-            os.remove('test_party_out.tgz')
+        if os.path.isfile('test_party_out_no_cat2.tgz'):
+            os.remove('test_party_out_no_cat2.tgz')
         try:
-            self.party.write(filename='test_party_out')
+            self.party.write(filename='test_party_out_no_cat2')
             party_back = read_party(
-                fname='test_party_out.tgz', read_detection_catalog=False)
+                fname='test_party_out_no_cat2.tgz',
+                read_detection_catalog=False)
             # creation times will differ - hack around this to make comparison
             # easier
             for family in self.party:
@@ -1083,7 +1133,8 @@ class TestMatchObjectLight(unittest.TestCase):
                         detection_back.event.creation_info.creation_time
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
-            os.remove('test_party_out.tgz')
+            if os.path.isfile('test_party_out_no_cat2.tgz'):
+                os.remove('test_party_out_no_cat2.tgz')
 
     def test_family_methods(self):
         """Test basic methods on Family objects."""
@@ -1139,11 +1190,16 @@ class TestMatchObjectLight(unittest.TestCase):
             self.assertEqual(len(party_back), 1)
             self.assertEqual(party_back[0], family)
         finally:
-            os.remove('test_family.tgz')
+            if os.path.isfile('test_family.tgz'):
+                os.remove('test_family.tgz')
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
+    party.sort()
+    party_in.sort()
     for fam, check_fam in zip(party, party_in):
+        fam.detections.sort(key=lambda d: d.detect_time)
+        check_fam.detections.sort(key=lambda d: d.detect_time)
         for det, check_det in zip(fam.detections, check_fam.detections):
             for key in det.__dict__.keys():
                 if key == 'event':
@@ -1180,16 +1236,18 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     if not np.allclose(
                             det.__dict__[key], check_det.__dict__[key],
                             atol=float_tol):
-                        print(key)
+                        print("{0}: new: {1}\tcheck-against: {2}".format(
+                            key, det.__dict__[key], check_det.__dict__[key]))
+                        print(det)
                     assert np.allclose(
                         det.__dict__[key], check_det.__dict__[key],
                         atol=float_tol)
                 elif isinstance(det.__dict__[key], UTCDateTime):
                     if not det.__dict__[key] == check_det.__dict__[key]:
-                        print(key)
-                    assert (
-                        abs(det.__dict__[key] -
-                            check_det.__dict__[key]) < 0.00001)
+                        print("{0}: new: {1}\tcheck-against: {2}".format(
+                            key, det.__dict__[key], check_det.__dict__[key]))
+                    assert (abs(
+                        det.__dict__[key] - check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
                     continue
                     # Name relies on creation-time, which is checked elsewhere,
