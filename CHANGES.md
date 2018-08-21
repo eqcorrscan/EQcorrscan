@@ -3,6 +3,9 @@
   an argument for function calls.
 
 ## Current
+* Correct test-script (`test_eqcorrscan.py`) to find paths properly.
+
+## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not 
   previously read in (which is a little more efficient).
@@ -61,6 +64,10 @@
 * Stopped allowing outer-threading on OSX, clang openMP is not thread-safe
   for how we have this set-up. Inner threading is faster and more memory
   efficient anyway.
+* Added testing script (`test_eqcorrscan.py`, which will be installed to your
+  path on installation of EQcorrscan) that will download all the relevant 
+  data and run the tests on the installed package - no need to clone 
+  EQcorrscan to run tests!
 
 
 ## 0.3.1

@@ -8,6 +8,7 @@ import itertools
 import logging
 from collections import defaultdict
 from functools import wraps
+from os.path import join
 
 import numpy as np
 import pytest
@@ -98,7 +99,7 @@ def generate_multichannel_templates():
 
 
 def read_gappy_real_template():
-    return [read("eqcorrscan/tests/test_data/DUWZ_template.ms")]
+    return [read(join(pytest.test_data_path, "DUWZ_template.ms"))]
 
 
 def read_gappy_real_data():

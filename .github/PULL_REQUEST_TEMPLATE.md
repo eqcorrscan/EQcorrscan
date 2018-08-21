@@ -5,7 +5,7 @@ Thank your for contributing to EQcorrscan!
 ### Why was it initiated?  Any relevant Issues?
 
 ### PR Checklist
-- [ ] Correct base branch selected? `master` for new features, `develop` for bug fixes.
+- [ ] `develop` base branch selected?
 - [ ] This PR is not directly related to an existing issue (which has no PR yet).
 - [ ] All tests still pass.
 - [ ] Any new features or fixed regressions are be covered via new tests.

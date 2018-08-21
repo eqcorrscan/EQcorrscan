@@ -343,7 +343,7 @@ def setup_package():
         'version': VERSION,
         'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
-        'url': 'https://github.com/calum-chamberlain/EQcorrscan',
+        'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
         'license': 'LGPL',
@@ -381,7 +381,8 @@ def setup_package():
     else:
         setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
                                   'eqcorrscan.core', 'eqcorrscan.utils.lib',
-                                  'eqcorrscan.tutorials', 'eqcorrscan.helpers']
+                                  'eqcorrscan.tutorials', 'eqcorrscan.helpers',
+                                  'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
