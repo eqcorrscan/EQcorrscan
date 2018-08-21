@@ -42,5 +42,6 @@ class TestParameterSetup(unittest.TestCase):
         self.assertEqual(par.trigger_interval, par_in.trigger_interval)
         os.remove('test_par')
 
+
 if __name__ == '__main__':
     unittest.main()

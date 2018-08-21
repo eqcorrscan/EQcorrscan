@@ -180,7 +180,11 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
               for sid in seed_ids)
     # get cc results and used chans into their own lists
     results = [pool.apply_async(func, param) for param in params]
-    xcorrs, tr_chans = zip(*(res.get() for res in results))
+    try:
+        xcorrs, tr_chans = zip(*(res.get() for res in results))
+    except KeyboardInterrupt as e:  # pragma: no cover
+        pool.terminate()
+        raise e
     cccsums = np.sum(xcorrs, axis=0)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):

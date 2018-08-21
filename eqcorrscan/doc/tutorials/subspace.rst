@@ -65,6 +65,7 @@ aligned (see clustering submodule for alignment methods).
     >>> from obspy import read
     >>> import glob
     >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/similar_events/*')
+    >>> wavefiles.sort()  # Sort the wavefiles to ensure reproducibility
     >>> streams = [read(w) for w in wavefiles[0:3]]
     >>> # Channels must all be the same length
     >>> for st in streams:

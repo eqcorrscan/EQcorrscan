@@ -9,7 +9,9 @@ except ImportError:
     from distutils.command.build_ext import build_ext
     using_setuptools = False
 
+from distutils import sysconfig
 from distutils.ccompiler import get_default_compiler
+from pkg_resources import get_build_platform
 
 import os
 import sys
@@ -186,7 +188,6 @@ def export_symbols(*path):
 
 def get_extensions():
     from distutils.extension import Extension
-    from pkg_resources import get_build_platform
 
     if READ_THE_DOCS:
         return []
@@ -206,7 +207,11 @@ def get_extensions():
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
-        extra_link_args = ['-lm', '-lgomp']
+        if get_build_platform().startswith('freebsd'):
+            # Clang uses libomp, not libgomp
+            extra_link_args = ['-lm', '-lomp']
+        else:
+            extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp']
         if all(arch not in get_build_platform()
                for arch in ['arm', 'aarch']):
@@ -260,6 +265,17 @@ class CustomBuildExt(build_ext):
         else:
             compiler = self.compiler
 
+        # Hack around OSX setting a -m flag
+        cfg_vars = sysconfig.get_config_vars()
+        if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
+            print(cfg_vars["CFLAGS"])
+            cflags = cfg_vars["CFLAGS"].split()
+            if "-m" in cflags:
+                cflags.remove("-m")
+            cflags = list(set(cflags))
+            cfg_vars["CFLAGS"] = " ".join(cflags)
+            print(cfg_vars["CFLAGS"])
+            os.environ["CFLAGS"] = " ".join(cflags)
         if compiler == 'msvc':
             # Add msvc specific hacks
 
@@ -329,7 +345,7 @@ def setup_package():
         'version': VERSION,
         'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
-        'url': 'https://github.com/calum-chamberlain/EQcorrscan',
+        'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
         'license': 'LGPL',
@@ -367,7 +383,7 @@ def setup_package():
     else:
         setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
                                   'eqcorrscan.core', 'eqcorrscan.utils.lib',
-                                  'eqcorrscan.tutorials']
+                                  'eqcorrscan.tutorials', 'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions()
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()

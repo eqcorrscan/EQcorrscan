@@ -5,7 +5,7 @@ from os.path import join, dirname
 import pytest
 
 # ------------------------- Paths constants
-# these are added to pytest namespace for convinience if finding things
+# these are added to pytest namespace for convenience if finding things
 # eg test data
 
 PKG_PATH = join(dirname(__file__), 'eqcorrscan')
