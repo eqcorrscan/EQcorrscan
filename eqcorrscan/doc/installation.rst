@@ -70,8 +70,8 @@ sudo depending on your configuration):
     brew install gcc6
     brew install fftw
 
-Then run the following to install EQcorrscan (note the need to select CC=gcc, clang,
-the default compiler, does not support modern openMP pragmas):
+Then run the following to install EQcorrscan (note the need to select CC=gcc, you can
+install using clang, but you will need additional libraries for openmp support):
 
 .. code-block:: bash
 

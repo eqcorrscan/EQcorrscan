@@ -131,7 +131,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             flatline_count = 0;
         }
         stdev = sqrt(var);
-        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1) {
+        if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1 && stdev * mean >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
                 status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
@@ -289,7 +289,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     fftwf_execute_dft_r2c(pb, image_ext, outb);
 
     //  Compute dot product
-    #pragma omp parallel for num_threads(num_threads)
+    #pragma omp parallel for num_threads(num_threads) private(i)
     for (t = 0; t < n_templates; ++t){
         for (i = 0; i < N2; ++i)
         {
@@ -369,10 +369,16 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     for(i = 1; i < (image_len - template_len + 1); ++i){
         if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1) {
             double stdev = sqrt(var[i]);
-            for (t = 0; t < n_templates; ++t){
-                double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i] );
-                c /= stdev;
-                status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+            double meanstd = fabs(mean[i] * stdev);
+            if (meanstd >= ACCEPTED_DIFF){
+                for (t = 0; t < n_templates; ++t){
+                    double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
+                    c /= stdev;
+                    status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+                }
+            }
+            else {
+                unused_corr = 1;
             }
             if (var[i] <= WARN_DIFF){
                 variance_warning[0] += 1;
@@ -409,7 +415,6 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-            // printf("Error at template index: %i,  data index: %i\n", t, i);
             status = 1;
         }
         else if (value > 1.0) {
@@ -418,7 +423,6 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
         else if (value < -1.0) {
             value = -1.0;
         }
-
         // prev_ncc = ncc[ncc_index];
         #pragma omp atomic
         ncc[ncc_index] += value;
@@ -485,11 +489,17 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     fftwf_complex **out = NULL;
     fftwf_plan pa, pb, px;
 
-
     #ifdef N_THREADS
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
 
+    /* Outer loop parallelism seems to cause issues on OSX */
+    if (OUTER_SAFE != 1 && num_threads_outer > 1){
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tOuter loop threading disabled for this system\n");
+        num_threads_inner *= num_threads_outer;
+        printf("WARNING\tMULTI_NORMXCORR_FFTW\tSetting inner threading to %i and outer threading to 1\n", num_threads_inner);
+        num_threads_outer = 1;
+    }
     if (num_threads_inner > 1) {
         /* initialise FFTW threads */
         fftwf_init_threads();
@@ -503,7 +513,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
-        printf("Warning: requesting more threads than available - this could affect performance\n");
+        printf("Warning: requesting more threads than available - this could negatively impact performance\n");
     }
     #else
     /* threading/OpenMP is disabled */

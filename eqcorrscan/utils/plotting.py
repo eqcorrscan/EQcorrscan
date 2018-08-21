@@ -430,7 +430,10 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         else:
             template_names = ['All templates']
     if ax is None:
-        ax = plt.gca()
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+    else:
+        fig = ax.figure()
     # Make sure not to pad at edges
     ax.margins(0, 0)
     min_date = min([min(_d) for _d in dates])
@@ -506,7 +509,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         hrFMT = mdates.DateFormatter('%Y/%m/%d')
     ax.xaxis.set_major_locator(hours)
     ax.xaxis.set_major_formatter(hrFMT)
-    plt.gcf().autofmt_xdate()
+    fig.autofmt_xdate()
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=15)
     if not rate:
@@ -515,7 +518,6 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         if ax.legend() is not None:
             leg = ax.legend(loc=2, prop={'size': 8}, ncol=2)
             leg.get_frame().set_alpha(0.5)
-    fig = plt.gcf()
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 
