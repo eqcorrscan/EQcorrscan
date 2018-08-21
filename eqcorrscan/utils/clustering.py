@@ -791,19 +791,17 @@ def extract_detections(detections, templates, archive, arc_type,
         return
 
 
-def dist_vec_km(catalog, master_index, num_threads=None):
+def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     """
-    Compute the distance vector for a catalog with one master event.
-
-    Will give physical distance in kilometers.
+    Remove events in catalog which do not have any other nearby events.
 
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog for which to compute the distance matrix
-    :type master_index: int
-    :param master_index: Index of master in catalog
+    :type distance_cutoff: float
+    :param distance_cutoff: Cutoff for considering events unclustered in km
 
-    :returns: distance vector
-    :rtype: :class:`numpy.ndarray`
+    :returns: catalog
+    :rtype: :class:`obspy.core.event.Catalog`
     """
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
@@ -812,21 +810,21 @@ def dist_vec_km(catalog, master_index, num_threads=None):
 
     utilslib = _load_cdll('libutils')
 
-    utilslib.distance_vector.argtypes = [
+    utilslib.remove_unclustered.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_long, ctypes.c_long,
-        np.ctypeslib.ndpointer(dtype=np.float32,
+        ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.int32,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
-    utilslib.distance_vector.restype = ctypes.c_int
+        ctypes.c_float, ctypes.c_int]
+    utilslib.remove_unclustered.restype = ctypes.c_int
 
     # Initialize square matrix
-    dist_vec = np.ascontiguousarray(np.empty(len(catalog), dtype=np.float32))
+    mask = np.ascontiguousarray(np.zeros(len(catalog), dtype=np.int32))
     latitudes, longitudes, depths = (
         np.empty(len(catalog), dtype=np.float32),
         np.empty(len(catalog), dtype=np.float32),
@@ -846,14 +844,19 @@ def dist_vec_km(catalog, master_index, num_threads=None):
     if num_threads == 0:
         num_threads = 1
 
-    ret = utilslib.distance_vector(
-        latitudes, longitudes, depths, len(catalog), master_index,
-        dist_vec, num_threads)
+    ret = utilslib.remove_unclustered(
+        latitudes, longitudes, depths, len(catalog), mask, distance_cutoff,
+        num_threads)
 
     if ret != 0:  # pragma: no cover
         raise Exception("Internal error while computing distance matrix")
 
-    return dist_vec
+    _events = []
+    for i, event in enumerate(catalog.events):
+        if mask[i]:
+            _events.append(event)
+    catalog.events = _events
+    return catalog
 
 
 def dist_mat_km(catalog, num_threads=None):

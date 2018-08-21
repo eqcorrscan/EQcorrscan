@@ -23,7 +23,7 @@ from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils.clustering import (
     cross_chan_coherence, distance_matrix, cluster, group_delays, svd, SVD,
     empirical_svd, empirical_SVD, SVD_2_stream, svd_to_stream, corr_cluster,
-    dist_mat_km, catalog_cluster, space_time_cluster, dist_vec_km)
+    dist_mat_km, catalog_cluster, space_time_cluster, remove_unclustered)
 
 
 @pytest.mark.network
@@ -154,21 +154,78 @@ class DistanceClusterTests(unittest.TestCase):
         cls.distance_threshold = 1000
         cls.time_threshold = 7200
 
-    def test_dist_vec_km(self):
-        master_index = 10
-        dist_vec = dist_vec_km(self.cat, master_index)
-        assert dist_vec[master_index] == 0.0
-        master_ori = (
-            self.cat[master_index].preferred_origin() or
-            self.cat[master_index].origins[0])
+    def test_remove_unclustered(self):
+        distance_cutoff = 100
+        cat_back = remove_unclustered(self.cat.copy(), distance_cutoff,
+                                      num_threads=1)
+        assert len(cat_back) < len(self.cat)
+        # Check that all events have at least one event within distance_cutoff
+        for i, event in enumerate(cat_back):
+            master_ori = event.preferred_origin() or event.origins[0]
+            distances = []
+            for j, other_event in enumerate(cat_back):
+                slave_ori = (other_event.preferred_origin() or
+                             other_event.origins[0])
+                if i == j:
+                    continue
+                distances.append(dist_calc(
+                    (master_ori.latitude, master_ori.longitude,
+                     master_ori.depth / 1000),
+                    (slave_ori.latitude, slave_ori.longitude,
+                     slave_ori.depth / 1000)))
+            assert any(np.array(distances) < distance_cutoff)
+        # Check that all events not in the catalog are correctly ignored
         for i, event in enumerate(self.cat):
-            slave_ori = event.preferred_origin() or event.origins[0]
-            distance = dist_calc(
-                (master_ori.latitude, master_ori.longitude,
-                 master_ori.depth / 1000),
-                (slave_ori.latitude, slave_ori.longitude,
-                 slave_ori.depth / 1000))
-            self.assertAlmostEqual(dist_vec[i], distance, 6)
+            if event not in cat_back:
+                master_ori = event.preferred_origin() or event.origins[0]
+                distances = []
+                for j, other_event in enumerate(self.cat):
+                    slave_ori = (other_event.preferred_origin() or
+                                 other_event.origins[0])
+                    if i == j:
+                        continue
+                    distances.append(dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000)))
+                assert all(np.array(distances) > distance_cutoff)
+
+    def test_remove_unclustered_parallel(self):
+        distance_cutoff = 100
+        cat_back = remove_unclustered(self.cat.copy(), distance_cutoff,
+                                      num_threads=4)
+        assert len(cat_back) < len(self.cat)
+        for i, event in enumerate(cat_back):
+            master_ori = event.preferred_origin() or event.origins[0]
+            distances = []
+            for j, other_event in enumerate(cat_back):
+                slave_ori = (other_event.preferred_origin() or
+                             other_event.origins[0])
+                if i == j:
+                    continue
+                distances.append(dist_calc(
+                    (master_ori.latitude, master_ori.longitude,
+                     master_ori.depth / 1000),
+                    (slave_ori.latitude, slave_ori.longitude,
+                     slave_ori.depth / 1000)))
+            assert any(np.array(distances) < distance_cutoff)
+        # Check that all events not in the catalog are correctly ignored
+        for i, event in enumerate(self.cat):
+            if event not in cat_back:
+                master_ori = event.preferred_origin() or event.origins[0]
+                distances = []
+                for j, other_event in enumerate(self.cat):
+                    slave_ori = (other_event.preferred_origin() or
+                                 other_event.origins[0])
+                    if i == j:
+                        continue
+                    distances.append(dist_calc(
+                        (master_ori.latitude, master_ori.longitude,
+                         master_ori.depth / 1000),
+                        (slave_ori.latitude, slave_ori.longitude,
+                         slave_ori.depth / 1000)))
+                assert all(np.array(distances) > distance_cutoff)
 
     def test_dist_mat_km(self):
         """Test spacial clustering."""
