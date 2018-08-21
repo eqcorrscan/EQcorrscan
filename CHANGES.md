@@ -1,3 +1,6 @@
+## Current
+* Correct test-script (`test_eqcorrscan.py`) to find paths properly.
+
 ## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not 
