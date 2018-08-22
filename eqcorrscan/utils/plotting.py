@@ -833,12 +833,15 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import detection_multiplot
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>>
-    >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
+    >>> test_file = os.path.join(TETS_PATH, 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
     >>> test_wavefile = os.path.join(
-    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
-    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    ...     TEST_PATH, 'WAV', 'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
     >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
@@ -1250,12 +1253,15 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
     >>> import os
     >>> from eqcorrscan.core import template_gen
     >>> from eqcorrscan.utils.plotting import pretty_template_plot
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>>
-    >>> test_file = os.path.join('eqcorrscan', 'tests', 'test_data', 'REA',
-    ...                          'TEST_', '01-0411-15L.S201309')
+    >>> test_file = os.path.join(TEST_PATH, 'REA', 'TEST_',
+    ...                          '01-0411-15L.S201309')
     >>> test_wavefile = os.path.join(
-    ...     'eqcorrscan', 'tests', 'test_data', 'WAV', 'TEST_',
-    ...     '2013-09-01-0410-35.DFDPC_024_00')
+    ...     TEST_PATH, 'WAV', 'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
     >>> event = read_events(test_file)[0]
     >>> st = read(test_wavefile)
     >>> st = st.filter('bandpass', freqmin=2.0, freqmax=15.0)
@@ -1273,11 +1279,14 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
         from eqcorrscan.core import template_gen
         from eqcorrscan.utils.plotting import pretty_template_plot
         import os
-        test_file = os.path.realpath('../../..') + \
-            '/tests/test_data/REA/TEST_/01-0411-15L.S201309'
-        test_wavefile = os.path.realpath('../../..') +\
-            '/tests/test_data/WAV/TEST_/' +\
-            '2013-09-01-0410-35.DFDPC_024_00'
+        # Get the path to the test data
+        import eqcorrscan
+        import os
+        TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+        test_file = os.path.join(
+            TEST_PATH, 'REA', 'TEST_', '01-0411-15L.S201309'
+        test_wavefile = os.path.join(
+            TEST_PATH, 'WAV', 'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
         event = read_events(test_file)[0]
         st = read(test_wavefile)
         st.filter('bandpass', freqmin=2.0, freqmax=15.0)

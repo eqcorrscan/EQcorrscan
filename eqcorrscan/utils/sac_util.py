@@ -59,7 +59,10 @@ def sactoevent(st, debug=0):
         for all traces with the same values.
 
     >>> from obspy import read
-    >>> st = read('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/SAC/2014p611252/*')
     >>> event = sactoevent(st)
     >>> print(event.origins[0].time)
     2014-08-15T03:55:21.057000Z
