@@ -57,7 +57,7 @@ install:
   - conda list
   # done installing dependencies
   - git version
-  - python setup.py develop
+  - python setup.py install
 #  - python setup.py build_ext --inplace
 
 script:

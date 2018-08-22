@@ -68,17 +68,6 @@ def setup_ci():
         shutil.rmtree(TEST_DATA_PATH)
     test_data_path = os.path.join(
         os.getcwd(), "eqcorrscan", "tests", "test_data")
-    print(glob.glob(os.path.join(os.getcwd(), "*")))
-    print(glob.glob(os.path.join(os.getcwd(), "eqcorrscan", "*")))
-    print(glob.glob(os.path.join(os.getcwd(), "eqcorrscan", "tests", "*")))
-    print(glob.glob(
-        os.path.join(os.getcwd(), "eqcorrscan", "tests", "test_data", "*")))
-
-    print(glob.glob(os.path.join(test_data_path, "*")))
-    if not os.path.isdir(test_data_path):
-        raise FileNotFoundError(
-            "The file {0} you thought was there, apparently isn't :(".format(
-                test_data_path))
     shutil.copytree(test_data_path, TEST_DATA_PATH)
 
 
