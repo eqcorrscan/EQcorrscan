@@ -47,14 +47,14 @@ jobs:
           name: install EQcorrscan
           command: |
             . venv/bin/activate
-            python setup.py build_ext --inplace
+            python setup.py develop
       # run tests!
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            python eqcorrscan/scripts/test_eqcorrscan.py --ci -m "network" -n 2
-            python eqcorrscan/scripts/test_eqcorrscan.py --ci ~/.eqcorrscan/eqcorrscan/doc/tutorials/*.rst ~/.eqcorrscan/eqcorrscan/doc/submodules/*.rst --cov-append
+            test_eqcorrscan.py --ci -m "network" -n 2
+            test_eqcorrscan.py --ci ~/.eqcorrscan/eqcorrscan/doc/tutorials/*.rst ~/.eqcorrscan/eqcorrscan/doc/submodules/*.rst --cov-append
 
       - run:
           name: Upload to codecov

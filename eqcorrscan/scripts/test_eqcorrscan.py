@@ -64,7 +64,8 @@ def setup_ci():
     for file in [".coveragerc", "pytest.ini", "conftest.py"]:
         shutil.copy(
             os.path.join(os.getcwd(), file), WORKING_DIR)
-    if os.path.isdir(TEST_DATA_PATH):
+    if os.path.isdir(TEST_DATA_PATH) and \
+       len(glob.glob(os.path.join(TEST_DATA_PATH, "*"))) == 0:
         shutil.rmtree(TEST_DATA_PATH)
     test_data_path = os.path.join(
         os.getcwd(), "eqcorrscan", "tests", "test_data")
