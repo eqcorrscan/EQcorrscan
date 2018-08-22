@@ -2040,7 +2040,8 @@ class Template(object):
         >>> # Get the path to the test data
         >>> import eqcorrscan
         >>> import os
-        >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+        >>> TEST_PATH = (
+        ...     os.path.dirname(eqcorrscan.__file__) + '/tests/test_data')
         >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
         >>> template = Template().construct(
         ...     method='from_sac', name='test', lowcut=2.0, highcut=8.0,

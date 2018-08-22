@@ -61,6 +61,7 @@ def sactoevent(st, debug=0):
     >>> from obspy import read
     >>> # Get the path to the test data
     >>> import eqcorrscan
+    >>> import os
     >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> st = read(TEST_PATH + '/SAC/2014p611252/*')
     >>> event = sactoevent(st)

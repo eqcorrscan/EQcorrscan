@@ -838,7 +838,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     >>> import os
     >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>>
-    >>> test_file = os.path.join(TETS_PATH, 'REA',
+    >>> test_file = os.path.join(TEST_PATH, 'REA',
     ...                          'TEST_', '01-0411-15L.S201309')
     >>> test_wavefile = os.path.join(
     ...     TEST_PATH, 'WAV', 'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
