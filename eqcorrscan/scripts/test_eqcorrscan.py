@@ -67,14 +67,17 @@ def setup_ci():
     if os.path.isdir(TEST_DATA_PATH) and \
        len(glob.glob(os.path.join(TEST_DATA_PATH, "*"))) == 0:
         shutil.rmtree(TEST_DATA_PATH)
-    test_data_path = os.path.join(
-        os.getcwd(), "eqcorrscan", "tests", "test_data")
-    shutil.copytree(test_data_path, TEST_DATA_PATH)
-    if os.path.isdir(os.path.join(PKG_PATH, "doc")):
+    if not os.path.isdir(TEST_DATA_PATH):
+        test_data_path = os.path.join(
+            os.getcwd(), "eqcorrscan", "tests", "test_data")
+        shutil.copytree(test_data_path, TEST_DATA_PATH)
+    if os.path.isdir(os.path.join(PKG_PATH, "doc")) and \
+       len(glob.glob(os.path.join(PKG_PATH, "doc", "*"))) == 0:
         shutil.rmtree(os.path.join(PKG_PATH, "doc"))
-    doc_path = os.path.join(
-        os.getcwd(), "eqcorrscan", "doc")
-    shutil.copytree(doc_path, os.path.join(PKG_PATH, "doc"))
+    if not os.path.isdir(os.path.join(PKG_PATH, "doc")):
+        doc_path = os.path.join(
+            os.getcwd(), "eqcorrscan", "doc")
+        shutil.copytree(doc_path, os.path.join(PKG_PATH, "doc"))
 
 
 def download_test_data():
