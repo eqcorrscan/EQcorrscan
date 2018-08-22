@@ -71,5 +71,4 @@ after_test:
   #  - "coverage combine"
  #  - "powershell copy-item .coverage ..\\.coverage.empty"
  #  - "coverage combine"
-  - "cd C:\\Users\\appveyor\\.eqcorrscan"
   - "codecov"
