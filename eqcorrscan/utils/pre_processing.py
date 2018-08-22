@@ -41,7 +41,11 @@ def _check_daylong(tr):
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import _check_daylong
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
     >>> _check_daylong(st[0])
     True
@@ -117,8 +121,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...                debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
@@ -129,8 +136,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
@@ -141,8 +151,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])

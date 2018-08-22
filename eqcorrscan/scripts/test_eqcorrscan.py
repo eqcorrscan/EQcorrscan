@@ -58,9 +58,6 @@ class cd:
 def setup_ci():
     if not os.path.isdir(WORKING_DIR):
         os.makedirs(WORKING_DIR)
-    if not os.path.islink(os.path.join(WORKING_DIR, "eqcorrscan")):
-        Logger.info("Making symlink to install")
-        os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
     for file in [".coveragerc", "pytest.ini", "conftest.py"]:
         shutil.copy(
             os.path.join(os.getcwd(), file), WORKING_DIR)
@@ -102,10 +99,6 @@ def download_test_data():
         os.makedirs(TEST_DATA_PATH)
     if not os.path.isdir(WORKING_DIR):
         os.makedirs(WORKING_DIR)
-    if not os.path.islink(os.path.join(WORKING_DIR, "eqcorrscan")):
-        # Make a symbolic link so that test data can be found
-        Logger.debug("Making symlink to install")
-        os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
 
     control_files_downloaded = all([c["downloaded"] for c in control_files])
     if test_data_downloaded and control_files_downloaded:
@@ -152,7 +145,7 @@ def run_tests(arg_list):
         arg_list.append("--runslow")
     arg_list.extend(
         ["--ignore", "EGG-INFO", "--ignore", "eqcorrscan/utils/lib",
-         "--doctest-modules"])
+         "--doctest-modules", PKG_PATH])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
         Logger.info("Running tests from {0}".format(PKG_PATH))
