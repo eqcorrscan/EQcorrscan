@@ -55,6 +55,20 @@ class cd:
         os.chdir(self.savedPath)
 
 
+def setup_ci():
+    if os.path.isdir(WORKING_DIR):
+        shutil.rmtree(WORKING_DIR)
+    os.makedirs(WORKING_DIR)
+    Logger.info("Making symlink to install")
+    os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
+    shutil.copy(".coveragerc", WORKING_DIR)
+    shutil.copy("pytest.ini", WORKING_DIR)
+    shutil.copy("conftest.py", WORKING_DIR)
+    if os.path.isdir(TEST_DATA_PATH):
+        shutil.rmtree(TEST_DATA_PATH)
+    shutil.copytree("eqcorrscan/tests/test_data", TEST_DATA_PATH)
+
+
 def download_test_data():
     """Check if test data are installed, and if not, download them"""
     test_data_downloaded = False
@@ -62,9 +76,6 @@ def download_test_data():
         {"name": "pytest.ini", "downloaded": False},
         {"name": "conftest.py", "downloaded": False},
         {"name": ".coveragerc", "downloaded": False}]
-    pytest_ini_downloaded = False
-    conftest_downloaded = False
-    coveragerc_downloaded = False
     if os.path.isdir(TEST_DATA_PATH):
         if len(glob.glob(os.path.join(TEST_DATA_PATH, "*"))) > 0:
             Logger.info("Found test data at: {0}".format(TEST_DATA_PATH))
@@ -138,5 +149,9 @@ def run_tests(arg_list):
 
 if __name__ == "__main__":
     arg_list = sys.argv[1:]
-    download_test_data()
+    if "--ci" in arg_list:
+        setup_ci()
+        arg_list.remove("--ci")
+    else:
+        download_test_data()
     run_tests(arg_list=arg_list)

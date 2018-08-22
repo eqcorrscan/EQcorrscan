@@ -62,14 +62,14 @@ install:
 
 script:
    - export MPLBACKEND=Agg
-   - test_eqcorrscan.py --runslow -m "not serial and not network" -n 2
+   - test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2
    #   - py.test --runslow -m "not serial and not network" -n 2
    - export OMP_NUM_THREADS=2;
    # These tests use multi-threading
    #   - py.test -m "serial and not network" --cov-append
-   - test_eqcorrscan.py -m "serial and not network" --cov-append
+   - test_eqcorrscan.py --ci -m "serial and not network" --cov-append
    #   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
-   - test_eqcorrscan.py --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+   - test_eqcorrscan.py --ci --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
 
 after_success:
   # Check how much code is actually tested and send this report to codecov

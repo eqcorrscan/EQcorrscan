@@ -54,8 +54,8 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            test_eqcorrscan.py -m "network" -n 2
-            test_eqcorrscan.py eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            test_eqcorrscan.py --ci -m "network" -n 2
+            test_eqcorrscan.py --ci eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
 
       - run:
           name: Upload to codecov
