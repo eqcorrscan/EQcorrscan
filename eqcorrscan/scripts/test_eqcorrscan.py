@@ -56,18 +56,19 @@ class cd:
 
 
 def setup_ci():
-    if os.path.isdir(WORKING_DIR):
-        shutil.rmtree(WORKING_DIR)
-    os.makedirs(WORKING_DIR)
-    Logger.info("Making symlink to install")
-    os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
+    if not os.path.isdir(WORKING_DIR):
+        os.makedirs(WORKING_DIR)
+    if not os.path.islink(os.path.join(WORKING_DIR, "eqcorrscan")):
+        Logger.info("Making symlink to install")
+        os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
     for file in [".coveragerc", "pytest.ini", "conftest.py"]:
         shutil.copy(
             os.path.join(os.getcwd(), file), WORKING_DIR)
     if os.path.isdir(TEST_DATA_PATH):
         shutil.rmtree(TEST_DATA_PATH)
-    shutil.copytree(os.path.join(os.getcwd(), "eqcorrscan/tests/test_data"),
-                    TEST_DATA_PATH)
+    shutil.copytree(
+        os.path.join(os.getcwd(), "eqcorrscan", "tests", "test_data"),
+        TEST_DATA_PATH)
 
 
 def download_test_data():

@@ -71,6 +71,6 @@ test_script:
 after_test:
   #  - "coverage combine"
  #  - "powershell copy-item .coverage ..\\.coverage.empty"
- #  - "cd .."
  #  - "coverage combine"
+  - "cd ~/.eqcorrscan"
   - "codecov"
