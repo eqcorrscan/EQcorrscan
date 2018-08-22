@@ -818,13 +818,13 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_long,
-        np.ctypeslib.ndpointer(dtype=np.int32,
+        np.ctypeslib.ndpointer(dtype=np.uint8,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_float, ctypes.c_int]
     utilslib.remove_unclustered.restype = ctypes.c_int
 
     # Initialize square matrix
-    mask = np.ascontiguousarray(np.zeros(len(catalog), dtype=np.int32))
+    mask = np.ascontiguousarray(np.zeros(len(catalog), dtype=np.uint8))
     latitudes, longitudes, depths = (
         np.empty(len(catalog), dtype=np.float32),
         np.empty(len(catalog), dtype=np.float32),
@@ -857,6 +857,74 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
             _events.append(event)
     catalog.events = _events
     return catalog
+
+
+def distance_link(catalog, distance_cutoff, num_threads=None):
+    """
+    Link events within a distance threshold of each other.
+
+    Can be useful for generating subsets of events to take on for further
+    clustering (e.g. only compute correlaions for events that are nearby).
+
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+    :type distance_cutoff: float
+    :param distance_cutoff: Cutoff for considering events unclustered in km
+
+    :returns:
+        np.ndarray of bools and size (len(catalog), len(catalog)), where each
+        row refers to each event and which events are clustered with it.
+    """
+    import ctypes
+    from eqcorrscan.utils.libnames import _load_cdll
+    from future.utils import native_str
+    from math import radians
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.distance_link.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.uint8,
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_float, ctypes.c_int]
+    utilslib.distance_link.restype = ctypes.c_int
+
+    # Initialize square matrix
+    mask = np.ascontiguousarray(np.zeros(
+        (len(catalog), len(catalog)), dtype=np.uint8))
+    latitudes, longitudes, depths = (
+        np.empty(len(catalog), dtype=np.float32),
+        np.empty(len(catalog), dtype=np.float32),
+        np.empty(len(catalog), dtype=np.float32))
+    for i, event in enumerate(catalog):
+        origin = event.preferred_origin() or event.origins[0]
+        latitudes[i] = radians(origin.latitude)
+        longitudes[i] = radians(origin.longitude)
+        depths[i] = origin.depth / 1000
+    depths = np.ascontiguousarray(depths, dtype=np.float32)
+    latitudes = np.ascontiguousarray(latitudes, dtype=np.float32)
+    longitudes = np.ascontiguousarray(longitudes, dtype=np.float32)
+
+    if num_threads is None:
+        # Testing showed that 400 events per thread was best on the i7.
+        num_threads = int(min(cpu_count(), len(catalog) // 400))
+    if num_threads == 0:
+        num_threads = 1
+
+    ret = utilslib.distance_link(
+        latitudes, longitudes, depths, len(catalog), mask, distance_cutoff,
+        num_threads)
+
+    if ret != 0:  # pragma: no cover
+        raise Exception("Internal error while computing distance matrix")
+
+    return mask.astype(np.bool)
 
 
 def dist_mat_km(catalog, num_threads=None):

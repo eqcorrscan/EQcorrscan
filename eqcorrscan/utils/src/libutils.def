@@ -11,3 +11,4 @@ EXPORTS
     dist_calc
     distance_matrix
     remove_unclustered
+    distance_link
