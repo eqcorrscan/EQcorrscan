@@ -147,8 +147,8 @@ def run_tests(arg_list):
     if "--runsuperslow" not in arg_list and "--runslow" not in arg_list:
         arg_list.append("--runslow")
     arg_list.extend(
-        ["--doctest-modules", "--ignore", "EGG-INFO",
-         "--ignore", "eqcorrscan/utils/lib"])
+        ["--ignore", "EGG-INFO", "--ignore", "eqcorrscan/utils/lib",
+         "--doctest-modules"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
         Logger.info("Running tests from {0}".format(PKG_PATH))

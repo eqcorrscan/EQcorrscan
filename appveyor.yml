@@ -63,9 +63,8 @@ build: false
 
 test_script:
   - "%CMD_IN_ENV% python setup.py build_ext --inplace"
-  - "%CMD_IN_ENV% python setup.py install"
+#  - "%CMD_IN_ENV% python setup.py install"
   - "%CMD_IN_ENV% test_eqcorrscan.py --ci -n4 -m \"not serial and not network\""
-  - "cd C:\\Users\\appveyor"
   - "%CMD_IN_ENV% test_eqcorrscan.py -m \"serial and not network\" --cov-append"
 #  - "%CMD_IN_ENV% test_eqcorrscan.py --ci -n4 -m \"network\" --cov-append"
 
