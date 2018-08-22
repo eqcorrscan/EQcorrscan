@@ -69,6 +69,11 @@ def setup_ci():
     test_data_path = os.path.join(
         os.getcwd(), "eqcorrscan", "tests", "test_data")
     print(glob.glob(os.path.join(os.getcwd(), "*")))
+    print(glob.glob(os.path.join(os.getcwd(), "eqcorrscan", "*")))
+    print(glob.glob(os.path.join(os.getcwd(), "eqcorrscan", "tests", "*")))
+    print(glob.glob(
+        os.path.join(os.getcwd(), "eqcorrscan", "tests", "test_data", "*")))
+
     print(glob.glob(os.path.join(test_data_path, "*")))
     if not os.path.isdir(test_data_path):
         raise FileNotFoundError(
