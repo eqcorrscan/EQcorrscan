@@ -394,7 +394,7 @@ class DistanceClusterTests(unittest.TestCase):
             master_median_time = master_times[0] + np.median(
                 [m - master_times[0] for m in master_times])
             # Just use the origin of one event
-            master_orgin = group[0].preferred_origin() or group[0].origins[0]
+            master_ori = group[0].preferred_origin() or group[0].origins[0]
             for j, other_group in enumerate(groups):
                 if i == j:
                     continue
