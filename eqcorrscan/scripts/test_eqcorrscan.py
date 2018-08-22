@@ -69,6 +69,8 @@ def setup_ci():
     test_data_path = os.path.join(
         os.getcwd(), "eqcorrscan", "tests", "test_data")
     shutil.copytree(test_data_path, TEST_DATA_PATH)
+    if os.path.isdir(os.path.join(PKG_PATH, "doc")):
+        shutil.rmtree(os.path.join(PKG_PATH, "doc"))
     doc_path = os.path.join(
         os.getcwd(), "eqcorrscan", "doc")
     shutil.copytree(doc_path, os.path.join(PKG_PATH, "doc"))
