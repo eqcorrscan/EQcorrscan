@@ -30,7 +30,7 @@ Logger = logging.getLogger(__name__)
 
 VERSION = eqcorrscan.__version__
 TEST_PATH = os.path.dirname(tests.__file__)
-PKG_PATH = os.path.dirname((eqcorrscan.__file__))
+PKG_PATH = os.path.dirname(eqcorrscan.__file__)
 WORKING_DIR = os.path.join(os.path.expanduser("~"), ".eqcorrscan")
 TAG_URL = "https://github.com/eqcorrscan/EQcorrscan/archive/{0}.zip".format(
     VERSION)
@@ -61,12 +61,13 @@ def setup_ci():
     os.makedirs(WORKING_DIR)
     Logger.info("Making symlink to install")
     os.symlink(PKG_PATH, os.path.join(WORKING_DIR, "eqcorrscan"))
-    shutil.copy(".coveragerc", WORKING_DIR)
-    shutil.copy("pytest.ini", WORKING_DIR)
-    shutil.copy("conftest.py", WORKING_DIR)
+    for file in [".coveragerc", "pytest.ini", "conftest.py"]:
+        shutil.copy(
+            os.path.join(os.getcwd(), file), WORKING_DIR)
     if os.path.isdir(TEST_DATA_PATH):
         shutil.rmtree(TEST_DATA_PATH)
-    shutil.copytree("eqcorrscan/tests/test_data", TEST_DATA_PATH)
+    shutil.copytree(os.path.join(os.getcwd(), "eqcorrscan/tests/test_data"),
+                    TEST_DATA_PATH)
 
 
 def download_test_data():
