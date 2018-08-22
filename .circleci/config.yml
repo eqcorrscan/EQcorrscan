@@ -56,6 +56,9 @@ jobs:
             . venv/bin/activate
             pwd
             ls
+            ls eqcorrscan
+            ls eqcorrscan/tests
+            ls eqcorrscan/tests/test_data
             test_eqcorrscan.py --ci -m "network" -n 2
             test_eqcorrscan.py --ci eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
 
