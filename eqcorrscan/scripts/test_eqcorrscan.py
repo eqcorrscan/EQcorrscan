@@ -174,7 +174,7 @@ def run_tests(arg_list):
         if os.name == "nt":
             shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
             shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
-        shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
+        shutil.move("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
         Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
@@ -183,7 +183,7 @@ def run_tests(arg_list):
         if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
             os.remove(os.path.join(PKG_PATH, "pytest.ini"))
             os.remove(os.path.join(PKG_PATH, ".coveragerc"))
-        os.remove(os.path.join(PKG_PATH, "conftest.py"))
+        shutil.move(os.path.join(PKG_PATH, "conftest.py"), "conftest.py")
         if ret != 0:
             raise SystemExit("Failed test")
 
