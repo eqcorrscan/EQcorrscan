@@ -137,10 +137,19 @@ def download_test_data():
     return
 
 
+def rewrite_coveragerc(infile, outfile):
+    with open(infile, "r") as f:
+        contents = f.read().split("\n")
+    with open(outfile, "w") as f:
+        for line in contents:
+            f.write(line.replace("eqcorrscan", PKG_PATH) + "\n")
+
+
 def run_tests(arg_list):
     """
     Run the tests.
     """
+    import subprocess
     # Convert arguments to real paths
     if "--doc" in arg_list:
         doc_files = glob.glob(
@@ -155,9 +164,11 @@ def run_tests(arg_list):
         arg_list.append("--runslow")
     arg_list.extend(
         ["--ignore", "EGG-INFO", "--ignore", PKG_PATH + "/utils/lib",
-         "--doctest-modules"])
+         "--doctest-modules", "--cov-config",
+         os.path.join(WORKING_DIR, ".coveragerc"), "--ignore=setup.py"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
+        rewrite_coveragerc(".coveragerc", ".coveragerc")
         # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
         if os.name == "nt":
             shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
@@ -166,7 +177,10 @@ def run_tests(arg_list):
         Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
-        pytest.main(args=arg_list)
+        # Run the tests!
+        # pytest.main(args=arg_list)
+        arg_list.insert(0, "py.test")
+        subprocess.call(arg_list)
         if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
             os.remove(os.path.join(PKG_PATH, "conftest.py"))
             os.remove(os.path.join(PKG_PATH, "pytest.ini"))
