@@ -145,7 +145,7 @@ def run_tests(arg_list):
     if "--doc" in arg_list:
         doc_files = glob.glob(
             os.path.join(PKG_PATH, "doc", "tutorials", "*.rst"))
-        doc_files.append(glob.glob(
+        doc_files.extend(glob.glob(
             os.path.join(PKG_PATH, "doc", "submodules", "*.rst")))
         arg_list.extend(doc_files)
         arg_list.remove("--doc")
