@@ -145,6 +145,7 @@ def run_tests(arg_list):
     if "--doc" in arg_list:
         arg_list.extend([os.path.join(PKG_PATH, "doc", "tutorials", "*.rst"),
                          os.path.join(PKG_PATH, "doc", "submodules", "*.rst")])
+        arg_list.remove("--doc")
     else:
         arg_list.append(PKG_PATH)
     if "--runsuperslow" not in arg_list and "--runslow" not in arg_list:
