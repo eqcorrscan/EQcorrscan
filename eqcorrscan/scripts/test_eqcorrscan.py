@@ -141,16 +141,34 @@ def run_tests(arg_list):
     """
     Run the tests.
     """
+    # Convert arguments to real paths
+    _arg_list = []
+    for arg in arg_list:
+        if "/" in arg:
+            arg = os.path.join(PKG_PATH, arg)
+        _arg_list.append(arg)
+    arg_list = _arg_list
     if "--runsuperslow" not in arg_list and "--runslow" not in arg_list:
         arg_list.append("--runslow")
     arg_list.extend(
-        ["--ignore", "EGG-INFO", "--ignore", "eqcorrscan/utils/lib",
+        ["--ignore", "EGG-INFO", "--ignore",
+         PKG_PATH + "/eqcorrscan/utils/lib",
          "--doctest-modules", PKG_PATH])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
+        # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
+        if os.name == "nt":
+            shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
+            shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
+            shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
+        Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
         pytest.main(args=arg_list)
+        if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
+            os.remove(os.path.join(PKG_PATH, "conftest.py"))
+            os.remove(os.path.join(PKG_PATH, "pytest.ini"))
+            os.remove(os.path.join(PKG_PATH, ".coveragerc"))
 
 
 if __name__ == "__main__":
