@@ -145,7 +145,7 @@ def run_tests(arg_list):
     _arg_list = []
     for arg in arg_list:
         if "/" in arg:
-            arg = os.path.join(PKG_PATH, arg)
+            arg = os.path.join(os.path.dirname(PKG_PATH), arg)
         _arg_list.append(arg)
     arg_list = _arg_list
     if "--runsuperslow" not in arg_list and "--runslow" not in arg_list:
