@@ -149,7 +149,6 @@ def run_tests(arg_list):
     """
     Run the tests.
     """
-    import subprocess
     # Convert arguments to real paths
     if "--doc" in arg_list:
         doc_files = glob.glob(
@@ -173,20 +172,20 @@ def run_tests(arg_list):
         rewrite_coveragerc(".coveragerc", ".coveragerc")
         # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
         if os.name == "nt":
-            shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
             shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
             shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
+        shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
         Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
         # Run the tests!
-        # pytest.main(args=arg_list)
-        arg_list.insert(0, "py.test")
-        subprocess.call(arg_list)
+        ret = pytest.main(args=arg_list)
         if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
-            os.remove(os.path.join(PKG_PATH, "conftest.py"))
             os.remove(os.path.join(PKG_PATH, "pytest.ini"))
             os.remove(os.path.join(PKG_PATH, ".coveragerc"))
+        os.remove(os.path.join(PKG_PATH, "conftest.py"))
+        if ret != 0:
+            raise SystemExit("Failed test")
 
 
 if __name__ == "__main__":
