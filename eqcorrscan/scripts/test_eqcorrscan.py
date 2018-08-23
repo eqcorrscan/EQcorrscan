@@ -143,8 +143,11 @@ def run_tests(arg_list):
     """
     # Convert arguments to real paths
     if "--doc" in arg_list:
-        arg_list.extend([os.path.join(PKG_PATH, "doc", "tutorials", "*.rst"),
-                         os.path.join(PKG_PATH, "doc", "submodules", "*.rst")])
+        doc_files = glob.glob(
+            os.path.join(PKG_PATH, "doc", "tutorials", "*.rst"))
+        doc_files.append(glob.glob(
+            os.path.join(PKG_PATH, "doc", "submodules", "*.rst")))
+        arg_list.extend(doc_files)
         arg_list.remove("--doc")
     else:
         arg_list.append(PKG_PATH)
