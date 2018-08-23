@@ -171,10 +171,10 @@ def run_tests(arg_list):
     with cd(WORKING_DIR):
         rewrite_coveragerc(".coveragerc", ".coveragerc")
         # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
-        if os.name == "nt":
+        if os.name != "posix":
             shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
             shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
-        shutil.move("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
+            shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
         Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
@@ -183,7 +183,7 @@ def run_tests(arg_list):
         if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
             os.remove(os.path.join(PKG_PATH, "pytest.ini"))
             os.remove(os.path.join(PKG_PATH, ".coveragerc"))
-        shutil.move(os.path.join(PKG_PATH, "conftest.py"), "conftest.py")
+            os.remove(os.path.join(PKG_PATH, "conftest.py"))
         if ret != 0:
             raise SystemExit("Failed test")
 
