@@ -69,7 +69,7 @@ script:
    #   - py.test -m "serial and not network" --cov-append
    - test_eqcorrscan.py --ci -m "serial and not network" --cov-append
    #   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
-   - test_eqcorrscan.py --ci --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+   - test_eqcorrscan.py --ci --runsuperslow -s --cov-append
 
 after_success:
   # Check how much code is actually tested and send this report to codecov

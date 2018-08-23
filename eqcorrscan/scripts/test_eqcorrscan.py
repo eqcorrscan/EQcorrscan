@@ -142,18 +142,16 @@ def run_tests(arg_list):
     Run the tests.
     """
     # Convert arguments to real paths
-    _arg_list = []
-    for arg in arg_list:
-        if "/" in arg:
-            arg = os.path.join(os.path.dirname(PKG_PATH), arg)
-        _arg_list.append(arg)
-    arg_list = _arg_list
+    if "--doc" in arg_list:
+        arg_list.extend([os.path.join(PKG_PATH, "doc", "tutorials", "*.rst"),
+                         os.path.join(PKG_PATH, "doc", "submodules", "*.rst")])
+    else:
+        arg_list.append(PKG_PATH)
     if "--runsuperslow" not in arg_list and "--runslow" not in arg_list:
         arg_list.append("--runslow")
     arg_list.extend(
-        ["--ignore", "EGG-INFO", "--ignore",
-         PKG_PATH + "/eqcorrscan/utils/lib",
-         "--doctest-modules", PKG_PATH])
+        ["--ignore", "EGG-INFO", "--ignore", PKG_PATH + "/utils/lib",
+         "--doctest-modules"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
         # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
