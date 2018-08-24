@@ -780,7 +780,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     for p in chained_ev_pick_corrs]
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                self.assertEqual(ev.resource_id, chained_ev.resource_id)
+                self.assertEqual(ev.resource_id.id[0:-5],
+                                 chained_ev.resource_id.id[0:-5])
                 assert np.allclose(
                     float(ev.comments[0].text.split("=")[-1]),
                     float(chained_ev.comments[0].text.split("=")[-1]),
