@@ -58,9 +58,11 @@ class cd:
 def setup_ci():
     if not os.path.isdir(WORKING_DIR):
         os.makedirs(WORKING_DIR)
-    for file in [".coveragerc", "pytest.ini", "conftest.py"]:
+    for file in ["pytest.ini", "conftest.py"]:
         shutil.copy(
             os.path.join(os.getcwd(), file), WORKING_DIR)
+    rewrite_coveragerc(os.path.join(os.getcwd(), ".coveragerc"),
+                       os.path.join(WORKING_DIR, ".coveragerc"))
     if os.path.isdir(TEST_DATA_PATH) and \
        len(glob.glob(os.path.join(TEST_DATA_PATH, "*"))) == 0:
         shutil.rmtree(TEST_DATA_PATH)
@@ -104,7 +106,7 @@ def download_test_data():
     if test_data_downloaded and control_files_downloaded:
         return
 
-    Logger.info("Downloading test data from github")
+    Logger.info("Downloading necessary files from github")
     with cd(TEST_DATA_PATH):
         # Get the whole zip for this release
         Logger.info("Downloading from {0}".format(TAG_URL))
@@ -122,7 +124,11 @@ def download_test_data():
                 contents.extract(extract_path, ".")
                 Logger.debug("Moving {0} to {1}".format(
                     extract_path, WORKING_DIR))
-                shutil.move(extract_path, WORKING_DIR)
+                if control_file["name"] == ".coveragerc":
+                    rewrite_coveragerc(
+                        extract_path, os.path.join(WORKING_DIR, ".coveragerc"))
+                else:
+                    shutil.move(extract_path, WORKING_DIR)
 
         if not test_data_downloaded:
             for file in contents.namelist():
@@ -169,9 +175,8 @@ def run_tests(arg_list):
          os.path.join(WORKING_DIR, ".coveragerc"), "--ignore=setup.py"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
-        rewrite_coveragerc(".coveragerc", ".coveragerc")
         # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
-        if os.name != "posix":
+        if sys.platform != "linux":
             shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
             shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
             shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
