@@ -1070,7 +1070,7 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     :returns: list of :class:`obspy.core.event.Catalog` objects
     :rtype: list
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
     >>> client = Client("NCEDC")
@@ -1078,9 +1078,9 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
-    >>> groups = space_cluster(catalog=cat, thresh=2, show=False)
+    >>> groups = catalog_cluster(catalog=cat, thresh=2, show=False)
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
     >>> client = Client("https://earthquake.usgs.gov")
@@ -1088,7 +1088,8 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=6)
-    >>> groups = space_cluster(catalog=cat, thresh=1000, show=False)
+    >>> groups = catalog_cluster(catalog=cat, thresh=1000, metric="time",
+    ...     show=False)
     """
     # Compute the distance matrix and linkage
     if metric == "distance":

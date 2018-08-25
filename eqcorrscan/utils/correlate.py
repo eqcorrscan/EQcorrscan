@@ -57,6 +57,9 @@ XCORR_STREAM_METHODS = ('multithread', 'multiprocess', 'concurrent',
 # these implement the array interface
 XCOR_ARRAY_METHODS = ('array_xcorr')
 
+# Gain shift for low-variance stabilization
+MULTIPLIER = 1e8
+
 
 class CorrelationError(Exception):
     """ Error handling for correlation functions. """
@@ -544,9 +547,13 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     # Check that stream is non-zero and above variance threshold
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
         # Apply gain
-        stream *= 1e8
-        warnings.warn("Low variance found for, applying gain "
+        stream *= MULTIPLIER
+        print("Low variance found...")
+        warnings.warn("Low variance found, applying gain "
                       "to stabilise correlations")
+        multiplier = MULTIPLIER
+    else:
+        multiplier = 1
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -567,7 +574,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         warnings.warn(
             "Low variance found in {0} positions, check result.".format(
                 variance_warning[0]))
-
+    # Remove variance correction
+    stream /= multiplier
     return ccc, used_chans
 
 
@@ -746,13 +754,17 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     template_array = np.ascontiguousarray([template_array[x]
                                            for x in seed_ids],
                                           dtype=np.float32)
+    multipliers = {}
     for x in seed_ids:
         # Check that stream is non-zero and above variance threshold
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
-            stream_array *= 1e8
+            stream_array[x] *= MULTIPLIER
             warnings.warn("Low variance found for {0}, applying gain "
                           "to stabilise correlations".format(x))
+            multipliers.update({x: MULTIPLIER})
+        else:
+            multipliers.update({x: 1})
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
     cccs = np.zeros((n_templates, image_len - template_len + 1),
@@ -786,7 +798,9 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
             warnings.warn("Low variance found in {0} places for {1},"
                           " check result.".format(variance_warning,
                                                   seed_ids[i]))
-
+    # Remove gain
+    for i, x in enumerate(seed_ids):
+        stream_array[i] *= multipliers[x]
     return cccs, used_chans
 
 # ------------------------------- stream_xcorr functions

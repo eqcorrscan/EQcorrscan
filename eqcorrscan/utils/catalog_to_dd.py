@@ -664,6 +664,7 @@ def read_phase(ph_file):
         else:
             event_text['picks'].append(line.rstrip())
     ph_catalog.append(_phase_to_event(event_text))
+    f.close()
     return ph_catalog
 
 

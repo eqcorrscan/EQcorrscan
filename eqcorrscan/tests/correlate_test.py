@@ -186,12 +186,13 @@ def array_ccs_low_amp(array_template, array_stream, pads):
      as the cc calculated by said function.
      This specifically tests low amplitude streams as raised in issue #181."""
     out = {}
+    arr_stream = array_stream * 10e-8
     for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
         print("Running {0} with low-variance".format(name))
         with warnings.catch_warnings(record=True) as w:
             cc, _ = time_func(
-                func, name, array_template, array_stream * 10e-8, pads)
+                func, name, array_template, arr_stream, pads)
             out[name] = (cc, w)
     return out
 
@@ -344,7 +345,7 @@ class TestArrayCorrelateFunctions:
             assert np.allclose(cc1, cc2, atol=self.atol)
 
     def test_test_autocorrelation(self, array_ccs):
-        """ ensure an auto correlationoccurred in each of ccs where it is
+        """ ensure an auto correlation occurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
