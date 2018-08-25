@@ -124,6 +124,8 @@ def download_test_data():
                 contents.extract(extract_path, ".")
                 Logger.debug("Moving {0} to {1}".format(
                     extract_path, WORKING_DIR))
+                if control_file["name"] == "conftest.py":
+                    check_path_conftest(extract_path)
                 if control_file["name"] == ".coveragerc":
                     rewrite_coveragerc(
                         extract_path, os.path.join(WORKING_DIR, ".coveragerc"))
@@ -149,6 +151,19 @@ def rewrite_coveragerc(infile, outfile):
     with open(outfile, "w") as f:
         for line in contents:
             f.write(line.replace("eqcorrscan", PKG_PATH) + "\n")
+
+
+def check_path_conftest(conftest):
+    lines_out = []
+    with open(conftest, "r") as f:
+        for line in f:
+            if line.startswith("PKG_PATH"):
+                lines_out.append("PKG_PATH = {0}".format(PKG_PATH))
+            else:
+                lines_out.append(line)
+    with open(conftest, "w") as f:
+        for line in lines_out:
+            f.write(line + "\n")
 
 
 def run_tests(arg_list):
