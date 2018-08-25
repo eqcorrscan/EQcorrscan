@@ -58,9 +58,10 @@ class cd:
 def setup_ci():
     if not os.path.isdir(WORKING_DIR):
         os.makedirs(WORKING_DIR)
-    for file in ["pytest.ini", "conftest.py"]:
+    for f in ["pytest.ini", "conftest.py"]:
         shutil.copy(
-            os.path.join(os.getcwd(), file), WORKING_DIR)
+            os.path.join(os.getcwd(), f), WORKING_DIR)
+    check_path_conftest(os.path.join(WORKING_DIR, "conftest.py"))
     rewrite_coveragerc(os.path.join(os.getcwd(), ".coveragerc"),
                        os.path.join(WORKING_DIR, ".coveragerc"))
     if os.path.isdir(TEST_DATA_PATH) and \
