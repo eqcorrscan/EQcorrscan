@@ -18,8 +18,10 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> from eqcorrscan.utils.mag_calc import amp_pick_event
     >>> from obspy import read, read_events
     >>> from obspy.io.nordic.core import readwavename
+    >>> from eqcorrscan import tests
     >>> import os
-    >>> testing_path = 'eqcorrscan/tests/test_data'
+    >>> # Get the path for the test-data so we can test this
+    >>> testing_path = os.path.dirname(tests.__file__) + '/test_data'
     >>> sfile = os.path.join(testing_path, 'REA', 'TEST_',
     ...                      '01-0411-15L.S201309')
     >>> datapath = os.path.join(testing_path, 'WAV', 'TEST_')
@@ -50,8 +52,11 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> import glob
     >>> from eqcorrscan.utils.clustering import svd
     >>> import numpy as np
-    >>> # Do the set-up
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> from eqcorrscan import tests
+    >>> import os
+    >>> # Get the path for the test-data so we can test this
+    >>> testing_path = os.path.dirname(
+    ...     tests.__file__) + '/test_data/similar_events'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []

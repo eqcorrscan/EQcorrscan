@@ -9,6 +9,9 @@
   outside the time-range.
 
 ## Current
+* Make test-script more stable.
+* Fix bug where `set_xcorr` as context manager did not correctly reset
+  stream_xcorr methods.
 * Correct test-script (`test_eqcorrscan.py`) to find paths properly.
 
 ## 0.3.2
