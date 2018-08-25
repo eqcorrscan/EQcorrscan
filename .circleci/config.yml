@@ -48,19 +48,19 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py develop
-#            python setup.py build_ext --inplace
       # run tests!
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            test_eqcorrscan.py -m "network" -n 2
-            test_eqcorrscan.py eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            test_eqcorrscan.py --ci -m "network" -n 2
+            test_eqcorrscan.py --ci  --doc --cov-append
 
       - run:
           name: Upload to codecov
           command: |
             . venv/bin/activate
+            cp ~/.eqcorrscan/.coverage .
             ls -a
             codecov
 

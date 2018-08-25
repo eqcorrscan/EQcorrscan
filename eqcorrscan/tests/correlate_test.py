@@ -437,6 +437,7 @@ class TestStreamCorrelateFunctions:
                 np.save("cc_1.npy", cc_1)
                 assert np.allclose(cc_1, cc, atol=self.atol * 100)
 
+
 class TestXcorrContextManager:
     # fake_cache = copy.deepcopy(corr.XCOR_FUNCS)
 
@@ -474,9 +475,13 @@ class TestXcorrContextManager:
 
     def test_str_accepted(self):
         """ ensure a str of the xcorr function can be passed as well """
+        old_default = corr.get_array_xcorr()
+        old_default_stream = corr.get_stream_xcorr()
         with corr.set_xcorr('numpy'):
             func = corr.get_array_xcorr()
             assert func is corr.numpy_normxcorr
+        assert corr.get_array_xcorr() == old_default
+        assert corr.get_stream_xcorr() == old_default_stream
 
 
 class TestGenericStreamXcorr:
