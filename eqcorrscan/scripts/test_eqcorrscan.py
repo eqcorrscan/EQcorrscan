@@ -19,7 +19,6 @@ import glob
 import zipfile
 import io
 import shutil
-import warnings
 
 import eqcorrscan
 from eqcorrscan import tests
