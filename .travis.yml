@@ -63,8 +63,8 @@ install:
   - conda list
   # done installing dependencies
   - git version
+#  - python setup.py install
   - python setup.py develop
-#  - python setup.py build_ext --inplace
 
 script:
    - export MPLBACKEND=Agg
@@ -83,7 +83,7 @@ script:
 after_success:
   # Check how much code is actually tested and send this report to codecov
   - ls -a
-  - mv .coverage ../.coverage.empty
+  - mv ~/.eqcorrscan/.coverage ../.coverage.empty
   - cd ..
   - coverage combine
   - codecov

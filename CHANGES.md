@@ -1,3 +1,9 @@
+## Current
+* Make test-script more stable.
+* Fix bug where `set_xcorr` as context manager did not correctly reset
+  stream_xcorr methods.
+* Correct test-script (`test_eqcorrscan.py`) to find paths properly.
+
 ## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not 

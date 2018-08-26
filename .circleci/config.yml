@@ -48,7 +48,6 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py develop
-#            python setup.py build_ext --inplace
       # run tests!
       - run:
           name: run tests
@@ -61,6 +60,7 @@ jobs:
           name: Upload to codecov
           command: |
             . venv/bin/activate
+            cp ~/.eqcorrscan/.coverage .
             ls -a
             codecov
 
