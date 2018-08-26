@@ -83,7 +83,7 @@ script:
 after_success:
   # Check how much code is actually tested and send this report to codecov
   - ls -a
-  - mv ~/.eqcorrscan/.coverage ../.coverage.empty
+  - mv .coverage ../.coverage.empty
   - cd ..
   - coverage combine
   - codecov
