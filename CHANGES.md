@@ -3,6 +3,8 @@
 * Fix bug where `set_xcorr` as context manager did not correctly reset
   stream_xcorr methods.
 * Correct test-script (`test_eqcorrscan.py`) to find paths properly.
+* BUG-FIX in `Party.decluster` when detections made at exactly the same time
+  the first, rather than the highest of these was taken.
 
 ## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
