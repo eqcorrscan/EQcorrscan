@@ -611,12 +611,16 @@ class Party(object):
         detect_times = np.array([
             _total_microsec(d[0].datetime, min_det.datetime)
             for d in detect_info])
+        # Trig_int must be converted from seconds to micro-seconds
         peaks_out = decluster(
             peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
-        # Trig_int must be converted from seconds to micro-seconds
-        declustered_detections = [
-            all_detections[np.where(detect_times == ind[1])[0][0]]
-            for ind in peaks_out]
+        # Need to match both the time and the detection value
+        declustered_detections = []
+        for ind in peaks_out:
+            matching_time_indeces = np.where(detect_times == ind[-1])[0]
+            matches = matching_time_indeces[
+                np.where(detect_vals[matching_time_indeces] == ind[0])[0][0]]
+            declustered_detections.append(all_detections[matches])
         # Convert this list into families
         template_names = list(set([d.template_name
                                    for d in declustered_detections]))
@@ -2023,8 +2027,12 @@ class Template(object):
 
         .. rubric:: Example
 
-        >>> sac_files = glob.glob(
-        ...     'eqcorrscan/tests/test_data/SAC/2014p611252/*')
+        >>> # Get the path to the test data
+        >>> import eqcorrscan
+        >>> import os
+        >>> TEST_PATH = (
+        ...     os.path.dirname(eqcorrscan.__file__) + '/tests/test_data')
+        >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
         >>> template = Template().construct(
         ...     method='from_sac', name='test', lowcut=2.0, highcut=8.0,
         ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',

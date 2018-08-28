@@ -8,17 +8,23 @@ addons:
 matrix:
   include:
     - os: linux
-      env: PYTHON_VERSION=2.7 MKL=0
+      env: PYTHON_VERSION=2.7 MKL=0 PYTEST=1
     - os: linux
-      env: PYTHON_VERSION=3.5 MKL=0
+      env: PYTHON_VERSION=3.5 MKL=0 PYTEST=1
     - os: linux
-      env: PYTHON_VERSION=3.6 MKL=0
+      env: PYTHON_VERSION=3.6 MKL=0 PYTEST=1
     - os: linux
-      env: PYTHON_VERSION=3.6 MKL=1
+      env: PYTHON_VERSION=3.6 MKL=1 PYTEST=1
+    - os: linux
+      env: PYTHON_VERSION=3.6 MKL=0 PYTEST=0
     - os: osx
       osx_image: xcode8
       env:
-        - PYTHON_VERSION=3.5 MKL=1
+        - PYTHON_VERSION=3.5 MKL=1 PYTEST=1
+    - os: osx
+      osx_image: xcode8
+      env:
+        - PYTHON_VERSION=3.5 MKL=1 PYTEST=0
 
 sudo: false
 
@@ -57,24 +63,27 @@ install:
   - conda list
   # done installing dependencies
   - git version
+#  - python setup.py install
   - python setup.py develop
-#  - python setup.py build_ext --inplace
 
 script:
    - export MPLBACKEND=Agg
-   - test_eqcorrscan.py --runslow -m "not serial and not network" -n 2
-   #   - py.test --runslow -m "not serial and not network" -n 2
-   - export OMP_NUM_THREADS=2;
-   # These tests use multi-threading
-   #   - py.test -m "serial and not network" --cov-append
-   - test_eqcorrscan.py -m "serial and not network" --cov-append
-   #   - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
-   - test_eqcorrscan.py --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+   - if [[ "$PYTEST" == "0" ]]; then
+     test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2;
+     export OMP_NUM_THREADS=2;
+     test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
+     test_eqcorrscan.py --ci --runsuperslow -s --cov-append;
+     else
+     py.test --runslow -m "not serial and not network" -n 2;
+     export OMP_NUM_THREADS=2;
+     py.test -m "serial and not network" --cov-append;
+     py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append;
+     fi
 
 after_success:
   # Check how much code is actually tested and send this report to codecov
   - ls -a
-  - mv .coverage ../.coverage.empty
+  - mv ~/.eqcorrscan/.coverage ../.coverage.empty
   - cd ..
   - coverage combine
   - codecov

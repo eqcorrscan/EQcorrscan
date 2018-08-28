@@ -306,13 +306,13 @@ class TestTemplateGeneration(unittest.TestCase):
 
 class TestEdgeGen(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls):    
+        import eqcorrscan
+        cls.testing_path = os.path.dirname(eqcorrscan.__file__) + '/tests'
         log = logging.getLogger(template_gen_module.__name__)
         cls._log_handler = MockLoggingHandler(level='DEBUG')
         log.addHandler(cls._log_handler)
         cls.log_messages = cls._log_handler.messages
-        cls.testing_path = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe())))
         cls.st = read(os.path.join(
             cls.testing_path, 'test_data', 'WAV', 'TEST_',
             '2013-09-15-0930-28.DFDPC_027_00'))

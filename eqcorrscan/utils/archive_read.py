@@ -86,9 +86,12 @@ def read_data(archive, arc_type, day, stachans, length=86400):
 
     .. rubric:: Example, local day-volumes
 
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> t1 = UTCDateTime(2012, 3, 26)
     >>> stachans = [('WHYM', 'SHZ'), ('EORO', 'SHZ')]
-    >>> st = read_data('eqcorrscan/tests/test_data/day_vols', 'day_vols',
+    >>> st = read_data(TEST_PATH + '/day_vols', 'day_vols',
     ...                t1, stachans)
     >>> print(st)
     2 Trace(s) in Stream:

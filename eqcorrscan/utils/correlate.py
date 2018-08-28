@@ -121,7 +121,8 @@ class _Context:
         :param new_value:
         :return:
         """
-        self.previous_value = self.cache.get(self.value_to_switch)
+        self.previous_value = copy.deepcopy(
+            self.cache.get(self.value_to_switch))
         self.cache[self.value_to_switch] = get_array_xcorr(new_value)
         return self
 
@@ -141,8 +142,9 @@ class _Context:
 
     def revert(self):
         """ revert the default xcorr function to previous value """
-        new_value = self.previous_value
-        self(new_value)
+        # Have to use the previous value as this may contain some custom
+        # stream_xcorr functions
+        self.cache[self.value_to_switch] = self.previous_value
 
 
 set_xcorr = _Context(XCOR_FUNCS, 'default')
@@ -285,8 +287,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         # register the functions in the XCOR
         fname = func_name or name.__name__ if callable(name) else str(name)
         XCOR_FUNCS[fname] = func
-        if is_default:  # set function as default
-            XCOR_FUNCS['default'] = func
+        # if is_default:  # set function as default
+        #     XCOR_FUNCS['default'] = func
         # attach some attrs, this is a bit of a hack to avoid pickle problems
         func.register = register
         cache['func'] = func
@@ -296,6 +298,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         func.stream_xcorr = _general_serial(func)
         func.array_xcorr = func
         func.registered = True
+        if is_default:  # set function as default
+            XCOR_FUNCS['default'] = copy.deepcopy(func)
         return func
 
     # used as a decorator

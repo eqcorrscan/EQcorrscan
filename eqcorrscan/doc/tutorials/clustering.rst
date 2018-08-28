@@ -87,8 +87,10 @@ in the tests directory.
     >>> import glob
     >>> import os
     >>> from eqcorrscan.utils.clustering import cluster
+    >>> from eqcorrscan import tests
     >>> # You will need to edit this line to the location of your eqcorrscan repo.
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> TEST_PATH = os.path.dirname(tests.__file__)
+    >>> testing_path = TEST_PATH + '/test_data/similar_events'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [(read(stream_file), i)
     ...                for i, stream_file in enumerate(stream_files)]
