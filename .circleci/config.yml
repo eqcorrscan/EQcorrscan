@@ -60,7 +60,6 @@ jobs:
           name: Upload to codecov
           command: |
             . venv/bin/activate
-            cp ~/.eqcorrscan/.coverage .
             ls -a
             codecov
 
