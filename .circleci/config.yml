@@ -53,7 +53,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            py.test -m network -n 2
+            py.test -m "network" -n 2
             py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
 
       - run:
