@@ -48,14 +48,13 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py develop
-#            python setup.py build_ext --inplace
       # run tests!
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            test_eqcorrscan.py -m "network" -n 2
-            test_eqcorrscan.py eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            py.test -m "network" -n 2
+            py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
 
       - run:
           name: Upload to codecov
