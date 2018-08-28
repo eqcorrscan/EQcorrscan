@@ -274,8 +274,9 @@ class SubspaceTestingMethods(unittest.TestCase):
                     np.allclose(np.abs(item), np.abs(other_item), atol=0.005))
 
     def test_refactor(self):
-        """Test subspace refactoring, checks that np.dot(U.T, U) is\
-         identity."""
+        """
+        Test subspace refactoring, checks that np.dot(U.T, U) is identity.
+        """
         templates = copy.deepcopy(self.templates)
         # Test a multiplexed version
         detector = subspace.Detector()
