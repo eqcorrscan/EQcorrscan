@@ -295,15 +295,16 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             if 80000 < data_len < 90000:
                 daylong = True
                 starttime = min([tr.stats.starttime for tr in st])
+                min_delta = min([tr.stats.delta for tr in st])
+                # Cope with the common starttime less than 1 sample before the
+                #  start of day.
+                if (starttime + min_delta).date > starttime.date:
+                    starttime = (starttime + min_delta)
                 # Check if this is stupid:
                 if abs(starttime - UTCDateTime(starttime.date)) > 600:
+                    print(abs(starttime - UTCDateTime(starttime.date)))
                     daylong = False
-                # Cope with the common starttime less than 1s before the
-                #  start of day.
-                if (starttime + 10).date > starttime.date:
-                    starttime = (starttime + 10).date
-                else:
-                    starttime = starttime.date
+                starttime = starttime.date
             else:
                 daylong = False
             if daylong:
