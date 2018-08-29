@@ -5,6 +5,9 @@
 * Correct test-script (`test_eqcorrscan.py`) to find paths properly.
 * BUG-FIX in `Party.decluster` when detections made at exactly the same time
   the first, rather than the highest of these was taken.
+* Catch one-sample difference in day properly in pre-processing.dayproc
+* Shortproc now clips and pads to the correct length asserted by starttime and
+  endtime.
 
 ## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard
