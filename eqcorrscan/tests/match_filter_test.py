@@ -1019,6 +1019,31 @@ class TestMatchObjectLight(unittest.TestCase):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
 
+    def test_party_decluster_same_times(self):
+        """
+        Test that the correct detection is associated with the peak.
+        Tests for the case where two detections from different templates are
+        made at the same time - the peak-finding finds the best, but decluster
+        did not always correctly associate the correct detection with that
+        peak.
+        """
+        # Test insertion before
+        test_party = self.party.copy()
+        det = test_party[0][0].copy()
+        det.detect_time = test_party[1][0].detect_time
+        det.detect_val = 4
+        test_party[0].detections.append(det)
+        test_party.decluster(1)
+        assert det not in [d for f in test_party for d in f]
+        # Tes insertion after
+        test_party = self.party.copy()
+        det = test_party[1][0].copy()
+        det.detect_time = test_party[0][0].detect_time
+        det.detect_val = 4
+        test_party[1].detections.append(det)
+        test_party.decluster(1)
+        assert det not in [d for f in test_party for d in f]
+
     def test_party_rethreshold(self):
         """Make sure that rethresholding removes the events we want it to."""
         party = self.party.copy()
