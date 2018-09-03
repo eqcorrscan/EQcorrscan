@@ -306,7 +306,7 @@ class TestTemplateGeneration(unittest.TestCase):
 
 class TestEdgeGen(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):    
+    def setUpClass(cls):
         import eqcorrscan
         cls.testing_path = os.path.dirname(eqcorrscan.__file__) + '/tests'
         log = logging.getLogger(template_gen_module.__name__)
