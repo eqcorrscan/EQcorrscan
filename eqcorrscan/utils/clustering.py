@@ -864,7 +864,9 @@ def distance_link(catalog, distance_cutoff, num_threads=None):
     Link events within a distance threshold of each other.
 
     Can be useful for generating subsets of events to take on for further
-    clustering (e.g. only compute correlaions for events that are nearby).
+    clustering (e.g. only compute correlations for events that are nearby).
+    This is not strictly a clustering routine, rather it just works out what
+    events are close to one-another.
 
     :type catalog: obspy.core.event.Catalog
     :param catalog: Catalog for which to compute the distance matrix
