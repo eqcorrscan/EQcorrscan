@@ -862,7 +862,6 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-#TODO: If stack is false, then padding doesn't need to be done.
 def _get_array_dicts(templates, stream, stack, copy_streams=True):
     """ prepare templates and stream, return dicts """
     # Do some reshaping

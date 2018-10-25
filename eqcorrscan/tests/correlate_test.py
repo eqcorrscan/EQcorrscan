@@ -592,7 +592,8 @@ class TestStreamCorrelateFunctionsUnstacked:
                 np.save("cc_1.npy", cc_1)
                 assert np.allclose(cc_1, cc, atol=self.atol * 10)
 
-    def test_gappy_real_multi_channel_xcorr(self, gappy_real_cc_dict_unstacked):
+    def test_gappy_real_multi_channel_xcorr(
+            self, gappy_real_cc_dict_unstacked):
         """
         test various correlation methods with multiple channels and a gap.
 
