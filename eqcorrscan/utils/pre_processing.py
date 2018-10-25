@@ -41,7 +41,11 @@ def _check_daylong(tr):
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import _check_daylong
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
     >>> _check_daylong(st[0])
     True
@@ -117,8 +121,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...                debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
@@ -129,8 +136,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
@@ -141,8 +151,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
@@ -159,12 +172,16 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
+    length = None
+    clip = False
     if starttime is not None and endtime is not None:
         for tr in st:
             tr.trim(starttime, endtime)
             if len(tr.data) == ((endtime - starttime) *
                                 tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
+        length = endtime - starttime
+        clip = True
     elif starttime:
         for tr in st:
             tr.trim(starttime=starttime)
@@ -184,9 +201,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps})
+            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+            'clip': clip, 'seisan_chan_names': seisan_chan_names,
+            'fill_gaps': fill_gaps, 'length': length})
                    for tr in st]
         pool.close()
         try:
@@ -200,8 +217,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         for i, tr in enumerate(st):
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                samp_rate=samp_rate, debug=debug, starttime=starttime,
+                clip=clip, seisan_chan_names=seisan_chan_names,
+                fill_gaps=fill_gaps, length=length)
     if tracein:
         st.merge()
         return st[0]

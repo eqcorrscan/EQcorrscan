@@ -191,9 +191,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     >>> from obspy import read
     >>> from eqcorrscan.core.template_gen import template_gen
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
-    >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
+    >>> quakeml = TEST_PATH + '/20130901T041115.xml'
     >>> templates = template_gen(
     ...    method='from_meta_file', meta_file=quakeml, st=st, lowcut=2.0,
     ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
@@ -212,7 +216,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> from eqcorrscan.core.template_gen import template_gen
     >>> import glob
     >>> # Get all the SAC-files associated with one event.
-    >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
     >>> templates = template_gen(
     ...    method='from_sac', sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...    samp_rate=25.0, filt_order=4, length=2.0, swin='all', prepick=0.1,
@@ -291,15 +295,16 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             if 80000 < data_len < 90000:
                 daylong = True
                 starttime = min([tr.stats.starttime for tr in st])
+                min_delta = min([tr.stats.delta for tr in st])
+                # Cope with the common starttime less than 1 sample before the
+                #  start of day.
+                if (starttime + min_delta).date > starttime.date:
+                    starttime = (starttime + min_delta)
                 # Check if this is stupid:
                 if abs(starttime - UTCDateTime(starttime.date)) > 600:
+                    print(abs(starttime - UTCDateTime(starttime.date)))
                     daylong = False
-                # Cope with the common starttime less than 1s before the
-                #  start of day.
-                if (starttime + 10).date > starttime.date:
-                    starttime = (starttime + 10).date
-                else:
-                    starttime = starttime.date
+                starttime = starttime.date
             else:
                 daylong = False
             if daylong:
@@ -1130,8 +1135,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
 
     >>> from eqcorrscan.core.template_gen import from_sac
     >>> import glob
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> # Get all the SAC-files associated with one event.
-    >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
     >>> templates = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...                      samp_rate=25.0, filt_order=4, length=2.0,
     ...                      swin='all', prepick=0.1, all_horiz=True)
@@ -1226,9 +1235,13 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 
     >>> from obspy import read
     >>> from eqcorrscan.core.template_gen import from_meta_file
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
-    >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
+    >>> quakeml = TEST_PATH + '/20130901T041115.xml'
     >>> templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
     ...                            highcut=9.0, samp_rate=20.0, filt_order=3,
     ...                            length=2, prepick=0.1, swin='S',

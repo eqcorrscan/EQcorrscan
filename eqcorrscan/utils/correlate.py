@@ -57,6 +57,9 @@ XCORR_STREAM_METHODS = ('multithread', 'multiprocess', 'concurrent',
 # these implement the array interface
 XCOR_ARRAY_METHODS = ('array_xcorr')
 
+# Gain shift for low-variance stabilization
+MULTIPLIER = 1e8
+
 
 class CorrelationError(Exception):
     """ Error handling for correlation functions. """
@@ -119,7 +122,8 @@ class _Context:
         :param new_value:
         :return:
         """
-        self.previous_value = self.cache.get(self.value_to_switch)
+        self.previous_value = copy.deepcopy(
+            self.cache.get(self.value_to_switch))
         self.cache[self.value_to_switch] = get_array_xcorr(new_value)
         return self
 
@@ -139,8 +143,9 @@ class _Context:
 
     def revert(self):
         """ revert the default xcorr function to previous value """
-        new_value = self.previous_value
-        self(new_value)
+        # Have to use the previous value as this may contain some custom
+        # stream_xcorr functions
+        self.cache[self.value_to_switch] = self.previous_value
 
 
 set_xcorr = _Context(XCOR_FUNCS, 'default')
@@ -295,8 +300,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         # register the functions in the XCOR
         fname = func_name or name.__name__ if callable(name) else str(name)
         XCOR_FUNCS[fname] = func
-        if is_default:  # set function as default
-            XCOR_FUNCS['default'] = func
+        # if is_default:  # set function as default
+        #     XCOR_FUNCS['default'] = func
         # attach some attrs, this is a bit of a hack to avoid pickle problems
         func.register = register
         cache['func'] = func
@@ -306,6 +311,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         func.stream_xcorr = _general_serial(func)
         func.array_xcorr = func
         func.registered = True
+        if is_default:  # set function as default
+            XCOR_FUNCS['default'] = copy.deepcopy(func)
         return func
 
     # used as a decorator
@@ -552,9 +559,13 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     # Check that stream is non-zero and above variance threshold
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
         # Apply gain
-        stream *= 1e8
-        warnings.warn("Low variance found for, applying gain "
+        stream *= MULTIPLIER
+        print("Low variance found...")
+        warnings.warn("Low variance found, applying gain "
                       "to stabilise correlations")
+        multiplier = MULTIPLIER
+    else:
+        multiplier = 1
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -575,7 +586,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         warnings.warn(
             "Low variance found in {0} positions, check result.".format(
                 variance_warning[0]))
-
+    # Remove variance correction
+    stream /= multiplier
     return ccc, used_chans
 
 
@@ -762,13 +774,17 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     template_array = np.ascontiguousarray([template_array[x]
                                            for x in seed_ids],
                                           dtype=np.float32)
+    multipliers = {}
     for x in seed_ids:
         # Check that stream is non-zero and above variance threshold
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
-            stream_array *= 1e8
+            stream_array[x] *= MULTIPLIER
             warnings.warn("Low variance found for {0}, applying gain "
                           "to stabilise correlations".format(x))
+            multipliers.update({x: MULTIPLIER})
+        else:
+            multipliers.update({x: 1})
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
     if stack:
@@ -807,7 +823,9 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
             warnings.warn("Low variance found in {0} places for {1},"
                           " check result.".format(variance_warning,
                                                   seed_ids[i]))
-
+    # Remove gain
+    for i, x in enumerate(seed_ids):
+        stream_array[i] *= multipliers[x]
     return cccs, used_chans
 
 # ------------------------------- stream_xcorr functions

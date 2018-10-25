@@ -624,7 +624,10 @@ def extract_detections(detections, templates, archive, arc_type,
     >>> from eqcorrscan.utils.clustering import extract_detections
     >>> from eqcorrscan.core.match_filter import Detection
     >>> from obspy import read, UTCDateTime
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
     >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> # Use some dummy detections, you would use real one
     >>> detections = [Detection(
     ...     template_name='temp1', detect_time=UTCDateTime(2012, 3, 26, 9, 15),
@@ -634,10 +637,9 @@ def extract_detections(detections, templates, archive, arc_type,
     ...     template_name='temp2', detect_time=UTCDateTime(2012, 3, 26, 18, 5),
     ...     no_chans=2, chans=['WHYM', 'EORO'], detect_val=2, threshold=1.2,
     ...     typeofdet='corr', threshold_type='MAD', threshold_input=8.0)]
-    >>> path_to_templates = os.path.join('eqcorrscan', 'tests', 'test_data')
-    >>> archive = os.path.join(path_to_templates, 'day_vols')
-    >>> template_files = [os.path.join(path_to_templates, 'temp1.ms'),
-    ...                   os.path.join(path_to_templates, 'temp2.ms')]
+    >>> archive = os.path.join(TEST_PATH, 'day_vols')
+    >>> template_files = [os.path.join(TEST_PATH, 'temp1.ms'),
+    ...                   os.path.join(TEST_PATH, 'temp2.ms')]
     >>> templates = [('temp' + str(i), read(filename))
     ...              for i, filename in enumerate(template_files)]
     >>> extracted = extract_detections(detections, templates,
@@ -1070,7 +1072,7 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     :returns: list of :class:`obspy.core.event.Catalog` objects
     :rtype: list
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
     >>> client = Client("NCEDC")
@@ -1078,9 +1080,9 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
-    >>> groups = space_cluster(catalog=cat, thresh=2, show=False)
+    >>> groups = catalog_cluster(catalog=cat, thresh=2, show=False)
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
     >>> client = Client("https://earthquake.usgs.gov")
@@ -1088,7 +1090,8 @@ def catalog_cluster(catalog, thresh, metric="distance", show=True):
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=6)
-    >>> groups = space_cluster(catalog=cat, thresh=1000, show=False)
+    >>> groups = catalog_cluster(catalog=cat, thresh=1000, metric="time",
+    ...     show=False)
     """
     # Compute the distance matrix and linkage
     if metric == "distance":
@@ -1196,9 +1199,11 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
     .. rubric:: Example
 
     >>> from eqcorrscan.utils.clustering import re_thresh_csv
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
     >>> import os
-    >>> det_file = os.path.join('eqcorrscan', 'tests', 'test_data',
-    ...                         'expected_tutorial_detections.txt')
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> det_file = os.path.join(TEST_PATH, 'expected_tutorial_detections.txt')
     >>> detections = re_thresh_csv(path=det_file, old_thresh=8, new_thresh=10,
     ...                            chan_thresh=3)
     Read in 22 detections
