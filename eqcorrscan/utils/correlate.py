@@ -171,9 +171,9 @@ def pool_boy(Pool, traces, **kwargs):
     pool.join()
 
 
-def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
+def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     # get parameter iterator
     params = ((template_dict[sid], stream_dict[sid], pad_dict[sid])
@@ -185,7 +185,10 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
     except KeyboardInterrupt as e:  # pragma: no cover
         pool.terminate()
         raise e
-    cccsums = np.sum(xcorrs, axis=0)
+    if stack:
+        cccsums = np.sum(xcorrs, axis=0)
+    else:
+        cccsums = np.asarray(xcorrs).swapaxes(0, 1)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -198,34 +201,43 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
 def _general_multithread(func):
     """ return the general multithreading function using func """
 
-    def multithread(templates, stream, *args, **kwargs):
+    def multithread(templates, stream, stack=True, *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            return _pool_normxcorr(
+                templates, stream, stack=stack, pool=pool, func=func)
 
     return multithread
 
 
 def _general_multiprocess(func):
-    def multiproc(templates, stream, *args, **kwargs):
+    def multiproc(templates, stream, stack=True, *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            return _pool_normxcorr(
+                templates, stream, stack=stack, pool=pool, func=func)
 
     return multiproc
 
 
 def _general_serial(func):
-    def stream_xcorr(templates, stream, *args, **kwargs):
+    def stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         no_chans = np.zeros(len(templates))
         chans = [[] for _ in range(len(templates))]
-        array_dict_tuple = _get_array_dicts(templates, stream)
+        array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
         stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-        cccsums = np.zeros([len(templates),
-                            len(stream[0]) - len(templates[0][0]) + 1])
-        for seed_id in seed_ids:
+        if stack:
+            cccsums = np.zeros([len(templates),
+                                len(stream[0]) - len(templates[0][0]) + 1])
+        else:
+            cccsums = np.zeros([len(templates), len(seed_ids),
+                                len(stream[0]) - len(templates[0][0]) + 1])
+        for chan_no, seed_id in enumerate(seed_ids):
             tr_cc, tr_chans = func(template_dict[seed_id],
                                    stream_dict[seed_id],
                                    pad_dict[seed_id])
-            cccsums = np.sum([cccsums, tr_cc], axis=0)
+            if stack:
+                cccsums = np.sum([cccsums, tr_cc], axis=0)
+            else:
+                cccsums[:, chan_no] = tr_cc
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
@@ -571,7 +583,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
 # threads) using the openMP threaded functions.
 
 @time_multi_normxcorr.register('concurrent')
-def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
+def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     """
     Use the threaded time-domain routine for concurrency
 
@@ -597,15 +609,22 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     """
     no_chans = np.zeros(len(templates))
     chans = [[] for _ in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-    cccsums = np.zeros([len(templates),
-                        len(stream[0]) - len(templates[0][0]) + 1])
-    for seed_id in seed_ids:
+    if stack:
+        cccsums = np.zeros([len(templates),
+                            len(stream[0]) - len(templates[0][0]) + 1])
+    else:
+        cccsums = np.zeros([len(templates), len(seed_ids),
+                            len(stream[0]) - len(templates[0][0]) + 1])
+    for chan_no, seed_id in enumerate(seed_ids):
         tr_cc, tr_chans = time_multi_normxcorr(
             template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
             True)
-        cccsums = np.sum([cccsums, tr_cc], axis=0)
+        if stack:
+            cccsums = np.sum([cccsums, tr_cc], axis=0)
+        else:
+            cccsums[:, chan_no] = tr_cc
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
             if state:
@@ -617,7 +636,7 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
 @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
-def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
+def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     """
     Apply fftw normxcorr routine concurrently.
 
@@ -657,13 +676,13 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
         num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer)
+        cores_outer=num_cores_outer, stack=stack)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -674,7 +693,7 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, cores_outer):
+                         cores_inner, cores_outer, stack=True):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -708,7 +727,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -751,8 +771,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                           "to stabilise correlations".format(x))
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
-    cccs = np.zeros((n_templates, image_len - template_len + 1),
-                    np.float32)
+    if stack:
+        cccs = np.zeros((n_templates, image_len - template_len + 1),
+                        np.float32)
+    else:
+        cccs = np.zeros(
+            (n_templates, n_channels, image_len - template_len + 1),
+            dtype=np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray([pad_array[seed_id]
                                          for seed_id in seed_ids],
@@ -764,7 +789,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
-        cores_inner, variance_warnings)
+        cores_inner, variance_warnings, int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
@@ -819,7 +844,8 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-def _get_array_dicts(templates, stream, copy_streams=True):
+#TODO: If stack is false, then padding doesn't need to be done.
+def _get_array_dicts(templates, stream, stack, copy_streams=True):
     """ prepare templates and stream, return dicts """
     # Do some reshaping
     # init empty structures for data storage
@@ -842,10 +868,13 @@ def _get_array_dicts(templates, stream, copy_streams=True):
         stream_dict.update(
             {seed_id: stream.select(
                 id=seed_id.split('_')[0])[0].data.astype(np.float32)})
-        pad_list = [
-            int(round(template[i].stats.sampling_rate *
-                      (template[i].stats.starttime - t_starts[j])))
-            for j, template in zip(range(len(templates)), templates)]
+        if stack:
+            pad_list = [
+                int(round(template[i].stats.sampling_rate *
+                          (template[i].stats.starttime - t_starts[j])))
+                for j, template in zip(range(len(templates)), templates)]
+        else:
+            pad_list = [0 for _ in range(len(templates))]
         pad_dict.update({seed_id: pad_list})
 
     return stream_dict, template_dict, pad_dict, seed_ids
