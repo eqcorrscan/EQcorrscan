@@ -129,33 +129,3 @@ int remove_unclustered(float *latitudes, float *longitudes, float *depths, long 
     }
     return out;
 }
-
-int distance_link(float *latitudes, float *longitudes, float *depths, long n_locs,
-                  unsigned char *cluster_mask, float distance_cutoff, int n_threads){
-    /* Check whether locations have any other locations within distance_cutoff and return 0 if not and 1 if true.
-    *
-    *  :type latitudes: Array of floats of latitudes in radians
-    *  :type longitudes: Array of floats of longitudes in radians
-    *  :type depths: Array of floats of depths in km (positive down)
-    *  :type n_locs: Int: Number of locations
-    *  :type cluster_mask: Array of uint8 which will be filled as bools (n_locs * n_locs) - should be initialised as zeros
-    *  :type distance_cutoff: float, cutoff distance in km
-    *  :type n_threads: int Number of threads to parallel over
-    */
-    int out = 0;
-    long i;
-
-    #pragma omp parallel for num_threads(n_threads)
-    for (i = 0; i < n_locs; ++i){
-        long j, mask_ind;
-        float dist;
-        for (j = 0; j < n_locs; ++j){
-            mask_ind = (i * n_locs) + j;
-            dist = dist_calc(
-                latitudes[j], longitudes[j], depths[j],
-                latitudes[i], longitudes[i], depths[i]);
-            if (dist < distance_cutoff){cluster_mask[mask_ind] = 1;}
-        }
-    }
-    return out;
-}

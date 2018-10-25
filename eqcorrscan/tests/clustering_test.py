@@ -23,8 +23,7 @@ from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils.clustering import (
     cross_chan_coherence, distance_matrix, cluster, group_delays, svd, SVD,
     empirical_svd, empirical_SVD, SVD_2_stream, svd_to_stream, corr_cluster,
-    dist_mat_km, catalog_cluster, space_time_cluster, remove_unclustered,
-    distance_link)
+    dist_mat_km, catalog_cluster, space_time_cluster, remove_unclustered)
 
 
 @pytest.mark.network
@@ -152,42 +151,6 @@ class DistanceClusterTests(unittest.TestCase):
                                     minmagnitude=4)
         cls.distance_threshold = 1000
         cls.time_threshold = 7200
-
-    def test_distance_linkage(self):
-        distance_cutoff = 100
-        linkage = distance_link(self.cat, distance_cutoff, num_threads=1)
-        for i, event in enumerate(self.cat):
-            master_ori = event.preferred_origin() or event.origins[0]
-            for j, other_event in enumerate(self.cat):
-                slave_ori = (other_event.preferred_origin() or
-                             other_event.origins[0])
-                distance = dist_calc(
-                    (master_ori.latitude, master_ori.longitude,
-                     master_ori.depth / 1000),
-                    (slave_ori.latitude, slave_ori.longitude,
-                     slave_ori.depth / 1000))
-                if distance < distance_cutoff:
-                    assert linkage[i][j]
-                else:
-                    assert not linkage[i][j]
-
-    def test_distance_linkage_parallel(self):
-        distance_cutoff = 100
-        linkage = distance_link(self.cat, distance_cutoff, num_threads=4)
-        for i, event in enumerate(self.cat):
-            master_ori = event.preferred_origin() or event.origins[0]
-            for j, other_event in enumerate(self.cat):
-                slave_ori = (other_event.preferred_origin() or
-                             other_event.origins[0])
-                distance = dist_calc(
-                    (master_ori.latitude, master_ori.longitude,
-                     master_ori.depth / 1000),
-                    (slave_ori.latitude, slave_ori.longitude,
-                     slave_ori.depth / 1000))
-                if distance < distance_cutoff:
-                    assert linkage[i][j]
-                else:
-                    assert not linkage[i][j]
 
     def test_remove_unclustered(self):
         distance_cutoff = 100

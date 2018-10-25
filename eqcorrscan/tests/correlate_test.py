@@ -53,6 +53,8 @@ chans = ['EHZ', 'EHN', 'EHE']
 stas = ['COVA', 'FOZ', 'LARB', 'GOVA', 'MTFO', 'MTBA']
 n_templates = 20
 stream_len = 100000
+unstacked_stream_len = 10000
+# Use a reduced length for unstacked to conserve memory
 template_len = 200
 gap_start = 5000
 
@@ -335,6 +337,8 @@ def stream_cc_output_dict_unstacked(
         multichannel_templates, multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    for tr in multichannel_stream:
+        tr.data = tr.data[0:unstacked_stream_len]
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
@@ -366,6 +370,8 @@ def gappy_stream_cc_output_dict_unstacked(
         multichannel_templates, gappy_multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    for tr in gappy_multichannel_stream:
+        tr.data = tr.data[0:unstacked_stream_len]
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
@@ -401,6 +407,8 @@ def gappy_real_cc_output_dict_unstacked(
         gappy_real_data_template, gappy_real_data):
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    for tr in gappy_real_data:
+        tr.data = tr.data[0:unstacked_stream_len]
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
