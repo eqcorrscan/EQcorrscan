@@ -15,23 +15,23 @@ from __future__ import unicode_literals
 
 import os
 import warnings
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
+from copy import deepcopy
 from obspy import Stream, Catalog, UTCDateTime, Trace
-from obspy.signal.cross_correlation import xcorr
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from scipy.spatial.distance import squareform
 
+from eqcorrscan.core.match_filter import _prep_data
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
-from eqcorrscan.utils.correlate import get_array_xcorr
-from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 
 
-def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
-                         xcorr_func='time_domain'):
+def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
+                         concurrency="concurrent", cores=1, **kwargs):
     """
     Calculate cross-channel coherency.
 
@@ -40,57 +40,58 @@ def cross_chan_coherence(st1, st2, allow_shift=False, shift_len=0.2, i=0,
 
     :type st1: obspy.core.stream.Stream
     :param st1: Stream one
-    :type st2: obspy.core.stream.Stream
-    :param st2: Stream two
-    :type allow_shift: bool
-    :param allow_shift:
-        Whether to allow the optimum alignment to be found for coherence,
-        defaults to `False` for strict coherence
+    :type streams: list
+    :param streams: Streams to compare to.
     :type shift_len: float
     :param shift_len: Seconds to shift, only used if `allow_shift=True`
-    :type i: int
-    :param i: index used for parallel async processing, returned unaltered
     :type xcorr_func: str, callable
     :param xcorr_func:
         The method for performing correlations. Accepts either a string or
-         callabe. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
-         for more details
+        callable. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
+        for more details
+    :type cores: int
+    :param cores: Number of threads to parallel over
 
     :returns:
-        cross channel coherence, float - normalized by number of channels,
-        and i, where i is int, as input.
-    :rtype: tuple
+        cross channel coherence, float - normalized by number of channels.
+        locations of maximums
+    :rtype: numpy.ndarray, numpy.ndarray
     """
-    cccoh = 0.0
-    kchan = 0
-    array_xcorr = get_array_xcorr(xcorr_func)
-    for tr in st1:
-        tr2 = st2.select(station=tr.stats.station,
-                         channel=tr.stats.channel)
-        if len(tr2) > 0 and tr.stats.sampling_rate != \
-                tr2[0].stats.sampling_rate:
-            warnings.warn('Sampling rates do not match, not using: %s.%s'
-                          % (tr.stats.station, tr.stats.channel))
-        if len(tr2) > 0 and allow_shift:
-            index, corval = xcorr(tr, tr2[0],
-                                  int(shift_len * tr.stats.sampling_rate))
-            cccoh += corval
-            kchan += 1
-        elif len(tr2) > 0:
-            min_len = min(len(tr.data), len(tr2[0].data))
-            cccoh += array_xcorr(
-                np.array([tr.data[0:min_len]]), tr2[0].data[0:min_len],
-                [0])[0][0][0]
-            kchan += 1
-    if kchan:
-        cccoh /= kchan
-        return np.round(cccoh, 6), i
+    if shift_len == 0:
+        stack = True  # More memory efficient method - data stacked internally
     else:
-        warnings.warn('No matching channels')
-        return 0, i
+        stack = False  # Return all individual channel correlograms
+    # Cut all channels in stream-list to be the correct length (shorter than
+    # st1 if stack = False by shift_len).
+    df = st1[0].stats.sampling_rate
+    end_trim = int((shift_len * df) / 2)
+    if end_trim > 0:
+        for stream in streams:
+            for tr in stream:
+                tr.data = tr.data[end_trim: -end_trim]
+                if tr.stats.sampling_rate != df:
+                    raise NotImplementedError("Sampling rates differ")
+    # Check which channels are in st1 and match those in the stream_list
+    streams, _, st1 = _prep_data(
+        stream=st1, template_names=[str(i) for i in range(len(streams))],
+        templates=streams)
+    # Run the correlations
+    multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+    [cccsums, no_chans, _] = multichannel_normxcorr(
+        templates=streams, stream=st1, cores=cores, stack=stack, **kwargs)
+    # Find the maximums and normalise by the number of channels
+    if stack:
+        # Find maximum and divide by no_chans
+        coherances = cccsums.max(axis=-1) / no_chans
+        positions = cccsums.argmax(axis=-1)
+    else:
+        # Find maximas, sum and divide by no_chans
+        coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
+        positions = cccsums.argmax(axis=-1)
+    return coherances, positions
 
 
-def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
+def distance_matrix(stream_list, shift_len=0.0, cores=1):
     """
     Compute distance matrix for waveforms based on cross-correlations.
 
@@ -103,8 +104,6 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
     :param stream_list:
         List of the :class:`obspy.core.stream.Stream` to compute the distance
         matrix for
-    :type allow_shift: bool
-    :param allow_shift: To allow templates to shift or not?
     :type shift_len: float
     :param shift_len: How many seconds for templates to shift
     :type cores: int
@@ -117,31 +116,23 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
         Because distance is given as :math:`1-abs(coherence)`, negatively
         correlated and positively correlated objects are given the same
         distance.
+
+    .. note::
+        Requires all traces to have the same sampling rate and same length.
     """
     # Initialize square matrix
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
     for i, master in enumerate(stream_list):
-        # Start a parallel processing pool
-        pool = Pool(processes=cores)
-        # Parallel processing
-        results = [pool.apply_async(cross_chan_coherence,
-                                    args=(master, stream_list[j], allow_shift,
-                                          shift_len, j))
-                   for j in range(len(stream_list))]
-        pool.close()
-        # Extract the results when they are done
-        dist_list = [p.get() for p in results]
-        # Close and join all the processes back to the master process
-        pool.join()
-        # Sort the results by the input j
-        dist_list.sort(key=lambda tup: tup[1])
+        dist_list, _ = cross_chan_coherence(
+            st1=master, streams=deepcopy(stream_list), shift_len=shift_len,
+            xcorr_func='fftw', cores=cores)
         # Sort the list into the dist_mat structure
         for j in range(i, len(stream_list)):
             if i == j:
                 dist_mat[i, j] = 0.0
             else:
-                dist_mat[i, j] = 1 - dist_list[j][0]
+                dist_mat[i, j] = 1 - dist_list[j]
     # Reshape the distance matrix
     for i in range(1, len(stream_list)):
         for j in range(i):
@@ -204,8 +195,8 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     # Compute the distance matrix
     if debug >= 1:
         print('Computing the distance matrix using %i cores' % num_cores)
-    dist_mat = distance_matrix(stream_list, allow_shift, shift_len,
-                               cores=num_cores)
+    dist_mat = distance_matrix(
+        stream_list=stream_list, shift_len=shift_len, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         if debug >= 1:

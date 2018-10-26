@@ -44,26 +44,24 @@ class ClusteringTests(unittest.TestCase):
 
     def test_cross_chan_coherence(self):
         """Initial test to ensure cross_chan_coherence runs."""
-        cccoh, i = cross_chan_coherence(st1=self.st1.copy(),
-                                        st2=self.st2.copy())
-        self.assertEqual(cccoh, 1)
-        self.assertEqual(i, 0)
+        cccoh, _ = cross_chan_coherence(
+            st1=self.st1.copy(), streams=[self.st2.copy()])
+        self.assertEqual(cccoh[0], 1)
 
     def test_cross_chan_coherence_shifted(self):
         """Initial test to ensure cross_chan_coherence runs."""
-        cccoh, i = cross_chan_coherence(st1=self.st1.copy(),
-                                        st2=self.st2.copy(), allow_shift=True)
-        self.assertEqual(round(cccoh, 6), 1)
-        self.assertEqual(i, 0)
+        cccoh, _ = cross_chan_coherence(
+            st1=self.st1.copy(), streams=[self.st2.copy()], shift_len=0.2)
+        self.assertEqual(round(cccoh[0], 6), 1)
 
     def test_inverted_coherence(self):
         """Reverse channels and ensure we get -1"""
         st2 = self.st2.copy()
         for tr in st2:
             tr.data *= -1
-        cccoh, i = cross_chan_coherence(st1=self.st1.copy(), st2=st2, i=1)
-        self.assertEqual(cccoh, -1)
-        self.assertEqual(i, 1)
+        cccoh, _ = cross_chan_coherence(
+            st1=self.st1.copy(), streams=[st2])
+        self.assertEqual(cccoh[0], -1)
 
     def test_known_coherence(self):
         """Test for a real stream case"""
@@ -71,15 +69,33 @@ class ClusteringTests(unittest.TestCase):
                                 '2013-09-01-0410-35.DFDPC_024_00'))
         st2 = read(os.path.join(self.testing_path, 'WAV', 'TEST_',
                                 '2013-09-01-2040-11.DFDPC_039_00'))
-        cccoh, i = cross_chan_coherence(st1=st1, st2=st2)
-        self.assertTrue(cccoh < 0.01)
-        self.assertEqual(i, 0)
+        st1 = st1.resample(100)
+        st2 = st2.resample(100)
+        for tr in st1:
+            tr.data = tr.data[0:8000]
+        for tr in st2:
+            tr.data = tr.data[0:8000]
+        cccoh, _ = cross_chan_coherence(st1=st1, streams=[st2])
+        self.assertTrue(cccoh[0] < 0.01)
 
     def test_distance_matrix(self):
         """Test that we can create a useful distance matrix."""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
         stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
         dist_mat = distance_matrix(stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
         self.assertEqual(dist_mat.shape[1], len(stream_list))
@@ -90,6 +106,19 @@ class ClusteringTests(unittest.TestCase):
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
         stream_list = [(read(stream_file), i)
                        for i, stream_file in enumerate(stream_files)]
+        for st in stream_list:
+            for tr in st[0]:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st[0]])
+        for st in stream_list:
+            for tr in st[0]:
+                tr.data = tr.data[0:shortest_tr]
         groups = cluster(template_list=stream_list, show=False,
                          corr_thresh=0.3)
         self.assertEqual(len(groups), 10)  # They shouldn't cluster at all
@@ -108,6 +137,19 @@ class ClusteringTests(unittest.TestCase):
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [(read(stream_file), i)
                        for i, stream_file in enumerate(stream_files)]
+        for st in stream_list:
+            for tr in st[0]:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st[0]])
+        for st in stream_list:
+            for tr in st[0]:
+                tr.data = tr.data[0:shortest_tr]
         for stream in stream_list:
             for tr in stream[0]:
                 if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
@@ -118,7 +160,7 @@ class ClusteringTests(unittest.TestCase):
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         groups = cluster(template_list=stream_list, show=False,
                          corr_thresh=0.3)
-        self.assertEqual(len(groups), 9)  # They should cluster reasonably
+        self.assertEqual(len(groups), 10)  # They should cluster reasonably
 
     def test_corr_cluster(self):
         """Test the corr_cluster function."""
@@ -404,7 +446,7 @@ class ClusteringTestWarnings(unittest.TestCase):
         for tr in st2:
             tr.stats.station += 'A'
         with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
+            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
             self.assertEqual(len(w), 1)
             self.assertTrue('No matching channels' in str(w[0].message))
 
@@ -414,7 +456,7 @@ class ClusteringTestWarnings(unittest.TestCase):
         for tr in st2:
             tr.stats.sampling_rate += 20
         with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), st2=st2)
+            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
             self.assertTrue('Sampling rates do not match' in str(w[0].message))
 
     def test_delay_grouping(self):
