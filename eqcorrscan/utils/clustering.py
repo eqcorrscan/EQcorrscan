@@ -24,10 +24,10 @@ from obspy import Stream, Catalog, UTCDateTime, Trace
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from scipy.spatial.distance import squareform
 
-from eqcorrscan.core.match_filter import _prep_data
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
+from eqcorrscan.utils.pre_processing import _prep_data
 
 
 def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
@@ -72,9 +72,7 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
                 if tr.stats.sampling_rate != df:
                     raise NotImplementedError("Sampling rates differ")
     # Check which channels are in st1 and match those in the stream_list
-    streams, _, st1 = _prep_data(
-        stream=st1, template_names=[str(i) for i in range(len(streams))],
-        templates=streams)
+    st1, streams = _prep_data(stream=st1, templates=streams)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
@@ -88,6 +86,8 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
         # Find maximas, sum and divide by no_chans
         coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
         positions = cccsums.argmax(axis=-1)
+    # positions should probably have half the length of the correlogram
+    # subtracted, and possibly be converted to seconds?
     return coherances, positions
 
 

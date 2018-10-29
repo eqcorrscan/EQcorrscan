@@ -17,6 +17,7 @@ from __future__ import unicode_literals
 import numpy as np
 import datetime as dt
 
+from collections import Counter
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
@@ -632,6 +633,109 @@ def _fill_gaps(tr):
     tr = tr.detrend().merge(fill_value=0)[0]
     gaps = [{'starttime': gap[4], 'endtime': gap[5]} for gap in gaps]
     return gaps, tr
+
+
+def _prep_data(stream, templates):
+    """
+    Check that all channels are the same length and that all channels have data
+    for both template and stream.
+
+    Works in place on data - will cut to shortest length
+
+    :param stream: Stream to compare data to
+    :param templates:
+        List of streams that will be forced to have the same channels as stream
+    :return: stream, templates
+    """
+    df = stream[0].stats.sampling_rate
+    for st in templates + [stream]:
+        for tr in st:
+            if tr.stats.sampling_rate != df:
+                raise NotImplementedError("Sampling rate differ")
+    stream_length = min([tr.stats.npts for tr in stream])
+
+    template_channels = {}
+    for template in templates:
+        _template_channels = [tr.id for tr in template]
+        _template_channels = Counter(_template_channels)
+        for key, value in _template_channels.items():
+            if key not in template_channels.keys():
+                template_channels.update({key: value})
+            elif value > template_channels[key]:
+                template_channels.update({key: value})
+
+    # Sort lengths and remove un-used traces
+    out_stream = Stream()
+    for tr in stream:
+        if tr.id not in template_channels.keys():
+            continue
+        if not tr.stats.npts == stream_length:
+            diff = tr.stats.npts - stream_length
+            if diff % 2:
+                # Remove last point by convention if difference is odd
+                tr.data = tr.data[0:-1]
+                diff -= 1
+                if diff == 0:
+                    continue
+            tr.data = tr.data[diff // 2: -diff // 2]
+            tr.stats.starttime += (diff // 2) / df
+        out_stream += tr
+
+    out_stream.sort(['starttime', 'network', 'station', 'location', 'channel'])
+
+    # Ensure stream has sufficient channels
+    stream_channels = []
+    for key, value in template_channels.items():
+        tr = out_stream.select(id=key)
+        n_channels = len(tr)
+        if n_channels == 0:
+            continue
+        while n_channels < value:
+            out_stream += tr[0]
+            n_channels += 1
+            stream_channels.append(key)
+        stream_channels.append(key)
+    stream_channels = Counter(stream_channels)
+
+    # Sort template lengths and remove unused channels
+    out_templates = []
+    template_length = min([tr.stats.npts for template in templates
+                           for tr in template])
+    for template in templates:
+        out_template = Stream()
+        for tr in template:
+            if tr.id not in stream_channels.keys():
+                continue
+            if not tr.stats.npts == template_length:
+                diff = tr.stats.npts - template_length
+                if diff % 2:
+                    # Remove last point by convention if difference is odd
+                    tr.data = tr.data[0:-1]
+                    diff -= 1
+                    if diff == 0:
+                        continue
+                tr.data = tr.data[diff // 2: -diff // 2]
+                tr.stats.starttime += (diff // 2) / df
+            out_template += tr
+        out_templates.append(out_template)
+
+    # Pad templates to have all channels
+    for template in out_templates:
+        for key, value in stream_channels.items():
+            tr = template.select(id=key)
+            n_channels = len(tr)
+            if n_channels == value:
+                continue
+            if n_channels == 0:
+                _tr = template[0].copy()
+                _tr.data = np.zeros_like(_tr.data) * np.NaN
+                _tr.id = key
+            else:
+                _tr = tr[0]
+            while n_channels < value:
+                template.append(_tr)
+                n_channels += 1
+    return out_stream, out_templates
 
 
 if __name__ == "__main__":
