@@ -28,7 +28,7 @@ jobs:
       packageSpecs: 'python=$(python.version)'
       updateConda: True
 
-  - script: conda install -c conda-forge obspy pyproj flake8 mock coverage bottleneck h5py
+  - script: conda install -y -c conda-forge obspy pyproj flake8 mock coverage bottleneck h5py
     displayName: 'Install conda libraries'
 
   - script: |
