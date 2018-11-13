@@ -21,10 +21,12 @@ jobs:
     maxParallel: 4
 
   steps:
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
+      createCustomEnvironment: True
       environmentName: 'eqcorrscan-test-env-$(python.version)'
       packageSpecs: 'python=$(python.version)'
+      updateConda: True
 
   - script: conda install -n 'eqcorrscan-test-env-$(python.version)' obspy pyproj flake8 mock coverage bottleneck h5py
     displayName: 'Install conda libraries'
