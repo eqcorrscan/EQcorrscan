@@ -34,6 +34,9 @@ jobs:
   - script: sudo conda install -y pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist
     displayName: 'Install test dependancies'
 
+  - script: python -m pip install --upgrade pip setuptools wheel
+    displayName: 'Install tools'
+
   - script: sudo pip install codecov pytest-rerunfailures pytest-mpl
     displayName: 'Install final pip things'
 
