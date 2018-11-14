@@ -31,8 +31,8 @@ jobs:
   - script: sudo conda install -y -c conda-forge setuptools pip obspy pyproj flake8 mock coverage bottleneck h5py
     displayName: 'Install conda libraries'
 
-  - script: sudo pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov
-    displayName: 'Install pip dependancies'
+  - script: sudo conda install -y pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov
+    displayName: 'Install test dependancies'
 
   - script: python setup.py build_ext --inplace
     displayName: 'Build EQcorrscan'
