@@ -28,11 +28,16 @@ jobs:
       packageSpecs: 'python=$(python.version)'
       updateConda: True
 
-  - script: conda install -y -c conda-forge obspy pyproj flake8 mock coverage bottleneck h5py
+  - script: sudo conda install -y -c conda-forge obspy pyproj flake8 mock coverage bottleneck h5py
     displayName: 'Install conda libraries'
 
+  - script: sudo pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov
+    displayName: 'Install pip dependancies'
+
+  - script: python setup.py build_ext --inplace
+    displayName: 'Build EQcorrscan'
+
   - script: |
-      pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov
       py.test --runslow -m "not serial and not network" -n 2;
       export OMP_NUM_THREADS=2;
       py.test -m "serial and not network" --cov-append;
