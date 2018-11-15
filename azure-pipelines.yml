@@ -28,6 +28,9 @@ jobs:
       packageSpecs: '-c conda-forge python=$(python.version) obspy pyproj flake8 mock coverage bottleneck h5py pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist'
       updateConda: True
 
+  - script: sudo apt install libfftw3-dev
+    displayName: 'apt install'
+
   - script: |
       which python
       python -c 'import obspy; print(obspy.__file__)'
