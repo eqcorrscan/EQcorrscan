@@ -25,19 +25,13 @@ jobs:
     inputs:
       createCustomEnvironment: True
       environmentName: 'eqcorrscan-test-env'
-      packageSpecs: 'python=$(python.version) pyproj flake8 mock coverage bottleneck h5py'
+      packageSpecs: '-c conda-forge python=$(python.version) obspy pyproj flake8 mock coverage bottleneck h5py pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist'
       updateConda: True
-
-  - script: sudo conda install -y -n eqcorrscan-test-env -c conda-forge obspy
-    displayName: 'Install conda libraries'
 
   - script: |
       which python
       python -c 'import obspy; print(obspy.__file__)'
     displayName: 'Check path'
-
-  - script: sudo conda install -n eqcorrscan-test-env -y pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist
-    displayName: 'Install test dependancies'
 
   - script: sudo python -m pip install --upgrade pip setuptools wheel
     displayName: 'Install tools'
