@@ -37,8 +37,11 @@ jobs:
   - script: sudo python -m pip install --upgrade pip setuptools wheel
     displayName: 'Install tools'
 
-  - script: sudo pip install codecov pytest-rerunfailures pytest-mpl
+  - script: sudo python -m pip install codecov pytest-rerunfailures pytest-mpl
     displayName: 'Install final pip things'
+
+  - script: python -c 'import obspy; print(obspy.__file__)'
+    displayName: 'Check path'
 
   - script: python setup.py build_ext --inplace
     displayName: 'Build EQcorrscan'
