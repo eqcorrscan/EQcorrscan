@@ -31,6 +31,11 @@ jobs:
   - script: sudo conda install -y -c conda-forge obspy pyproj flake8 mock coverage bottleneck h5py
     displayName: 'Install conda libraries'
 
+  - script: |
+      which python
+      python -c 'import obspy; print(obspy.__file__)'
+    displayName: 'Check path'
+
   - script: sudo conda install -y pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist
     displayName: 'Install test dependancies'
 
@@ -39,9 +44,6 @@ jobs:
 
   - script: sudo python -m pip install codecov pytest-rerunfailures pytest-mpl
     displayName: 'Install final pip things'
-
-  - script: python -c 'import obspy; print(obspy.__file__)'
-    displayName: 'Check path'
 
   - script: python setup.py build_ext --inplace
     displayName: 'Build EQcorrscan'
