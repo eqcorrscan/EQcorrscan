@@ -31,11 +31,6 @@ jobs:
   - script: sudo apt install libfftw3-dev
     displayName: 'apt install'
 
-  - script: |
-      which python
-      python -c 'import obspy; print(obspy.__file__)'
-    displayName: 'Check path'
-
   - script: sudo python -m pip install --upgrade pip setuptools wheel
     displayName: 'Install tools'
 
