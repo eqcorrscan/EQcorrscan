@@ -17,13 +17,14 @@ from eqcorrscan.utils.clustering import space_cluster
 from eqcorrscan.core import subspace
 
 
-def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4):
+def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
+                 verbose=False):
     """
     Run the tutorial.
 
     :return: detections
     """
-    client = Client("GEONET")
+    client = Client("GEONET", debug=verbose)
     cat = client.get_events(
         minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
         maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
@@ -58,12 +59,14 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4):
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
     print("Downloading data for %i events" % len(cluster))
     st = client.get_waveforms_bulk(bulk=bulk_info)
+    print("Downloaded %i channels" % len(st))
     for event in cluster:
         t1 = event.origins[0].time
         t2 = t1 + 25
         design_set.append(st.copy().trim(t1, t2))
     # Construction of the detector will process the traces, then align them,
     # before multiplexing.
+    print("Making detector")
     detector = subspace.Detector()
     detector.construct(
         streams=design_set, lowcut=2.0, highcut=9.0, filt_order=4,
