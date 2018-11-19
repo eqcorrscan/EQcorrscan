@@ -18,15 +18,10 @@ matrix:
     - os: osx
       osx_image: xcode8
       env:
-        - PYTHON_VERSION=3.6 MKL=1 PYTEST=1
+        - PYTHON_VERSION=3.6 MKL=1 PYTEST=0
     - os: osx
-      osx_image: xcode8
       env:
       - PYTHON_VERSION=3.7 MKL=1 PYTEST=1
-    - os: osx
-      osx_image: xcode8
-      env:
-        - PYTHON_VERSION=3.6 MKL=1 PYTEST=0
 
 sudo: false
 
