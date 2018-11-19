@@ -172,12 +172,16 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
+    length = None
+    clip = False
     if starttime is not None and endtime is not None:
         for tr in st:
             tr.trim(starttime, endtime)
             if len(tr.data) == ((endtime - starttime) *
                                 tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
+        length = endtime - starttime
+        clip = True
     elif starttime:
         for tr in st:
             tr.trim(starttime=starttime)
@@ -197,9 +201,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps})
+            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+            'clip': clip, 'seisan_chan_names': seisan_chan_names,
+            'fill_gaps': fill_gaps, 'length': length})
                    for tr in st]
         pool.close()
         try:
@@ -213,8 +217,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         for i, tr in enumerate(st):
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                samp_rate=samp_rate, debug=debug, starttime=starttime,
+                clip=clip, seisan_chan_names=seisan_chan_names,
+                fill_gaps=fill_gaps, length=length)
     if tracein:
         st.merge()
         return st[0]
