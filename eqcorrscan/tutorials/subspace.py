@@ -10,7 +10,7 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 """
 
 from obspy.clients.fdsn import Client
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Stream
 
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.clustering import space_cluster
@@ -49,16 +49,17 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
     # the detection statistics by that amount before stacking and detection.
     client = Client('GEONET')
     design_set = []
-    bulk_info = []
+    st = Stream()
     for event in cluster:
+        print("Downloading for event {0}".format(event.resource_id.id))
+        bulk_info = []
         t1 = event.origins[0].time
         t2 = t1 + 25.1  # Have to download extra data, otherwise GeoNet will
         # trim wherever suits.
         t1 -= 0.1
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-    print("Downloading data for %i events" % len(cluster))
-    st = client.get_waveforms_bulk(bulk=bulk_info)
+        st += client.get_waveforms_bulk(bulk=bulk_info)
     print("Downloaded %i channels" % len(st))
     for event in cluster:
         t1 = event.origins[0].time
