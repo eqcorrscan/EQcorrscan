@@ -17,10 +17,18 @@ TEST_DATA_PATH = join(TEST_PATH, 'test_data')
 
 
 def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true",
-                     help="run slow tests")
-    parser.addoption("--runsuperslow", action="store_true",
-                     help="run super-slow tests")
+    try:
+        parser.addoption("--runslow", action="store_true",
+                         help="run slow tests")
+    except ValueError as e:
+        print(e)
+        pass
+    try:
+        parser.addoption("--runsuperslow", action="store_true",
+                         help="run super-slow tests")
+    except ValueError as e:
+        print(e)
+        pass
 
 
 # ------------------ session fixtures
