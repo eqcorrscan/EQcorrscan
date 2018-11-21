@@ -69,12 +69,12 @@ script:
      test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2;
      export OMP_NUM_THREADS=2;
      test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
-     travis_wait 20 test_eqcorrscan.py --ci --runsuperslow -s --cov-append;
+     test_eqcorrscan.py --ci --runsuperslow -s --cov-append;
      else
      py.test --runslow -m "not serial and not network" -n 2;
      export OMP_NUM_THREADS=2;
      py.test -m "serial and not network" --cov-append;
-     travis_wait 20 py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append;
+     py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append;
      fi
 
 after_success:
