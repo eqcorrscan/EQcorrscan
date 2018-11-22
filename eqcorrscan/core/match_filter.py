@@ -2122,9 +2122,11 @@ class Tribe(object):
         .. rubric:: Example
 
         >>> tribe = Tribe(templates=[Template(name='a')])
-        >>> tribe + Tribe(templates=[Template(name='b')])
+        >>> tribe_ab = tribe + Tribe(templates=[Template(name='b')])
+        >>> print(tribe_ab)
         Tribe of 2 templates
-        >>> tribe + Template(name='c')
+        >>> tribe_abc = tribe_ab + Template(name='c')
+        >>> print(tribe_abc)
         Tribe of 3 templates
         """
         return self.copy().__iadd__(other)
