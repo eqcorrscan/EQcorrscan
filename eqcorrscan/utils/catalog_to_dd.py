@@ -141,7 +141,11 @@ def readSTATION0(path, stations):
     :returns: List of tuples of station, lat, long, elevation
     :rtype: list
 
-    >>> readSTATION0('eqcorrscan/tests/test_data', ['WHFS', 'WHAT2', 'BOB'])
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> readSTATION0(TEST_PATH, ['WHFS', 'WHAT2', 'BOB'])
     [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, \
 170.36038333333335, 95.0), ('BOB', 41.408166666666666, \
 -174.87116666666665, 101.0)]
@@ -637,7 +641,11 @@ def read_phase(ph_file):
     :rtype: :class:`obspy.core.event.Catalog`
 
     >>> from obspy.core.event.catalog import Catalog
-    >>> catalog = read_phase('eqcorrscan/tests/test_data/tunnel.phase')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> catalog = read_phase(TEST_PATH + '/tunnel.phase')
     >>> isinstance(catalog, Catalog)
     True
     """

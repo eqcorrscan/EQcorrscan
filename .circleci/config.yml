@@ -13,7 +13,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.5
+      - image: circleci/python:3.7
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -48,14 +48,14 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py develop
-#            python setup.py build_ext --inplace
       # run tests!
       - run:
           name: run tests
           command: |
             . venv/bin/activate
-            test_eqcorrscan.py -m "network" -n 2
-            test_eqcorrscan.py eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            py.test -m "network" -n 2
+            py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
 
       - run:
           name: Upload to codecov
