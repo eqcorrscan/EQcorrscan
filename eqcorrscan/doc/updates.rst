@@ -1,6 +1,21 @@
 What's new
 ==========
 
+Version 0.3.3
+-------------
+* Make test-script more stable - use the installed script for testing.
+* Fix bug where `set_xcorr` as context manager did not correctly reset
+  stream_xcorr methods.
+* Correct test-script (`test_eqcorrscan.py`) to find paths properly.
+* BUG-FIX in `Party.decluster` when detections made at exactly the same time
+  the first, rather than the highest of these was taken.
+* Catch one-sample difference in day properly in pre-processing.dayproc
+* Shortproc now clips and pads to the correct length asserted by starttime and
+  endtime.
+* Bug-fix: Match-filter collection objects (Tribe, Party, Family) implemented
+  addition (`__add__`) to alter the main object. Now the main object is left
+  unchanged.
+* `Family.catalog` is now an immutable property.
 
 Version 0.3.2
 -------------

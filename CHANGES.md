@@ -1,4 +1,4 @@
-## Current
+## 0.3.3
 * Make test-script more stable.
 * Fix bug where `set_xcorr` as context manager did not correctly reset
   stream_xcorr methods.
