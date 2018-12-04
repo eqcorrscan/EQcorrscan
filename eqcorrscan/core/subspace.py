@@ -283,8 +283,6 @@ class Detector(object):
             will return detections and streams.
         :type cores: int
         :param cores: Number of threads to process data with.
-        :type debug: int
-        :param debug: Debug output level from 0-5.
 
         :return: list of :class:`eqcorrscan.core.match_filter.Detection`
         :rtype: list

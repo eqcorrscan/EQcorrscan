@@ -143,7 +143,7 @@ def read_data(archive, arc_type, day, stachans, length=86400):
     return st
 
 
-def _get_station_file(path_name, station, channel, debug=0):
+def _get_station_file(path_name, station, channel):
     """
     Helper function to find the correct file.
 
@@ -156,13 +156,13 @@ def _get_station_file(path_name, station, channel, debug=0):
     """
     wavfiles = glob.glob(path_name + os.sep + '*')
 
-    out_files = [_check_data(wavfile, station, channel, debug=debug)
+    out_files = [_check_data(wavfile, station, channel)
                  for wavfile in wavfiles]
     out_files = list(set(out_files))
     return out_files
 
 
-def _check_data(wavfile, station, channel, debug=0):
+def _check_data(wavfile, station, channel):
     """
     Inner loop for parallel checks.
 
@@ -172,11 +172,8 @@ def _check_data(wavfile, station, channel, debug=0):
     :param station: Channel name to check for
     :type channel: str
     :param channel: Channel name to check for
-    :type debug: int
-    :param debug: Debug level, if > 1, will output what it it working on.
     """
-    if debug > 1:
-        Logger.debug('Checking ' + wavfile)
+    Logger.debug('Checking ' + wavfile)
     st = read(wavfile, headonly=True)
     for tr in st:
         if tr.stats.station == station and tr.stats.channel == channel:

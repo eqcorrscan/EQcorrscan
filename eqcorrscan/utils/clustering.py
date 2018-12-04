@@ -153,7 +153,7 @@ def distance_matrix(stream_list, allow_shift=False, shift_len=0, cores=1):
 
 
 def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
-            shift_len=0, save_corrmat=False, cores='all', debug=1):
+            shift_len=0, save_corrmat=False, cores='all'):
     """
     Cluster template waveforms based on average correlations.
 
@@ -189,10 +189,6 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :param cores:
         number of cores to use when computing the distance matrix, defaults to
         'all' which will work out how many cpus are available and hog them.
-    :type debug: int
-    :param debug:
-        Level of debugging from 1-5, higher is more output,
-        currently only level 1 implemented.
 
     :returns:
         List of groups. Each group is a list of
@@ -205,40 +201,32 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     # Extract only the Streams from stream_list
     stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
-    if debug >= 1:
-        Logger.info('Computing the distance matrix using %i cores' % num_cores)
+    Logger.info('Computing the distance matrix using %i cores' % num_cores)
     dist_mat = distance_matrix(stream_list, allow_shift, shift_len,
                                cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
-        if debug >= 1:
-            Logger.info('Saved the distance matrix as dist_mat.npy')
+        Logger.info('Saved the distance matrix as dist_mat.npy')
     dist_vec = squareform(dist_mat)
-    if debug >= 1:
-        Logger.info('Computing linkage')
+    Logger.info('Computing linkage')
     Z = linkage(dist_vec)
     if show:
-        if debug >= 1:
-            Logger.info('Plotting the dendrogram')
+        Logger.info('Plotting the dendrogram')
         dendrogram(Z, color_threshold=1 - corr_thresh,
                    distance_sort='ascending')
         plt.show()
     # Get the indices of the groups
-    if debug >= 1:
-        Logger.info('Clustering')
+    Logger.info('Clustering')
     indices = fcluster(Z, t=1 - corr_thresh, criterion='distance')
     # Indices start at 1...
     group_ids = list(set(indices))  # Unique list of group ids
-    if debug >= 1:
-        msg = ' '.join(['Found', str(len(group_ids)), 'groups'])
-        Logger.info(msg)
+    Logger.info(' '.join(['Found', str(len(group_ids)), 'groups']))
     # Convert to tuple of (group id, stream id)
     indices = [(indices[i], i) for i in range(len(indices))]
     # Sort by group id
     indices.sort(key=lambda tup: tup[0])
     groups = []
-    if debug >= 1:
-        Logger.info('Extracting and grouping')
+    Logger.info('Extracting and grouping')
     for group_id in group_ids:
         group = []
         for ind in indices:

@@ -782,7 +782,7 @@ class Party(object):
                 try:
                     all_cat = read_events(det_cat_file[0])
                 except TypeError as e:
-                    print(e)
+                    Logger.error(e)
                     pass
             else:
                 all_cat = Catalog()
@@ -1032,8 +1032,8 @@ class Family(object):
         self.detections = detections or []
         self.__catalog = get_catalog(self.detections)
         if catalog:
-            warnings.warn("Setting catalog directly is no-longer supported, "
-                          "now generated from detections.")
+            Logger.warning("Setting catalog directly is no-longer supported, "
+                           "now generated from detections.")
 
     @property
     def catalog(self):
@@ -3165,7 +3165,7 @@ class Detection(object):
             Does not correct for pre-pick.
         """
         if template is not None and template.name != self.template_name:
-            print("Template names do not match: {0}: {1}".format(
+            Logger.info("Template names do not match: {0}: {1}".format(
                 template.name, self.template_name))
             return
         # Detect time must be valid QuakeML uri within resource_id.

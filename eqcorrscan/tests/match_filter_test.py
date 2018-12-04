@@ -613,8 +613,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         cls.tribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len,
-            debug=0)
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
         print(cls.tribe)
         cls.onehztribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
@@ -693,8 +692,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            debug=2)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,

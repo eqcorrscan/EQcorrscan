@@ -132,17 +132,6 @@ class TestPreProcessing(unittest.TestCase):
         for tr in processed:
             self.assertEqual(self.instart, tr.stats.starttime)
             self.assertEqual(self.inend, tr.stats.endtime)
-    # This tries to plot, can't run.
-    # def test_high_debug(self):
-    #     """Test the debug=5 level"""
-    #     processed = shortproc(
-    #         self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-    #         samp_rate=1, debug=5, parallel=True, num_cores=False,
-    #         starttime=None, endtime=None)
-    #     self.assertEqual(len(processed), self.nchans)
-    #     for tr in processed:
-    #         self.assertEqual(self.instart, tr.stats.starttime)
-    #         self.assertEqual(self.inend, tr.stats.endtime)
 
     def test_dayproc(self):
         """Test a straight-forward day processing implementation."""

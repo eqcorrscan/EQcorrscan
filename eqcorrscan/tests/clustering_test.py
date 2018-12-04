@@ -95,8 +95,7 @@ class ClusteringTests(unittest.TestCase):
         self.assertEqual(len(groups), 10)  # They shouldn't cluster at all
         # Test setting a number of cores
         groups_2 = cluster(template_list=stream_list, show=False,
-                           corr_thresh=0.3, cores=2, debug=2,
-                           save_corrmat=True)
+                           corr_thresh=0.3, cores=2, save_corrmat=True)
         self.assertTrue(os.path.isfile('dist_mat.npy'))
         os.remove('dist_mat.npy')
         self.assertEqual(len(groups_2), 10)  # They shouldn't cluster at all
