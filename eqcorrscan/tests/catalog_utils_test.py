@@ -50,5 +50,6 @@ class CatalogUtilsTests(unittest.TestCase):
                 filtered_stations.append(pick.waveform_id.station_code)
         self.assertEqual(len(list(set(filtered_stations))), top_n_picks)
 
+
 if __name__ == '__main__':
     unittest.main()

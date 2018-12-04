@@ -28,7 +28,6 @@ import re
 import shutil
 import tarfile
 import tempfile
-import time
 import logging
 from collections import Counter
 from os.path import join

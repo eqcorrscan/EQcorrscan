@@ -134,17 +134,17 @@ def sactoevent(st):
                     # the keys, the variables are filled with SAC nans.
                     Logger.warning(
                         'No pick in position {0} for trace {1}'.format(
-                            pick.key, tr.id))
+                            pick_key, tr.id))
                     continue
                 pick_time = reference_time + tr.stats.sac[pick_key]
                 phase_hint = tr.stats.sac[phase_key].split()[0]
             except KeyError:
                 Logger.warning(
                         'No pick in position {0} for trace {1}'.format(
-                            pick.key, tr.id))
+                            pick_key, tr.id))
                 continue
             Logger.info('Found pick in position {0} for {1}'.format(
-                pick.key, tr.id))
+                pick_key, tr.id))
             waveform_id = WaveformStreamID(station_code=tr.stats.station,
                                            network_code=tr.stats.network,
                                            channel_code=tr.stats.channel)
@@ -157,23 +157,22 @@ def sactoevent(st):
             if tr.stats.sac['a'] == float_nan:
                 Logger.warning(
                         'No pick in position {0} for trace {1}'.format(
-                            pick.key, tr.id))
+                            pick_key, tr.id))
                 continue
             pick_time = reference_time + tr.stats.sac['a']
             phase_hint = tr.stats.sac['ka'].split()[0]
         except KeyError:
             Logger.warning(
                         'No pick in position {0} for trace {1}'.format(
-                            pick.key, tr.id))
+                            pick_key, tr.id))
             continue
         Logger.info('Found pick in position {0} for {1}'.format(
-            pick.key, tr.id))
-        waveform_id = WaveformStreamID(station_code=tr.stats.station,
-                                       network_code=tr.stats.network,
-                                       channel_code=tr.stats.channel)
-        pick = Pick(waveform_id=waveform_id,
-                    phase_hint=phase_hint,
-                    time=pick_time)
+            pick_key, tr.id))
+        waveform_id = WaveformStreamID(
+            station_code=tr.stats.station, network_code=tr.stats.network,
+            channel_code=tr.stats.channel)
+        pick = Pick(
+            waveform_id=waveform_id, phase_hint=phase_hint, time=pick_time)
         event.picks.append(pick)
 
     return event

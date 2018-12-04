@@ -116,6 +116,7 @@ class TestAlignRealData(unittest.TestCase):
         known_ccs = [round(cc, 3) for cc in known_ccs]
         self.assertEqual(ccs, list(known_ccs))
 
+
 if __name__ == '__main__':
     """
     Run stacking tests

@@ -17,13 +17,11 @@ from __future__ import unicode_literals
 import getpass
 import ast
 import logging
-import numpy as np
-from pprint import pprint
 
 from multiprocessing import Pool, cpu_count
 from obspy.core.util import AttribDict
 from obspy import UTCDateTime
-from obspy.signal.trigger import trigger_onset, plot_trigger, recursive_sta_lta
+from obspy.signal.trigger import trigger_onset, recursive_sta_lta
 
 import eqcorrscan
 from eqcorrscan.utils.despike import median_filter

@@ -26,7 +26,6 @@ import eqcorrscan
 import copy
 import scipy
 
-import matplotlib.pyplot as plt
 from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
     WaveformStreamID, Pick

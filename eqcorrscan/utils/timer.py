@@ -54,6 +54,7 @@ def time_func(func, name, *args, **kwargs):
     print('%s took %0.2f seconds' % (name, toc - tic))
     return out
 
+
 if __name__ == "__main__":
     """Doc-test."""
     import doctest

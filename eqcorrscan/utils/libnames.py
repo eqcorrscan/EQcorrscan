@@ -60,7 +60,7 @@ def _load_cdll(name):
     try:
         fftw_lib = ctypes.CDLL(str(static_fftw))  # noqa: F841
         fftwf_lib = ctypes.CDLL(str(static_fftwf))  # noqa: F841
-    except:
+    except Exception:
         pass
     try:
         cdll = ctypes.CDLL(str(libpath))

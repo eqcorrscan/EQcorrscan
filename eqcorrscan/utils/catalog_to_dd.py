@@ -476,25 +476,18 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
             masterstream = read(masterpath[0])
         if len(master_wavefiles) > 1:
             for wavefile in master_wavefiles:
-                try:
-                    masterstream += read(os.join(wavbase, wavefile))
-                except:
-                    raise IOError("Couldn't find wavefile")
+                masterstream += read(os.path.join(wavbase, wavefile))
         for j in range(i + 1, k_events):
             # Use this tactic to only output unique event pairings
             slave_sfile = event_list[j][1]
             Logger.info('Comparing to event: %s' % slave_sfile)
             slave_event_id = event_list[j][0]
             slave_wavefiles = readwavename(slave_sfile)
-            try:
-                slavestream = read(wavbase + os.sep + slave_wavefiles[0])
-            except:
-                raise IOError('No wavefile found: ' + slave_wavefiles[0] +
-                              ' ' + slave_sfile)
+            slavestream = read(os.path.join(wavbase, slave_wavefiles[0]))
             if len(slave_wavefiles) > 1:
                 for wavefile in slave_wavefiles:
                     try:
-                        slavestream += read(wavbase + os.sep + wavefile)
+                        slavestream += read(os.path.join(wavbase, wavefile))
                     except IOError:
                         Logger.error('No waveform found: %s' %
                                      (wavbase + os.sep + wavefile))
@@ -561,14 +554,13 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         break
                     # Correct the picks
                     try:
-                        correction, cc =\
-                            xcorr_pick_correction(
-                                pick.time, mastertr, slave_pick.time,
-                                slavetr, pre_pick, extract_len - pre_pick,
-                                shift_len, filter="bandpass",
-                                filter_options={'freqmin': lowcut,
-                                                'freqmax': highcut},
-                                plot=plotvar)
+                        correction, cc = xcorr_pick_correction(
+                            pick.time, mastertr, slave_pick.time,
+                            slavetr, pre_pick, extract_len - pre_pick,
+                            shift_len, filter="bandpass",
+                            filter_options={'freqmin': lowcut,
+                                            'freqmax': highcut},
+                            plot=plotvar)
                         # Get the differential travel time using the
                         # corrected time.
                         # Check that the correction is within the allowed shift
@@ -577,19 +569,21 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         # window.
                         if abs(correction) > shift_len:
                             Logger.warning('Shift correction too large, ' +
-                                          'will not use')
+                                           'will not use')
                             continue
-                        correction = (pick.time - master_ori_time) -\
-                            (slave_pick.time + correction - slave_ori_time)
+                        correction = (
+                            (pick.time - master_ori_time) -
+                            (slave_pick.time + correction - slave_ori_time))
                         links += 1
                         if cc >= cc_thresh:
                             weight = cc
                             phases += 1
                             # added by Caro
-                            event_text += pick.waveform_id.station_code.\
-                                ljust(5) + _cc_round(correction, 3).\
-                                rjust(11) + _cc_round(weight, 3).rjust(8) +\
-                                ' ' + pick.phase_hint + '\n'
+                            event_text += (
+                                pick.waveform_id.station_code.ljust(5) +
+                                _cc_round(correction, 3).rjust(11) +
+                                _cc_round(weight, 3).rjust(8) +
+                                ' ' + pick.phase_hint + '\n')
                             event_text2 += pick.waveform_id.station_code\
                                 .ljust(5) + _cc_round(correction, 3).\
                                 rjust(11) +\
@@ -599,9 +593,10 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
                         else:
                             Logger.info('cc too low: %s' % cc)
                         corr_list.append(cc * cc)
-                    except:
-                        msg = "Couldn't compute correlation correction"
-                        Logger.warning(msg)
+                    except Exception as e:
+                        Logger.warning(
+                            "Couldn't compute correlation correction")
+                        Logger.error(e)
                         continue
             if links >= min_link and phases > 0:
                 f.write(event_text)

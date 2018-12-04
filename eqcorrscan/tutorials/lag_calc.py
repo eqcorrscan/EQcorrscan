@@ -4,7 +4,6 @@ import logging
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog
 from obspy import UTCDateTime
-from multiprocessing import cpu_count
 
 from eqcorrscan.core import template_gen, match_filter, lag_calc
 from eqcorrscan.utils import pre_processing, catalog_utils
