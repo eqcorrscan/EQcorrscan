@@ -266,12 +266,23 @@ class CustomBuildExt(build_ext):
         # Hack around OSX setting a -m flag
         cfg_vars = sysconfig.get_config_vars()
         if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
+            print("System C-flags:")
             print(cfg_vars["CFLAGS"])
-            cflags = cfg_vars["CFLAGS"].split()
+            cflags = list(set(cfg_vars["CFLAGS"].split()))
             if "-m" in cflags:
                 cflags.remove("-m")
+            if "-isysroot" in cflags:
+                cflags.remove("-isysroot")
+            # Remove sdk links
+            sdk_flags = []
+            for cflag in cflags:
+                if cflag.endswith(".sdk"):
+                    sdk_flags.append(cflag)
+            for cflag in sdk_flags:
+                cflags.remove(cflag)
             cflags = list(set(cflags))
             cfg_vars["CFLAGS"] = " ".join(cflags)
+            print("Editted C-flags:")
             print(cfg_vars["CFLAGS"])
             os.environ["CFLAGS"] = " ".join(cflags)
         if compiler == 'msvc':

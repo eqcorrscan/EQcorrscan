@@ -901,8 +901,9 @@ class TestMatchObjectLight(unittest.TestCase):
         """Test add method"""
         added = self.tribe.copy()
         self.assertEqual(len(added + added[0]), 5)
+        self.assertEqual(len(added), 4)
         added += added[-1]
-        self.assertEqual(len(added), 6)
+        self.assertEqual(len(added), 5)
 
     def test_tribe_remove(self):
         """Test remove method"""
@@ -978,6 +979,8 @@ class TestMatchObjectLight(unittest.TestCase):
         test_party = self.party.copy()
         test_family = test_party[0]
         self.assertTrue(isinstance(test_family, Family))
+        self.assertEqual(len(test_party + test_family), 5)
+        self.assertEqual(len(test_party), 4)
         test_party += test_family
         self.assertEqual(len(test_party), 5)
         test_slice = test_party[0:2]
@@ -993,6 +996,8 @@ class TestMatchObjectLight(unittest.TestCase):
         test_slice.families.append(new_family)
         self.assertTrue(isinstance(test_slice, Party))
         self.assertEqual(len(test_slice), 4)
+        self.assertEqual(len(test_party + test_slice), 9)
+        self.assertEqual(len(test_party), 5)
         test_party += test_slice
         self.assertEqual(len(test_party), 9)
         with self.assertRaises(NotImplementedError):
@@ -1218,6 +1223,20 @@ class TestMatchObjectLight(unittest.TestCase):
         finally:
             if os.path.isfile('test_family.tgz'):
                 os.remove('test_family.tgz')
+
+    def test_family_catalogs(self):
+        """Check that the catalog always represents the detections"""
+        family = self.family.copy()
+        self.assertEqual(family.catalog, get_catalog(family.detections))
+        additional_detection = family.detections[0].copy()
+        additional_detection.detect_time += 3600
+        for pick in additional_detection.event.picks:
+            pick.time += 3600
+        added_family = family + additional_detection
+        self.assertEqual(added_family.catalog,
+                         get_catalog(added_family.detections))
+        family.detections.append(additional_detection)
+        self.assertEqual(family.catalog, get_catalog(family.detections))
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):

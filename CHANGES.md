@@ -1,8 +1,8 @@
-## Future
+## Current
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
 
-## Current
+## 0.3.3
 * Make test-script more stable.
 * Fix bug where `set_xcorr` as context manager did not correctly reset
   stream_xcorr methods.
@@ -12,6 +12,10 @@
 * Catch one-sample difference in day properly in pre-processing.dayproc
 * Shortproc now clips and pads to the correct length asserted by starttime and
   endtime.
+* Bug-fix: Match-filter collection objects (Tribe, Party, Family) implemented
+  addition (`__add__`) to alter the main object. Now the main object is left
+  unchanged.
+* `Family.catalog` is now an immutable property.
 
 ## 0.3.2
 * Implement reading Party objects from multiple files, including wildcard

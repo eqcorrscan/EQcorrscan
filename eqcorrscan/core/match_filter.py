@@ -166,7 +166,22 @@ class Party(object):
         >>> print(party_a)
         Party of 2 Families.
         """
-        return self.__add__(other)
+        if isinstance(other, Family):
+            families = [other]
+        elif isinstance(other, Party):
+            families = other.families
+        else:
+            raise NotImplementedError(
+                'Ambiguous add, only allowed Party or Family additions.')
+        for oth_fam in families:
+            added = False
+            for fam in self.families:
+                if fam.template == oth_fam.template:
+                    fam += oth_fam
+                    added = True
+            if not added:
+                self.families.append(oth_fam)
+        return self
 
     def __add__(self, other):
         """
@@ -221,22 +236,7 @@ class Party(object):
         NotImplementedError: Ambiguous add, only allowed Party or Family \
         additions
         """
-        if isinstance(other, Family):
-            families = [other]
-        elif isinstance(other, Party):
-            families = other.families
-        else:
-            raise NotImplementedError(
-                'Ambiguous add, only allowed Party or Family additions.')
-        for oth_fam in families:
-            added = False
-            for fam in self.families:
-                if fam.template == oth_fam.template:
-                    fam += oth_fam
-                    added = True
-            if not added:
-                self.families.append(oth_fam)
-        return self
+        return self.copy().__iadd__(other)
 
     def __eq__(self, other, verbose=False):
         """
@@ -544,7 +544,6 @@ class Party(object):
                     d.threshold_type = new_threshold_type
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
-            family.catalog = Catalog([d.event for d in family])
         return self
 
     def decluster(self, trig_int, timing='detect', metric='avg_cor'):
@@ -631,9 +630,7 @@ class Party(object):
             new_families.append(Family(
                 template=template,
                 detections=[d for d in declustered_detections
-                            if d.template_name == template_name],
-                catalog=Catalog([d.event for d in declustered_detections
-                                 if d.template_name == template_name])))
+                            if d.template_name == template_name]))
         self.families = new_families
         return self
 
@@ -799,15 +796,10 @@ class Party(object):
                         f for f in families if
                         f.template.name == family.template.name][0]
                     new_family = False
-                family.detections.extend(_read_family(
-                    fname=family_file, all_cat=all_cat, template=template[0]))
-                family.catalog = Catalog()
-                for detection in family.detections:
-                    if detection.event:
-                        family.catalog.append(detection.event)
+                family.detections = _read_family(
+                    fname=family_file, all_cat=all_cat, template=template[0])
                 if new_family:
                     families.append(family)
-
             shutil.rmtree(temp_dir)
         self.families = families
         return self
@@ -1035,16 +1027,24 @@ class Family(object):
     def __init__(self, template, detections=None, catalog=None):
         """Instantiation of Family object."""
         self.template = template
-        self.detections = []
-        self.catalog = Catalog()
         if isinstance(detections, Detection):
             detections = [detections]
-        if isinstance(catalog, Event):
-            catalog = Catalog(catalog)
-        if detections:
-            self.detections.extend(detections)
+        self.detections = detections or []
+        self.__catalog = get_catalog(self.detections)
         if catalog:
-            self.catalog.extend(catalog)
+            warnings.warn("Setting catalog directly is no-longer supported, "
+                          "now generated from detections.")
+
+    @property
+    def catalog(self):
+        if len(self.__catalog) != len(self.detections):
+            self.__catalog = get_catalog(self.detections)
+        return self.__catalog
+
+    @catalog.setter
+    def catalog(self, catalog):
+        raise NotImplementedError(
+            "Setting catalog directly is no-longer supported")
 
     def __repr__(self):
         """
@@ -1109,35 +1109,14 @@ class Family(object):
         NotImplementedError: Templates do not match
 
 
-        Can not extent a family with a list, or another object.
+        Cannot extent a family with a list, or another object.
 
         >>> family_a = Family(template=Template(name='a'))
         >>> family = family_a + ['albert'] # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         NotImplementedError: Can only extend with a Detection of Family object.
         """
-        if isinstance(other, Family):
-            if other.template == self.template:
-                self.detections.extend(other.detections)
-                try:
-                    self.catalog += other.catalog
-                except TypeError:
-                    pass
-            else:
-                raise NotImplementedError('Templates do not match')
-        elif isinstance(other, Detection) and other.template_name \
-                == self.template.name:
-            self.detections.append(other)
-            try:
-                self.catalog += other.event
-            except TypeError:
-                pass
-        elif isinstance(other, Detection):
-            raise NotImplementedError('Template do not match')
-        else:
-            raise NotImplementedError('Can only extend with a Detection or '
-                                      'Family object.')
-        return self
+        return self.copy().__iadd__(other)
 
     def __iadd__(self, other):
         """
@@ -1151,7 +1130,22 @@ class Family(object):
         >>> print(family_a)
         Family of 0 detections from template a
         """
-        return self.__add__(other)
+        if isinstance(other, Family):
+            if other.template == self.template:
+                self.detections.extend(other.detections)
+                self.__catalog.events.extend(get_catalog(other.detections))
+            else:
+                raise NotImplementedError('Templates do not match')
+        elif isinstance(other, Detection) and other.template_name \
+                == self.template.name:
+            self.detections.append(other)
+            self.__catalog.events.extend(get_catalog([other]))
+        elif isinstance(other, Detection):
+            raise NotImplementedError('Templates do not match')
+        else:
+            raise NotImplementedError('Can only extend with a Detection or '
+                                      'Family object.')
+        return self
 
     def __eq__(self, other, verbose=False):
         """
@@ -1307,7 +1301,6 @@ class Family(object):
         [_detections.append(d) for d in self.detections
          if not _detections.count(d)]
         self.detections = _detections
-        self.catalog = get_catalog(self.detections)
         return self
 
     def sort(self):
@@ -2115,18 +2108,14 @@ class Tribe(object):
         .. rubric:: Example
 
         >>> tribe = Tribe(templates=[Template(name='a')])
-        >>> tribe + Tribe(templates=[Template(name='b')])
+        >>> tribe_ab = tribe + Tribe(templates=[Template(name='b')])
+        >>> print(tribe_ab)
         Tribe of 2 templates
-        >>> tribe + Template(name='c')
+        >>> tribe_abc = tribe_ab + Template(name='c')
+        >>> print(tribe_abc)
         Tribe of 3 templates
         """
-        if isinstance(other, Tribe):
-            self.templates += other.templates
-        elif isinstance(other, Template):
-            self.templates.append(other)
-        else:
-            raise TypeError('Must be either Template or Tribe')
-        return self
+        return self.copy().__iadd__(other)
 
     def __iadd__(self, other):
         """
@@ -2142,7 +2131,13 @@ class Tribe(object):
         >>> print(tribe)
         Tribe of 3 templates
         """
-        return self.__add__(other)
+        if isinstance(other, Tribe):
+            self.templates += other.templates
+        elif isinstance(other, Template):
+            self.templates.append(other)
+        else:
+            raise TypeError('Must be either Template or Tribe')
+        return self
 
     def __eq__(self, other):
         """
@@ -2639,7 +2634,6 @@ class Tribe(object):
             for family in party:
                 if family is not None:
                     family.detections = family._uniq().detections
-                    family.catalog = family._uniq().catalog
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -2908,7 +2902,6 @@ class Tribe(object):
         for family in party:
             if family is not None:
                 family.detections = family._uniq().detections
-                family.catalog = family._uniq().catalog
         if return_stream:
             return party, stream
         else:
@@ -3536,7 +3529,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 family = Family(template=template, detections=[])
                 for detection in detections:
                     if detection.template_name == template.name:
-                        family.append(detection)
+                        family.detections.append(detection)
                 party += family
     return party
 
