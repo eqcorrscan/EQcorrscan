@@ -23,7 +23,7 @@ from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils import clustering
 from eqcorrscan.utils.clustering import (
     cross_chan_coherence, distance_matrix, cluster, group_delays, svd,
-    empirical_svd,svd_to_stream, corr_cluster, dist_mat_km, catalog_cluster,
+    empirical_svd, svd_to_stream, corr_cluster, dist_mat_km, catalog_cluster,
     space_time_cluster, remove_unclustered)
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 

@@ -418,7 +418,7 @@ def gappy_real_cc_output_dict_unstacked(
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     import warnings
-    
+
     for tr in gappy_real_data:
         tr.data = tr.data[0:unstacked_stream_len]
     out = {}

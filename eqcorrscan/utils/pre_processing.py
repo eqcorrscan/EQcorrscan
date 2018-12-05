@@ -679,8 +679,8 @@ def _prep_data(stream, templates):
 
     # Sort template lengths and remove unused channels
     out_templates = []
-    template_length = min([tr.stats.npts for template in templates
-                           for tr in template])
+    template_length = min([_tr.stats.npts for template in templates
+                           for _tr in template])
     for template in templates:
         out_template = Stream()
         for tr in template:
