@@ -28,7 +28,7 @@ import contextlib
 import copy
 import ctypes
 import os
-import warnings
+import logging
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -36,6 +36,8 @@ import numpy as np
 from future.utils import native_str
 
 from eqcorrscan.utils.libnames import _load_cdll
+
+Logger = logging.getLogger(__name__)
 
 # This is for building docs on readthedocs, which has an old version of
 # scipy - without this, this module cannot be imported, which breaks the docs
@@ -560,9 +562,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
         # Apply gain
         stream *= MULTIPLIER
-        print("Low variance found...")
-        warnings.warn("Low variance found, applying gain "
-                      "to stabilise correlations")
+        Logger.warning("Low variance found for, applying gain "
+                       "to stabilise correlations")
         multiplier = MULTIPLIER
     else:
         multiplier = 1
@@ -575,15 +576,15 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     if ret < 0:
         raise MemoryError()
     elif ret not in [0, 999]:
-        print('Error in C code (possible normalisation error)')
-        print('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
-        print('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
+        Logger.critical('Error in C code (possible normalisation error)')
+        Logger.critical('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
+        Logger.critical('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        warnings.warn("Some correlations not computed, are there "
-                      "zeros in data? If not, consider increasing gain.")
+        Logger.warning("Some correlations not computed, are there "
+                       "zeros in data? If not, consider increasing gain.")
     if variance_warning[0] and variance_warning[0] > template_length:
-        warnings.warn(
+        Logger.warning(
             "Low variance found in {0} positions, check result.".format(
                 variance_warning[0]))
     # Remove variance correction
@@ -780,8 +781,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
             stream_array[x] *= MULTIPLIER
-            warnings.warn("Low variance found for {0}, applying gain "
-                          "to stabilise correlations".format(x))
+            Logger.warning("Low variance found for {0}, applying gain "
+                           "to stabilise correlations".format(x))
             multipliers.update({x: MULTIPLIER})
         else:
             multipliers.update({x: 1})
@@ -809,20 +810,22 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
-        print('Error in C code (possible normalisation error)')
-        print('Maximum cccs %f at %s' %
-              (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
-        print('Minimum cccs %f at %s' %
-              (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
+        Logger.critical('Error in C code (possible normalisation error)')
+        Logger.critical(
+            'Maximum cccs %f at %s' %
+            (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
+        Logger.critical(
+            'Minimum cccs %f at %s' %
+            (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        warnings.warn("Some correlations not computed, are there "
-                      "zeros in data? If not, consider increasing gain.")
+        Logger.warning("Some correlations not computed, are there "
+                       "zeros in data? If not, consider increasing gain.")
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
-            warnings.warn("Low variance found in {0} places for {1},"
-                          " check result.".format(variance_warning,
-                                                  seed_ids[i]))
+            Logger.warning(
+                "Low variance found in {0} places for {1}, check "
+                "result.".format(variance_warning, seed_ids[i]))
     # Remove gain
     for i, x in enumerate(seed_ids):
         stream_array[i] *= multipliers[x]

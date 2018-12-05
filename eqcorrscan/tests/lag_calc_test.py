@@ -9,22 +9,26 @@ from __future__ import unicode_literals
 import unittest
 import os
 import numpy as np
-import warnings
+import logging
 
 from obspy import read_events, read
 from obspy.io.nordic.core import readwavename
 
+from eqcorrscan.core import lag_calc
 from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
 from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
 from eqcorrscan.core.match_filter import normxcorr2, Detection
 from eqcorrscan.core.template_gen import from_meta_file
-
-warnings.simplefilter("always")
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
 class TestMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        log = logging.getLogger(lag_calc.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
         cls.testing_path = os.path.join(os.path.abspath(
             os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
         cls.wave_path = os.path.join(os.path.abspath(
@@ -65,7 +69,9 @@ class TestMethods(unittest.TestCase):
         for tr in cls.template:
             cls.delays.update({tr.stats.station + '.' + tr.stats.channel:
                                tr.stats.starttime - tstart})
-        warnings.simplefilter("always")
+
+    def setUp(self):
+        self._log_handler.reset()
 
     def test_channel_loop(self):
         """Test the main lag_calc function"""
@@ -95,12 +101,12 @@ class TestMethods(unittest.TestCase):
         temp_spicks += temp_spicks.select(
             station='GCSZ', channel='EZ')[0].copy()
         temp_spicks[-1].stats.channel = 'HA'
-        with warnings.catch_warnings(record=True) as w:
-            i, event = _channel_loop(
-                detection=det_spicks, template=temp_spicks, min_cc=0.2, i=0,
-                detection_id='Tester_01', interpolate=False)
-            self.assertEqual(len(w), 1)
-            self.assertTrue(str('Cannot check if cccsum') in str(w[0].message))
+        i, event = _channel_loop(
+            detection=det_spicks, template=temp_spicks, min_cc=0.2, i=0,
+            detection_id='Tester_01', interpolate=False)
+        self.assertEqual(len(self.log_messages['warning']), 1)
+        self.assertTrue(
+            'Cannot check if cccsum' in self.log_messages['warning'][0])
         matched_traces = []
         detection_stachans = [(tr.stats.station, tr.stats.channel)
                               for tr in det_spicks]
@@ -226,6 +232,16 @@ class TestMethods(unittest.TestCase):
 
 
 class ShortTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        log = logging.getLogger(lag_calc.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
+
+    def setUp(self):
+        self._log_handler.reset()
+
     def test_error(self):
         with self.assertRaises(LagCalcError):
             raise LagCalcError('Generic error')
@@ -238,14 +254,13 @@ class ShortTests(unittest.TestCase):
         ccc = np.array([-0.21483282, -0.59443731, 0.1898917, -0.67516038,
                         0.60129057, -0.71043723,  0.16709118, 0.96839009,
                         1.58283915, -0.3053663])
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            _xcorr_interp(ccc, 0.1)
-        for _w in w:
-            print(_w.message)
-        self.assertEqual(len(w), 2)
-        self.assertTrue('Less than 5 samples' in str(w[0].message))
-        self.assertTrue('Residual in quadratic fit' in str(w[1].message))
+
+        _xcorr_interp(ccc, 0.1)
+        self.assertEqual(len(self.log_messages['warning']), 2)
+        self.assertTrue(
+            'Less than 5 samples' in self.log_messages['warning'][0])
+        self.assertTrue(
+            'Residual in quadratic fit' in self.log_messages['warning'][1])
 
 
 if __name__ == '__main__':

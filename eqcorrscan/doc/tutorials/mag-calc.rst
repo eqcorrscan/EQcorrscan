@@ -32,7 +32,6 @@ This example requires data downloaded from the eqcorrscan github repository.
     ...     event=event, st=st, respdir=respdir, chans=['Z'],
     ...     var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True,
     ...     lowcut=1.0, highcut=20.0, corners=4) # doctest:+ELLIPSIS
-    Working on ...
 
 Relative moment by singular-value decomposition
 -----------------------------------------------
@@ -79,4 +78,3 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
     >>> M, events_out = svd_moments(u=Uvectors, s=SValues, v=SVectors,
     ...                             stachans=stachans, event_list=event_list) # doctest:+ELLIPSIS
-    Created Kernel matrix: ...

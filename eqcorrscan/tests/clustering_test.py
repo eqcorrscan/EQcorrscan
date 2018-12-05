@@ -11,7 +11,7 @@ import pytest
 import numpy as np
 import os
 import glob
-import warnings
+import logging
 
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime
@@ -20,10 +20,12 @@ from obspy.clients.fdsn.header import FDSNException
 
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils import clustering
 from eqcorrscan.utils.clustering import (
-    cross_chan_coherence, distance_matrix, cluster, group_delays, svd, SVD,
-    empirical_svd, empirical_SVD, SVD_2_stream, svd_to_stream, corr_cluster,
-    dist_mat_km, catalog_cluster, space_time_cluster, remove_unclustered)
+    cross_chan_coherence, distance_matrix, cluster, group_delays, svd,
+    empirical_svd,svd_to_stream, corr_cluster, dist_mat_km, catalog_cluster,
+    space_time_cluster, remove_unclustered)
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
 @pytest.mark.network
@@ -124,8 +126,7 @@ class ClusteringTests(unittest.TestCase):
         self.assertEqual(len(groups), 10)  # They shouldn't cluster at all
         # Test setting a number of cores
         groups_2 = cluster(template_list=stream_list, show=False,
-                           corr_thresh=0.3, cores=2, debug=2,
-                           save_corrmat=True)
+                           corr_thresh=0.3, cores=2, save_corrmat=True)
         self.assertTrue(os.path.isfile('dist_mat.npy'))
         os.remove('dist_mat.npy')
         self.assertEqual(len(groups_2), 10)  # They shouldn't cluster at all
@@ -430,6 +431,10 @@ class ClusteringTestWarnings(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
+        log = logging.getLogger(clustering.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
         cls.st1 = read()
         cls.st2 = cls.st1.copy()
         cls.testing_path = os.path.join(
@@ -437,27 +442,30 @@ class ClusteringTestWarnings(unittest.TestCase):
         client = Client("https://earthquake.usgs.gov")
         starttime = UTCDateTime("2002-01-01")
         endtime = UTCDateTime("2002-01-02")
-        cls.cat = client.get_events(starttime=starttime, endtime=endtime,
-                                    minmagnitude=6)
+        cls.cat = client.get_events(
+            starttime=starttime, endtime=endtime, minmagnitude=6)
+
+    def setUp(self):
+        self._log_handler.reset()
 
     def test_cross_chan_coherence_non_matching(self):
         """Initial test to ensure cross_chan_coherence runs."""
         st2 = self.st2.copy()
         for tr in st2:
             tr.stats.station += 'A'
-        with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
-            self.assertEqual(len(w), 1)
-            self.assertTrue('No matching channels' in str(w[0].message))
+        cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
+        self.assertEqual(len(self.log_messages['error']), 1)
+        self.assertTrue(
+            'No matching channels' in self.log_messages['error'][0])
 
     def test_cross_chan_coherence_non_matching_sampling_rates(self):
         """Initial test to ensure cross_chan_coherence runs."""
         st2 = self.st2.copy()
         for tr in st2:
             tr.stats.sampling_rate += 20
-        with warnings.catch_warnings(record=True) as w:
-            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
-            self.assertTrue('Sampling rates do not match' in str(w[0].message))
+        cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
+        self.assertTrue(
+            'Sampling rates do not match' in self.log_messages['warning'][0])
 
     def test_delay_grouping(self):
         """Test grouping by delays"""
@@ -471,7 +479,6 @@ class ClusteringTestWarnings(unittest.TestCase):
         try:
             mktemplates(plot=False)
         except FDSNException:
-            warnings.warn('FDSN exception raised, is server down?')
             return
         stream_list = []
         for template_no in range(4):
@@ -503,10 +510,6 @@ class ClusteringTestWarnings(unittest.TestCase):
         self.assertEqual(len(UVectors), len(stachans))
         for SVec in SVectors:
             self.assertEqual(len(SVec), len(stream_list))
-        with warnings.catch_warnings(record=True) as w:
-            SVD(stream_list=stream_list)
-            self.assertEqual(len(w), 1)
-            self.assertTrue('Depreciated' in str(w[0].message))
 
     def test_empirical_svd(self):
         """Test the empirical SVD method"""
@@ -528,10 +531,6 @@ class ClusteringTestWarnings(unittest.TestCase):
                                               linear=False)
         self.assertEqual(len(first_sub), len(second_sub))
         self.assertEqual(len(stream_list[0]), len(first_sub))
-        with warnings.catch_warnings(record=True) as w:
-            empirical_SVD(stream_list=stream_list)
-            self.assertEqual(len(w), 1)
-            self.assertTrue('Depreciated' in str(w[0].message))
 
     def test_svd_to_stream(self):
         """Test the conversion of SVD to stream."""
@@ -552,11 +551,6 @@ class ClusteringTestWarnings(unittest.TestCase):
         svstreams = svd_to_stream(uvectors=SVectors, stachans=stachans, k=4,
                                   sampling_rate=samp_rate)
         self.assertEqual(len(svstreams), 4)
-        with warnings.catch_warnings(record=True) as w:
-            SVD_2_stream(uvectors=SVectors, stachans=stachans, k=4,
-                         sampling_rate=samp_rate)
-            self.assertEqual(len(w), 1)
-            self.assertTrue('Depreciated' in str(w[0].message))
 
     def test_corr_unclustered(self):
         """Test the corr_cluster function."""
@@ -575,11 +569,10 @@ class ClusteringTestWarnings(unittest.TestCase):
                 tr.resample(sampling_rate=samp_rate)
                 tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         trace_list = [stream[0] for stream in stream_list]
-        with warnings.catch_warnings(record=True) as w:
-            corr_cluster(trace_list=trace_list, thresh=0.7)
-            self.assertEqual(len(w), 1)
-            self.assertTrue('Nothing made it past the first 0.6 threshold'
-                            in str(w[0].message))
+        corr_cluster(trace_list=trace_list, thresh=0.7)
+        self.assertEqual(len(self.log_messages['warning']), 1)
+        self.assertTrue('Nothing made it past the first 0.6 threshold'
+                        in self.log_messages['warning'][0])
 
 
 if __name__ == '__main__':
