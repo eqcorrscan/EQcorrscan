@@ -448,24 +448,13 @@ class ClusteringTestWarnings(unittest.TestCase):
     def setUp(self):
         self._log_handler.reset()
 
-    def test_cross_chan_coherence_non_matching(self):
-        """Initial test to ensure cross_chan_coherence runs."""
-        st2 = self.st2.copy()
-        for tr in st2:
-            tr.stats.station += 'A'
-        cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
-        self.assertEqual(len(self.log_messages['error']), 1)
-        self.assertTrue(
-            'No matching channels' in self.log_messages['error'][0])
-
     def test_cross_chan_coherence_non_matching_sampling_rates(self):
         """Initial test to ensure cross_chan_coherence runs."""
         st2 = self.st2.copy()
         for tr in st2:
             tr.stats.sampling_rate += 20
-        cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
-        self.assertTrue(
-            'Sampling rates do not match' in self.log_messages['warning'][0])
+        with self.assertRaises(NotImplementedError):
+            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
 
     def test_delay_grouping(self):
         """Test grouping by delays"""
