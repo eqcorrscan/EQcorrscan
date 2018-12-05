@@ -1,3 +1,7 @@
+## Current
+* Changed all prints to calls to logging, as a result, debug is no longer
+  an argument for function calls.
+
 ## 0.3.3
 * Make test-script more stable.
 * Fix bug where `set_xcorr` as context manager did not correctly reset
@@ -76,6 +80,7 @@
   path on installation of EQcorrscan) that will download all the relevant 
   data and run the tests on the installed package - no need to clone 
   EQcorrscan to run tests!
+
 
 ## 0.3.1
 * Cleaned imports in utils modules

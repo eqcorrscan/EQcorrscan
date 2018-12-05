@@ -36,7 +36,7 @@ class TestStandardPeakFinding:
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            debug=0, starttime=None, samp_rate=200.0)
+            starttime=None, samp_rate=200.0)
         return peaks
 
     @pytest.fixture
@@ -44,7 +44,7 @@ class TestStandardPeakFinding:
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            debug=0, starttime=None, samp_rate=200.0, full_peaks=True)
+            starttime=None, samp_rate=200.0, full_peaks=True)
         return peaks
 
     # tests
@@ -155,7 +155,7 @@ class TestPeakFindSpeeds:
         threshold = np.median(dataset_1d)  # get threshold
         peaks = time_func(
             find_peaks2_short, "find_peaks2_short", arr=dataset_1d,
-            thresh=threshold, trig_int=600, debug=0, starttime=False,
+            thresh=threshold, trig_int=600, starttime=False,
             samp_rate=100)
         print('Found %i peaks' % len(peaks))
 

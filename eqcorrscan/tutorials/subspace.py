@@ -9,12 +9,19 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 
 """
 
+import logging
+
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream
 
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.clustering import space_cluster
 from eqcorrscan.core import subspace
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
 def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,

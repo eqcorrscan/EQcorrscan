@@ -316,8 +316,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                            shift_len=4, reject=0.3,
                            no_missed=False).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.2, trig_int=4,
-                                     debug=1)
+        detections = detector.detect(st=st, threshold=0.2, trig_int=4)
         self.assertEqual(len(detections), 34)
 
     def test_not_multiplexed(self):
@@ -330,7 +329,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                            shift_len=4, reject=0.3).partition(4)
         st = self.st
         detections = detector.detect(st=st, threshold=0.5, trig_int=4,
-                                     debug=1, moveout=2, min_trig=5)
+                                     moveout=2, min_trig=5)
         self.assertEqual(len(detections), 16)
 
     def test_multi_detectors(self):

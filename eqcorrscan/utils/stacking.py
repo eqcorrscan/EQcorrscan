@@ -14,10 +14,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import numpy as np
 
 from scipy.signal import hilbert
 from copy import deepcopy
+
+
+Logger = logging.getLogger(__name__)
 
 
 def linstack(streams, normalize=True):
@@ -75,7 +79,7 @@ def PWS_stack(streams, weight=2, normalize=True):
     Linstack = linstack(streams)
     # Compute the instantaneous phase
     instaphases = []
-    print("Computing instantaneous phase")
+    Logger.debug("Computing instantaneous phase")
     for stream in streams:
         instaphase = stream.copy()
         for tr in instaphase:
@@ -85,7 +89,7 @@ def PWS_stack(streams, weight=2, normalize=True):
             tr.data = analytic / envelope
         instaphases.append(instaphase)
     # Compute the phase stack
-    print("Computing the phase stack")
+    Logger.debug("Computing the phase stack")
     Phasestack = linstack(instaphases, normalize=normalize)
     # Compute the phase-weighted stack
     for tr in Phasestack:
@@ -132,7 +136,7 @@ def align_traces(trace_list, shift_len, master=False, positive=False,
                 master = traces[i]
                 MAD_master = np.median(np.abs(master.data))
     else:
-        print('Using master given by user')
+        Logger.info('Using master given by user')
     shifts = []
     ccs = []
     for i in range(len(traces)):

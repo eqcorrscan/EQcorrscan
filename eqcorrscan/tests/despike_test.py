@@ -9,7 +9,7 @@ import unittest
 
 class DespikeTesting(unittest.TestCase):
     def test_median_filter(self):
-        """Test the median filter implimentation."""
+        """Test the median filter implementation."""
         from obspy import read
         import os
         from eqcorrscan.utils.despike import median_filter
@@ -37,7 +37,7 @@ class DespikeTesting(unittest.TestCase):
         template = Trace(template)
         template.stats.sampling_rate = 100
         despiked = template_remove(tr=spiked, template=template, cc_thresh=0.3,
-                                   windowlength=0.5, interp_len=0.05, debug=0)
+                                   windowlength=0.5, interp_len=0.05)
         self.assertNotEqual(despiked.data[100], 20)
         self.assertNotEqual(despiked.data[400], 40)
         self.assertNotEqual(despiked.data[450], -40)
