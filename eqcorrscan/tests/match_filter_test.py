@@ -163,7 +163,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False, debug=3)
+                     plotvar=False)
 
 
 @pytest.mark.network
@@ -205,7 +205,7 @@ class TestGeoNetCase(unittest.TestCase):
         print('Processing continuous data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1)
+            num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -367,7 +367,7 @@ class TestNCEDCCases(unittest.TestCase):
         cls.unproc_st = st.copy()
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -613,8 +613,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         cls.tribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len,
-            debug=0)
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
         print(cls.tribe)
         cls.onehztribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
@@ -622,7 +621,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.party = Party().read(
             filename=os.path.join(
@@ -682,7 +681,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent', debug=0)
+            xcorr_func='fftw', concurrency='concurrent')
         self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
@@ -693,8 +692,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            debug=2)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -780,7 +778,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     for p in chained_ev_pick_corrs]
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                self.assertEqual(ev.resource_id, chained_ev.resource_id)
+                self.assertEqual(ev.resource_id.id[0:-5],
+                                 chained_ev.resource_id.id[0:-5])
                 assert np.allclose(
                     float(ev.comments[0].text.split("=")[-1]),
                     float(chained_ev.comments[0].text.split("=")[-1]),
@@ -900,8 +899,9 @@ class TestMatchObjectLight(unittest.TestCase):
         """Test add method"""
         added = self.tribe.copy()
         self.assertEqual(len(added + added[0]), 5)
+        self.assertEqual(len(added), 4)
         added += added[-1]
-        self.assertEqual(len(added), 6)
+        self.assertEqual(len(added), 5)
 
     def test_tribe_remove(self):
         """Test remove method"""
@@ -977,6 +977,8 @@ class TestMatchObjectLight(unittest.TestCase):
         test_party = self.party.copy()
         test_family = test_party[0]
         self.assertTrue(isinstance(test_family, Family))
+        self.assertEqual(len(test_party + test_family), 5)
+        self.assertEqual(len(test_party), 4)
         test_party += test_family
         self.assertEqual(len(test_party), 5)
         test_slice = test_party[0:2]
@@ -992,6 +994,8 @@ class TestMatchObjectLight(unittest.TestCase):
         test_slice.families.append(new_family)
         self.assertTrue(isinstance(test_slice, Party))
         self.assertEqual(len(test_slice), 4)
+        self.assertEqual(len(test_party + test_slice), 9)
+        self.assertEqual(len(test_party), 5)
         test_party += test_slice
         self.assertEqual(len(test_party), 9)
         with self.assertRaises(NotImplementedError):
@@ -1017,6 +1021,31 @@ class TestMatchObjectLight(unittest.TestCase):
                 with self.assertRaises(IndexError):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
+
+    def test_party_decluster_same_times(self):
+        """
+        Test that the correct detection is associated with the peak.
+        Tests for the case where two detections from different templates are
+        made at the same time - the peak-finding finds the best, but decluster
+        did not always correctly associate the correct detection with that
+        peak.
+        """
+        # Test insertion before
+        test_party = self.party.copy()
+        det = test_party[0][0].copy()
+        det.detect_time = test_party[1][0].detect_time
+        det.detect_val = 4
+        test_party[0].detections.append(det)
+        test_party.decluster(1)
+        assert det not in [d for f in test_party for d in f]
+        # Tes insertion after
+        test_party = self.party.copy()
+        det = test_party[1][0].copy()
+        det.detect_time = test_party[0][0].detect_time
+        det.detect_val = 4
+        test_party[1].detections.append(det)
+        test_party.decluster(1)
+        assert det not in [d for f in test_party for d in f]
 
     def test_party_rethreshold(self):
         """Make sure that rethresholding removes the events we want it to."""
@@ -1193,6 +1222,20 @@ class TestMatchObjectLight(unittest.TestCase):
             if os.path.isfile('test_family.tgz'):
                 os.remove('test_family.tgz')
 
+    def test_family_catalogs(self):
+        """Check that the catalog always represents the detections"""
+        family = self.family.copy()
+        self.assertEqual(family.catalog, get_catalog(family.detections))
+        additional_detection = family.detections[0].copy()
+        additional_detection.detect_time += 3600
+        for pick in additional_detection.event.picks:
+            pick.time += 3600
+        added_family = family + additional_detection
+        self.assertEqual(added_family.catalog,
+                         get_catalog(added_family.detections))
+        family.detections.append(additional_detection)
+        self.assertEqual(family.catalog, get_catalog(family.detections))
+
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
@@ -1258,17 +1301,15 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert det.__dict__[key] == check_det.__dict__[key]
 
 
-def test_match_filter(
-        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
-        threshold=10, template_excess=False, stream_excess=False):
+def test_match_filter(plotvar=False, extract_detections=False,
+                      threshold_type='MAD', threshold=10,
+                      template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
 
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz to use
-    :type debug: int
-    :param debug: Debug level, higher the number the more output.
     """
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
@@ -1306,7 +1347,7 @@ def test_match_filter(
     detections = match_filter(
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
-        plotvar=plotvar, plotdir='.', cores=1, debug=debug, output_cat=False,
+        plotvar=plotvar, plotdir='.', cores=1, output_cat=False,
         extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]
@@ -1340,13 +1381,6 @@ def test_match_filter(
                 kfalse += 1
             print('Minimum difference in samples is: ' + str(min_diff))
     # print('Catalog created is of length: ' + str(len(out_cat)))
-    # Plot the detections
-    if debug > 3:
-        for i, template in enumerate(templates):
-            times = [d.detect_time.datetime for d in detections
-                     if d.template_name == template_names[i]]
-            print(times)
-            # plotting.detection_multiplot(data, template, times)
     # Set an 'acceptable' ratio of positive to false detections
     print(str(ktrue) + ' true detections and ' + str(kfalse) +
           ' false detections')

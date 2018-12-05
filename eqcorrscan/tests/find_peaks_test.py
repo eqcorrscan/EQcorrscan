@@ -36,7 +36,7 @@ class TestStandardPeakFinding:
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            debug=0, starttime=None, samp_rate=200.0)
+            starttime=None, samp_rate=200.0)
         return peaks
 
     @pytest.fixture
@@ -44,7 +44,7 @@ class TestStandardPeakFinding:
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            debug=0, starttime=None, samp_rate=200.0, full_peaks=True)
+            starttime=None, samp_rate=200.0, full_peaks=True)
         return peaks
 
     # tests
@@ -231,8 +231,7 @@ class TestPeakFindSpeeds:
         print("Threshold: {0}".format(threshold))
         peaks = time_func(
             find_peaks2_short, "find_peaks2_short", arr=dataset_1d[0],
-            thresh=threshold, trig_int=600, debug=2, starttime=False,
-            samp_rate=1.0)
+            thresh=threshold, trig_int=600)
         print('Found %i peaks' % len(peaks))
         assert len(peaks) <= len(dataset_1d[1])
         for peak in peaks:
@@ -241,8 +240,7 @@ class TestPeakFindSpeeds:
         # Run the prototype and check that is gets the same results!
         proto_peaks = time_func(
             find_peaks_compiled, "find_peaks_compiled", arr=dataset_1d[0],
-            thresh=threshold, trig_int=600, debug=2, starttime=False,
-            samp_rate=1.0)
+            thresh=threshold, trig_int=600)
         print('Found %i peaks' % len(proto_peaks))
         for peak in proto_peaks:
             assert abs(peak[0]) > threshold

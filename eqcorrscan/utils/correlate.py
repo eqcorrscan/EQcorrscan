@@ -28,7 +28,7 @@ import contextlib
 import copy
 import ctypes
 import os
-import warnings
+import logging
 from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
@@ -36,6 +36,8 @@ import numpy as np
 from future.utils import native_str
 
 from eqcorrscan.utils.libnames import _load_cdll
+
+Logger = logging.getLogger(__name__)
 
 # This is for building docs on readthedocs, which has an old version of
 # scipy - without this, this module cannot be imported, which breaks the docs
@@ -119,7 +121,8 @@ class _Context:
         :param new_value:
         :return:
         """
-        self.previous_value = self.cache.get(self.value_to_switch)
+        self.previous_value = copy.deepcopy(
+            self.cache.get(self.value_to_switch))
         self.cache[self.value_to_switch] = get_array_xcorr(new_value)
         return self
 
@@ -139,8 +142,9 @@ class _Context:
 
     def revert(self):
         """ revert the default xcorr function to previous value """
-        new_value = self.previous_value
-        self(new_value)
+        # Have to use the previous value as this may contain some custom
+        # stream_xcorr functions
+        self.cache[self.value_to_switch] = self.previous_value
 
 
 set_xcorr = _Context(XCOR_FUNCS, 'default')
@@ -283,8 +287,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         # register the functions in the XCOR
         fname = func_name or name.__name__ if callable(name) else str(name)
         XCOR_FUNCS[fname] = func
-        if is_default:  # set function as default
-            XCOR_FUNCS['default'] = func
+        # if is_default:  # set function as default
+        #     XCOR_FUNCS['default'] = func
         # attach some attrs, this is a bit of a hack to avoid pickle problems
         func.register = register
         cache['func'] = func
@@ -294,6 +298,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         func.stream_xcorr = _general_serial(func)
         func.array_xcorr = func
         func.registered = True
+        if is_default:  # set function as default
+            XCOR_FUNCS['default'] = copy.deepcopy(func)
         return func
 
     # used as a decorator
@@ -541,8 +547,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
         # Apply gain
         stream *= 1e8
-        warnings.warn("Low variance found for, applying gain "
-                      "to stabilise correlations")
+        Logger.warning("Low variance found for, applying gain "
+                       "to stabilise correlations")
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -552,15 +558,15 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     if ret < 0:
         raise MemoryError()
     elif ret not in [0, 999]:
-        print('Error in C code (possible normalisation error)')
-        print('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
-        print('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
+        Logger.critical('Error in C code (possible normalisation error)')
+        Logger.critical('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
+        Logger.critical('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        warnings.warn("Some correlations not computed, are there "
-                      "zeros in data? If not, consider increasing gain.")
+        Logger.warning("Some correlations not computed, are there "
+                       "zeros in data? If not, consider increasing gain.")
     if variance_warning[0] and variance_warning[0] > template_length:
-        warnings.warn(
+        Logger.warning(
             "Low variance found in {0} positions, check result.".format(
                 variance_warning[0]))
 
@@ -747,8 +753,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
             stream_array *= 1e8
-            warnings.warn("Low variance found for {0}, applying gain "
-                          "to stabilise correlations".format(x))
+            Logger.warning("Low variance found for {0}, applying gain "
+                           "to stabilise correlations".format(x))
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
     cccs = np.zeros((n_templates, image_len - template_len + 1),
@@ -768,20 +774,22 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
-        print('Error in C code (possible normalisation error)')
-        print('Maximum cccs %f at %s' %
-              (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
-        print('Minimum cccs %f at %s' %
-              (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
+        Logger.critical('Error in C code (possible normalisation error)')
+        Logger.critical(
+            'Maximum cccs %f at %s' %
+            (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
+        Logger.critical(
+            'Minimum cccs %f at %s' %
+            (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
-        warnings.warn("Some correlations not computed, are there "
-                      "zeros in data? If not, consider increasing gain.")
+        Logger.warning("Some correlations not computed, are there "
+                       "zeros in data? If not, consider increasing gain.")
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
-            warnings.warn("Low variance found in {0} places for {1},"
-                          " check result.".format(variance_warning,
-                                                  seed_ids[i]))
+            Logger.warning("Low variance found in {0} places for {1},"
+                           " check result.".format(variance_warning,
+                                                   seed_ids[i]))
 
     return cccs, used_chans
 

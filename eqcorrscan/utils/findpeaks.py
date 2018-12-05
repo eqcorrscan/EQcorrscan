@@ -14,17 +14,20 @@ from __future__ import unicode_literals
 
 import ctypes
 import random
+import logging
 import numpy as np
 
+from multiprocessing import Pool
 from obspy import UTCDateTime
 from scipy import ndimage
-from multiprocessing import Pool
 from future.utils import native_str
 from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
-from eqcorrscan.utils.debug_log import debug_print
+
+
+Logger = logging.getLogger(__name__)
 
 
 def is_prime(number):
@@ -62,8 +65,7 @@ def is_prime(number):
         return False
 
 
-def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
-                        samp_rate=1.0, full_peaks=False):
+def find_peaks_compiled(arr, thresh, trig_int, full_peaks=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -79,12 +81,6 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     :param trig_int:
         The minimum difference in samples between triggers, if multiple
         peaks within this window this code will find the highest.
-    :type debug: int
-    :param debug: Optional, debug level 0-5
-    :type starttime: obspy.core.utcdatetime.UTCDateTime
-    :param starttime: Starttime for plotting, only used if debug > 2.
-    :type samp_rate: float
-    :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
     :type full_peaks: bool
     :param full_peaks:
         If True, will remove the issue eluded to below, by declustering within
@@ -98,8 +94,6 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     if not np.any(np.abs(arr) > thresh):
         # Fast fail
         return []
-    if not starttime:
-        starttime = UTCDateTime(0)
     if not full_peaks:
         peak_vals, peak_indices = _find_peaks_c(array=arr, threshold=thresh)
     else:
@@ -108,13 +102,6 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
     if len(peak_vals) > 0:
         peaks = decluster(peaks=np.array(peak_vals),
                           index=np.array(peak_indices), trig_int=trig_int + 1)
-        if debug >= 3:
-            from eqcorrscan.utils import plotting
-            _fname = ''.join([
-                'peaks_', starttime.datetime.strftime('%Y-%m-%d'), '.pdf'])
-            plotting.peaks_plot(
-                data=arr, starttime=starttime, samp_rate=samp_rate,
-                save=True, peaks=peaks, savefile=_fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
@@ -122,8 +109,7 @@ def find_peaks_compiled(arr, thresh, trig_int, debug=0, starttime=False,
         return []
 
 
-def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
-                      samp_rate=1.0, full_peaks=False):
+def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
@@ -139,12 +125,6 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
     :param trig_int:
         The minimum difference in samples between triggers, if multiple
         peaks within this window this code will find the highest.
-    :type debug: int
-    :param debug: Optional, debug level 0-5
-    :type starttime: obspy.core.utcdatetime.UTCDateTime
-    :param starttime: Starttime for plotting, only used if debug > 2.
-    :type samp_rate: float
-    :param samp_rate: Sampling rate in Hz, only used for plotting if debug > 2.
     :type full_peaks: bool
     :param full_peaks:
         If True, will remove the issue eluded to below, by declustering within
@@ -184,20 +164,17 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         trigger intervals are usually relatively large and thresholds high.
 
     """
-    if not starttime:
-        starttime = UTCDateTime(0)
     # Set everything below the threshold to zero
     image = np.copy(arr)
-    debug_print("Threshold: {0}\tMax: {1}".format(thresh, max(image)),
-                2, debug)
+    Logger.debug("Threshold: {0}\tMax: {1}".format(thresh, max(image)))
     image[np.abs(image) < thresh] = 0
     if len(image[np.abs(image) > thresh]) == 0:
-        debug_print("No values over threshold {0}".format(thresh), 0, debug)
+        Logger.debug("No values over threshold {0}".format(thresh))
         return []
     if np.all(np.abs(arr) > thresh):
         full_peaks = True
-    debug_print('Found {0} samples above the threshold'.format(
-        len(image[image > thresh])), 0, debug)
+    Logger.debug('Found {0} samples above the threshold'.format(
+        len(image[image > thresh])))
     initial_peaks = []
     # Find the peaks
     labeled_image, number_of_objects = ndimage.label(image)
@@ -231,13 +208,6 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
                       index=np.array(list(zip(*initial_peaks))[1]),
                       trig_int=trig_int + 1)
     if initial_peaks:
-        if debug >= 3:
-            from eqcorrscan.utils import plotting
-            _fname = ''.join([
-                'peaks_', starttime.datetime.strftime('%Y-%m-%d'), '.pdf'])
-            plotting.peaks_plot(
-                data=image, starttime=starttime, samp_rate=samp_rate,
-                save=True, peaks=peaks, savefile=_fname)
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
@@ -245,7 +215,7 @@ def find_peaks2_short(arr, thresh, trig_int, debug=0, starttime=False,
         return []
 
 
-def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
+def multi_find_peaks(arr, thresh, trig_int, starttime=False,
                      samp_rate=1.0, parallel=True, full_peaks=False,
                      cores=None, internal_func=find_peaks_compiled):
     """
@@ -261,8 +231,6 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     :param trig_int:
         The minimum difference in samples between triggers, if multiple
         peaks within this window this code will find the highest.
-    :type debug: int
-    :param debug: Optional, debug level 0-5
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Starttime for plotting, only used if debug > 2.
     :type samp_rate: float
@@ -275,6 +243,9 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     :type cores: int
     :param cores:
         Maximum number of processes to spin up for parallel peak-finding
+    :type internal_func: callable
+    :param internal_func:
+        Function to use for peak finding - defaults to the compiled version.
 
     :returns:
         List of list of tuples of (peak, index) in same order as input arrays
@@ -283,18 +254,16 @@ def multi_find_peaks(arr, thresh, trig_int, debug=0, starttime=False,
     if not parallel:
         for sub_arr, arr_thresh in zip(arr, thresh):
             peaks.append(internal_func(
-                arr=sub_arr, thresh=arr_thresh, trig_int=trig_int, debug=debug,
-                starttime=starttime, samp_rate=samp_rate,
+                arr=sub_arr, thresh=arr_thresh, trig_int=trig_int,
                 full_peaks=full_peaks))
     else:
         if cores is None:
             cores = arr.shape[0]
-        with pool_boy(Pool=Pool, traces=cores) as pool:
-            params = ((sub_arr, arr_thresh, trig_int, debug,
-                       False, 1.0, full_peaks)
+        with pool_boy(Pool=Pool, traces=arr.shape[0], cores=cores) as pool:
+            params = ((sub_arr, arr_thresh, trig_int, full_peaks)
                       for sub_arr, arr_thresh in zip(arr, thresh))
-            results = [pool.apply_async(internal_func, param)
-                       for param in params]
+            results = [
+                pool.apply_async(internal_func, param) for param in params]
             peaks = [res.get() for res in results]
     return peaks
 

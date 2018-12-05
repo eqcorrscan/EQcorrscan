@@ -66,7 +66,11 @@ event:
 
      >>> import glob
      >>> from eqcorrscan.core.match_filter import Template
-     >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+     >>> import os
+     >>> from eqcorrscan import tests
+     >>> # Get the path for the test-data so we can test this
+     >>> TEST_PATH = os.path.dirname(tests.__file__)
+     >>> sac_files = glob.glob(TEST_PATH + '/test_data/SAC/2014p611252/*')
      >>> # sac_files is now a list of all the SAC files for event id:2014p611252
      >>> template = Template().construct(
      ...      method='from_sac', name='test', lowcut=2.0, highcut=8.0,
@@ -157,7 +161,6 @@ generate re-picked catalogues using lag-calc:
      >>> stream = stream.merge().sort(['station'])
      >>> repicked_catalog = party.lag_calc(stream, pre_processed=False,
      ...                                   shift_len=0.2, min_cc=0.4) # doctest:+ELLIPSIS
-     5 Trace(s) in Stream:...
 
 By using the above examples you can go from a standard catalog available from
 data centers, to a matched-filter detected and cross-correlation repicked
