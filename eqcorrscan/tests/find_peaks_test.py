@@ -112,8 +112,7 @@ class TestEdgeCases:
         # Run the prototype and check that is gets the same results!
         proto_peaks = time_func(
             find_peaks_compiled, "find_peaks_compiled", arr=dataset[0],
-            thresh=threshold, trig_int=self.trig_int, debug=2,
-            starttime=False, samp_rate=1.0)
+            thresh=threshold, trig_int=self.trig_int)
         print('Found %i peaks' % len(proto_peaks))
         for peak in proto_peaks:
             assert abs(peak[0]) > threshold
@@ -122,8 +121,7 @@ class TestEdgeCases:
         assert len(proto_peaks) <= len(dataset[1])
         peaks = time_func(
             find_peaks2_short, "find_peaks2_short", arr=dataset[0],
-            thresh=threshold, trig_int=self.trig_int, debug=2,
-            starttime=False, samp_rate=1.0, full_peaks=True)
+            thresh=threshold, trig_int=self.trig_int, full_peaks=True)
         print('Found %i peaks' % len(peaks))
         assert len(peaks) <= len(dataset[1])
         for peak in peaks:
