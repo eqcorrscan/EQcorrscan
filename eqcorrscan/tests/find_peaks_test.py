@@ -35,8 +35,7 @@ class TestStandardPeakFinding:
     def peak_array(self, cc_array):
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
-            arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            starttime=None, samp_rate=200.0)
+            arr=cc_array, thresh=0.2, trig_int=self.trig_index)
         return peaks
 
     @pytest.fixture
@@ -44,7 +43,7 @@ class TestStandardPeakFinding:
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
-            starttime=None, samp_rate=200.0, full_peaks=True)
+            full_peaks=True)
         return peaks
 
     # tests
