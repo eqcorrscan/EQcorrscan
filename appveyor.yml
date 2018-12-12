@@ -10,10 +10,13 @@ environment:
 
   matrix:
     - PYTHON: "C:\\Miniconda35-x64"
-      PYTHON_VERSION: "3.5"
+      PYTHON_VERSION: "3.6"
+      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Miniconda35-x64"
+      PYTHON_VERSION: "3.7"
       PYTHON_ARCH: "64"
     - PYTHON: "C:\\Miniconda35"
-      PYTHON_VERSION: "3.5"
+      PYTHON_VERSION: "3.6"
       PYTHON_ARCH: "86"
     - PYTHON: "C:\\Miniconda-x64"
       PYTHON_VERSION: "2.7"
@@ -46,13 +49,13 @@ install:
   #      else
   #        PYFLAKES="pyflakes=0.9.0"
   #      fi
-  - "conda install -q --yes pip obspy numpy>=1.12.0 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml"
+  - "conda install -q --yes pip obspy numpy=1.14 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml"
   # additional dependecies
   - "pip install pyimgur"
 
   # Install other pip dependancies
   - "pip install -U future"
-  - "pip install pytest==3.2.4 pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures codecov"
+  - "pip install pytest pytest-pep8 pytest-cov pytest-xdist pytest-rerunfailures pytest-mpl codecov"
   # list package versions
   - "conda list"
   # Copy the windows fftw header file
@@ -62,15 +65,13 @@ install:
 build: false
 
 test_script:
-  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
-  - "%CMD_IN_ENV% python setup.py install"
+  - "%CMD_IN_ENV% python setup.py develop"
+#  - "%CMD_IN_ENV% python setup.py install"
   - "%CMD_IN_ENV% py.test -n4 -m \"not serial and not network\""
   - "%CMD_IN_ENV% py.test -m \"serial and not network\" --cov-append"
-#  - "%CMD_IN_ENV% py.test -n4 -m \"network\" --cov-append"
 
 after_test:
   #  - "coverage combine"
  #  - "powershell copy-item .coverage ..\\.coverage.empty"
- #  - "cd .."
  #  - "coverage combine"
   - "codecov"

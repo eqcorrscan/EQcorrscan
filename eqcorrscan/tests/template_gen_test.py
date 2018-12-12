@@ -307,8 +307,8 @@ class TestTemplateGeneration(unittest.TestCase):
 class TestEdgeGen(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.testing_path = os.path.dirname(
-            os.path.abspath(inspect.getfile(inspect.currentframe())))
+        import eqcorrscan
+        cls.testing_path = os.path.dirname(eqcorrscan.__file__) + '/tests'
         cls.st = read(os.path.join(
             cls.testing_path, 'test_data', 'WAV', 'TEST_',
             '2013-09-15-0930-28.DFDPC_027_00'))

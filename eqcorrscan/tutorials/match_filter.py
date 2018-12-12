@@ -16,7 +16,7 @@ from eqcorrscan.utils import plotting
 from eqcorrscan.core import match_filter
 
 
-def run_tutorial(plot=False, process_len=3600):
+def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
     """Main function to run the tutorial dataset."""
     # First we want to load our templates
     template_names = glob.glob('tutorial_template_*.ms')
@@ -74,26 +74,13 @@ def run_tutorial(plot=False, process_len=3600):
         # Merge the stream, it will be downloaded in chunks
         st.merge(fill_value='interpolate')
 
-        # Set how many cores we want to parallel across, we will set this
-        # to four as this is the number of templates, if your machine has
-        # fewer than four cores/CPUs the multiprocessing will wait until there
-        # is a free core.
-        # Setting this to be higher than the number of templates will have no
-        # increase in speed as only detections for each template are computed
-        # in parallel.  It may also slow your processing by using more memory
-        # than needed, to the extent that swap may be filled.
-        if cpu_count() < len(templates):
-            ncores = cpu_count()
-        else:
-            ncores = len(templates)
-
         # Pre-process the data to set frequency band and sampling rate
         # Note that this is, and MUST BE the same as the parameters used for
         # the template creation.
         print('Processing the seismic data')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=2, num_cores=ncores, starttime=t1, endtime=t2)
+            debug=0, num_cores=num_cores, starttime=t1, endtime=t2)
         # Convert from list to stream
         st = Stream(st)
 
@@ -101,7 +88,7 @@ def run_tutorial(plot=False, process_len=3600):
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=plot, plotdir='.', cores=ncores, debug=1,
+            plotvar=plot, plotdir='.', cores=num_cores, debug=0,
             plot_format='png')
 
         # Now lets try and work out how many unique events we have just to

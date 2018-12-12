@@ -19,9 +19,9 @@ from eqcorrscan.core.lag_calc import lag_calc  # NOQA
 from eqcorrscan.utils.correlate import (  # NOQA
     get_stream_xcorr, get_array_xcorr, register_array_xcorr)
 
-__all__ = ['core', 'utils', 'tutorials']
+__all__ = ['core', 'utils', 'tutorials', 'tests']
 
-__version__ = '0.3.1'
+__version__ = '0.3.3'
 
 # Cope with changes to name-space to remove most of the camel-case
 _import_map = {
@@ -35,6 +35,13 @@ class EQcorrscanDeprecationWarning(UserWarning):
     Force pop-up of warnings.
     """
     pass
+
+
+if sys.version_info.major < 3:
+    warnings.warn(
+        "EQcorrscan will stop supporting Python 2.x in a forthcoming release."
+        " See https://github.com/eqcorrscan/EQcorrscan/issues/242 to read "
+        "more.", EQcorrscanDeprecationWarning)
 
 
 class EQcorrscanRestructureAndLoad(object):

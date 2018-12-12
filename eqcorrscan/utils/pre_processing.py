@@ -1,7 +1,6 @@
 """
-Utilities module whose functions are designed to do the basic \
-processing of the data using obspy modules (which also rely on scipy and \
-numpy).
+Utilities module whose functions are designed to do the basic processing of
+the data using obspy modules (which also rely on scipy and numpy).
 
 :copyright:
     EQcorrscan developers.
@@ -42,7 +41,11 @@ def _check_daylong(tr):
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import _check_daylong
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
     >>> _check_daylong(st[0])
     True
@@ -76,12 +79,13 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :type debug: int
     :param debug: Debug flag from 0-5, higher numbers = more output
     :type parallel: bool
-    :param parallel: Set to True to process traces in parallel, for small \
-        numbers of traces this is often slower than serial processing, \
-        defaults to False
+    :param parallel:
+        Set to True to process traces in parallel, for small numbers of traces
+        this is often slower than serial processing, defaults to False
     :type num_cores: int
-    :param num_cores: Control the number of cores for parallel processing, \
-        if set to False then this will use all the cores.
+    :param num_cores:
+        Control the number of cores for parallel processing, if set to False
+        then this will use all the cores available.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime:
         Desired data start time, will trim to this before processing
@@ -98,7 +102,13 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `st = st.merge()`).
 
     .. warning::
         If you intend to use this for processing templates you should consider
@@ -111,8 +121,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
     ...                debug=0, parallel=True, num_cores=2)
     >>> print(st[0])
@@ -123,8 +136,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
@@ -135,8 +151,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
 
     >>> from obspy import read
     >>> from eqcorrscan.utils.pre_processing import shortproc
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
-    ...           '2013-09-01-0410-35.DFDPC_024_00')
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
     ...                samp_rate=20, debug=0)
     >>> print(st[0])
@@ -153,12 +172,16 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         raise IOError('Highcut must be lower than the nyquist')
     if debug > 4:
         parallel = False
+    length = None
+    clip = False
     if starttime is not None and endtime is not None:
         for tr in st:
             tr.trim(starttime, endtime)
             if len(tr.data) == ((endtime - starttime) *
                                 tr.stats.sampling_rate) + 1:
                 tr.data = tr.data[1:len(tr.data)]
+        length = endtime - starttime
+        clip = True
     elif starttime:
         for tr in st:
             tr.trim(starttime=starttime)
@@ -178,20 +201,25 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': False,
-            'clip': False, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps})
+            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+            'clip': clip, 'seisan_chan_names': seisan_chan_names,
+            'fill_gaps': fill_gaps, 'length': length})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
         for i, tr in enumerate(st):
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, debug=debug, starttime=False, clip=False,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                samp_rate=samp_rate, debug=debug, starttime=starttime,
+                clip=clip, seisan_chan_names=seisan_chan_names,
+                fill_gaps=fill_gaps, length=length)
     if tracein:
         st.merge()
         return st[0]
@@ -241,7 +269,13 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: Will convert channel names to two characters long.
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `st = st.merge()`).
 
     .. warning::
         Will fail if data are less than 19.2 hours long - this number is
@@ -327,7 +361,11 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
             'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
-        stream_list = [p.get() for p in results]
+        try:
+            stream_list = [p.get() for p in results]
+        except KeyboardInterrupt as e:  # pragma: no cover
+            pool.terminate()
+            raise e
         pool.join()
         st = Stream(stream_list)
     else:
@@ -390,6 +428,14 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     :return: Processed trace.
     :type: :class:`obspy.core.stream.Trace`
+
+    .. note::
+        If your data contain gaps you should *NOT* fill those gaps before
+        using the pre-process functions. The pre-process functions will fill
+        the gaps internally prior to processing, process the data, then re-fill
+        the gaps with zeros to ensure correlations are not incorrectly
+        calculated within gaps. If your data have gaps you should pass a merged
+        stream without the `fill_value` argument (e.g.: `tr = tr.merge()`).
     """
     # Add sanity check
     if highcut and highcut >= 0.5 * samp_rate:
@@ -429,18 +475,20 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
 
     # Sanity check to ensure files are daylong
     padded = False
+    if clip:
+        tr = tr.trim(starttime, starttime + length, nearest_sample=True)
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
                     ' are not of daylong length, will zero pad', 2, debug)
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
             raise NotImplementedError(
-                "Data for {0}.{1} is {2} hours long, which is less than 80 "
-                "percent of the desired length, will not pad".format(
+                "Data for {0}.{1} is {2:.2f} seconds long, which is less than "
+                "80 percent of the desired length ({3} seconds), will not "
+                "pad".format(
                     tr.stats.station, tr.stats.channel,
-                    (tr.stats.endtime - tr.stats.starttime) / 3600))
+                    tr.stats.endtime - tr.stats.starttime, length))
         # trim, then calculate length of any pads required
-        tr = tr.trim(starttime, starttime + length, nearest_sample=True)
         pre_pad_secs = tr.stats.starttime - starttime
         post_pad_secs = (starttime + length) - tr.stats.endtime
         if pre_pad_secs > 0 or post_pad_secs > 0:

@@ -119,7 +119,8 @@ class _Context:
         :param new_value:
         :return:
         """
-        self.previous_value = self.cache.get(self.value_to_switch)
+        self.previous_value = copy.deepcopy(
+            self.cache.get(self.value_to_switch))
         self.cache[self.value_to_switch] = get_array_xcorr(new_value)
         return self
 
@@ -139,8 +140,9 @@ class _Context:
 
     def revert(self):
         """ revert the default xcorr function to previous value """
-        new_value = self.previous_value
-        self(new_value)
+        # Have to use the previous value as this may contain some custom
+        # stream_xcorr functions
+        self.cache[self.value_to_switch] = self.previous_value
 
 
 set_xcorr = _Context(XCOR_FUNCS, 'default')
@@ -180,7 +182,11 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
               for sid in seed_ids)
     # get cc results and used chans into their own lists
     results = [pool.apply_async(func, param) for param in params]
-    xcorrs, tr_chans = zip(*(res.get() for res in results))
+    try:
+        xcorrs, tr_chans = zip(*(res.get() for res in results))
+    except KeyboardInterrupt as e:  # pragma: no cover
+        pool.terminate()
+        raise e
     cccsums = np.sum(xcorrs, axis=0)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
@@ -279,8 +285,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         # register the functions in the XCOR
         fname = func_name or name.__name__ if callable(name) else str(name)
         XCOR_FUNCS[fname] = func
-        if is_default:  # set function as default
-            XCOR_FUNCS['default'] = func
+        # if is_default:  # set function as default
+        #     XCOR_FUNCS['default'] = func
         # attach some attrs, this is a bit of a hack to avoid pickle problems
         func.register = register
         cache['func'] = func
@@ -290,6 +296,8 @@ def register_array_xcorr(name, func=None, is_default=False):
         func.stream_xcorr = _general_serial(func)
         func.array_xcorr = func
         func.registered = True
+        if is_default:  # set function as default
+            XCOR_FUNCS['default'] = copy.deepcopy(func)
         return func
 
     # used as a decorator
@@ -533,6 +541,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
     variance_warning = np.ascontiguousarray([0], dtype=np.intc)
 
+    # Check that stream is non-zero and above variance threshold
+    if not np.all(stream == 0) and np.var(stream) < 1e-8:
+        # Apply gain
+        stream *= 1e8
+        warnings.warn("Low variance found for, applying gain "
+                      "to stabilise correlations")
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -732,6 +746,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     template_array = np.ascontiguousarray([template_array[x]
                                            for x in seed_ids],
                                           dtype=np.float32)
+    for x in seed_ids:
+        # Check that stream is non-zero and above variance threshold
+        if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
+            # Apply gain
+            stream_array *= 1e8
+            warnings.warn("Low variance found for {0}, applying gain "
+                          "to stabilise correlations".format(x))
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
     cccs = np.zeros((n_templates, image_len - template_len + 1),

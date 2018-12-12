@@ -191,9 +191,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     >>> from obspy import read
     >>> from eqcorrscan.core.template_gen import template_gen
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
-    >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
+    >>> quakeml = TEST_PATH + '/20130901T041115.xml'
     >>> templates = template_gen(
     ...    method='from_meta_file', meta_file=quakeml, st=st, lowcut=2.0,
     ...    highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
@@ -212,7 +216,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> from eqcorrscan.core.template_gen import template_gen
     >>> import glob
     >>> # Get all the SAC-files associated with one event.
-    >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
     >>> templates = template_gen(
     ...    method='from_sac', sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...    samp_rate=25.0, filt_order=4, length=2.0, swin='all', prepick=0.1,
@@ -244,8 +248,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     elif method == 'from_meta_file':
         if isinstance(kwargs.get('meta_file'), Catalog):
             catalog = kwargs.get('meta_file')
-        else:
+        elif kwargs.get('meta_file'):
             catalog = read_events(kwargs.get('meta_file'))
+        elif kwargs.get('catalog'):
+            catalog = kwargs.get('catalog')
         sub_catalogs = [catalog]
         st = kwargs.get('st', Stream())
         process = kwargs.get('process', True)
@@ -288,16 +294,20 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                             for tr in st])
             if 80000 < data_len < 90000:
                 daylong = True
+                starttime = min([tr.stats.starttime for tr in st])
+                min_delta = min([tr.stats.delta for tr in st])
+                # Cope with the common starttime less than 1 sample before the
+                #  start of day.
+                if (starttime + min_delta).date > starttime.date:
+                    starttime = (starttime + min_delta)
+                # Check if this is stupid:
+                if abs(starttime - UTCDateTime(starttime.date)) > 600:
+                    print(abs(starttime - UTCDateTime(starttime.date)))
+                    daylong = False
+                starttime = starttime.date
             else:
                 daylong = False
             if daylong:
-                starttime = min([tr.stats.starttime for tr in st])
-                # Cope with the common starttime less than 1s before the
-                #  start of day.
-                if (starttime + 10).date > starttime.date:
-                    starttime = (starttime + 10).date
-                else:
-                    starttime = starttime.date
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
                     filt_order=filt_order, samp_rate=samp_rate, debug=debug,
@@ -544,16 +554,22 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         P, S, P_all, S_all or all, defaults to all: see note in
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type prepick: float
-    :param prepick: Length in seconds to extract before the pick time \
-            default is 0.05 seconds
+    :param prepick:
+        Length in seconds to extract before the pick time default is 0.05
+        seconds.
     :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
+    :param all_horiz:
+        To use both horizontal channels even if there is only a pick on one
+        of them.  Defaults to False.
     :type delayed: bool
-    :param delayed: If True, each channel will begin relative to it's own \
-        pick-time, if set to False, each channel will begin at the same time.
+    :param delayed:
+        If True, each channel will begin relative to it's own pick-time, if
+        set to False, each channel will begin at the same time.
     :type plot: bool
-    :param plot: To plot the template or not, default is True
+    :param plot:
+        To plot the template or not, default is False. Plots are saved as
+        `template-starttime_template.png` and `template-starttime_noise.png`,
+        where `template-starttime` is the start-time of the template
     :type min_snr: float
     :param min_snr:
         Minimum signal-to-noise ratio for a channel to be included in the
@@ -593,6 +609,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     """
     from eqcorrscan.utils.debug_log import debug_print
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
+    from eqcorrscan.utils.plotting import noise_plot
     from eqcorrscan.core.bright_lights import _rms
     picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
     # the users picks intact.
@@ -628,6 +645,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     if plot:
         stplot = st.slice(first_pick.time - 20,
                           first_pick.time + length + 90).copy()
+        noise = stplot.copy()
     # Work out starttimes
     starttimes = []
     for _swin in swin:
@@ -713,6 +731,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             tr_cut = tr.slice(
                 starttime=starttime, endtime=starttime + length,
                 nearest_sample=False).copy()
+            if plot:
+                noise.select(
+                    station=_starttime['station'],
+                    channel=_starttime['channel']).trim(
+                        noise[0].stats.starttime, starttime)
             if len(tr_cut.data) == 0:
                 debug_print(
                     "No data provided for {0}.{1} starting at {2}".format(
@@ -739,9 +762,14 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             debug_print('No pick for ' + tr.stats.station + '.' +
                         tr.stats.channel, 0, debug)
     if plot:
-        tplot(st1, background=stplot, picks=picks_copy,
-              title='Template for ' + str(st1[0].stats.starttime))
-        del stplot
+        fig1 = tplot(st1, background=stplot, picks=picks_copy,
+                     title='Template for ' + str(st1[0].stats.starttime),
+                     show=False, return_figure=True)
+        fig2 = noise_plot(
+            signal=st1, noise=noise, show=False, return_figure=True)
+        fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
+        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime))
+        del(stplot, fig1, fig2)
     return st1
 
 
@@ -1107,8 +1135,12 @@ def from_sac(sac_files, lowcut, highcut, samp_rate, filt_order, length, swin,
 
     >>> from eqcorrscan.core.template_gen import from_sac
     >>> import glob
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> # Get all the SAC-files associated with one event.
-    >>> sac_files = glob.glob('eqcorrscan/tests/test_data/SAC/2014p611252/*')
+    >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
     >>> templates = from_sac(sac_files=sac_files, lowcut=2.0, highcut=10.0,
     ...                      samp_rate=25.0, filt_order=4, length=2.0,
     ...                      swin='all', prepick=0.1, all_horiz=True)
@@ -1203,9 +1235,13 @@ def from_meta_file(meta_file, st, lowcut, highcut, samp_rate, filt_order,
 
     >>> from obspy import read
     >>> from eqcorrscan.core.template_gen import from_meta_file
-    >>> st = read('eqcorrscan/tests/test_data/WAV/TEST_/' +
+    >>> # Get the path to the test data
+    >>> import eqcorrscan
+    >>> import os
+    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
+    >>> st = read(TEST_PATH + '/WAV/TEST_/' +
     ...           '2013-09-01-0410-35.DFDPC_024_00')
-    >>> quakeml = 'eqcorrscan/tests/test_data/20130901T041115.xml'
+    >>> quakeml = TEST_PATH + '/20130901T041115.xml'
     >>> templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
     ...                            highcut=9.0, samp_rate=20.0, filt_order=3,
     ...                            length=2, prepick=0.1, swin='S',
