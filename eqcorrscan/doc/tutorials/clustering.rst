@@ -39,7 +39,7 @@ threshold of 2km).
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
     >>> groups = catalog_cluster(
-    ...    catalog=cat, metric="distance", d_thresh=2, show=False)
+    ...    catalog=cat, metric="distance", thresh=2, show=False)
 
 
 Setting show to true will plot the dendrogram for grouping with individual
