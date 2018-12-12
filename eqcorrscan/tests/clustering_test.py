@@ -28,21 +28,13 @@ from eqcorrscan.utils.clustering import (
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
-@pytest.mark.network
 class ClusteringTests(unittest.TestCase):
-    """Main testing routines"""
     @classmethod
-    @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         cls.st1 = read()
         cls.st2 = cls.st1.copy()
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
-        client = Client("https://earthquake.usgs.gov")
-        starttime = UTCDateTime("2002-01-01")
-        endtime = UTCDateTime("2002-01-02")
-        cls.cat = client.get_events(starttime=starttime, endtime=endtime,
-                                    minmagnitude=6)
 
     def test_cross_chan_coherence(self):
         """Initial test to ensure cross_chan_coherence runs."""
