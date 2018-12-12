@@ -18,7 +18,7 @@ threshold to 1,000km
 
 .. code-block:: python
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
 
@@ -27,7 +27,8 @@ threshold to 1,000km
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=6, catalog="ISC")
-    >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
+    >>> groups = catalog_cluster(
+    ...    catalog=cat, metric="distance", thresh=1000, show=False)
 
 Download a local catalog of earthquakes and cluster much finer (distance
 threshold of 2km).
@@ -37,7 +38,8 @@ threshold of 2km).
     >>> client = Client("NCEDC")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
-    >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
+    >>> groups = catalog_cluster(
+    ...    catalog=cat, metric="distance", d_thresh=2, show=False)
 
 
 Setting show to true will plot the dendrogram for grouping with individual
@@ -99,7 +101,7 @@ in the tests directory.
     ...         if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
     ...             stream[0].remove(tr) # doctest:+ELLIPSIS
     ...             continue
-    ...         tr = tr.detrend('simple')
+    ...         tr = tr.detrend('simple').resample(100.0)
     ...         tr = tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
     ...         tr = tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     <obspy.core.stream.Stream object at ...>
