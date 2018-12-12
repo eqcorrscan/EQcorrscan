@@ -36,8 +36,6 @@ int distance_matrix(float*, float*, float*, long, float*, int);
 
 int remove_unclustered(float*, float*, float*, long, unsigned char*, float, int);
 
-int distance_link(float*, float*, float*, long, unsigned char*, float, int);
-
 float dist_calc(float lat1, float lon1, float depth1, float lat2, float lon2, float depth2){
 //    Function to calculate the distance in km between two points.
 //
