@@ -1095,8 +1095,8 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_slicing_by_name(self):
         """Check that slicing by template name works as expected"""
         t_name = self.tribe[2].name
-        self.assertTrue(self.tribe[2] == self.tribe[t_name])
-        self.assertTrue(self.party[2] == self.party[t_name])
+        self.assertEqual(self.tribe[2], self.tribe[t_name])
+        self.assertEqual(self.party[2], self.party[t_name])
 
     def test_template_io(self):
         """Test template read/write."""
