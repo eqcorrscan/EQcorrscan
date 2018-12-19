@@ -1,6 +1,10 @@
 ## Current
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
+* `find-peaks` replaced by compiled peak finding routine - more efficient
+  both in memory and time #249
+* multi-find peaks makes use of openMP parallelism for more efficient
+  memory usage #249
 
 ## 0.3.3
 * Make test-script more stable.

@@ -1,7 +1,9 @@
 LIBRARY libutils.pyd
 EXPORTS
     find_peaks
+    multi_find_peaks
     decluster
+    multi_decluster
     normxcorr_fftw
     normxcorr_fftw_threaded
     normxcorr_time

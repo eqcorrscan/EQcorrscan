@@ -22,7 +22,7 @@
 
 // Functions
 // Longs could be unsigned ints...
-int decluster(float *arr, long *indexes, int len, float thresh, long trig_int,
+int decluster(float *arr, long *indexes, long len, float thresh, long trig_int,
                unsigned int *out){
     // Takes a sorted array and the indexes
     int i, j, keep;
@@ -47,6 +47,19 @@ int decluster(float *arr, long *indexes, int len, float thresh, long trig_int,
         else {out[i] = 0;}
     }
     return 0;
+}
+
+int multi_decluster(float *arr, long *indices, long len, int n, float *thresholds,
+                    long trig_int, unsigned int *out, int threads){
+    int i, ret_val=0;
+    /*
+    # TODO: Write for mixed sizes
+    */
+    #pragma omp parallel for num_threads(threads)
+    for (i = 0; i < n; ++i){
+        ret_val += decluster(&arr[i * len], &indices[i * len])
+    }
+    return ret_val;
 }
 
 
