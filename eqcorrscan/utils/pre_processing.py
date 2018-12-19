@@ -701,6 +701,8 @@ def _prep_data(stream, templates):
     out_templates = []
     template_length = min([tr.stats.npts for template in templates
                            for tr in template])
+    nan_channel = templates[0][0]
+    nan_channel.data = np.zeros_like(nan_channel.data) * np.NaN
     for template in templates:
         out_template = Stream()
         for tr in template:
@@ -727,8 +729,7 @@ def _prep_data(stream, templates):
             if n_channels == value:
                 continue
             if n_channels == 0:
-                _tr = template[0].copy()
-                _tr.data = np.zeros_like(_tr.data) * np.NaN
+                _tr = nan_channel.copy()
                 _tr.id = key
             else:
                 _tr = tr[0]
