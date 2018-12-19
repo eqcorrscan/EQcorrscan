@@ -1,12 +1,18 @@
 """Tutorial to illustrate the lag_calc usage."""
+import logging
+from multiprocessing import cpu_count
 
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog
 from obspy import UTCDateTime
-from multiprocessing import cpu_count
 
 from eqcorrscan.core import template_gen, match_filter, lag_calc
 from eqcorrscan.utils import pre_processing, catalog_utils
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
 def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
@@ -64,7 +70,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
         st.merge(fill_value='interpolate')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=num_cores)
+            num_cores=num_cores)
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates, st=st,
             threshold=8.0, threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -89,11 +95,10 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
             detections=unique_detections, detect_data=st,
             template_names=template_names, templates=templates,
             shift_len=shift_len, min_cc=min_cc, interpolate=False, plot=False,
-            parallel=True, debug=3)
+            parallel=True)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
 
 
 if __name__ == '__main__':
-    from multiprocessing import cpu_count
     run_tutorial(min_magnitude=4, num_cores=cpu_count())

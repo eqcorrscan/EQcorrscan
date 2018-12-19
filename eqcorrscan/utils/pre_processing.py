@@ -15,6 +15,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
+import logging
 import datetime as dt
 
 from collections import Counter
@@ -22,7 +23,9 @@ from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
 from obspy.signal.filter import bandpass, lowpass, highpass
-from eqcorrscan.utils.debug_log import debug_print
+
+
+Logger = logging.getLogger(__name__)
 
 
 def _check_daylong(tr):
@@ -58,8 +61,8 @@ def _check_daylong(tr):
     return qual
 
 
-def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
-              parallel=False, num_cores=False, starttime=None, endtime=None,
+def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
+              num_cores=False, starttime=None, endtime=None,
               seisan_chan_names=False, fill_gaps=True):
     """
     Basic function to bandpass and downsample.
@@ -77,8 +80,6 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     :param filt_order: Number of corners for bandpass filter
     :type samp_rate: float
     :param samp_rate: Sampling rate desired in Hz
-    :type debug: int
-    :param debug: Debug flag from 0-5, higher numbers = more output
     :type parallel: bool
     :param parallel:
         Set to True to process traces in parallel, for small numbers of traces
@@ -128,7 +129,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
-    ...                debug=0, parallel=True, num_cores=2)
+    ...                parallel=True, num_cores=2)
     >>> print(st[0])
     AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
 | 20.0 Hz, 1800 samples
@@ -143,7 +144,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=None, highcut=9, filt_order=3,
-    ...                samp_rate=20, debug=0)
+    ...                samp_rate=20)
     >>> print(st[0])
     AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
 | 20.0 Hz, 1800 samples
@@ -158,7 +159,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
     >>> st = read(TEST_PATH + '/WAV/TEST_/2013-09-01-0410-35.DFDPC_024_00')
     >>> st = shortproc(st=st, lowcut=2, highcut=None, filt_order=3,
-    ...                samp_rate=20, debug=0)
+    ...                samp_rate=20)
     >>> print(st[0])
     AF.LABE..SHZ | 2013-09-01T04:10:35.700000Z - 2013-09-01T04:12:05.650000Z \
 | 20.0 Hz, 1800 samples
@@ -171,8 +172,6 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     # Add sanity check for filter
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
-    if debug > 4:
-        parallel = False
     length = None
     clip = False
     if starttime is not None and endtime is not None:
@@ -192,8 +191,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
-            debug_print('No data for %s.%s after trim' %
-                        (tr.stats.station, tr.stats.channel), 1, debug)
+            Logger.warning('No data for {0} after trim'.format(tr.id))
     if parallel:
         if not num_cores:
             num_cores = cpu_count()
@@ -202,7 +200,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
+            'samp_rate': samp_rate, 'starttime': starttime,
             'clip': clip, 'seisan_chan_names': seisan_chan_names,
             'fill_gaps': fill_gaps, 'length': length})
                    for tr in st]
@@ -218,7 +216,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
         for i, tr in enumerate(st):
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, debug=debug, starttime=starttime,
+                samp_rate=samp_rate, starttime=starttime,
                 clip=clip, seisan_chan_names=seisan_chan_names,
                 fill_gaps=fill_gaps, length=length)
     if tracein:
@@ -227,7 +225,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, debug=0,
     return st
 
 
-def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
+def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             parallel=True, num_cores=False, ignore_length=False,
             seisan_chan_names=False, fill_gaps=True):
     """
@@ -248,8 +246,6 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     :param samp_rate: Desired sampling rate in Hz.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Desired start-date of trace.
-    :type debug: int
-    :param debug: Debug output level from 0-5, higher numbers = more output.
     :type parallel: bool
     :param parallel:
         Set to True to process traces in parallel, this is often faster than
@@ -303,19 +299,19 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     >>> st_keep = st.copy()  # Copy the stream for later examples
     >>> # Example of bandpass filtering
     >>> st = dayproc(st=st, lowcut=2, highcut=9, filt_order=3, samp_rate=20,
-    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    ...              starttime=t1, parallel=True, num_cores=2)
     >>> print(st[0])
     BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
 950000Z | 20.0 Hz, 1728000 samples
     >>> # Example of lowpass filtering
     >>> st = dayproc(st=st, lowcut=None, highcut=9, filt_order=3, samp_rate=20,
-    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    ...              starttime=t1, parallel=True, num_cores=2)
     >>> print(st[0])
     BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
 950000Z | 20.0 Hz, 1728000 samples
     >>> # Example of highpass filtering
     >>> st = dayproc(st=st, lowcut=2, highcut=None, filt_order=3, samp_rate=20,
-    ...              starttime=t1, debug=0, parallel=True, num_cores=2)
+    ...              starttime=t1, parallel=True, num_cores=2)
     >>> print(st[0])
     BP.JCNB.40.SP1 | 2012-03-26T00:00:00.000000Z - 2012-03-26T23:59:59.\
 950000Z | 20.0 Hz, 1728000 samples
@@ -328,8 +324,6 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         tracein = False
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the nyquist')
-    if debug > 4:
-        parallel = False
     # Set the start-time to a day start - cope with
     if starttime is None:
         startdates = []
@@ -339,10 +333,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
                 # If the trace starts within 1 sample of the next day, use the
                 # next day as the startdate
                 startdates.append((tr.stats.starttime + 86400).date)
-                debug_print(
+                Logger.warning(
                     '{0} starts within 1 sample of the next day, using this '
                     'time {1}'.format(
-                        tr.id, (tr.stats.starttime + 86400).date), 2, debug)
+                        tr.id, (tr.stats.starttime + 86400).date))
             else:
                 startdates.append(tr.stats.starttime.date)
         # Check that all traces start on the same date...
@@ -357,8 +351,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         pool = Pool(processes=num_cores)
         results = [pool.apply_async(process, (tr,), {
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
-            'samp_rate': samp_rate, 'debug': debug, 'starttime': starttime,
-            'clip': True, 'ignore_length': ignore_length, 'length': 86400,
+            'samp_rate': samp_rate, 'starttime': starttime, 'clip': True,
+            'ignore_length': ignore_length, 'length': 86400,
             'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
                    for tr in st]
         pool.close()
@@ -373,8 +367,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
         for i, tr in enumerate(st):
             st[i] = process(
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-                samp_rate=samp_rate, debug=debug, starttime=starttime,
-                clip=True, length=86400, ignore_length=ignore_length,
+                samp_rate=samp_rate, starttime=starttime, clip=True,
+                length=86400, ignore_length=ignore_length,
                 seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
     for tr in st:
         if len(tr.data) == 0:
@@ -385,7 +379,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime, debug=0,
     return st
 
 
-def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
+def process(tr, lowcut, highcut, filt_order, samp_rate,
             starttime=False, clip=False, length=86400,
             seisan_chan_names=False, ignore_length=False, fill_gaps=True):
     """
@@ -410,8 +404,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     :param filt_order: Number of corners for filter.
     :type samp_rate: float
     :param samp_rate: Desired sampling rate in Hz.
-    :type debug: int
-    :param debug: Debug output level from 0-5, higher numbers = more output.
     :type starttime: obspy.core.utcdatetime.UTCDateTime
     :param starttime: Desired start of trace
     :type clip: bool
@@ -448,14 +440,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if isinstance(starttime, dt.date) or isinstance(starttime,
                                                         dt.datetime):
             starttime = UTCDateTime(starttime)
-        day = starttime.date
-    else:
-        day = tr.stats.starttime.date
 
-    debug_print(
-        'Working on: ' + tr.stats.station + '.' + tr.stats.channel, 2, debug)
-    if debug >= 5:
-        tr.plot()
+    Logger.debug('Working on: {0}'.format(tr.id))
     # Check if the trace is gappy and pad if it is.
     gappy = False
     if isinstance(tr.data, np.ma.MaskedArray):
@@ -470,17 +456,17 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         raise ValueError(msg)
     tr = tr.detrend('simple')
     # Detrend data before filtering
-    debug_print('I have ' + str(len(tr.data)) + ' data points for ' +
-                tr.stats.station + '.' + tr.stats.channel +
-                ' before processing', 0, debug)
+    Logger.debug('I have {0} data points for {1} before processing'.format(
+        tr.stats.npts, tr.id))
 
     # Sanity check to ensure files are daylong
     padded = False
     if clip:
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
-        debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
-                    ' are not of daylong length, will zero pad', 2, debug)
+        Logger.info(
+            'Data for {0} are not of daylong length, will zero pad'.format(
+                tr.id))
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
             raise NotImplementedError(
@@ -496,14 +482,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
             padded = True
             pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
             post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
-            debug_print(str(tr), 2, debug)
-            debug_print(
-                "Padding to day long with %f s before and %f s at end" %
-                (pre_pad_secs, post_pad_secs), 1, debug)
+            Logger.debug(str(tr))
+            Logger.debug("Padding to day long with {0} s before and {1} s "
+                         "at end".format(pre_pad_secs, post_pad_secs))
             tr.data = np.concatenate([pre_pad, tr.data, post_pad])
             # Use this rather than the expected pad because of rounding samples
             tr.stats.starttime -= len(pre_pad) * tr.stats.delta
-            debug_print(str(tr), 2, debug)
+            Logger.debug(str(tr))
         # If there is one sample too many after this remove the first one
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
@@ -511,55 +496,53 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
         if not tr.stats.sampling_rate * length == tr.stats.npts:
                 raise ValueError('Data are not daylong for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
-        debug_print('I now have %i data points after enforcing length'
-                    % len(tr.data), 0, debug)
+        Logger.debug(
+            'I now have {0} data points after enforcing length'.format(
+                tr.stats.npts))
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
-        debug_print('Resampling', 1, debug)
+        Logger.debug('Resampling')
         tr.resample(samp_rate)
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
-        debug_print('Bandpassing', 1, debug)
+        Logger.debug('Bandpassing')
         tr.data = bandpass(tr.data, lowcut, highcut,
                            tr.stats.sampling_rate, filt_order, True)
     elif highcut:
-        debug_print('Lowpassing', 1, debug)
+        Logger.debug('Lowpassing')
         tr.data = lowpass(tr.data, highcut, tr.stats.sampling_rate,
                           filt_order, True)
     elif lowcut:
-        debug_print('Highpassing', 1, debug)
+        Logger.debug('Highpassing')
         tr.data = highpass(tr.data, lowcut, tr.stats.sampling_rate,
                            filt_order, True)
     else:
-        debug_print('No filters applied', 2, debug)
+        Logger.warning('No filters applied')
     # Account for two letter channel names in s-files and therefore templates
     if seisan_chan_names:
         tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
 
-    # Sanity check the time header
-    if tr.stats.starttime.day != day and clip:
-        debug_print("Time headers do not match expected date: {0}".format(
-            tr.stats.starttime), 2, debug)
-
     if padded:
-        debug_print("Reapplying zero pads post processing", 1, debug)
-        debug_print(str(tr), 2, debug)
+        Logger.debug("Reapplying zero pads post processing")
+        Logger.debug(str(tr))
         pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
         post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
         pre_pad_len = len(pre_pad)
         post_pad_len = len(post_pad)
-        debug_print("Taking only valid data between %i and %i samples" %
-                    (pre_pad_len, len(tr.data) - post_pad_len), 1, debug)
+        Logger.debug(
+            "Taking only valid data between {0} and {1} samples".format(
+                pre_pad_len, tr.stats.npts - post_pad_len))
         # Re-apply the pads, taking only the data section that was valid
         tr.data = np.concatenate(
             [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
              post_pad])
-        debug_print(str(tr), 2, debug)
+        Logger.debug(str(tr))
     # Sanity check to ensure files are daylong
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
-        debug_print('Data for ' + tr.stats.station + '.' + tr.stats.channel +
-                    ' are not of daylong length, will zero pad', 1, debug)
+        Logger.info(
+            'Data for {0} are not of daylong length, will zero pad'.format(
+                tr.id))
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
                      nearest_sample=True)
@@ -573,9 +556,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate, debug,
     # Replace the gaps with zeros
     if gappy:
         tr = _zero_pad_gaps(tr, gaps, fill_gaps=fill_gaps)
-    # Final visual check for debug
-    if debug > 4:
-        tr.plot()
     return tr
 
 
@@ -699,10 +679,10 @@ def _prep_data(stream, templates):
 
     # Sort template lengths and remove unused channels
     out_templates = []
-    template_length = min([tr.stats.npts for template in templates
-                           for tr in template])
     nan_channel = templates[0][0]
     nan_channel.data = np.zeros_like(nan_channel.data) * np.NaN
+    template_length = min([_tr.stats.npts for template in templates
+                           for _tr in template])
     for template in templates:
         out_template = Stream()
         for tr in template:

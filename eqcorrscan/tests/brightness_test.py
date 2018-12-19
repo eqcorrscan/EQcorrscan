@@ -93,7 +93,8 @@ class BrightnessTestMethods(unittest.TestCase):
             threshold=threshold)
         for lag in lags:
             for _lag in lag:
-                other_lags = np.array([l for l in lag if not l == _lag])
+                other_lags = np.array(
+                    [_lag for _lag in lag if not _lag == _lag])
                 self.assertTrue(np.all(np.abs(other_lags - _lag) > threshold))
 
     def test_rms(self):

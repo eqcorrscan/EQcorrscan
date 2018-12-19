@@ -15,7 +15,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
+import logging
 import os
 import glob
 import matplotlib.pyplot as plt
@@ -37,6 +37,9 @@ from obspy.geodetics import degrees2kilometers
 
 from eqcorrscan.core.match_filter import MatchFilterError
 from eqcorrscan.utils.catalog_utils import _get_origin
+
+
+Logger = logging.getLogger(__name__)
 
 
 def dist_calc(loc1, loc2):
@@ -198,8 +201,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         max_mag = max(magnitudes)
     for m_c in completeness:
         if m_c >= max_mag or m_c >= max(magnitudes):
-            warnings.warn('Not computing completeness at %s, above max_mag' %
-                          str(m_c))
+            Logger.warning('Not computing completeness at %s, above max_mag' %
+                           str(m_c))
             break
         complete_mags = []
         complete_freq = []
@@ -208,8 +211,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
                 complete_mags.append(mag)
                 complete_freq.append(np.log10(cdf[i]))
         if len(complete_mags) < 4:
-            warnings.warn('Not computing completeness above ' + str(m_c) +
-                          ', fewer than 4 events')
+            Logger.warning('Not computing completeness above ' + str(m_c) +
+                           ', fewer than 4 events')
             break
         fit = np.polyfit(complete_mags, complete_freq, 1, full=True)
         # Calculate the residuals according to the Wiemer & Wys 2000 definition
@@ -291,7 +294,7 @@ def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
                               paz_remove=None, paz_simulate=PAZ_WA,
                               water_level=water_level, seedresp=seedresp)
     else:
-        UserWarning('No response given to remove, will just simulate WA')
+        Logger.warning('No response given to remove, will just simulate WA')
         trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
                               paz_remove=None, paz_simulate=PAZ_WA,
                               water_level=water_level)
@@ -323,8 +326,9 @@ def _max_p2t(data, delta):
         amplitudes = np.empty([len(turning_points) - 1],)
         half_periods = np.empty([len(turning_points) - 1],)
     else:
-        print('Turning points has length: ' + str(len(turning_points)) +
-              ' data have length: ' + str(len(data)))
+        Logger.warning(
+            'Turning points has length: ' + str(len(turning_points)) +
+            ' data have length: ' + str(len(data)))
         return 0.0, 0.0, 0.0
     for i in range(1, len(turning_points)):
         half_periods[i - 1] = (delta * (turning_points[i][1] -
@@ -431,7 +435,7 @@ def _find_resp(station, channel, network, time, delta, directory):
     PAZ = []
     seedresp = []
     for respfile in possible_respfiles:
-        print('Reading response from: ' + respfile)
+        Logger.info('Reading response from: ' + respfile)
         if respfile.split(os.path.sep)[-1][0:4] == 'RESP':
             # Read from a resp file
             seedresp = {'filename': respfile, 'date': UTCDateTime(time),
@@ -445,8 +449,8 @@ def _find_resp(station, channel, network, time, delta, directory):
                     units=seedresp['units'], freq=True,
                     network=seedresp['network'], station=seedresp['station'],
                     channel=seedresp['channel'])
-            except:
-                print('Issues with RESP file')
+            except Exception as e:
+                Logger.warning('Issues with RESP file: {0}'.format(e))
                 seedresp = []
                 continue
         elif respfile[-3:] == 'GSE':
@@ -455,9 +459,9 @@ def _find_resp(station, channel, network, time, delta, directory):
             # check that the date is good!
             if pazdate >= time and pazchannel != channel and\
                pazstation != station:
-                print('Issue with GSE file')
-                print('date: ' + str(pazdate) + ' channel: ' + pazchannel +
-                      ' station: ' + pazstation)
+                Logger.warning('Issue with GSE file: date: ' +
+                               str(pazdate) + ' channel: ' + pazchannel +
+                               ' station: ' + pazstation)
                 PAZ = []
         else:
             continue
@@ -618,16 +622,16 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             picktimes.append(pick.time)
             picktypes.append(pick.phase_hint)
     if len(picktypes) == 0:
-        warnings.warn('No P or S picks found')
+        Logger.warning('No P or S picks found')
     st.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
     for sta in uniq_stas:
         for chan in chans:
-            print('Working on ' + sta + ' ' + chan)
+            Logger.info('Working on ' + sta + ' ' + chan)
             tr = st.select(station=sta, channel='*' + chan)
             if not tr:
-                warnings.warn(
+                Logger.warning(
                     'There is no station and channel match in the wavefile!')
                 continue
             else:
@@ -636,8 +640,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             if pre_filt:
                 try:
                     tr.split().detrend('simple').merge(fill_value=0)
-                except:
-                    print('Some issue splitting this one')
+                except Exception as e:
+                    Logger.warning(
+                        'Some issue splitting this one: {0}'.format(e))
                     dummy = tr.split()
                     dummy.detrend('simple')
                     tr = dummy.merge(fill_value=0)
@@ -645,8 +650,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
                               corners=corners)
                 except NotImplementedError:
-                    print('For some reason trace is not continuous:')
-                    print(tr)
+                    Logger.error(
+                        'For some reason trace is not continuous: {0}'.format(
+                            tr))
                     continue
             # Find the response information
             resp_info = _find_resp(
@@ -665,9 +671,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             elif seedresp and len(tr.data) > 10:
                 tr = _sim_WA(tr, None, seedresp, 10, velocity=velocity)
             elif len(tr.data) > 10:
-                warnings.warn('No PAZ for ' + tr.stats.station + ' ' +
-                              tr.stats.channel + ' at time: ' +
-                              str(tr.stats.starttime))
+                Logger.warning('No PAZ for ' + tr.stats.station + ' ' +
+                               tr.stats.channel + ' at time: ' +
+                               str(tr.stats.starttime))
                 continue
             sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
@@ -709,14 +715,14 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                               if picktypes[i] == 'P']
                     p_pick = min(p_pick)
                     s_modelled = p_pick + (hypo_dist * ps_multiplier)
-                    print('P_pick=%s' % str(p_pick))
-                    print('hypo_dist: %s' % str(hypo_dist))
-                    print('S modelled=%s' % str(s_modelled))
+                    Logger.info('P_pick=%s' % str(p_pick))
+                    Logger.info('hypo_dist: %s' % str(hypo_dist))
+                    Logger.info('S modelled=%s' % str(s_modelled))
                     try:
                         tr.trim(starttime=s_modelled - pre_pick,
                                 endtime=s_modelled + (s_modelled - p_pick) *
                                 winlen)
-                        print(tr)
+                        Logger.debug(tr)
                     except ValueError:
                         continue
                 # Work out the window length based on p-s time or distance
@@ -742,7 +748,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # are not using any kind of velocity model.
                 p_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'P']
-                print(picktimes)
+                Logger.debug(picktimes)
                 p_pick = min(p_pick)
                 s_modelled = p_pick + hypo_dist * ps_multiplier
                 try:
@@ -751,21 +757,22 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 except ValueError:
                     continue
             if len(tr.data) <= 10:
-                warnings.warn('No data found for: ' + tr.stats.station)
+                Logger.warning('No data found for: ' + tr.stats.station)
                 continue
             # Get the amplitude
             try:
                 amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
             except ValueError:
-                print('No amplitude picked for tr %s' % str(tr))
+                Logger.error('No amplitude picked for tr %s' % str(tr))
                 continue
             # Calculate the normalized noise amplitude
             noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             if amplitude == 0.0:
                 continue
             if amplitude / noise_amplitude < min_snr:
-                print('Signal to noise ratio of %s is below threshold.' %
-                      (amplitude / noise_amplitude))
+                Logger.info(
+                    'Signal to noise ratio of %s is below threshold.' %
+                    (amplitude / noise_amplitude))
                 continue
             if plot:
                 plt.plot(np.arange(len(tr.data)), tr.data, 'k')
@@ -773,9 +780,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 plt.scatter(tr.stats.sampling_rate * (delay + period),
                             -amplitude / 2)
                 plt.show()
-            print('Amplitude picked: ' + str(amplitude))
-            print('Signal-to-noise ratio is: %s' %
-                  (amplitude / noise_amplitude))
+            Logger.info('Amplitude picked: ' + str(amplitude))
+            Logger.info('Signal-to-noise ratio is: %s' %
+                        (amplitude / noise_amplitude))
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
             if pre_filt:
@@ -828,7 +835,7 @@ def amp_pick_sfile(*args, **kwargs):
 
 def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
     """Depreciated."""
-    print('Depreciated, use svd_moments instead')
+    Logger.warning('Depreciated, use svd_moments instead')
     return svd_moments(u=U, s=s, v=V, stachans=stachans,
                        event_list=event_list, n_svs=n_SVs)
 
@@ -925,8 +932,8 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     # attempting to regulerize this matrix I propose undertaking the
     # randomisation step a further time
     if len(stachans) == 1:
-        print('Only provided data from one station-channel - '
-              'will not try to invert')
+        Logger.critical('Only provided data from one station-channel - '
+                        'will not try to invert')
         return u[0][:, 0], event_list[0]
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
@@ -937,8 +944,8 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
         s_working = copy.deepcopy(s[i].T)
         ev_list = event_list[i]
         if len(ev_list) > len(U_working):
-            print('U is : ' + str(U_working.shape))
-            print('ev_list is len %s' % str(len(ev_list)))
+            Logger.error('U is : ' + str(U_working.shape))
+            Logger.error('ev_list is len %s' % str(len(ev_list)))
             f_dump = open('mag_calc_U_working.pkl', 'wb')
             pickle.dump(U_working, f_dump)
             f_dump.close()
@@ -953,7 +960,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
         SVD_weights = U_working[:, 0]
         # If all the weights are negative take the abs
         if np.all(SVD_weights < 0):
-            warnings.warn('All weights are negative - flipping them')
+            Logger.warning('All weights are negative - flipping them')
             SVD_weights = np.abs(SVD_weights)
         SVD_weights = np.array(SVD_weights).reshape(-1).tolist()
         # Shuffle the SVD_weights prior to pairing - will give one of multiple
@@ -1016,10 +1023,10 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     K_width = len(K[0])
     # Add an extra row to K, so average moment = 1
     K.append(np.ones(K_width) * (1. / K_width))
-    print("Created Kernel matrix: ")
+    Logger.debug("Created Kernel matrix: ")
     del row
-    print('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
-          for item in row]) for row in K]))
+    Logger.debug('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
+                 for item in row]) for row in K]))
     Krounded = np.around(K, decimals=4)
     # Create a weighting matrix to put emphasis on the final row.
     W = np.matrix(np.identity(len(K)))
