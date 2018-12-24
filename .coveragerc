@@ -6,8 +6,6 @@ omit =
   eqcorrscan/*/__init__.py
   eqcorrscan/tests/*
   eqcorrscan/utils/timer.py
-  eqcorrscan/utils/plotting.py
-  eqcorrscan/utils/sfile_util.py
   eqcorrscan/utils/src/*
   eqcorrscan/lib/*
   eqcorrscan/scripts/*

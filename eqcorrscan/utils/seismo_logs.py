@@ -24,9 +24,12 @@ import datetime as dt
 import re
 import os
 import io
-import warnings
+import logging
 import glob
 import sys
+
+
+Logger = logging.getLogger(__name__)
 
 
 def rt_time_log(logfile, startdate):
@@ -57,7 +60,7 @@ def rt_time_log(logfile, startdate):
         try:
             line = line_binary.decode("utf8", "ignore")
         except UnicodeDecodeError:
-            warnings.warn('Cannot decode line, skipping')
+            Logger.warning('Cannot decode line, skipping')
             continue
         if re.search("INTERNAL CLOCK PHASE ERROR", line):
             match = re.search("INTERNAL CLOCK PHASE ERROR", line)
@@ -103,8 +106,8 @@ def rt_location_log(logfile):
         try:
             line = line_binary.decode("utf8", "ignore")
         except UnicodeDecodeError:
-            warnings.warn('Cannot decode line, skipping')
-            print(line_binary)
+            Logger.warning('Cannot decode line, skipping')
+            Logger.warning(line_binary)
             continue
         match = re.search("GPS: POSITION:", line)
         if match:
@@ -177,7 +180,7 @@ def check_all_logs(directory, time_thresh):
     :rtype: list
     """
     log_files = glob.glob(directory + '/*/0/000000000_00000000')
-    print('I have ' + str(len(log_files)) + ' log files to scan')
+    Logger.debug('I have ' + str(len(log_files)) + ' log files to scan')
     total_phase_errs = []
     for i, log_file in enumerate(log_files):
         startdate = dt.datetime.strptime(log_file.split('/')[-4][0:7],

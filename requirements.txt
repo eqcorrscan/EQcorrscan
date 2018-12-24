@@ -11,3 +11,4 @@ pytest-xdist
 pytest-rerunfailures
 codecov
 psutil
+pytest-mpl

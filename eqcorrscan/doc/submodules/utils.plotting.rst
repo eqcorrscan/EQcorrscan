@@ -4,6 +4,9 @@ plotting
 .. currentmodule:: eqcorrscan.utils.plotting
 .. automodule:: eqcorrscan.utils.plotting
 
+All plotting functions accept the `save`, `savefile`, `title` and `show` keyword
+arguments.
+
     .. comment to end block
 
     Classes & Functions
@@ -31,5 +34,6 @@ plotting
        threeD_seismplot
        triple_plot
        xcorr_plot
+       noise_plot
 
     .. comment to end block

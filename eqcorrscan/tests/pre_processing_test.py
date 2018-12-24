@@ -51,7 +51,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test the short-proc processing method."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=False, num_cores=False,
+            samp_rate=1, parallel=False, num_cores=False,
             starttime=None, endtime=None)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -62,14 +62,14 @@ class TestPreProcessing(unittest.TestCase):
         """Check that we don't allow filtering above the nyquist."""
         with self.assertRaises(IOError):
             shortproc(self.short_stream.copy(), lowcut=0.1, highcut=0.6,
-                      filt_order=4, samp_rate=1, debug=0, parallel=False,
+                      filt_order=4, samp_rate=1, parallel=False,
                       num_cores=False, starttime=None, endtime=None)
 
     def test_shortproc_set_start(self):
         """Check that shortproc trims properly."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=False, num_cores=False,
+            samp_rate=1, parallel=False, num_cores=False,
             starttime=self.short_stream[0].stats.starttime + 2, endtime=None)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -80,7 +80,7 @@ class TestPreProcessing(unittest.TestCase):
         """Check that shortproc trims properly."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=False, num_cores=False,
+            samp_rate=1, parallel=False, num_cores=False,
             starttime=None, endtime=self.short_stream[0].stats.endtime - 2)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -91,7 +91,7 @@ class TestPreProcessing(unittest.TestCase):
         """Check that shortproc trims properly."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=False, num_cores=False,
+            samp_rate=1, parallel=False, num_cores=False,
             starttime=self.short_stream[0].stats.starttime + 2,
             endtime=self.short_stream[0].stats.endtime - 2)
         self.assertEqual(len(processed), self.nchans)
@@ -105,7 +105,7 @@ class TestPreProcessing(unittest.TestCase):
         """
         processed = shortproc(
             self.short_stream.copy()[0], lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=False, num_cores=False,
+            samp_rate=1, parallel=False, num_cores=False,
             starttime=None, endtime=None)
         self.assertTrue(isinstance(processed, Trace))
         self.assertEqual(self.instart, processed.stats.starttime)
@@ -115,7 +115,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test the parallel implementation."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=True, num_cores=2,
+            samp_rate=1, parallel=True, num_cores=2,
             starttime=None, endtime=None)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -126,29 +126,18 @@ class TestPreProcessing(unittest.TestCase):
         """Test the parallel implementation without num_cores set."""
         processed = shortproc(
             self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-            samp_rate=1, debug=0, parallel=True, num_cores=False,
+            samp_rate=1, parallel=True, num_cores=False,
             starttime=None, endtime=None)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
             self.assertEqual(self.instart, tr.stats.starttime)
             self.assertEqual(self.inend, tr.stats.endtime)
-    # This tries to plot, can't run.
-    # def test_high_debug(self):
-    #     """Test the debug=5 level"""
-    #     processed = shortproc(
-    #         self.short_stream.copy(), lowcut=0.1, highcut=0.4, filt_order=4,
-    #         samp_rate=1, debug=5, parallel=True, num_cores=False,
-    #         starttime=None, endtime=None)
-    #     self.assertEqual(len(processed), self.nchans)
-    #     for tr in processed:
-    #         self.assertEqual(self.instart, tr.stats.starttime)
-    #         self.assertEqual(self.inend, tr.stats.endtime)
 
     def test_dayproc(self):
         """Test a straight-forward day processing implementation."""
         processed = dayproc(
             st=self.st.copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, debug=0, parallel=True,
+            samp_rate=1, starttime=self.day_start, parallel=True,
             num_cores=2)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -161,7 +150,7 @@ class TestPreProcessing(unittest.TestCase):
         """
         processed = dayproc(
             st=self.st[0].copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, debug=0, parallel=True,
+            samp_rate=1, starttime=self.day_start, parallel=True,
             num_cores=2)
         self.assertTrue(isinstance(processed, Trace))
         self.assertEqual(UTCDateTime(self.day_start),
@@ -172,14 +161,14 @@ class TestPreProcessing(unittest.TestCase):
         """Test a failing day processing."""
         with self.assertRaises(IOError):
             dayproc(st=self.st.copy(), lowcut=0.1, highcut=0.6, filt_order=3,
-                    samp_rate=1, starttime=self.day_start, debug=0,
+                    samp_rate=1, starttime=self.day_start,
                     parallel=True, num_cores=2)
 
     def test_dayproc_serial(self):
         """Test the serial implementation of dayproc."""
         processed = dayproc(st=self.st.copy(), lowcut=0.1, highcut=0.4,
                             filt_order=3, samp_rate=1,
-                            starttime=self.day_start, debug=0, parallel=False,
+                            starttime=self.day_start, parallel=False,
                             num_cores=2)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -190,7 +179,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test a straight-forward day processing implementation."""
         processed = dayproc(
             st=self.st.copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, debug=0, parallel=True,
+            samp_rate=1, starttime=self.day_start, parallel=True,
             num_cores=False)
         self.assertEqual(len(processed), self.nchans)
         for tr in processed:
@@ -200,15 +189,7 @@ class TestPreProcessing(unittest.TestCase):
     def test_process(self):
         """Test a basic process implementation."""
         processed = process(tr=self.st[0].copy(), lowcut=0.1, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=0,
-                            starttime=False, clip=False, length=86400,
-                            seisan_chan_names=True, ignore_length=False)
-        self.assertEqual(processed.stats.npts, 86400)
-
-    def test_process_with_debug(self):
-        """Test the debug option of 2 for process."""
-        processed = process(tr=self.st[0].copy(), lowcut=0.1, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=2,
+                            filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=86400,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
@@ -216,7 +197,7 @@ class TestPreProcessing(unittest.TestCase):
     def test_process_datetime(self):
         """Test a basic process implementation."""
         processed = process(tr=self.st[0].copy(), lowcut=0.1, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=0,
+                            filt_order=3, samp_rate=1,
                             starttime=self.day_start, clip=False, length=86400,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
@@ -225,9 +206,8 @@ class TestPreProcessing(unittest.TestCase):
         """Test a nyquist error is raised."""
         with self.assertRaises(IOError):
             process(tr=self.st[0].copy(), lowcut=0.1, highcut=0.6,
-                    filt_order=3, samp_rate=1, debug=0,
-                    starttime=False, clip=False, length=86400,
-                    seisan_chan_names=True, ignore_length=False)
+                    filt_order=3, samp_rate=1, starttime=False, clip=False,
+                    length=86400, seisan_chan_names=True, ignore_length=False)
 
     def test_process_bad_data(self):
         """Check that we won't allow data that are mostly zeros."""
@@ -238,7 +218,7 @@ class TestPreProcessing(unittest.TestCase):
                 3602 * int(self.st[0].stats.sampling_rate)))
         with self.assertRaises(ValueError):
             process(tr=not_daylong, lowcut=0.1, highcut=0.4,
-                    filt_order=3, samp_rate=1, debug=0,
+                    filt_order=3, samp_rate=1,
                     starttime=False, clip=False, length=86400,
                     seisan_chan_names=True, ignore_length=False)
 
@@ -247,7 +227,7 @@ class TestPreProcessing(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             process(tr=self.st[0].copy().
                     trim(endtime=self.st[0].stats.endtime - 18000), lowcut=0.1,
-                    highcut=0.4, filt_order=3, samp_rate=1, debug=0,
+                    highcut=0.4, filt_order=3, samp_rate=1,
                     starttime=self.day_start, clip=True, length=86400,
                     seisan_chan_names=True, ignore_length=False)
 
@@ -256,7 +236,7 @@ class TestPreProcessing(unittest.TestCase):
         processed = process(
             tr=self.st[0].copy().trim(endtime=self.
                                       st[0].stats.endtime - 18000), lowcut=0.1,
-            highcut=0.4, filt_order=3, samp_rate=1, debug=0,
+            highcut=0.4, filt_order=3, samp_rate=1,
             starttime=self.day_start, clip=True, length=86400,
             seisan_chan_names=True, ignore_length=True)
         self.assertEqual(processed.stats.npts, 86400)
@@ -264,7 +244,7 @@ class TestPreProcessing(unittest.TestCase):
     def test_highcut_debug(self):
         """Test a basic process implementation with just a highcut"""
         processed = process(tr=self.st[0].copy(), lowcut=None, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=2,
+                            filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=86400,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
@@ -272,7 +252,7 @@ class TestPreProcessing(unittest.TestCase):
     def test_lowcut_debug(self):
         """Test a basic process implementation with just a highcut"""
         processed = process(tr=self.st[0].copy(), lowcut=0.1, highcut=None,
-                            filt_order=3, samp_rate=1, debug=2,
+                            filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=86400,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
@@ -281,7 +261,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test that processing a masked array works."""
         tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=0,
+                            filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=3600,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 3601)
@@ -293,7 +273,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test that processing a masked array without filling gaps works."""
         tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
-                            filt_order=3, samp_rate=1, debug=0,
+                            filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=3600,
                             seisan_chan_names=True, ignore_length=False,
                             fill_gaps=False)
@@ -304,7 +284,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test that processing and resampling a masked array works."""
         tr = self.gappy_trace
         processed = process(tr=tr, lowcut=0.1, highcut=0.2,
-                            filt_order=3, samp_rate=0.5, debug=0,
+                            filt_order=3, samp_rate=0.5,
                             starttime=False, clip=False, length=3600,
                             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 1800)
@@ -319,14 +299,13 @@ class TestPreProcessing(unittest.TestCase):
         tr_before.stats.starttime -= 3600
         tr = tr_before + self.gappy_trace + tr_after
         processed = process(
-            tr=tr, lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1, debug=0,
+            tr=tr, lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1,
             starttime=self.gappy_trace.stats.starttime, clip=True, length=3600,
             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 3600)
         self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
         self.assertTrue(np.all(
             processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
-
 
 
 if __name__ == '__main__':

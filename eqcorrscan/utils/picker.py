@@ -16,6 +16,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import numpy as np
 
 from obspy import UTCDateTime
@@ -24,80 +25,14 @@ from obspy.signal.filter import envelope
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import CreationInfo, Comment, Origin
 from obspy.signal.trigger import classic_sta_lta, trigger_onset
-from obspy.signal.trigger import plot_trigger
 
 import eqcorrscan.utils.plotting as plotting
 
-# def synth_compare(stream, stream_list, cores=4, debug=0):
-#     """
-#     Find best matching template or earthquake for a given stream.
-#     Compare a specific stream to a list of synthetic templates, or \
-#     earthquakes of known source and find the best matching event.
-#
-#     This can be used to assign the event to a family, which has a known \
-#     location.
-#
-#     :type stream: :class: obspy.Stream
-#     :param stream: Stream to be compared to streams with known locations.
-#     :type stream_list: list
-#     :param stream_list: List of streams with known locations
-#     :type cores: int
-#     :param cores: Number of cores to parallel over
-#     :type debug: int
-#     :param debug: Debug level, high is more debug
-#
-#     :returns: int, float: index of best match and cross-correlation sum
-#     :rtype: tuple
-#     """
-#     from eqcorrscan.core.match_filter import _channel_loop
-#     import numpy as np
-#     import copy
-#     from obspy import Trace
-#
-#     stream_copy = stream.copy()
-#     templates = copy.deepcopy(stream_list)
-#     # Need to fill the stream_list - template - channels
-#     template_stachan = []
-#     for template in templates:
-#         for tr in template:
-#             template_stachan += [(tr.stats.station, tr.stats.channel)]
-#     template_stachan = list(set(template_stachan))
-#
-#     for stachan in template_stachan:
-#         if not stream_copy.select(station=stachan[0], channel=stachan[1]):
-#             # Remove template traces rather than adding NaN data
-#             for template in templates:
-#                 if template.select(station=stachan[0], channel=stachan[1]):
-#                     for tr in template.select(station=stachan[0],
-#                                               channel=stachan[1]):
-#                         template.remove(tr)
-#     # Remove un-needed channels
-#     for tr in stream_copy:
-#         if not (tr.stats.station, tr.stats.channel) in template_stachan:
-#             stream_copy.remove(tr)
-#     # Also pad out templates to have all channels
-#     for template in templates:
-#         for stachan in template_stachan:
-#             if not template.select(station=stachan[0], channel=stachan[1]):
-#                 nulltrace = Trace()
-#                 nulltrace.stats.station = stachan[0]
-#                 nulltrace.stats.channel = stachan[1]
-#                 nulltrace.stats.sampling_rate = \
-#                   template[0].stats.sampling_rate
-#                 nulltrace.stats.starttime = template[0].stats.starttime
-#                 nulltrace.data = np.array([np.NaN] * len(template[0].data),
-#                                           dtype=np.float32)
-#                 template += nulltrace
-#     # Hand off  cross-correaltion to _channel_loop, which runs in parallel
-#     [cccsums, no_chans] = _channel_loop(templates, stream_copy, cores, debug)
-#     cccsums = [np.max(cccsum) for cccsum in cccsums]
-#     # Find the maximum cccsum and index thereof
-#     index = np.argmax(cccsums)
-#     cccsum = cccsums[index]
-#     return index, cccsum
+
+Logger = logging.getLogger(__name__)
 
 
-def cross_net(stream, env=False, debug=0, master=False):
+def cross_net(stream, env=False, master=False):
     """
     Generate picks using a simple envelope cross-correlation.
 
@@ -110,8 +45,6 @@ def cross_net(stream, env=False, debug=0, master=False):
     :param stream: Stream to pick
     :type env: bool
     :param env: To compute cross-correlations on the envelope or not.
-    :type debug: int
-    :param debug: Debug level from 0-5
     :type master: obspy.core.trace.Trace
     :param master:
         Trace to use as master, if False, will use the first trace in stream.
@@ -139,14 +72,12 @@ def cross_net(stream, env=False, debug=0, master=False):
     event.comments.append(Comment(text='cross_net'))
     samp_rate = stream[0].stats.sampling_rate
     if not env:
-        if debug > 2:
-            print('Using the raw data')
+        Logger.info('Using the raw data')
         st = stream.copy()
         st.resample(samp_rate)
     else:
         st = stream.copy()
-        if debug > 2:
-            print('Computing envelope')
+        Logger.info('Computing envelope')
         for tr in st:
             tr.resample(samp_rate)
             tr.data = envelope(tr.data)
@@ -157,13 +88,9 @@ def cross_net(stream, env=False, debug=0, master=False):
     master.data = np.nan_to_num(master.data)
     for i, tr in enumerate(st):
         tr.data = np.nan_to_num(tr.data)
-        if debug > 2:
-            msg = ' '.join(['Comparing', tr.stats.station, tr.stats.channel,
-                            'with the master'])
-            print(msg)
+        Logger.debug('Comparing {0} with the master'.format(tr.id))
         shift_len = int(0.3 * len(tr))
-        if debug > 2:
-            print('Shift length is set to ' + str(shift_len) + ' samples')
+        Logger.debug('Shift length is set to ' + str(shift_len) + ' samples')
         index, cc = xcorr(master, tr, shift_len)
         wav_id = WaveformStreamID(station_code=tr.stats.station,
                                   channel_code=tr.stats.channel,
@@ -173,8 +100,7 @@ def cross_net(stream, env=False, debug=0, master=False):
                                 waveform_id=wav_id,
                                 phase_hint='S',
                                 onset='emergent'))
-        if debug > 2:
-            print(event.picks[i])
+        Logger.debug(event.picks[i])
     event.origins[0].time = min([pick.time for pick in event.picks]) - 1
     # event.origins[0].latitude = float('nan')
     # event.origins[0].longitude = float('nan')
@@ -184,7 +110,7 @@ def cross_net(stream, env=False, debug=0, master=False):
 
 
 def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
-                freqmax=False, debug=0, show=False):
+                freqmax=False, show=False):
     """
     Basic sta/lta picker, suggest using alternative in obspy.
 
@@ -210,8 +136,6 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
     :param freqmin: Low-cut frequency in Hz for bandpass filter
     :type freqmax: float
     :param freqmax: High-cut frequency in Hz for bandpass filter
-    :type debug: int
-    :param debug: Debug output level from 0-5.
     :type show: bool
     :param show: Show picks on waveform.
 
@@ -251,8 +175,6 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                       corners=3, zerophase=True)
         df = tr.stats.sampling_rate
         cft = classic_sta_lta(tr.data, int(stalen * df), int(ltalen * df))
-        if debug > 3:
-            plot_trigger(tr, cft, trig_on, trig_off)
         triggers = trigger_onset(cft, trig_on, trig_off)
         for trigger in triggers:
             on = tr.stats.starttime + (trigger[0] / df)
@@ -261,9 +183,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
                                       channel_code=tr.stats.channel,
                                       network_code=tr.stats.network)
             p = Pick(waveform_id=wav_id, phase_hint=phase, time=on)
-            if debug > 2:
-                print('Pick made:')
-                print(p)
+            Logger.info('Pick made: {0}'.format(p))
             picks.append(p)
     # QC picks
     pick_stations = list(set([pick.waveform_id.station_code
@@ -279,7 +199,7 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
         if p_time > s_time:
             p_pick = [pick for pick in station_picks if pick.phase_hint == 'P']
             for pick in p_pick:
-                print('P pick after S pick, removing P pick')
+                Logger.info('P pick after S pick, removing P pick')
                 picks.remove(pick)
     if show:
         plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',

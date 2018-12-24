@@ -87,8 +87,10 @@ in the tests directory.
     >>> import glob
     >>> import os
     >>> from eqcorrscan.utils.clustering import cluster
+    >>> from eqcorrscan import tests
     >>> # You will need to edit this line to the location of your eqcorrscan repo.
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> TEST_PATH = os.path.dirname(tests.__file__)
+    >>> testing_path = TEST_PATH + '/test_data/similar_events'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [(read(stream_file), i)
     ...                for i, stream_file in enumerate(stream_files)]
@@ -103,11 +105,6 @@ in the tests directory.
     <obspy.core.stream.Stream object at ...>
     >>> groups = cluster(template_list=stream_list, show=False,
     ...                  corr_thresh=0.3, cores=2)
-    Computing the distance matrix using 2 cores
-    Computing linkage
-    Clustering
-    Found 9 groups
-    Extracting and grouping
 
 
 Stack waveforms (linear)
@@ -148,5 +145,3 @@ of the instantaneous phase.  In this manor coherent signals are amplified.
     >>> # groups[0] should contain 3 streams, which we can now stack
     >>> # Groups are returned as lists of tuples, of the stream and event index
     >>> stack = PWS_stack(streams=group_streams)
-    Computing instantaneous phase
-    Computing the phase stack
