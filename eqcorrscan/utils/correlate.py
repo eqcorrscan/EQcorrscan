@@ -530,8 +530,10 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     template_length = templates.shape[1]
     stream_length = len(stream)
     n_templates = templates.shape[0]
-    fftshape = next_fast_len(template_length + stream_length - 1)
-
+    fftshape = kwargs.get("fft_len")
+    if fftshape is None:
+        fftshape = next_fast_len(template_length + stream_length - 1)
+    assert(fftshape >= template_length)
     # # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
@@ -652,8 +654,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
-    num_cores_inner = kwargs.get('cores')
-    num_cores_outer = kwargs.get('cores_outer')
+    num_cores_inner = kwargs.pop('cores', None)
+    num_cores_outer = kwargs.pop('cores_outer', None)
     if num_cores_inner is None and num_cores_outer is None:
         num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
         num_cores_outer = 1
@@ -669,7 +671,7 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer)
+        cores_outer=num_cores_outer, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -680,7 +682,7 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, cores_outer):
+                         cores_inner, cores_outer, *args, **kwargs):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -744,10 +746,12 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     n_channels = len(seed_ids)
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
-    fft_len = next_fast_len(template_len + image_len - 1)
-    template_array = np.ascontiguousarray([template_array[x]
-                                           for x in seed_ids],
-                                          dtype=np.float32)
+    fft_len = kwargs.get("fft_len")
+    if fft_len is None:
+        fft_len = next_fast_len(template_len + image_len - 1)
+    assert(fft_len >= template_len)
+    template_array = np.ascontiguousarray(
+        [template_array[x] for x in seed_ids], dtype=np.float32)
     for x in seed_ids:
         # Check that stream is non-zero and above variance threshold
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
@@ -760,9 +764,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     cccs = np.zeros((n_templates, image_len - template_len + 1),
                     np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
-    pad_array_np = np.ascontiguousarray([pad_array[seed_id]
-                                         for seed_id in seed_ids],
-                                        dtype=np.intc)
+    pad_array_np = np.ascontiguousarray(
+        [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
     variance_warnings = np.ascontiguousarray(
         np.zeros(n_channels), dtype=np.intc)
 

@@ -59,6 +59,10 @@ static inline int set_ncc(long t, long i, long template_len, long image_len, flo
 int normxcorr_fftw_main(float*, long, long, float*, long, float*, long, float*, float*, float*,
         fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan, int*, int*, int, int*);
 
+int normxcorr_fftw_internal(long, long, float*, long, float*, long, long, float*, float*, float*, float*, fftwf_complex*,
+                            fftwf_complex*, fftwf_complex*, fftwf_plan, fftwf_plan, int*, int*, int,
+                            int*);
+
 int normxcorr_fftw_threaded(float*, long, long, float*, long, float*, long, int*, int*, int*);
 
 void free_fftwf_arrays(int, float**, float**, float**, fftwf_complex**, fftwf_complex**, fftwf_complex**);
@@ -301,12 +305,8 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     pb:             Forward plan for image
     px:             Reverse plan
   */
-    long N2 = fft_len / 2 + 1;
-    long i, t, startind;
-    int status = 0, unused_corr = 0;
-    int * flatline_count = (int *) calloc(image_len - template_len + 1, sizeof(int));
-    double *mean, *var;
-    double new_samp, old_samp, sum=0.0;
+    long i, t, chunk, n_chunks, chunk_len, remainder, startind;
+    int status = 0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
@@ -322,14 +322,66 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
             norm_sums[t] += templates[(t * template_len) + i];
         }
     }
-    for (i = 0; i < image_len; ++i)
-    {
-        image_ext[i] = image[i];
-    }
 
     //  Compute fft of template
     fftwf_execute_dft_r2c(pa, template_ext, outa);
-    
+
+    if (fft_len >= image_len)
+    {
+        n_chunks = 1;
+        chunk_len = image_len;
+        remainder = image_len;
+    } else
+    {
+        n_chunks = image_len / fft_len + (image_len % fft_len > 0);
+        chunk_len = image_len / n_chunks;
+        remainder = image_len - ((n_chunks * chunk_len) - ((template_len - 1) * n_chunks));
+        if (remainder > chunk_len){
+            n_chunks += remainder / chunk_len + (remainder % chunk_len > 0);
+            remainder = image_len - ((n_chunks * chunk_len) - ((template_len - 1) * n_chunks));
+        }
+        if (remainder > 0){
+            n_chunks += 1;
+        } else {
+            remainder = chunk_len;
+        }
+    }
+    for (chunk = 0; chunk < n_chunks; ++chunk)
+    {
+        startind = (chunk * chunk_len) - (chunk * (template_len - 1));
+        if (chunk == n_chunks - 1)
+        {
+            chunk_len = remainder;
+        }
+        memset(image_ext, 0, (size_t) fft_len * sizeof(float));
+        for (i = 0; i < chunk_len; ++i)
+        {
+            image_ext[i] = image[startind + i];
+        }
+        status += normxcorr_fftw_internal(
+            template_len, n_templates, &image[startind], chunk_len,
+            &ncc[startind], image_len, fft_len, template_ext,
+            image_ext, norm_sums, ccc, outa, outb, out, pb, px, used_chans,
+            pad_array, num_threads, variance_warning);
+    }
+    free(norm_sums);
+    return status;
+}
+
+int normxcorr_fftw_internal(long template_len, long n_templates, float *image,
+                            long image_len, float *ncc, long ncc_len, long fft_len, float *template_ext,
+                            float *image_ext, float *norm_sums, float *ccc, fftwf_complex *outa,
+                            fftwf_complex *outb, fftwf_complex *out, fftwf_plan pb,
+                            fftwf_plan px, int *used_chans, int *pad_array, int num_threads,
+                            int *variance_warning)
+{
+    long i, t, startind;
+    long N2 = fft_len / 2 + 1;
+    int status = 0, unused_corr = 0;
+    int * flatline_count = (int *) calloc(image_len - template_len + 1, sizeof(int));
+    double *mean, *var;
+    double new_samp, old_samp, sum=0.0;
+
     // Compute fft of image
     fftwf_execute_dft_r2c(pb, image_ext, outb);
 
@@ -361,7 +413,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         return 1;
     }
     
-    //  Procedures for normalisation
+    // Procedures for normalisation
     // Compute starting mean, will update this
     sum = 0.0;
     for (i=0; i < template_len; ++i){
@@ -383,7 +435,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
         for (t = 0; t < n_templates; ++t){
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
             c /= stdev;
-            status += set_ncc(t, 0, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+            status += set_ncc(t, 0, template_len, ncc_len, (float) c, used_chans, pad_array, ncc);
 
         }
         if (var[0] <= WARN_DIFF){
@@ -419,7 +471,7 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
                 for (t = 0; t < n_templates; ++t){
                     double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
                     c /= stdev;
-                    status += set_ncc(t, i, template_len, image_len, (float) c, used_chans, pad_array, ncc);
+                    status += set_ncc(t, i, template_len, ncc_len, (float) c, used_chans, pad_array, ncc);
                 }
             }
             else {
@@ -439,7 +491,6 @@ int normxcorr_fftw_main(float *templates, long template_len, long n_templates,
     }
 
     //  Clean up
-    free(norm_sums);
     free(mean);
     free(var);
     free(flatline_count);
@@ -679,7 +730,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
         #endif
         /* initialise memory to zero */
         memset(template_ext[tid], 0, (size_t) fft_len * n_templates * sizeof(float));
-        memset(image_ext[tid], 0, (size_t) fft_len * sizeof(float));
+        // Done internally now. memset(image_ext[tid], 0, (size_t) fft_len * sizeof(float));
 
         /* call the routine */
         results[i] = normxcorr_fftw_main(&templates[(size_t) n_templates * template_len * i], template_len,

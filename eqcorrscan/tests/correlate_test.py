@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 from multiprocessing import cpu_count
 from obspy import Trace, Stream, read
+from scipy.fftpack import next_fast_len
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
@@ -60,6 +61,8 @@ n_templates = 20
 stream_len = 100000
 template_len = 200
 gap_start = 5000
+fft_len = next_fast_len(max(stream_len // 4, template_len))
+# fft_len = None
 
 
 def generate_multichannel_stream():
@@ -144,9 +147,10 @@ starting_index = 500
 @pytest.fixture(scope='module')
 def array_template():
     """
-    return a set of templates, generated with randomn, for correlation tests.
+    return a set of templates, generated with random, for correlation tests.
     """
     return random.randn(200, 200)
+    # return random.randn(2, 200)
 
 
 @pytest.fixture(scope='module')
@@ -181,6 +185,13 @@ def array_ccs(array_template, array_stream, pads):
         print("Running %s" % name)
         cc, _ = time_func(func, name, array_template, array_stream, pads)
         out[name] = cc
+        if "fftw" in name:
+            print("Running fixed len fft")
+            fft_len = next_fast_len(
+                max(len(array_stream) // 4, len(array_template)))
+            cc, _ = time_func(func, name, array_template, array_stream, pads,
+                              fft_len=fft_len)
+            out[name] = cc
     return out
 
 
@@ -250,14 +261,21 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
             cc_out = time_func(func, name, multichannel_templates,
                                multichannel_stream, cores=cores)
             out["{0}.{1}".format(name, cores)] = cc_out
-            if "fftw" in name and cores > 1:
-                print("Running outer core parallel")
-                # Make sure that using both parallel methods gives the same
-                # result
+            if "fftw" in name:
+                if cores > 1:
+                    print("Running outer core parallel")
+                    # Make sure that using both parallel methods gives the same
+                    # result
+                    cc_out = time_func(
+                        func, name, multichannel_templates, multichannel_stream,
+                        cores=1, cores_outer=cores)
+                    out["{0}.{1}_outer".format(name, cores)] = cc_out
+                print("Running shorter, fixed fft-len")
+                # Make sure that running with a pre-defined fft-len works
                 cc_out = time_func(
                     func, name, multichannel_templates, multichannel_stream,
-                    cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = cc_out
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = cc_out
     return out
 
 
@@ -281,15 +299,23 @@ def gappy_stream_cc_output_dict(
                                gappy_multichannel_stream, cores=cores)
             out["{0}.{1}".format(name, cores)] = (
                 cc_out, copy.deepcopy(log_messages['warning']))
-            if "fftw" in name and cores > 1:
-                print("Running outer core parallel")
-                _log_handler.reset()
-                # Make sure that using both parallel methods gives the same
-                # result
+            if "fftw" in name:
+                if cores > 1:
+                    print("Running outer core parallel")
+                    _log_handler.reset()
+                    # Make sure that using both parallel methods gives the same
+                    # result
+                    cc_out = time_func(
+                        func, name, multichannel_templates,
+                        gappy_multichannel_stream, cores=1, cores_outer=cores)
+                    out["{0}.{1}_outer".format(name, cores)] = (
+                        cc_out, copy.deepcopy(log_messages['warning']))
+                print("Running shorter, fixed fft-len")
+                # Make sure that running with a pre-defined fft-len works
                 cc_out = time_func(
                     func, name, multichannel_templates,
-                    gappy_multichannel_stream, cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = (
+                    gappy_multichannel_stream, cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = (
                     cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
@@ -315,15 +341,24 @@ def gappy_real_cc_output_dict(
                                gappy_real_data, cores=cores)
             out["{0}.{1}".format(name, cores)] = (
                 cc_out, copy.deepcopy(log_messages['warning']))
-            if "fftw" in name and cores > 1:
+            if "fftw" in name:
+                if cores > 1:
+                    _log_handler.reset()
+                    print("Running outer core parallel")
+                    # Make sure that using both parallel methods gives the same
+                    # result
+                    cc_out = time_func(
+                        func, name, gappy_real_data_template,
+                        gappy_real_data, cores=1, cores_outer=cores)
+                    out["{0}.{1}_outer".format(name, cores)] = (
+                        cc_out, copy.deepcopy(log_messages['warning']))
                 _log_handler.reset()
-                print("Running outer core parallel")
-                # Make sure that using both parallel methods gives the same
-                # result
+                print("Running shorter, fixed fft-len")
+                # Make sure that running with a pre-defined fft-len works
                 cc_out = time_func(
-                    func, name, gappy_real_data_template,
-                    gappy_real_data, cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = (
+                    func, name, gappy_real_data_template, gappy_real_data,
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = (
                     cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
@@ -349,10 +384,13 @@ class TestArrayCorrelateFunctions:
         given the same input data """
         cc_list = list(array_ccs.values())
         for cc1, cc2 in itertools.combinations(cc_list, 2):
+            if not np.allclose(cc1, cc2, atol=self.atol):
+                np.save("cc.npy", cc1)
+                np.save("cc_1.npy", cc2)
             assert np.allclose(cc1, cc2, atol=self.atol)
 
-    def test_test_autocorrelation(self, array_ccs):
-        """ ensure an auto correlationoccurred in each of ccs where it is
+    def test_autocorrelation(self, array_ccs):
+        """ ensure an autocorrelation occurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
