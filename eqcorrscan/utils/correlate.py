@@ -204,10 +204,7 @@ def _general_multithread(func):
 
     def multithread(templates, stream, *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
-            try:
-                return _pool_normxcorr(templates, stream, pool=pool, func=func)
-            except Exception as e:
-                return e
+            return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multithread
 
@@ -215,10 +212,7 @@ def _general_multithread(func):
 def _general_multiprocess(func):
     def multiproc(templates, stream, *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
-            try:
-                return _pool_normxcorr(templates, stream, pool=pool, func=func)
-            except Exception as e:
-                return e
+            return _pool_normxcorr(templates, stream, pool=pool, func=func)
 
     return multiproc
 
@@ -440,10 +434,13 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
+                               flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
-    func = utilslib.multi_normxcorr_time
+    if threaded:
+        func = utilslib.multi_normxcorr_time_threaded
+        argtypes.append(ctypes.c_int)
+    else:
+        func = utilslib.multi_normxcorr_time
     func.argtypes = argtypes
     func.restype = restype
     # Need to de-mean everything
@@ -461,8 +458,6 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
                  np.ascontiguousarray(stream, np.float32), image_len, ccc]
     if threaded:
         time_args.append(kwargs.get('cores', cpu_count()))
-    else:
-        time_args.append(1)
     func(*time_args)
     ccc[np.isnan(ccc)] = 0.0
     ccc = ccc.reshape((n_templates, image_len - template_len + 1))
@@ -521,6 +516,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
+
     if threaded:
         func = utilslib.normxcorr_fftw_threaded
     else:
@@ -577,7 +573,9 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     return ccc, used_chans
 
 
-@time_multi_normxcorr.register('multithread')
+# The time-domain routine can be sped up massively on large machines (many
+# threads) using the openMP threaded functions.
+
 @time_multi_normxcorr.register('concurrent')
 def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     """
@@ -611,8 +609,8 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
                         len(stream[0]) - len(templates[0][0]) + 1])
     for seed_id in seed_ids:
         tr_cc, tr_chans = time_multi_normxcorr(
-            templates=template_dict[seed_id], stream=stream_dict[seed_id],
-            pads=pad_dict[seed_id], threaded=True)
+            template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
+            True)
         cccsums = np.sum([cccsums, tr_cc], axis=0)
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
