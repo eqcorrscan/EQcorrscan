@@ -1,5 +1,12 @@
 ## Current
 * Added memory management functions in helpers.memory_management
+* Add script to test what is the fastest correlation routine for a given dataset
+    * This script will write out to a .eqcorrscan.rc file in the users home
+      directory and utils.correlate will check this to see whether it should
+      use a different correlation routine to the standard default.
+    * .eqcorrscan.rc can have multiple different defaults for different dataset
+      sizes.
+* Moved utils.timer utils.libnames and utils.debug_log to a `helpers` module.
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
 
@@ -108,13 +115,6 @@
 
 ## 0.3.0
 * Compiled peak-finding routine written to speed-up peak-finding.
-* Add script to test what is the fastest correlation routine for a given dataset
-    * This script will write out to a .eqcorrscan.rc file in the users home
-      directory and utils.correlate will check this to see whether it should
-      use a different correlation routine to the standard default.
-    * .eqcorrscan.rc can have multiple different defaults for different dataset
-      sizes.
-* Moved utils.timer utils.libnames and utils.debug_log to a `helpers` module.
 * Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
 * Do not try to process when no processing needs to be done in 
