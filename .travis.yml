@@ -67,11 +67,12 @@ script:
    - export MPLBACKEND=Agg
    - if [[ "$PYTEST" == "0" ]]; then
      test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2;
-     export OMP_NUM_THREADS=2;
-     test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
      else
      py.test --runslow -m "not serial and not network" -n 2;
-     export OMP_NUM_THREADS=2;
+  -  export OMP_NUM_THREADS=2;
+  -  if [[ "$PYTEST" == "0" ]]; then
+     test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
+     else
      py.test -m "serial and not network" --cov-append;
      fi
 
