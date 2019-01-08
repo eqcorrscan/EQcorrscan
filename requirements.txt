@@ -4,7 +4,7 @@ scipy>=0.18
 bottleneck
 obspy>=1.0.3
 h5py
-pytest>=2.0.0
+pytest>=2.0.0,<4.0
 pytest-cov
 pytest-pep8
 pytest-xdist

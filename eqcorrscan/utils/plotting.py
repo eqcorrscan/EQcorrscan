@@ -46,7 +46,9 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type return_figure: bool
     """
     title = kwargs.get("title") or None
-    show = kwargs.get("show") or False
+    show = kwargs.get("show")
+    if show is None:
+        show = True
     save = kwargs.get("save") or False
     savefile = kwargs.get("savefile") or "EQcorrscan_figure.png"
     return_fig = kwargs.get("return_figure") or False
@@ -311,7 +313,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
 
 def cumulative_detections(dates=None, template_names=None, detections=None,
                           plot_grouped=False, group_name=None, rate=False,
-                          plot_legend=True, ax=None, **kwargs):
+                          binsize=None, plot_legend=True, ax=None, **kwargs):
     """
     Plot cumulative detections or detection rate in time.
 
@@ -336,6 +338,8 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :param rate:
         Whether or not to plot the rate of detection per day. Only works for
         plot_grouped=True
+    :type binsize: int
+    :param binsize: Bin size for rate plotting in seconds.
     :type plot_legend: bool
     :param plot_legend:
         Specify whether to plot legend of template names. Defaults to True.
@@ -403,8 +407,10 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                     'black', 'firebrick', 'purple', 'darkgoldenrod', 'gray'])
     linestyles = cycle(['-', '-.', '--', ':'])
     # Check that dates is a list of lists
-    if not detections:
-        if type(dates[0]) != list:
+    if detections is None:
+        if not isinstance(dates, list):
+            raise IndexError("No detections or dates given")
+        if not isinstance(dates[0], list):
             dates = [dates]
     else:
         dates = []
@@ -429,7 +435,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         for template_dates in dates:
             _dates += template_dates
         dates = [_dates]
-        if group_name:
+        if group_name is not None:
             template_names = group_name
         else:
             template_names = ['All templates']
@@ -455,18 +461,28 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             if not plot_grouped:
                 msg = 'Plotting rate only implemented for plot_grouped=True'
                 raise NotImplementedError(msg)
-            if 31 < (max_date - min_date).days < 365:
-                bins = (max_date - min_date).days
-                ax.set_ylabel('Detections per day')
-            elif (max_date - min_date).days <= 31:
-                bins = (max_date - min_date).days * 4
-                ax.set_ylabel('Detections per 6 hour bin')
+            if binsize is None:
+                if 365 <= (max_date - min_date).days:
+                    binsize = 7 * 86400
+                    ax.set_ylabel('Detections per week')
+                elif 31 < (max_date - min_date).days < 365:
+                    binsize = 86400
+                    ax.set_ylabel('Detections per day')
+                elif 1 < (max_date - min_date).days <= 31:
+                    binsize = 6 * 3600
+                    ax.set_ylabel('Detections per 6 hours')
+                elif 3600 < (max_date - min_date).total_seconds() <= 86400:
+                    binsize = 900
+                    ax.set_ylabel('Detections per 15 minutes')
+                else:
+                    binsize = 60
+                    ax.set_ylabel('Detections per minute')
             else:
-                bins = (max_date - min_date).days // 7
-                ax.set_ylabel('Detections per week')
-            if len(plot_dates) <= 10:
-                bins = 1
-            ax.hist(mdates.date2num(plot_dates), bins=bins,
+                ax.set_ylabel('Detections per {0} seconds'.format(binsize))
+            bins = np.arange(
+                min_date, max_date + dt.timedelta(seconds=binsize),
+                dt.timedelta(seconds=binsize))
+            ax.hist(mdates.date2num(plot_dates), bins=mdates.date2num(bins),
                     label='Rate of detections', color='darkgrey',
                     alpha=0.5)
         else:
