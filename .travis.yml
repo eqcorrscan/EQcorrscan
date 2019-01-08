@@ -70,10 +70,11 @@ script:
      else
      py.test --runslow -m "not serial and not network" -n 2;
      fi
-  -  export OMP_NUM_THREADS=2
-  -  if [[ "$PYTEST" == "0" ]]; then
+   - if [[ "$PYTEST" == "0" ]]; then
+     export OMP_NUM_THREADS=2;
      test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
      else
+     export OMP_NUM_THREADS=2;
      py.test -m "serial and not network" --cov-append;
      fi
 
