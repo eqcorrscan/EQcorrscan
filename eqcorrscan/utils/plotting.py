@@ -46,7 +46,9 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type return_figure: bool
     """
     title = kwargs.get("title") or None
-    show = kwargs.get("show") or True
+    show = kwargs.get("show")
+    if show is None:
+        show = True
     save = kwargs.get("save") or False
     savefile = kwargs.get("savefile") or "EQcorrscan_figure.png"
     return_fig = kwargs.get("return_figure") or False
