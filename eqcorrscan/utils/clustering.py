@@ -27,7 +27,7 @@ from scipy.spatial.distance import squareform
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
-from eqcorrscan.utils.pre_processing import _prep_data
+from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
 
 Logger = logging.getLogger(__name__)
 
@@ -67,14 +67,19 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
     # st1 if stack = False by shift_len).
     df = st1[0].stats.sampling_rate
     end_trim = int((shift_len * df) / 2)
+    _streams = []
     if end_trim > 0:
         for stream in streams:
-            for tr in stream:
+            _stream = stream.copy()  # Do not work on the users data
+            for tr in _stream:
                 tr.data = tr.data[end_trim: -end_trim]
                 if tr.stats.sampling_rate != df:
                     raise NotImplementedError("Sampling rates differ")
+            _streams.append(_stream)
+        streams = _streams
     # Check which channels are in st1 and match those in the stream_list
-    st1, streams = _prep_data(stream=st1, templates=streams)
+    st1, streams = _prep_data_for_correlation(
+        stream=st1, templates=streams, force_stream_epoch=False)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
@@ -142,7 +147,7 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     return dist_mat
 
 
-def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
+def cluster(template_list, show=True, corr_thresh=0.3,
             shift_len=0, save_corrmat=False, cores='all'):
     """
     Cluster template waveforms based on average correlations.
@@ -166,9 +171,6 @@ def cluster(template_list, show=True, corr_thresh=0.3, allow_shift=False,
     :param show: plot linkage on screen if True, defaults to True
     :type corr_thresh: float
     :param corr_thresh: Cross-channel correlation threshold for grouping
-    :type allow_shift: bool
-    :param allow_shift:
-        Whether to allow the templates to shift when correlating
     :type shift_len: float
     :param shift_len: How many seconds to allow the templates to shift
     :type save_corrmat: bool

@@ -231,7 +231,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(IOError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -554,7 +554,7 @@ class TestNCEDCCases(unittest.TestCase):
         templates = [self.templates[0].copy()]
         templates[0][0].data = np.concatenate([templates[0][0].data,
                                                np.random.randn(10)])
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,

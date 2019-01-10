@@ -29,12 +29,11 @@ import shutil
 import tarfile
 import tempfile
 import logging
-from collections import Counter
 from os.path import join
 from timeit import default_timer
 
 import numpy as np
-from obspy import Trace, Catalog, UTCDateTime, Stream, read, read_events
+from obspy import Catalog, UTCDateTime, Stream, read, read_events
 from obspy.core.event import (
     Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier)
 
@@ -44,7 +43,8 @@ from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
 from eqcorrscan.utils.findpeaks import decluster, multi_find_peaks
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.pre_processing import dayproc, shortproc, _check_daylong
+from eqcorrscan.utils.pre_processing import (
+    dayproc, shortproc, _check_daylong, _prep_data_for_correlation)
 
 Logger = logging.getLogger(__name__)
 CAT_EXT_MAP = {"QUAKEML": "xml", "SC3ML": "xml"}  # , "NORDIC": "out"}
@@ -4231,134 +4231,8 @@ def match_filter(template_names, template_list, st, threshold,
             if isinstance(tr.data, np.ma.core.MaskedArray):
                 raise MatchFilterError('Template contains masked array,'
                                        ' split first')
-    # Perform a check that the continuous data are all the same length
-    min_start_time = min([tr.stats.starttime for tr in stream])
-    max_end_time = max([tr.stats.endtime for tr in stream])
-    longest_trace_length = stream[0].stats.sampling_rate * (max_end_time -
-                                                            min_start_time)
-    longest_trace_length += 1
-    for tr in stream:
-        if not tr.stats.npts == longest_trace_length:
-            Logger.info(
-                'Data for {0} is not as long as needed, padding'.format(tr.id))
-            start_pad = np.zeros(int(tr.stats.sampling_rate *
-                                     (tr.stats.starttime - min_start_time)))
-            end_pad = np.zeros(int(tr.stats.sampling_rate *
-                                   (max_end_time - tr.stats.endtime)))
-            # In some cases there will be one sample missing when sampling
-            # time-stamps are not set consistently between channels, this
-            # results in start_pad and end_pad being len==0
-            if len(start_pad) == 0 and len(end_pad) == 0:
-                Logger.debug(
-                    "start and end pad are both zero, padding at one end")
-                if (tr.stats.starttime - min_start_time) > (
-                   max_end_time - tr.stats.endtime):
-                    start_pad = np.zeros(
-                        int(longest_trace_length - tr.stats.npts))
-                else:
-                    end_pad = np.zeros(
-                        int(longest_trace_length - tr.stats.npts))
-            tr.data = np.concatenate([start_pad, tr.data, end_pad])
-    # Perform check that all template lengths are internally consistent
-    for i, temp in enumerate(template_list):
-        if len(set([tr.stats.npts for tr in temp])) > 1:
-            msg = ('Template %s contains traces of differing length, this is '
-                   'not currently supported' % _template_names[i])
-            raise MatchFilterError(msg)
-    Logger.debug('Ensuring all template channels have matches in'
-                 ' continuous data')
-    template_stachan = {}
-    # Work out what station-channel pairs are in the templates, including
-    # duplicate station-channel pairs.  We will use this information to fill
-    # all templates with the same station-channel pairs as required by
-    # _template_loop.
-    for template in templates:
-        stachans_in_template = []
-        for tr in template:
-            stachans_in_template.append((tr.stats.network, tr.stats.station,
-                                         tr.stats.location, tr.stats.channel))
-        stachans_in_template = dict(Counter(stachans_in_template))
-        for stachan in stachans_in_template.keys():
-            stachans = stachans_in_template[stachan]
-            if stachan not in template_stachan.keys():
-                template_stachan.update({stachan: stachans})
-            elif stachans_in_template[stachan] > template_stachan[stachan]:
-                template_stachan.update({stachan: stachans})
-    # Remove un-matched channels from templates.
-    _template_stachan = copy.deepcopy(template_stachan)
-    for stachan in template_stachan.keys():
-        if not stream.select(network=stachan[0], station=stachan[1],
-                             location=stachan[2], channel=stachan[3]):
-            # Remove stachan from list of dictionary of template_stachans
-            _template_stachan.pop(stachan)
-            Logger.info('Removing template channel {0}.{1}.{2}.{3} due to'
-                        ' no matches in continuous data'.format(
-                            stachan[0], stachan[1], stachan[2], stachan[3]))
-            # Remove template traces rather than adding NaN data
-            for template in templates:
-                if template.select(network=stachan[0], station=stachan[1],
-                                   location=stachan[2], channel=stachan[3]):
-                    for tr in template.select(
-                            network=stachan[0], station=stachan[1],
-                            location=stachan[2], channel=stachan[3]):
-                        template.remove(tr)
-    template_stachan = _template_stachan
-    # Remove un-needed channels from continuous data.
-    for tr in stream:
-        if not (tr.stats.network, tr.stats.station,
-                tr.stats.location, tr.stats.channel) in \
-                template_stachan.keys():
-            Logger.info(
-                'Removing channel in continuous data for %s.%s.%s.%s:'
-                ' no match in template' %
-                (tr.stats.network, tr.stats.station, tr.stats.location,
-                 tr.stats.channel))
-            stream.remove(tr)
-    # Check for duplicate channels
-    stachans = [(tr.stats.network, tr.stats.station,
-                 tr.stats.location, tr.stats.channel) for tr in stream]
-    c_stachans = Counter(stachans)
-    for key in c_stachans.keys():
-        if c_stachans[key] > 1:
-            msg = ('Multiple channels for %s.%s.%s.%s, likely a data issue'
-                   % (key[0], key[1], key[2], key[3]))
-            raise MatchFilterError(msg)
-    # Pad out templates to have all channels
-    _templates = []
-    used_template_names = []
-    for template, template_name in zip(templates, _template_names):
-        if len(template) == 0:
-            msg = ('No channels matching in continuous data for ' +
-                   'template' + template_name)
-            Logger.warning(msg)
-            continue
-        for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(
-                network=stachan[0], station=stachan[1], location=stachan[2],
-                channel=stachan[3]))
-            if number_of_channels < template_stachan[stachan]:
-                missed_channels = template_stachan[stachan] - \
-                                  number_of_channels
-                nulltrace = Trace()
-                nulltrace.stats.update(
-                    {'network': stachan[0], 'station': stachan[1],
-                     'location': stachan[2], 'channel': stachan[3],
-                     'sampling_rate': template[0].stats.sampling_rate,
-                     'starttime': template[0].stats.starttime,
-                     'not_in_original': True})
-                nulltrace.data = np.array([np.NaN] * len(template[0].data),
-                                          dtype=np.float32)
-                for dummy in range(missed_channels):
-                    template += nulltrace
-        template.sort()
-        _templates.append(template)
-        used_template_names.append(template_name)
-        # Quick check that this has all worked
-        if len(template) != max([len(t) for t in templates]):
-            raise MatchFilterError('Internal error forcing same template '
-                                   'lengths, report this error.')
-    templates = _templates
-    _template_names = used_template_names
+    stream, templates, _template_names = _prep_data_for_correlation(
+        stream=stream, templates=templates, template_names=_template_names)
     Logger.info('Starting the correlation run for these data')
     for template in templates:
         Logger.debug(template.__str__())

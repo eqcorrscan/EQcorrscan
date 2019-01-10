@@ -124,37 +124,6 @@ class ClusteringTests(unittest.TestCase):
         self.assertEqual(len(groups_2), 10)  # They shouldn't cluster at all
         self.assertEqual(groups, groups_2)
 
-    def test_clustered(self):
-        """Test clustering on clustered data..."""
-        testing_path = os.path.join(self.testing_path, 'similar_events')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))
-        stream_list = [(read(stream_file), i)
-                       for i, stream_file in enumerate(stream_files)]
-        for st in stream_list:
-            for tr in st[0]:
-                if tr.stats.sampling_rate != 100.0:
-                    ratio = tr.stats.sampling_rate / 100
-                    if int(ratio) == ratio:
-                        tr.decimate(int(ratio))
-                    else:
-                        tr.resample(100)
-        shortest_tr = min(
-            [tr.stats.npts for st in stream_list for tr in st[0]])
-        for st in stream_list:
-            for tr in st[0]:
-                tr.data = tr.data[0:shortest_tr]
-        for stream in stream_list:
-            for tr in stream[0]:
-                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                    stream[0].remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-        groups = cluster(template_list=stream_list, show=False,
-                         corr_thresh=0.3)
-        self.assertEqual(len(groups), 10)  # They should cluster reasonably
-
     def test_corr_cluster(self):
         """Test the corr_cluster function."""
         samp_rate = 40
@@ -174,6 +143,76 @@ class ClusteringTests(unittest.TestCase):
         trace_list = [stream[0] for stream in stream_list]
         output = corr_cluster(trace_list=trace_list, thresh=0.7)
         self.assertFalse(output.all())
+
+
+class EfficientClustering(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            'similar_events')
+        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
+        for stream in stream_list:
+            for tr in stream:
+                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
+                    stream.remove(tr)
+                    continue
+                tr.detrend('simple')
+                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
+                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
+        cls.stream_list = stream_list
+
+    def test_cross_chan_different_order(self):
+        """ Check that the order of streams doesn't matter. """
+        from random import shuffle
+
+        for master in self.stream_list:
+            shuffled_stream_list = [st.copy() for st in self.stream_list]
+            shuffle(shuffled_stream_list)
+            cccoh, _ = cross_chan_coherence(
+                st1=master.copy(), streams=self.stream_list)
+            cccoh_shuffled, _ = cross_chan_coherence(
+                st1=master.copy(), streams=shuffled_stream_list)
+            cccoh.sort()
+            cccoh_shuffled.sort()
+            assert np.allclose(cccoh, cccoh_shuffled, atol=0.0001)
+
+    def test_cross_chan_different_order_shifted(self):
+        """ Check that the order of streams doesn't matter. """
+        from random import shuffle
+
+        shift = 0.5
+        for master in self.stream_list:
+            shuffled_stream_list = [st.copy() for st in self.stream_list]
+            shuffle(shuffled_stream_list)
+            cccoh, _ = cross_chan_coherence(
+                st1=master, streams=self.stream_list, shift_len=shift)
+            cccoh_shuffled, _ = cross_chan_coherence(
+                st1=master, streams=shuffled_stream_list, shift_len=shift)
+            cccoh.sort()
+            cccoh_shuffled.sort()
+            assert np.allclose(cccoh, cccoh_shuffled, atol=0.0001)
+
+    def test_clustered(self):
+        """Test clustering on clustered data..."""
+        groups = cluster(
+            template_list=[(st, i) for i, st in enumerate(self.stream_list)],
+            show=False, corr_thresh=0.3)
+        self.assertEqual(len(groups), 9)  # TODO: Check the groups.
 
 
 class DistanceClusterTests(unittest.TestCase):
