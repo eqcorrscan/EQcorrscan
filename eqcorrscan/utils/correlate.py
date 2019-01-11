@@ -384,7 +384,6 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :return: np.ndarray channels used
     """
     import bottleneck
-    from scipy.signal.signaltools import _centered
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
@@ -410,13 +409,26 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
                        fftshape)[:, 0:template_length + stream_length - 1]
-    res = ((_centered(res, stream_length - template_length + 1)) -
+    res = ((_centered(res, (templates.shape[0],
+                            stream_length - template_length + 1))) -
            norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
     # res[np.isinf(res)] = 0.0
     for i, pad in enumerate(pads):  # range(len(pads)):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
+
+
+def _centered(arr, newshape):
+    """
+    Hack of scipy.signaltools._centered
+    """
+    newshape = np.asarray(newshape)
+    currshape = np.array(arr.shape)
+    startind = (currshape - newshape) // 2
+    endind = startind + newshape
+    myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
+    return arr[tuple(myslice)]
 
 
 @register_array_xcorr('time_domain')
@@ -878,6 +890,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
         t_starts.append(min([tr.stats.starttime for tr in template]))
+    stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     # pull common channels out of streams and templates and put in dicts
@@ -885,13 +898,17 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         temps_with_seed = [template[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
+        stream_channel = stream.select(id=seed_id.split('_')[0])[0]
         stream_dict.update(
-            {seed_id: stream.select(
-                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
+            {seed_id: stream_channel.data.astype(np.float32)})
+        stream_offset = int(
+            round(stream_channel.stats.sampling_rate *
+                  (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
                 int(round(template[i].stats.sampling_rate *
-                          (template[i].stats.starttime - t_starts[j])))
+                          (template[i].stats.starttime -
+                           t_starts[j]))) - stream_offset
                 for j, template in zip(range(len(templates)), templates)]
         else:
             pad_list = [0 for _ in range(len(templates))]

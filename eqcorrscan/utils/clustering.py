@@ -59,10 +59,6 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
         locations of maximums
     :rtype: numpy.ndarray, numpy.ndarray
     """
-    if shift_len == 0:
-        stack = True  # More memory efficient method - data stacked internally
-    else:
-        stack = False  # Return all individual channel correlograms
     # Cut all channels in stream-list to be the correct length (shorter than
     # st1 if stack = False by shift_len).
     df = st1[0].stats.sampling_rate
@@ -83,16 +79,10 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
-        templates=streams, stream=st1, cores=cores, stack=stack, **kwargs)
-    # Find the maximums and normalise by the number of channels
-    if stack:
-        # Find maximum and divide by no_chans
-        coherances = cccsums.max(axis=-1) / no_chans
-        positions = cccsums.argmax(axis=-1)
-    else:
-        # Find maximas, sum and divide by no_chans
-        coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
-        positions = cccsums.argmax(axis=-1)
+        templates=streams, stream=st1, cores=cores, stack=False, **kwargs)
+    # Find maximas, sum and divide by no_chans
+    coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
+    positions = cccsums.argmax(axis=-1)
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
     return coherances, positions
@@ -132,18 +122,13 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
                         len(stream_list))
     for i, master in enumerate(stream_list):
         dist_list, _ = cross_chan_coherence(
-            st1=master, streams=deepcopy(stream_list), shift_len=shift_len,
-            xcorr_func='fftw', cores=cores)
-        # Sort the list into the dist_mat structure
-        for j in range(i, len(stream_list)):
-            if i == j:
-                dist_mat[i, j] = 0.0
-            else:
-                dist_mat[i, j] = 1 - dist_list[j]
-    # Reshape the distance matrix
-    for i in range(1, len(stream_list)):
-        for j in range(i):
-            dist_mat[i, j] = dist_mat.T[i, j]
+            st1=master.copy(), streams=deepcopy(stream_list),
+            shift_len=shift_len, xcorr_func='fftw', cores=cores)
+        dist_mat[i] = 1 - dist_list
+    assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
+    # Force perfect symmetry
+    dist_mat = (dist_mat + dist_mat.T) / 2
+    np.fill_diagonal(dist_mat, 0)
     return dist_mat
 
 
