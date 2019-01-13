@@ -347,6 +347,7 @@ def stream_cc_output_dict_unstacked(
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     for tr in multichannel_stream:
         tr.data = tr.data[0:unstacked_stream_len]
+    multichannel_templates = multichannel_templates[0:5]
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
@@ -382,6 +383,7 @@ def gappy_stream_cc_output_dict_unstacked(
 
     for tr in gappy_multichannel_stream:
         tr.data = tr.data[0:unstacked_stream_len]
+    multichannel_templates = multichannel_templates[0:5]
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
