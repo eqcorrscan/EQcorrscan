@@ -4233,6 +4233,8 @@ def match_filter(template_names, template_list, st, threshold,
                                        ' split first')
     stream, templates, _template_names = _prep_data_for_correlation(
         stream=stream, templates=templates, template_names=_template_names)
+    if len(templates) == 0:
+        raise IndexError("No matching data")
     Logger.info('Starting the correlation run for these data')
     for template in templates:
         Logger.debug(template.__str__())

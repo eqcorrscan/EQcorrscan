@@ -655,7 +655,8 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         min_start_time = min([tr.stats.starttime for tr in stream])
         max_end_time = max([tr.stats.endtime for tr in stream])
         longest_trace_length = (
-                stream[0].stats.sampling_rate * (max_end_time - min_start_time))
+                stream[0].stats.sampling_rate *
+                (max_end_time - min_start_time))
         longest_trace_length += 1
     else:
         longest_trace_length = max([tr.stats.npts for tr in stream])
@@ -748,7 +749,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         if c_stachans[key] > 1:
             msg = ('Multiple channels for %s.%s.%s.%s, likely a data issue'
                    % (key[0], key[1], key[2], key[3]))
-            raise IOError(msg)
+            raise NotImplementedError(msg)
     # Pad out templates to have all channels
     _templates = []
     used_template_names = []
@@ -783,11 +784,9 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         if len(template) != max([len(t) for t in templates]):
             raise Exception('Internal error forcing same template '
                             'lengths, report this error.')
-    templates = _templates
-    _template_names = used_template_names
     if not unnamed:
-        return stream, templates, template_names
-    return stream, templates
+        return stream, _templates, used_template_names
+    return stream, _templates
 
 
 if __name__ == "__main__":

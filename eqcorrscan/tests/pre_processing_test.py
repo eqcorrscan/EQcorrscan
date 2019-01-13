@@ -352,15 +352,15 @@ class TestDataPrep(unittest.TestCase):
 
         order_prepped_st1, order_prepped_streams = _prep_data_for_correlation(
             stream=st1, templates=ordered_streams, force_stream_epoch=False)
-        shuffl_prepped_st1, shuffl_prepped_streams = _prep_data_for_correlation(
+        shuff_prepped_st1, shuff_prepped_streams = _prep_data_for_correlation(
             stream=st1, templates=shuffled_streams, force_stream_epoch=False)
 
-        self.assertEqual(order_prepped_st1, shuffl_prepped_st1)
-        shuffl_prepped_streams = sorted(
-            shuffl_prepped_streams, key=lambda s: s[0].stats.starttime)
+        self.assertEqual(order_prepped_st1, shuff_prepped_st1)
+        shuff_prepped_streams = sorted(
+            shuff_prepped_streams, key=lambda s: s[0].stats.starttime)
 
         for ordered, shuffled in zip(order_prepped_streams,
-                                     shuffl_prepped_streams):
+                                     shuff_prepped_streams):
             for tr_ordered, tr_shuffled in zip(ordered, shuffled):
                 self.assertEqual(tr_ordered, tr_shuffled)
 
