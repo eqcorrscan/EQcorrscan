@@ -55,7 +55,7 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> import os
     >>> # Get the path for the test-data so we can test this
     >>> testing_path = os.path.dirname(
-    ...     tests.__file__) + '/test_data/similar_events'
+    ...     tests.__file__) + '/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
@@ -68,9 +68,6 @@ This example requires data downloaded from the eqcorrscan github repository.
     ...                 [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
     ...             stream.remove(tr)
     ...             continue
-    ...         tr.detrend('simple')
-    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     ...         st_list.append(i)
     ...     event_list.append(st_list)
     <obspy.core.stream.Stream object at ...>

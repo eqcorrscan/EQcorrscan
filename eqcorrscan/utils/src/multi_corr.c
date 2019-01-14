@@ -469,7 +469,6 @@ static inline int set_ncc(long t, long i, int chan, int n_chans, long template_l
 
     if (used_chans[t] && (i >= pad_array[t])) {
         size_t ncc_index = (t * n_chans * ((size_t) image_len - template_len + 1)) + (chan * ((size_t) image_len - template_len + 1) + i - pad_array[t]);
-        //TODO: This logic for defining where to write to for unstacked might be a bit off.
 
         if (isnanf(value)) {
             // set NaNs to zero

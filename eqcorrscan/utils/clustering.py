@@ -470,8 +470,9 @@ def corr_cluster(trace_list, thresh=0.9):
     """
     Group traces based on correlations above threshold with the stack.
 
-    Will run twice, once with a lower threshold to remove large outliers that
-    would negatively affect the stack, then again with your threshold.
+    Will run twice, once with 80% of threshold threshold to remove large
+    outliers that would negatively affect the stack, then again with your
+    threshold.
 
     :type trace_list: list
     :param trace_list:
@@ -490,17 +491,22 @@ def corr_cluster(trace_list, thresh=0.9):
         :func:`eqcorrscan.utils.stacking.align_traces` function for a way to do
         this.
     """
+    init_thresh = thresh * .8
     stack = stacking.linstack([Stream(tr) for tr in trace_list])[0]
     output = np.array([False] * len(trace_list))
     group1 = []
     array_xcorr = get_array_xcorr()
     for i, tr in enumerate(trace_list):
-        if array_xcorr(
-                np.array([tr.data]), stack.data, [0])[0][0][0] > 0.6:
+        cc = array_xcorr(np.array([tr.data]), stack.data, [0])[0][0][0]
+        if cc > init_thresh:
+            print(cc)
+            print(tr)
+            print(i)
             output[i] = True
             group1.append(tr)
-    if not group1:
-        Logger.warning('Nothing made it past the first 0.6 threshold')
+    print(group1)
+    if len(group1) == 0:
+        Logger.warning('Nothing made it past the first 80% threshold')
         return output
     stack = stacking.linstack([Stream(tr) for tr in group1])[0]
     group2 = []

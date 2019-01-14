@@ -231,7 +231,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(IOError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,

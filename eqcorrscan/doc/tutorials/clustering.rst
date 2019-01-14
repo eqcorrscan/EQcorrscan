@@ -92,7 +92,7 @@ in the tests directory.
     >>> from eqcorrscan import tests
     >>> # You will need to edit this line to the location of your eqcorrscan repo.
     >>> TEST_PATH = os.path.dirname(tests.__file__)
-    >>> testing_path = TEST_PATH + '/test_data/similar_events'
+    >>> testing_path = TEST_PATH + '/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [(read(stream_file), i)
     ...                for i, stream_file in enumerate(stream_files)]
@@ -101,10 +101,6 @@ in the tests directory.
     ...         if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
     ...             stream[0].remove(tr) # doctest:+ELLIPSIS
     ...             continue
-    ...         tr = tr.detrend('simple').resample(100.0)
-    ...         tr = tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr = tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-    <obspy.core.stream.Stream object at ...>
     >>> groups = cluster(template_list=stream_list, show=False,
     ...                  corr_thresh=0.3, cores=2)
 

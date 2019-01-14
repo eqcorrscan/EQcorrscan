@@ -14,8 +14,7 @@ import glob
 import logging
 
 from obspy.clients.fdsn import Client
-from obspy import UTCDateTime
-from obspy import read
+from obspy import UTCDateTime, read, Trace
 from obspy.clients.fdsn.header import FDSNException
 
 from eqcorrscan.tutorials.template_creation import mktemplates
@@ -212,7 +211,7 @@ class EfficientClustering(unittest.TestCase):
         groups = cluster(
             template_list=[(st, i) for i, st in enumerate(self.stream_list)],
             show=False, corr_thresh=0.3)
-        self.assertEqual(len(groups), 9)  # TODO: Check the groups.
+        self.assertEqual(len(groups), 9)
 
 
 class DistanceClusterTests(unittest.TestCase):
@@ -513,17 +512,10 @@ class ClusteringTestWarnings(unittest.TestCase):
 
     def test_svd(self):
         """Test the svd method."""
-        testing_path = os.path.join(self.testing_path, 'similar_events')
+        testing_path = os.path.join(
+            self.testing_path, 'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
-        for stream in stream_list:
-            for tr in stream:
-                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         UVectors, SValues, SVectors, stachans = svd(stream_list=stream_list)
         self.assertEqual(len(SVectors), len(stachans))
         self.assertEqual(len(SValues), len(stachans))
@@ -533,17 +525,10 @@ class ClusteringTestWarnings(unittest.TestCase):
 
     def test_empirical_svd(self):
         """Test the empirical SVD method"""
-        testing_path = os.path.join(self.testing_path, 'similar_events')
+        testing_path = os.path.join(
+            self.testing_path, 'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
-        for stream in stream_list:
-            for tr in stream:
-                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         first_sub, second_sub = empirical_svd(stream_list=stream_list)
         self.assertEqual(len(first_sub), len(second_sub))
         self.assertEqual(len(stream_list[0]), len(first_sub))
@@ -555,18 +540,10 @@ class ClusteringTestWarnings(unittest.TestCase):
     def test_svd_to_stream(self):
         """Test the conversion of SVD to stream."""
         samp_rate = 100
-        testing_path = os.path.join(self.testing_path, 'similar_events')
+        testing_path = os.path.join(
+            self.testing_path, 'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
-        for stream in stream_list:
-            for tr in stream:
-                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.resample(sampling_rate=samp_rate)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
         svstreams = svd_to_stream(uvectors=SVectors, stachans=stachans, k=4,
                                   sampling_rate=samp_rate)
@@ -574,24 +551,10 @@ class ClusteringTestWarnings(unittest.TestCase):
 
     def test_corr_unclustered(self):
         """Test the corr_cluster function."""
-        samp_rate = 40
-        testing_path = os.path.join(self.testing_path, 'similar_events')
-        stream_files = glob.glob(os.path.join(testing_path, '*'))
-        stream_list = [read(stream_file) for stream_file in stream_files]
-        for stream in stream_list:
-            for tr in stream:
-                if not (tr.stats.station == 'WHAT2' and
-                        tr.stats.channel == 'SH1'):
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
-                tr.resample(sampling_rate=samp_rate)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-        trace_list = [stream[0] for stream in stream_list]
-        corr_cluster(trace_list=trace_list, thresh=0.7)
+        trace_list = [Trace(np.random.randn(200)) for _ in range(20)]
+        corr_cluster(trace_list=trace_list, thresh=1.0)
         self.assertEqual(len(self.log_messages['warning']), 1)
-        self.assertTrue('Nothing made it past the first 0.6 threshold'
+        self.assertTrue('Nothing made it past the first 80% threshold'
                         in self.log_messages['warning'][0])
 
 

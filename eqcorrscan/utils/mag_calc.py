@@ -903,7 +903,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     >>> from eqcorrscan.utils.clustering import svd
     >>> import numpy as np
     >>> # Do the set-up
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
@@ -914,9 +914,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     ...         if (tr.stats.station, tr.stats.channel) not in remove_list:
     ...             stream.remove(tr)
     ...             continue
-    ...         tr.detrend('simple')
-    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     ...         st_list.append(i)
     ...     event_list.append(st_list) # doctest: +SKIP
     >>> event_list = np.asarray(event_list).T.tolist()
