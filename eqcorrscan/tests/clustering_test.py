@@ -149,30 +149,9 @@ class EfficientClustering(unittest.TestCase):
     def setUpClass(cls):
         testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data',
-            'similar_events')
+            'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
-        for st in stream_list:
-            for tr in st:
-                if tr.stats.sampling_rate != 100.0:
-                    ratio = tr.stats.sampling_rate / 100
-                    if int(ratio) == ratio:
-                        tr.decimate(int(ratio))
-                    else:
-                        tr.resample(100)
-        shortest_tr = min(
-            [tr.stats.npts for st in stream_list for tr in st])
-        for st in stream_list:
-            for tr in st:
-                tr.data = tr.data[0:shortest_tr]
-        for stream in stream_list:
-            for tr in stream:
-                if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
-                    stream.remove(tr)
-                    continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         cls.stream_list = stream_list
 
     def test_cross_chan_different_order(self):
