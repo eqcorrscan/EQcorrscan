@@ -24,7 +24,7 @@ from multiprocessing import Pool, cpu_count
 from obspy import Trace
 
 from eqcorrscan.utils.timer import Timer
-from eqcorrscan.core.match_filter import normxcorr2
+from eqcorrscan.utils.correlate import get_array_xcorr
 from eqcorrscan.utils.findpeaks import find_peaks2_short
 
 
@@ -147,8 +147,7 @@ def _interp_gap(data, peak_loc, interp_len):
     return data
 
 
-def template_remove(tr, template, cc_thresh, windowlength,
-                    interp_len):
+def template_remove(tr, template, cc_thresh, windowlength, interp_len):
     """
     Looks for instances of template in the trace and removes the matches.
 
@@ -168,22 +167,23 @@ def template_remove(tr, template, cc_thresh, windowlength,
     """
     _interp_len = int(tr.stats.sampling_rate * interp_len)
     if _interp_len < len(template.data):
-        Logger.warning('Interp_len is less than the length of the template,'
+        Logger.warning('Interp_len is less than the length of the template, '
                        'will used the length of the template!')
         _interp_len = len(template.data)
     if isinstance(template, Trace):
-        template = template.data
+        template = np.array([template.data])
     with Timer() as t:
-        cc = normxcorr2(image=tr.data.astype(np.float32),
-                        template=template.astype(np.float32))
-        peaks = find_peaks2_short(arr=cc.flatten(), thresh=cc_thresh,
-                                  trig_int=windowlength * tr.stats.
-                                  sampling_rate)
+        normxcorr = get_array_xcorr("fftw")
+        cc, _ = normxcorr(stream=tr.data.astype(np.float32),
+                          templates=template.astype(np.float32), pads=[0])
+        peaks = find_peaks2_short(
+            arr=cc.flatten(), thresh=cc_thresh,
+            trig_int=windowlength * tr.stats.sampling_rate)
         for peak in peaks:
-            tr.data = _interp_gap(data=tr.data,
-                                  peak_loc=peak[1] + int(0.5 * _interp_len),
-                                  interp_len=_interp_len)
-    print("Despiking took: %s s" % t.secs)
+            tr.data = _interp_gap(
+                data=tr.data, peak_loc=peak[1] + int(0.5 * _interp_len),
+                interp_len=_interp_len)
+    Logger.info("Despiking took: {0:.4f} s".format(t.secs))
     return tr
 
 
