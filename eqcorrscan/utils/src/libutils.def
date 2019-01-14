@@ -8,3 +8,6 @@ EXPORTS
     multi_normxcorr_fftw
     multi_normxcorr_time
     multi_normxcorr_time_threaded
+    dist_calc
+    distance_matrix
+    remove_unclustered
