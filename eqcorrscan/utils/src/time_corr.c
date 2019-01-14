@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  multi_corr.c
+ *       Filename:  time_corr.c
  *
  *        Purpose:  Routines for computing cross-correlations in the time-domain
  *
@@ -9,7 +9,7 @@
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (Calum Chamberlain),
+ *         Author:  Calum Chamberlain
  *   Organization:  EQcorrscan
  *      Copyright:  EQcorrscan developers.
  *        License:  GNU Lesser General Public License, Version 3

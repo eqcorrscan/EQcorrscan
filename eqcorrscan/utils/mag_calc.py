@@ -25,6 +25,7 @@ import sys
 import copy
 import random
 import pickle
+import math
 
 from scipy.signal import iirfilter
 from collections import Counter
@@ -45,8 +46,10 @@ def dist_calc(loc1, loc2):
     """
     Function to calculate the distance in km between two points.
 
-    Uses the flat Earth approximation. Better things are available for this,
-    like `gdal <http://www.gdal.org/>`_.
+    Uses the
+    `haversine formula <https://en.wikipedia.org/wiki/Haversine_formula>`_
+    to calculate great circle distance at the Earth's surface, then uses
+    trig to include depth.
 
     :type loc1: tuple
     :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
@@ -56,13 +59,21 @@ def dist_calc(loc1, loc2):
     :returns: Distance between points in km.
     :rtype: float
     """
-    R = 6371.009  # Radius of the Earth in km
-    dlat = np.radians(abs(loc1[0] - loc2[0]))
-    dlong = np.radians(abs(loc1[1] - loc2[1]))
-    ddepth = abs(loc1[2] - loc2[2])
-    mean_lat = np.radians((loc1[0] + loc2[0]) / 2)
-    dist = R * np.sqrt(dlat ** 2 + (np.cos(mean_lat) * dlong) ** 2)
-    dist = np.sqrt(dist ** 2 + ddepth ** 2)
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.dist_calc.argtypes = [
+        ctypes.c_float, ctypes.c_float, ctypes.c_float,
+        ctypes.c_float, ctypes.c_float, ctypes.c_float]
+    utilslib.dist_calc.restype = ctypes.c_float
+
+    dist = utilslib.dist_calc(
+        float(math.radians(loc1[0])), float(math.radians(loc1[1])),
+        float(loc1[2]),
+        float(math.radians(loc2[0])), float(math.radians(loc2[1])),
+        float(loc2[2]))
     return dist
 
 
@@ -892,7 +903,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     >>> from eqcorrscan.utils.clustering import svd
     >>> import numpy as np
     >>> # Do the set-up
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
@@ -903,9 +914,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     ...         if (tr.stats.station, tr.stats.channel) not in remove_list:
     ...             stream.remove(tr)
     ...             continue
-    ...         tr.detrend('simple')
-    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     ...         st_list.append(i)
     ...     event_list.append(st_list) # doctest: +SKIP
     >>> event_list = np.asarray(event_list).T.tolist()

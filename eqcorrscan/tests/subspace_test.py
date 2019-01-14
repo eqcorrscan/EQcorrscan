@@ -397,13 +397,16 @@ def get_test_data():
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     client = Client('GEONET')
     design_set = []
-    bulk_info = []
+    st = Stream()
     for event in cluster:
+        # This print is just in to force some output during long running test
+        print("Downloading for event {0}".format(event.resource_id))
+        bulk_info = []
         t1 = event.origins[0].time + 5
         t2 = t1 + 15.1
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-    st = client.get_waveforms_bulk(bulk=bulk_info)
+        st += client.get_waveforms_bulk(bulk=bulk_info)
     for event in cluster:
         t1 = event.origins[0].time + 5
         t2 = t1 + 15

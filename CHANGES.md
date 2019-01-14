@@ -1,3 +1,13 @@
+## Future
+* BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
+  the Earth when changing hemispheres. We now use the Haversine formula, which
+  should give better results at short distances, and does not use a flat-Earth
+  approximation, so is better suited to larger distances as well.
+* Add C-openmp parallel distance-clustering (speed-ups of ~100 times).
+* Add time-clustering for catalogs and change how space-time cluster works
+  so that it uses the time-clustering, rather than just throwing out events
+  outside the time-range.
+
 ## Current
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.

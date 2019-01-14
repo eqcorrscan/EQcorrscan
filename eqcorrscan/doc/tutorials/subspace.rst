@@ -68,14 +68,11 @@ aligned (see clustering submodule for alignment methods).
     >>> from eqcorrscan import tests
     >>> # Get the path for the test-data so we can test this
     >>> TEST_PATH = os.path.dirname(tests.__file__)
-    >>> wavefiles = glob.glob(TEST_PATH + '/test_data/similar_events/*')
+    >>> wavefiles = glob.glob(
+    ...    TEST_PATH + '/test_data/similar_events_processed/*')
     >>> wavefiles.sort()  # Sort the wavefiles to ensure reproducibility
     >>> streams = [read(w) for w in wavefiles[0:3]]
     >>> # Channels must all be the same length
-    >>> for st in streams:
-    ...    for tr in st:
-    ...       tr.data = tr.data[int(41.5 * tr.stats.sampling_rate):
-    ...                         int(44 * tr.stats.sampling_rate)]
     >>> detector.construct(streams=streams, lowcut=2, highcut=9, filt_order=4,
     ...                    sampling_rate=20, multiplex=True, name='Test_1',
     ...                    align=True, shift_len=0.5, reject=0.2)
@@ -116,9 +113,6 @@ True.
 .. code-block:: python
 
     >>> stream = read(wavefiles[0])
-    >>> for tr in stream:
-    ...   tr.data = tr.data[int(41.5 * tr.stats.sampling_rate):
-    ...                     int(44 * tr.stats.sampling_rate)]
     >>> detections = detector.detect(st=stream, threshold=0.5, trig_int=3) # doctest:+ELLIPSIS
 
 
