@@ -125,8 +125,8 @@ class ClusteringTests(unittest.TestCase):
 
     def test_corr_cluster(self):
         """Test the corr_cluster function."""
-        samp_rate = 40
-        testing_path = os.path.join(self.testing_path, 'similar_events')
+        testing_path = os.path.join(
+            self.testing_path, 'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
         for stream in stream_list:
@@ -135,10 +135,6 @@ class ClusteringTests(unittest.TestCase):
                         tr.stats.channel == 'EHZ'):
                     stream.remove(tr)
                     continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=2.0, freqmax=10.0)
-                tr.resample(sampling_rate=samp_rate)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
         trace_list = [stream[0] for stream in stream_list]
         output = corr_cluster(trace_list=trace_list, thresh=0.7)
         self.assertFalse(output.all())
@@ -152,6 +148,8 @@ class EfficientClustering(unittest.TestCase):
             'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            st.detrend().filter("bandpass", freqmin=5.0, freqmax=15.0)
         cls.stream_list = stream_list
 
     def test_cross_chan_different_order(self):
