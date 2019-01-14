@@ -51,6 +51,8 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
         The method for performing correlations. Accepts either a string or
         callable. See :func:`eqcorrscan.utils.correlate.register_array_xcorr`
         for more details
+    :type concurrency: str
+    :param concurrency: Concurrency for xcorr-func.
     :type cores: int
     :param cores: Number of threads to parallel over
 
@@ -499,12 +501,8 @@ def corr_cluster(trace_list, thresh=0.9):
     for i, tr in enumerate(trace_list):
         cc = array_xcorr(np.array([tr.data]), stack.data, [0])[0][0][0]
         if cc > init_thresh:
-            print(cc)
-            print(tr)
-            print(i)
             output[i] = True
             group1.append(tr)
-    print(group1)
     if len(group1) == 0:
         Logger.warning('Nothing made it past the first 80% threshold')
         return output
