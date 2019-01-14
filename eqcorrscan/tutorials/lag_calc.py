@@ -1,5 +1,6 @@
 """Tutorial to illustrate the lag_calc usage."""
 import logging
+from multiprocessing import cpu_count
 
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog
@@ -100,5 +101,4 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
 
 
 if __name__ == '__main__':
-    from multiprocessing import cpu_count
     run_tutorial(min_magnitude=4, num_cores=cpu_count())

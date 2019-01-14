@@ -55,7 +55,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       conda install clangdev=4 openmp=4 libcxx=4 toolchain toolchain_c_osx-64;
     fi
-  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
+  - pip install pep8-naming 'pytest<4.0' pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures pytest-mpl codecov Cython
   - pip freeze
   - conda list
   # done installing dependencies
@@ -67,10 +67,13 @@ script:
    - export MPLBACKEND=Agg
    - if [[ "$PYTEST" == "0" ]]; then
      test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2;
+     else
+     py.test --runslow -m "not serial and not network" -n 2;
+     fi
+   - if [[ "$PYTEST" == "0" ]]; then
      export OMP_NUM_THREADS=2;
      test_eqcorrscan.py --ci -m "serial and not network" --cov-append;
      else
-     py.test --runslow -m "not serial and not network" -n 2;
      export OMP_NUM_THREADS=2;
      py.test -m "serial and not network" --cov-append;
      fi
@@ -78,7 +81,7 @@ script:
 after_success:
   # Check how much code is actually tested and send this report to codecov
   - ls -a
-  - mv ~/.eqcorrscan/.coverage ../.coverage.empty
+  - mv .coverage ../.coverage.empty
   - cd ..
   - coverage combine
   - codecov

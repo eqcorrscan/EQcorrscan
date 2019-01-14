@@ -43,6 +43,8 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertEqual(round(dist_calc((90, 90, 0), (90, 90, 10))), 10)
         self.assertEqual(round(dist_calc((90, 90, 0), (90, 89, 0))), 0)
         self.assertEqual(round(dist_calc((90, 90, 0), (89, 90, 0))), 111)
+        self.assertEqual(round(dist_calc((0, 180, 0), (0, -179, 0))), 111)
+        self.assertEqual(round(dist_calc((0, -180, 0), (0, 179, 0))), 111)
 
     @pytest.mark.network
     @pytest.mark.flaky(reruns=2)
@@ -192,7 +194,7 @@ class TestMagCalcMethods(unittest.TestCase):
         """Test the SVD magnitude calculator."""
         # Do the set-up
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data', 'similar_events')
+                                    'test_data', 'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))
         stream_list = [read(stream_file) for stream_file in stream_files]
         event_list = []
@@ -203,9 +205,6 @@ class TestMagCalcMethods(unittest.TestCase):
                         [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
                     stream.remove(tr)
                     continue
-                tr.detrend('simple')
-                tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-                tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
                 st_list.append(i)
             event_list.append(st_list)
         event_list = np.asarray(event_list).T.tolist()
