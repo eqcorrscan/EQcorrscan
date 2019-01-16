@@ -325,6 +325,7 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     utilslib = _load_cdll('libutils')
 
     lengths = np.array([peak.shape[0] for peak in peaks], dtype=ctypes.c_long)
+    trig_int = int(trig_int)
     n = np.int32(len(peaks))
     cores = min(cores, n)
 
@@ -397,6 +398,7 @@ def decluster(peaks, index, trig_int, threshold=0):
     utilslib = _load_cdll('libutils')
 
     length = peaks.shape[0]
+    trig_int = int(trig_int)
     utilslib.decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
