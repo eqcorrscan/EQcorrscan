@@ -20,7 +20,6 @@ import numpy as np
 from multiprocessing import Pool, cpu_count
 from scipy import ndimage
 from future.utils import native_str
-from itertools import compress
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
@@ -139,26 +138,6 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
     >>> arr[60] = 100
     >>> find_peaks2_short(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
-
-    .. note::
-        peak-finding is optimised for zero-mean cross-correlation data where
-        fluctuations are frequent.  Because of this, in certain cases some
-        peaks may be missed if the trig_int is short and the threshold is low.
-        Consider the following case:
-
-        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
-        >>> find_peaks2_short(arr, thresh=.2, trig_int=3)
-        [(1.0, 0)]
-
-        Whereas you would expect the following:
-
-        >>> arr = np.array([1, .2, .2, .2, .2, 1, .2, .2, .2, .2, 1])
-        >>> find_peaks2_short(arr, thresh=.2, trig_int=3, full_peaks=True)
-        [(1.0, 0), (1.0, 5), (1.0, 10)]
-
-        This is rare and unlikely to happen for correlation cases, where
-        trigger intervals are usually relatively large and thresholds high.
-
     """
     # Set everything below the threshold to zero
     image = np.copy(arr)
@@ -264,7 +243,8 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
     return peaks
 
 
-def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks, cores):
+def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks,
+                               cores):
     """
     Determine peaks in an array or arrays of data above a certain threshold.
 
