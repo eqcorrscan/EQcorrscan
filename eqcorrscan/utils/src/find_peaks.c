@@ -23,10 +23,14 @@
 // Functions
 // Longs could be unsigned ints...
 int decluster(float *arr, long *indexes, long len, float thresh, long trig_int,
-               unsigned int *out){
+              unsigned int *out){
     // Takes a sorted array and the indexes
-    int i, j, keep;
+    long i, j;
+    int keep;
     float step;
+
+    if (fabs(arr[0]) < thresh){return 0;}
+
     // Take first (highest) peak
     out[0] = 1;
     for (i = 1; i < len; ++i){
@@ -35,30 +39,39 @@ int decluster(float *arr, long *indexes, long len, float thresh, long trig_int,
         if (fabs(arr[i]) < thresh){
             break;
         }
-        for (j = 0; j < len; ++j){
-            step = indexes[i] - indexes[j];
-            if (step < 0){step *= -1;}
-            if (i != j && trig_int > step && out[j] == 1){
+        for (j = 0; j < i; ++j){
+            step = abs(indexes[i] - indexes[j]);
+            if (trig_int >= step && out[j] == 1){
                 keep = 0;
                 break;
             }
         }
-        if (keep == 1){out[i] = 1;}
+        if (keep == 1){
+            out[i] = 1;
+         }
         else {out[i] = 0;}
     }
     return 0;
 }
 
-int multi_decluster(float *arr, long *indices, long len, int n, float *thresholds,
+int multi_decluster(float *arr, long *indices, long *lengths, int n, float *thresholds,
                     long trig_int, unsigned int *out, int threads){
-    int i, ret_val=0;
-    /*
-    # TODO: Write for mixed sizes
-    */
+    int i, ret_val = 0;
+    long * start_inds = (long *) calloc(n, sizeof(long));
+    long start_ind = 0;
+
+    for (i = 0; i < n; ++i){
+        start_inds[i] = start_ind;
+        start_ind += lengths[i];
+    }
+
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
-        ret_val += decluster(&arr[i * len], &indices[i * len])
+        ret_val += decluster(
+            &arr[start_inds[i]], &indices[start_inds[i]], lengths[i], thresholds[i],
+            trig_int, &out[start_inds[i]]);
     }
+    free(start_inds);
     return ret_val;
 }
 
@@ -100,11 +113,20 @@ int find_peaks(float *arr, long len, float thresh){
 
 
 int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads){
-    int i, ret_val=0;
+    int i, ret_val = 0;
+    long * start_inds = (long *) calloc(n, sizeof(long));
+    long start_ind = 0;
+
+    for (i = 0; i < n; ++i){
+        start_inds[i] = start_ind;
+        start_ind += len;
+    }
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
-        ret_val += find_peaks(&arr[i * len], len, thresholds[i]);
+        ret_val += find_peaks(&arr[start_inds[i]], len, thresholds[i]);
     }
+
+    free(start_inds);
     return ret_val;
 }

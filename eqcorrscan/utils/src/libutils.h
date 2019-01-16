@@ -53,7 +53,7 @@
 // find_peaks functions
 int decluster(float*, long*, long, float, long, unsigned int*);
 
-int multi_decluster(float*, long*, long, int, float*, long, unsigned int*, int);
+int multi_decluster(float*, long*, long*, int, float*, long, unsigned int*, int);
 
 int findpeaks(float*, long, float);
 

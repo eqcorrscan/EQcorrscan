@@ -1,18 +1,21 @@
-## Future
+## Current
 * BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
   the Earth when changing hemispheres. We now use the Haversine formula, which
   should give better results at short distances, and does not use a flat-Earth
   approximation, so is better suited to larger distances as well.
 * Add C-openmp parallel distance-clustering (speed-ups of ~100 times).
+* Allow option to not stack correlations in correlation functions.
+* Use compiled correlation functions for correlation clustering (speed-up).
 * Add time-clustering for catalogs and change how space-time cluster works
   so that it uses the time-clustering, rather than just throwing out events
   outside the time-range.
-
-## Current
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
 * `find-peaks` replaced by compiled peak finding routine - more efficient
-  both in memory and time #249
+  both in memory and time #249 - approx 50x faster
+  * Note that the results of the C-func and the Python functions are slightly
+    different.  The C function (now the default) is more stable when peaks
+    are small and close together (e.g. in noisy data).
 * multi-find peaks makes use of openMP parallelism for more efficient
   memory usage #249
 

@@ -12,13 +12,14 @@ import numpy as np
 import pytest
 
 from eqcorrscan.utils.findpeaks import (
-    find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled)
+    find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
+    _multi_find_peaks_c, _find_peaks_c)
 from eqcorrscan.utils.timer import time_func
 
 
 class TestStandardPeakFinding:
     """ Run peak finding against a standard cc array """
-    trig_index = 10
+    trig_index = 100
 
     # fixtures
     @pytest.fixture
@@ -32,34 +33,57 @@ class TestStandardPeakFinding:
         return np.load(join(pytest.test_data_path, 'test_peaks.npy'))
 
     @pytest.fixture
-    def peak_array(self, cc_array):
+    def peak_array_py(self, cc_array):
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index)
         return peaks
 
     @pytest.fixture
-    def full_peak_array(self, cc_array):
+    def full_peak_array_py(self, cc_array):
         """ run find_peaks2_short on cc_array and return results """
         peaks = find_peaks2_short(
             arr=cc_array, thresh=0.2, trig_int=self.trig_index,
             full_peaks=True)
         return peaks
 
+    @pytest.fixture
+    def peak_array_c(self, cc_array):
+        """ run find_peaks2_short on cc_array and return results """
+        peaks = find_peaks_compiled(
+            arr=cc_array, thresh=0.2, trig_int=self.trig_index)
+        return peaks
+
+    @pytest.fixture
+    def full_peak_array_c(self, cc_array):
+        """ run find_peaks2_short on cc_array and return results """
+        peaks = find_peaks_compiled(
+            arr=cc_array, thresh=0.2, trig_int=self.trig_index,
+            full_peaks=True)
+        return peaks
+
     # tests
-    def test_main_find_peaks(self, peak_array, expected_peak_array):
+    def test_main_find_peaks(self, peak_array_c, peak_array_py,
+                             expected_peak_array):
         """Test find_peaks2_short returns expected peaks """
 
         # Check length first as this will be a more obvious issue
-        assert len(peak_array) == len(expected_peak_array), (
+        assert len(peak_array_c) == len(expected_peak_array), (
             'Peaks are not the same length, has ccc been updated?')
-        assert (np.array(peak_array) == expected_peak_array).all()
+        assert (np.array(peak_array_c) == expected_peak_array).all()
+        assert len(peak_array_py) == len(expected_peak_array), (
+            'Peaks are not the same length, has ccc been updated?')
+        assert (np.array(peak_array_py) == expected_peak_array).all()
 
-    def test_find_all_peaks(self, full_peak_array, expected_peak_array):
+    def test_find_all_peaks(self, full_peak_array_c, full_peak_array_py,
+                            expected_peak_array):
         """Test finding all the peaks."""
         for peak in expected_peak_array[0]:
-            assert peak in np.array(full_peak_array)
-        assert len(full_peak_array) == 185
+            assert peak in np.array(full_peak_array_c)
+        assert len(full_peak_array_c) == 69
+        for peak in expected_peak_array[0]:
+            assert peak in np.array(full_peak_array_py)
+        assert len(full_peak_array_py) == 69
 
 
 class TestEdgeCases:
@@ -80,7 +104,7 @@ class TestEdgeCases:
     @pytest.append_name(datasets)
     def not_below_threshold(self):
         """ An array that doesn't drop below the threshold. """
-        arr = np.ones(self.data_len)
+        arr = np.ones(self.data_len, dtype=np.float32)
         spike_locs = np.random.randint(0, self.data_len, size=500)
         threshold = 0.5
         for spike_loc in spike_locs:
@@ -91,7 +115,7 @@ class TestEdgeCases:
     @pytest.append_name(datasets)
     def nearby_peaks(self):
         """ Peaks within trig-int of one-another - ensure highest is kept."""
-        arr = np.ones(self.data_len)
+        arr = np.ones(self.data_len, dtype=np.float32)
         biggest_peak_loc = self.data_len // 2
         arr[biggest_peak_loc] *= 1000
         arr[biggest_peak_loc - (self.trig_int // 2)] *= 900
@@ -154,7 +178,9 @@ class TestPeakFindSpeeds:
     """ test findpeaks on various themes of arrays """
     datasets_1d = []
     datasets_2d = []
-    data_len = 1000000
+    data_len = 100000
+    n_channels = 50  # Number of channels for noisy 2D dataset
+    DEBUG = False
 
     # fixtures that create 1D datasets
     @pytest.fixture(scope='class')
@@ -212,7 +238,7 @@ class TestPeakFindSpeeds:
     @pytest.append_name(datasets_2d)
     def noisy_multi_array(self):
         """ a noisy 2d array """
-        return np.random.randn(4, self.data_len) ** 5
+        return np.random.randn(self.n_channels, self.data_len) ** 5
 
     @pytest.fixture(scope='class', params=datasets_2d)
     def dataset_2d(self, request):
@@ -250,8 +276,8 @@ class TestPeakFindSpeeds:
         """ ensure the same results are returned for serial and parallel
         in multi_find_peaks """
         print('starting find_peak profiling on: ' + request.node.name)
-        arr = dataset_2d
-        threshold = [10 * np.median(np.abs(x)) for x in dataset_2d]
+        arr = dataset_2d.astype(np.float32)
+        threshold = [np.float32(10 * np.median(np.abs(x))) for x in arr]
         print("Running serial C loop")
         serial_c_peaks = time_func(
             multi_find_peaks, name="serial-C", arr=arr, thresh=threshold,
@@ -272,30 +298,81 @@ class TestPeakFindSpeeds:
             thresh=threshold, trig_int=600, parallel=True,
             internal_func=find_peaks2_short, full_peaks=True)
         assert serial_py_peaks == parallel_py_peaks
+        if not serial_c_peaks == parallel_c_peaks and self.DEBUG:
+            for _serial_c_peaks, _parallel_c_peaks in zip(
+                    serial_c_peaks, parallel_c_peaks):
+                for peak in _serial_c_peaks:
+                    if peak not in _parallel_c_peaks:
+                        print("Peak in serial but not parallel: {0}".format(
+                            peak))
+                for peak in _parallel_c_peaks:
+                    if peak not in _serial_c_peaks:
+                        print("Peak in parallel but not serial: {0}".format(
+                            peak))
+            # Test the first step
+            parallel_peak_vals, parallel_peak_indices = _multi_find_peaks_c(
+                arrays=arr, thresholds=threshold, threads=2)
+            parallel_sorted = []
+            parallel_peaks_sorted = []
+            parallel_indices_sorted = []
+            for _peaks, _indices in zip(parallel_peak_vals,
+                                        parallel_peak_indices):
+                if len(_peaks) == 0:
+                    parallel_sorted.append([])
+                    continue
+                _peaks_sort = sorted(
+                    zip(_peaks, _indices),
+                    key=lambda amplitude: abs(amplitude[0]), reverse=True)
+                parallel_sorted.append(_peaks_sort)
+                _arr, _ind = zip(*_peaks_sort)
+                parallel_peaks_sorted.extend(_arr)
+                parallel_indices_sorted.extend(_ind)
+            serial_peak_vals, serial_peak_indices, serial_sorted = ([], [], [])
+            for sub_arr, thresh in zip(arr, threshold):
+                _peak_vals, _peak_indices = _find_peaks_c(
+                    array=sub_arr, threshold=thresh)
+                serial_peak_vals.append(_peak_vals)
+                serial_peak_indices.append(_peak_indices)
+                _peaks_sort = sorted(
+                    zip(_peak_vals, _peak_indices),
+                    key=lambda amplitude: abs(amplitude[0]), reverse=True)
+                serial_sorted.append(_peaks_sort)
+            for i in range(len(serial_peak_vals)):
+                if parallel_peak_vals[i].size > 0:
+                    assert np.all(parallel_peak_vals[i] == serial_peak_vals[i])
+                    assert np.all(parallel_peak_indices[i] ==
+                                  serial_peak_indices[i])
+                    assert parallel_sorted == serial_sorted
+                else:
+                    assert serial_peak_vals[i].size == 0
+            np.save("test_2d_array.npy", arr)
         assert serial_c_peaks == parallel_c_peaks
-        # i = 0
-        # for py, c in zip(serial_py_peaks, serial_c_peaks):
-        #     if len(py) > 0:
-        #         py_peak_locs = list(zip(*py))[1]
-        #         for peak in c:
-        #             if peak[1] not in py_peak_locs:
-        #                 print("{0} in C but not Py".format(peak))
-        #                 np.save("failed_dataset.npy", arr[i])
-        #                 np.save("Python_peaks.npy", py)
-        #                 np.save("C_peaks.npy", c)
-        #                 assert peak[1] in py_peak_locs
-        #     i += 1
-        #     assert len(py) == len(c)
-        #     assert np.allclose(py, c, atol=0.01)
+        for i in range(len(serial_c_peaks)):
+            diff_count = 0
+            for j in range(len(serial_c_peaks[i])):
+                if not serial_c_peaks[i][j] in serial_py_peaks[i]:
+                    diff_count += 1
+                    print("Peak {0} in C but not in py".format(
+                        serial_c_peaks[i][j]))
+            for j in range(len(serial_py_peaks[i])):
+                if not serial_py_peaks[i][j] in serial_c_peaks[i]:
+                    diff_count += 1
+                    print("Peak {0} in py but not in C".format(
+                        serial_py_peaks[i][j]))
+            assert diff_count <= 0.0001 * self.data_len
 
     def test_noisy_timings(self, noisy_multi_array):
-        threshold = [np.median(np.abs(d)) for d in noisy_multi_array]
+        arr = noisy_multi_array.astype(np.float32)
+        threshold = [np.float32(np.median(np.abs(d)))
+                     for d in noisy_multi_array]
         print("Running serial loop")
         serial_peaks = time_func(
-            multi_find_peaks, name="serial", arr=noisy_multi_array,
+            multi_find_peaks, name="serial", arr=arr,
             thresh=threshold, trig_int=600, parallel=False)
         print("Running parallel loop")
         parallel_peaks = time_func(
-            multi_find_peaks, name="parallel", arr=noisy_multi_array,
+            multi_find_peaks, name="parallel", arr=arr,
             thresh=threshold, trig_int=600, parallel=True)
-        assert serial_peaks == parallel_peaks
+        assert len(serial_peaks) == len(parallel_peaks)
+        for i in range(len(serial_peaks)):
+            assert serial_peaks[i] == parallel_peaks[i]

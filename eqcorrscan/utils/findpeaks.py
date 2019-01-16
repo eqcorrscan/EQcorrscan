@@ -17,7 +17,7 @@ import random
 import logging
 import numpy as np
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from scipy import ndimage
 from future.utils import native_str
 from itertools import compress
@@ -68,8 +68,6 @@ def find_peaks_compiled(arr, thresh, trig_int, full_peaks=False):
     """
     Determine peaks in an array of data above a certain threshold.
 
-    Uses a mask to remove data below threshold and finds peaks in what is left.
-
     :type arr: numpy.ndarray
     :param arr: 1-D numpy array is required
     :type thresh: float
@@ -82,10 +80,9 @@ def find_peaks_compiled(arr, thresh, trig_int, full_peaks=False):
         peaks within this window this code will find the highest.
     :type full_peaks: bool
     :param full_peaks:
-        If True, will remove the issue eluded to below, by declustering within
-        data-sections above the threshold, rather than just taking the peak
-        within that section. This will take more time. This defaults to True
-        for match_filter.
+        If True, will declustering within data-sections above the threshold,
+        rather than just taking the peak within that section. This will take
+        more time. This defaults to True for match_filter.
 
     :return: peaks: Lists of tuples of peak values and locations.
     :rtype: list
@@ -99,12 +96,12 @@ def find_peaks_compiled(arr, thresh, trig_int, full_peaks=False):
         peak_vals = arr
         peak_indices = np.arange(arr.shape[0])
     if len(peak_vals) > 0:
-        peaks = decluster(peaks=np.array(peak_vals),
-                          index=np.array(peak_indices), trig_int=trig_int + 1)
-        peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
+        peaks = decluster(
+            peaks=np.array(peak_vals), index=np.array(peak_indices),
+            trig_int=trig_int + 1, threshold=thresh)
+        peaks = sorted(peaks, key=lambda peak: peak[1], reverse=False)
         return peaks
     else:
-        print('No peaks for you!')
         return []
 
 
@@ -253,7 +250,7 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
                 full_peaks=full_peaks))
     else:
         if cores is None:
-            cores = arr.shape[0]
+            cores = min(arr.shape[0], cpu_count())
         if internal_func.__name__ != 'find_peaks_compiled':
             with pool_boy(Pool=Pool, traces=arr.shape[0], cores=cores) as pool:
                 params = ((sub_arr, arr_thresh, trig_int, full_peaks)
@@ -269,60 +266,138 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
 
 def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks, cores):
     """
+    Determine peaks in an array or arrays of data above a certain threshold.
 
-    :param arrays:
+    :type arrays: numpy.ndarray
+    :param arrays: 2-D numpy array is required
+    :type thresholds: list
     :param thresholds:
+        Minimum value for peaks.
+    :type trig_int: int
     :param trig_int:
+        The minimum difference in samples between triggers, if multiple
+        peaks within this window this code will find the highest.
+    :type full_peaks: bool
     :param full_peaks:
-    :param cores:
-    :return:
+        If True, will decluster within data-sections above the threshold,
+        rather than just taking the peak within that section. This will take
+        more time. This defaults to True for match_filter.
+    :type cores: int
+    :param cores: Number of threads to parallel across
+
+    :return: peaks: List of List of tuples of peak values and locations.
+    :rtype: list
     """
-    peaks = []
-    #TODO: multi-decluster compiled.
-    return peaks
+    if not full_peaks:
+        peak_vals, peak_indices = _multi_find_peaks_c(
+            arrays=arrays, thresholds=thresholds, threads=cores)
+        # Remove empty arrays
+        peak_mapper = {}
+        map_index = 0
+        _peak_vals = []
+        _peak_indices = []
+        _thresholds = []
+        for i in range(arrays.shape[0]):
+            if len(peak_vals[i]) > 0:
+                peak_mapper.update({i: map_index})
+                _peak_vals.append(peak_vals[i])
+                _peak_indices.append(peak_indices[i])
+                _thresholds.append(thresholds[i])
+                map_index += 1
+        peak_vals = _peak_vals
+        peak_indices = _peak_indices
+        thresholds = _thresholds
+    else:
+        peak_vals = arrays
+        peak_indices = [np.arange(arr.shape[0]) for arr in arrays]
+        peak_mapper = {i: i for i in range(len(peak_indices))}
+    peaks = _multi_decluster(
+        peaks=peak_vals, indices=peak_indices, trig_int=trig_int,
+        thresholds=thresholds, cores=cores)
+    peaks = [sorted(_peaks, key=lambda peak: peak[1], reverse=False)
+             for _peaks in peaks]
+    out_peaks = []
+    for i in range(arrays.shape[0]):
+        if i in peak_mapper.keys():
+            out_peaks.append(peaks[peak_mapper[i]])
+        else:
+            out_peaks.append([])
+    return out_peaks
 
 
-def _multi_decluster(peaks, indices, trig_int, thresholds):
+def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     """
     Decluster peaks based on an enforced minimum separation.
 
     Only works when peaks and indices are all the same shape.
 
-    :type peaks: np.ndarray
-    :param peaks: array of peak values
-    :type indices: np.ndarray
-    :param indices: locations of peaks
-    :type trig_int: list of int
+    :type peaks: list
+    :param peaks: list of arrays of peak values
+    :type indices: list
+    :param indices: list of arrays of locations of peaks
+    :type trig_int: int
     :param trig_int: Minimum trigger interval in samples
+    :type thresholds: list
+    :param thresholds: list of float of threshold values
 
-    :return: list of tuples of (value, sample)
+    :return: list of lists of tuples of (value, sample)
     """
     utilslib = _load_cdll('libutils')
-    # TODO Write with mixed sizes
 
-    length = np.int64(peaks.shape[1])
-    n = np.int32(peaks.shape[0])
+    lengths = np.array([peak.shape[0] for peak in peaks], dtype=np.int64)
+    n = np.int32(len(peaks))
+    cores = min(cores, n)
+
+    total_length = lengths.sum()
+
     utilslib.multi_decluster.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.int64, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=np.int64, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_float, ctypes.c_long,
-        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS'))]
+        np.ctypeslib.ndpointer(dtype=np.int64, shape=(n,),
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(n,),
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(total_length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
     utilslib.multi_decluster.restype = ctypes.c_int
-    peaks_sort = sorted(zip(peaks, index),
-                        key=lambda amplitude: abs(amplitude[0]),
-                        reverse=True)
-    arr, inds = zip(*peaks_sort)
-    arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.ascontiguousarray(inds, dtype=np.int64)
-    out = np.zeros(len(arr), dtype=np.uint32)
-    ret = utilslib.decluster(
-        arr, inds, length, np.float32(threshold), np.int64(trig_int), out)
+
+    peaks_sorted = np.empty(total_length, dtype=np.float32)
+    indices_sorted = np.empty_like(peaks_sorted, dtype=np.float32)
+
+    start_ind = 0
+    end_ind = 0
+    for _peaks, _indices, length in zip(peaks, indices, lengths):
+        end_ind += length
+        sorted_indices = np.abs(_peaks).argsort()
+        peaks_sorted[start_ind: end_ind] = _peaks[sorted_indices[::-1]]
+        indices_sorted[start_ind: end_ind] = _indices[sorted_indices[::-1]]
+        start_ind += length
+
+    peaks_sorted = np.ascontiguousarray(peaks_sorted, dtype=np.float32)
+    indices_sorted = np.ascontiguousarray(indices_sorted, dtype=np.int64)
+    lengths = np.ascontiguousarray(lengths, dtype=np.int64)
+    thresholds = np.ascontiguousarray(thresholds, dtype=np.float32)
+    out = np.zeros(total_length, dtype=np.uint32)
+    ret = utilslib.multi_decluster(
+        peaks_sorted, indices_sorted, lengths, np.int32(n), thresholds,
+        np.int64(trig_int + 1), out, np.int32(cores))
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
-    peaks_out = list(compress(peaks_sort, out))
+
+    peaks_out = []
+    slice_start = 0
+    for length in lengths:
+        slice_end = slice_start + length
+        out_mask = out[slice_start: slice_end].astype(bool)
+        declustered_peaks = peaks_sorted[slice_start: slice_end][out_mask]
+        declustered_indices = indices_sorted[slice_start: slice_end][out_mask]
+        peaks_out.append(list(zip(declustered_peaks, declustered_indices)))
+        slice_start = slice_end
     return peaks_out
 
 
@@ -351,18 +426,20 @@ def decluster(peaks, index, trig_int, threshold=0):
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.decluster.restype = ctypes.c_int
-    peaks_sort = sorted(zip(peaks, index),
-                        key=lambda amplitude: abs(amplitude[0]),
-                        reverse=True)
-    arr, inds = zip(*peaks_sort)
+
+    sorted_inds = np.abs(peaks).argsort()
+    arr = peaks[sorted_inds[::-1]]
+    inds = index[sorted_inds[::-1]]
     arr = np.ascontiguousarray(arr, dtype=np.float32)
     inds = np.ascontiguousarray(inds, dtype=np.int64)
     out = np.zeros(len(arr), dtype=np.uint32)
+
     ret = utilslib.decluster(
         arr, inds, length, np.float32(threshold), np.int64(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
-    peaks_out = list(compress(peaks_sort, out))
+
+    peaks_out = list(zip(arr[out.astype(bool)], inds[out.astype(bool)]))
     return peaks_out
 
 
@@ -378,11 +455,12 @@ def _find_peaks_c(array, threshold):
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_long, ctypes.c_float]
     utilslib.find_peaks.restype = ctypes.c_int
-    array = np.ascontiguousarray(array, np.float32)
-    ret = utilslib.find_peaks(array, length, threshold)
+    arr = np.ascontiguousarray(array.copy(), np.float32)
+    ret = utilslib.find_peaks(arr, length, threshold)
+    # copy data to avoid farking the users data
     if ret != 0:
         raise MemoryError("Internal error")
-    peaks_locations = np.nonzero(array)
+    peaks_locations = np.nonzero(arr)
     return array[peaks_locations], peaks_locations[0]
 
 
@@ -395,24 +473,27 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     length = np.int64(arrays.shape[1])
     n = np.int32(arrays.shape[0])
     thresholds = np.ascontiguousarray(thresholds, np.float32)
-    arrays = np.ascontiguousarray(arrays, np.float32)
+    arr = np.ascontiguousarray(arrays.flatten().copy(), np.float32)
     utilslib.multi_find_peaks.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float32, shape=(n, length),
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(n * length,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_long, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n, ),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
     utilslib.multi_find_peaks.restype = ctypes.c_int
-    ret = utilslib.multi_find_peaks(arrays, length, n, thresholds, threads)
+    ret = utilslib.multi_find_peaks(
+        arr, length, n, thresholds, threads)
+    # Copy data to avoid farking the users data
     if ret != 0:
         raise MemoryError("Internal error")
     peaks = []
     peak_locations = []
+    arr = arr.reshape(n, length)
     for i in range(n):
-        peak_locs = np.nonzero(arrays[i])
+        peak_locs = np.nonzero(arr[i])
         peaks.append(arrays[i][peak_locs])
-        peak_locations.append(peak_locs)
+        peak_locations.append(peak_locs[0])
 
     return peaks, peak_locations
 
