@@ -334,14 +334,14 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     utilslib.multi_decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_ulonglong, shape=(total_length,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_ulonglong, shape=(n,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(n,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_ulonglong,
+        ctypes.c_longlong,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
@@ -361,13 +361,13 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     peaks_sorted = np.ascontiguousarray(peaks_sorted, dtype=np.float32)
     indices_sorted = np.ascontiguousarray(
-        indices_sorted, dtype=ctypes.c_ulonglong)
-    lengths = np.ascontiguousarray(lengths, dtype=ctypes.c_ulonglong)
+        indices_sorted, dtype=ctypes.c_longlong)
+    lengths = np.ascontiguousarray(lengths, dtype=ctypes.c_longlong)
     thresholds = np.ascontiguousarray(thresholds, dtype=np.float32)
     out = np.zeros(total_length, dtype=np.uint32)
     ret = utilslib.multi_decluster(
         peaks_sorted, indices_sorted, lengths, np.int32(n), thresholds,
-        ctypes.c_ulonglong(trig_int + 1), out, np.int32(cores))
+        ctypes.c_longlong(trig_int + 1), out, np.int32(cores))
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 
@@ -403,9 +403,9 @@ def decluster(peaks, index, trig_int, threshold=0):
     utilslib.decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_ulonglong, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_ulonglong, ctypes.c_float, ctypes.c_ulonglong,
+        ctypes.c_longlong, ctypes.c_float, ctypes.c_longlong,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.decluster.restype = ctypes.c_int
@@ -414,12 +414,12 @@ def decluster(peaks, index, trig_int, threshold=0):
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.ascontiguousarray(inds, dtype=ctypes.c_ulonglong)
+    inds = np.ascontiguousarray(inds, dtype=ctypes.c_longlong)
     out = np.zeros(len(arr), dtype=np.uint32)
 
     ret = utilslib.decluster(
-        arr, inds, ctypes.c_ulonglong(length), np.float32(threshold),
-        ctypes.c_ulonglong(trig_int), out)
+        arr, inds, ctypes.c_longlong(length), np.float32(threshold),
+        ctypes.c_longlong(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 

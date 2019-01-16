@@ -22,10 +22,10 @@
 
 // Functions
 // Longs could be unsigned ints...
-int decluster(float *arr, unsigned long long *indexes, unsigned long long len,
-              float thresh, unsigned long long trig_int, unsigned int *out){
+int decluster(float *arr, long long *indexes, long long len,
+              float thresh, long long trig_int, unsigned int *out){
     // Takes a sorted array and the indexes
-    unsigned long long i, j, step;
+    long long i, j, step;
     int keep;
 
     if (fabs(arr[0]) < thresh){return 0;}
@@ -39,7 +39,7 @@ int decluster(float *arr, unsigned long long *indexes, unsigned long long len,
             break;
         }
         for (j = 0; j < i; ++j){
-            step = labs(indexes[i] - indexes[j]);
+            step = llabs(indexes[i] - indexes[j]);
             if (trig_int >= step && out[j] == 1){
                 keep = 0;
                 break;
@@ -53,12 +53,12 @@ int decluster(float *arr, unsigned long long *indexes, unsigned long long len,
     return 0;
 }
 
-int multi_decluster(float *arr, unsigned long long *indices,
-                    unsigned long long *lengths, int n, float *thresholds,
-                    unsigned long long trig_int, unsigned int *out, int threads){
+int multi_decluster(float *arr, long long *indices,
+                    long long *lengths, int n, float *thresholds,
+                    long long trig_int, unsigned int *out, int threads){
     int i, ret_val = 0;
-    unsigned long long * start_inds = (unsigned long long *) calloc(n, sizeof(unsigned long long));
-    unsigned long long start_ind = 0;
+    long long * start_inds = (long long *) calloc(n, sizeof(long long));
+    long long start_ind = 0;
 
     for (i = 0; i < n; ++i){
         start_inds[i] = start_ind;

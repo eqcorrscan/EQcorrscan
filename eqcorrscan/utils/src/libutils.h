@@ -51,9 +51,9 @@
 #define WARN_DIFF 1e-8 //1e-10
 
 // find_peaks functions
-int decluster(float*, unsigned long long*, unsigned long long, float, unsigned long long, unsigned int*);
+int decluster(float*, long long*, long long, float, long long, unsigned int*);
 
-int multi_decluster(float*, unsigned long long*, unsigned long long*, int, float*, unsigned long long, unsigned int*, int);
+int multi_decluster(float*, long long*, long long*, int, float*, long long, unsigned int*, int);
 
 int findpeaks(float*, long, float);
 
