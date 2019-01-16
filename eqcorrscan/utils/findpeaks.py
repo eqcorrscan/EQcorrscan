@@ -324,28 +324,39 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     """
     utilslib = _load_cdll('libutils')
 
-    lengths = np.array([peak.shape[0] for peak in peaks], dtype=ctypes.c_long)
+    lengths = np.array([peak.shape[0] for peak in peaks], dtype=int)
     trig_int = int(trig_int)
     n = np.int32(len(peaks))
     cores = min(cores, n)
 
     total_length = lengths.sum()
 
-    utilslib.multi_decluster.argtypes = [
+    for var in [trig_int, lengths.max(), max(
+            [_indices.max() for _indices in indices])]:
+        if var == ctypes.c_long(var).value:
+            long_type = ctypes.c_long
+            func = utilslib.multi_decluster
+        elif var == ctypes.c_longlong(var.value):
+            long_type = ctypes.c_longlong
+            func = utilslib.multi_decluster_ll
+        else:
+            raise OverflowError("Maximum index larger than internal long long")
+
+    func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(total_length,),
+        np.ctypeslib.ndpointer(dtype=long_type, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(n,),
+        np.ctypeslib.ndpointer(dtype=long_type, shape=(n,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_longlong,
+        long_type,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
-    utilslib.multi_decluster.restype = ctypes.c_int
+    func.restype = ctypes.c_int
 
     peaks_sorted = np.empty(total_length, dtype=np.float32)
     indices_sorted = np.empty_like(peaks_sorted, dtype=np.float32)
@@ -361,13 +372,13 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     peaks_sorted = np.ascontiguousarray(peaks_sorted, dtype=np.float32)
     indices_sorted = np.ascontiguousarray(
-        indices_sorted, dtype=ctypes.c_longlong)
-    lengths = np.ascontiguousarray(lengths, dtype=ctypes.c_longlong)
+        indices_sorted, dtype=long_type)
+    lengths = np.ascontiguousarray(lengths, dtype=long_type)
     thresholds = np.ascontiguousarray(thresholds, dtype=np.float32)
     out = np.zeros(total_length, dtype=np.uint32)
-    ret = utilslib.multi_decluster(
+    ret = func(
         peaks_sorted, indices_sorted, lengths, np.int32(n), thresholds,
-        ctypes.c_longlong(trig_int + 1), out, np.int32(cores))
+        long_type(trig_int + 1), out, np.int32(cores))
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 
@@ -400,26 +411,37 @@ def decluster(peaks, index, trig_int, threshold=0):
 
     length = peaks.shape[0]
     trig_int = int(trig_int)
-    utilslib.decluster.argtypes = [
+
+    for var in [index.max(), trig_int]:
+        if var == ctypes.c_long(var).value:
+            long_type = ctypes.c_long
+            func = utilslib.decluster
+        elif var == ctypes.c_longlong(var.value):
+            long_type = ctypes.c_longlong
+            func = utilslib.decluster_ll
+        else:
+            raise OverflowError("Maximum index larger than internal long long")
+
+    func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=ctypes.c_longlong, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=long_type, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_longlong, ctypes.c_float, ctypes.c_longlong,
+        long_type, ctypes.c_float, long_type,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
-    utilslib.decluster.restype = ctypes.c_int
+    func.restype = ctypes.c_int
 
     sorted_inds = np.abs(peaks).argsort()
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.ascontiguousarray(inds, dtype=ctypes.c_longlong)
+    inds = np.ascontiguousarray(inds, dtype=long_type)
     out = np.zeros(len(arr), dtype=np.uint32)
 
-    ret = utilslib.decluster(
-        arr, inds, ctypes.c_longlong(length), np.float32(threshold),
-        ctypes.c_longlong(trig_int), out)
+    ret = func(
+        arr, inds, long_type(length), np.float32(threshold),
+        long_type(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 
