@@ -402,7 +402,7 @@ def decluster(peaks, index, trig_int, threshold=0):
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=ctypes.c_long, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_float, ctypes.c_long,
+        ctypes.c_long, ctypes.c_float, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS'))]
     utilslib.decluster.restype = ctypes.c_int
