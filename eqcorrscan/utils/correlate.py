@@ -901,7 +901,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         stream_channel = stream.select(id=seed_id.split('_')[0])[0]
         # Normalize data to endure no float overflow
         stream_data = stream_channel.data / (np.max(
-            np.abs(stream_channel.data)) / 1e5))
+            np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
             {seed_id: stream_channel.data.astype(np.float32)})
         stream_offset = int(
