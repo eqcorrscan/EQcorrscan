@@ -324,7 +324,7 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     """
     utilslib = _load_cdll('libutils')
 
-    lengths = np.array([peak.shape[0] for peak in peaks], dtype=np.int64)
+    lengths = np.array([peak.shape[0] for peak in peaks], dtype=ctypes.c_long)
     n = np.int32(len(peaks))
     cores = min(cores, n)
 
@@ -333,9 +333,9 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     utilslib.multi_decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.int64, shape=(total_length,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_long, shape=(total_length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.int64, shape=(n,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_long, shape=(n,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n,),
@@ -359,13 +359,13 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
         start_ind += length
 
     peaks_sorted = np.ascontiguousarray(peaks_sorted, dtype=np.float32)
-    indices_sorted = np.ascontiguousarray(indices_sorted, dtype=np.int64)
-    lengths = np.ascontiguousarray(lengths, dtype=np.int64)
+    indices_sorted = np.ascontiguousarray(indices_sorted, dtype=ctypes.c_long)
+    lengths = np.ascontiguousarray(lengths, dtype=ctypes.c_long)
     thresholds = np.ascontiguousarray(thresholds, dtype=np.float32)
     out = np.zeros(total_length, dtype=np.uint32)
     ret = utilslib.multi_decluster(
         peaks_sorted, indices_sorted, lengths, np.int32(n), thresholds,
-        np.int64(trig_int + 1), out, np.int32(cores))
+        ctypes.c_long(trig_int + 1), out, np.int32(cores))
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 
@@ -396,11 +396,11 @@ def decluster(peaks, index, trig_int, threshold=0):
     """
     utilslib = _load_cdll('libutils')
 
-    length = np.int64(peaks.shape[0])
+    length = peaks.shape[0]
     utilslib.decluster.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
-        np.ctypeslib.ndpointer(dtype=np.int64, shape=(length,),
+        np.ctypeslib.ndpointer(dtype=ctypes.c_long, shape=(length,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_float, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
@@ -411,11 +411,12 @@ def decluster(peaks, index, trig_int, threshold=0):
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     arr = np.ascontiguousarray(arr, dtype=np.float32)
-    inds = np.ascontiguousarray(inds, dtype=np.int64)
+    inds = np.ascontiguousarray(inds, dtype=ctypes.c_long)
     out = np.zeros(len(arr), dtype=np.uint32)
 
     ret = utilslib.decluster(
-        arr, inds, length, np.float32(threshold), np.int64(trig_int), out)
+        arr, inds, ctypes.c_long(length), np.float32(threshold),
+        ctypes.c_long(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
 
@@ -429,14 +430,14 @@ def _find_peaks_c(array, threshold):
     """
     utilslib = _load_cdll('libutils')
 
-    length = np.int64(array.shape[0])
+    length = array.shape[0]
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_long, ctypes.c_float]
     utilslib.find_peaks.restype = ctypes.c_int
     arr = np.ascontiguousarray(array.copy(), np.float32)
-    ret = utilslib.find_peaks(arr, length, threshold)
+    ret = utilslib.find_peaks(arr, ctypes.c_long(length), threshold)
     # copy data to avoid farking the users data
     if ret != 0:
         raise MemoryError("Internal error")
@@ -450,7 +451,7 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     """
     utilslib = _load_cdll('libutils')
 
-    length = np.int64(arrays.shape[1])
+    length = arrays.shape[1]
     n = np.int32(arrays.shape[0])
     thresholds = np.ascontiguousarray(thresholds, np.float32)
     arr = np.ascontiguousarray(arrays.flatten().copy(), np.float32)
@@ -463,7 +464,7 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
         ctypes.c_int]
     utilslib.multi_find_peaks.restype = ctypes.c_int
     ret = utilslib.multi_find_peaks(
-        arr, length, n, thresholds, threads)
+        arr, ctypes.c_long(length), n, thresholds, threads)
     # Copy data to avoid farking the users data
     if ret != 0:
         raise MemoryError("Internal error")

@@ -25,9 +25,8 @@
 int decluster(float *arr, long *indexes, long len, float thresh, long trig_int,
               unsigned int *out){
     // Takes a sorted array and the indexes
-    long i, j;
+    long i, j, step;
     int keep;
-    float step;
 
     if (fabs(arr[0]) < thresh){return 0;}
 
@@ -40,7 +39,7 @@ int decluster(float *arr, long *indexes, long len, float thresh, long trig_int,
             break;
         }
         for (j = 0; j < i; ++j){
-            step = abs(indexes[i] - indexes[j]);
+            step = labs(indexes[i] - indexes[j]);
             if (trig_int >= step && out[j] == 1){
                 keep = 0;
                 break;
@@ -80,7 +79,7 @@ int find_peaks(float *arr, long len, float thresh){
     // Find peaks in noisy data above some threshold and at-least
     // trig-int samples apart. Sets all other values in array to 0
     float prev_value = 0, value, next_value;
-    int i;
+    long i;
     int * peak_positions = (int *) calloc(len, sizeof(int));
 
     for (i = 0; i < len - 1; ++i){
