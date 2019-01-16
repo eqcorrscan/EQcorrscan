@@ -903,7 +903,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         stream_data = stream_channel.data / (np.max(
             np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
-            {seed_id: stream_channel.data.astype(np.float32)})
+            {seed_id: stream_data.astype(np.float32)})
         stream_offset = int(
             round(stream_channel.stats.sampling_rate *
                   (stream_channel.stats.starttime - stream_start)))
