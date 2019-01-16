@@ -336,10 +336,12 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
             func = utilslib.multi_decluster
-        elif var == ctypes.c_longlong(var.value):
+        elif var == ctypes.c_longlong(var).value:
             long_type = ctypes.c_longlong
             func = utilslib.multi_decluster_ll
         else:
+            # Note, could use numpy.gcd to try and find greatest common
+            # divisor and make numbers smaller
             raise OverflowError("Maximum index larger than internal long long")
 
     func.argtypes = [
@@ -416,7 +418,7 @@ def decluster(peaks, index, trig_int, threshold=0):
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
             func = utilslib.decluster
-        elif var == ctypes.c_longlong(var.value):
+        elif var == ctypes.c_longlong(var).value:
             long_type = ctypes.c_longlong
             func = utilslib.decluster_ll
         else:
@@ -459,14 +461,18 @@ def _find_peaks_c(array, threshold):
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_long, ctypes.c_float]
+        ctypes.c_long, ctypes.c_float,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length, ),
+                               flags=native_str('C_CONTIGUOUS'))]
     utilslib.find_peaks.restype = ctypes.c_int
-    arr = np.ascontiguousarray(array.copy(), np.float32)
-    ret = utilslib.find_peaks(arr, ctypes.c_long(length), threshold)
-    # copy data to avoid farking the users data
+    arr = np.ascontiguousarray(array, np.float32)
+    out = np.ascontiguousarray(np.zeros((length, ), dtype=np.uint32))
+    ret = utilslib.find_peaks(arr, ctypes.c_long(length), threshold, out)
+
     if ret != 0:
         raise MemoryError("Internal error")
-    peaks_locations = np.nonzero(arr)
+
+    peaks_locations = np.nonzero(out)
     return array[peaks_locations], peaks_locations[0]
 
 
@@ -479,25 +485,29 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     length = arrays.shape[1]
     n = np.int32(arrays.shape[0])
     thresholds = np.ascontiguousarray(thresholds, np.float32)
-    arr = np.ascontiguousarray(arrays.flatten().copy(), np.float32)
+    arr = np.ascontiguousarray(arrays.flatten(), np.float32)
     utilslib.multi_find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n * length,),
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_long, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n, ),
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int]
+        ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(n * length, ),
+                               flags=native_str('C_CONTIGUOUS'))]
     utilslib.multi_find_peaks.restype = ctypes.c_int
+
+    out = np.ascontiguousarray(np.zeros((n * length, ), dtype=np.uint32))
     ret = utilslib.multi_find_peaks(
-        arr, ctypes.c_long(length), n, thresholds, threads)
+        arr, ctypes.c_long(length), n, thresholds, threads, out)
     # Copy data to avoid farking the users data
     if ret != 0:
         raise MemoryError("Internal error")
     peaks = []
     peak_locations = []
-    arr = arr.reshape(n, length)
+    out = out.reshape(n, length)
     for i in range(n):
-        peak_locs = np.nonzero(arr[i])
+        peak_locs = np.nonzero(out[i])
         peaks.append(arrays[i][peak_locs])
         peak_locations.append(peak_locs[0])
 

@@ -20,8 +20,7 @@
 #include <libutils.h>
 
 
-// Functions
-// TODO: It would be good to have functions for long and long long - needs size checking in python
+// Functions for long longs
 int decluster_ll(float *arr, long long *indexes, long long len,
                  float thresh, long long trig_int, unsigned int *out){
     // Takes a sorted array and the indexes
@@ -75,6 +74,8 @@ int multi_decluster_ll(float *arr, long long *indices,
     return ret_val;
 }
 
+
+// Functions for longs - should be the same logic as above
 int decluster(float *arr, long *indexes, long len,
               float thresh, long trig_int, unsigned int *out){
     // Takes a sorted array and the indexes
@@ -129,12 +130,11 @@ int multi_decluster(float *arr, long *indices,
 }
 
 
-int find_peaks(float *arr, long len, float thresh){
+int find_peaks(float *arr, long len, float thresh, unsigned int *peak_positions){
     // Find peaks in noisy data above some threshold and at-least
     // trig-int samples apart. Sets all other values in array to 0
     float prev_value = 0, value, next_value;
     long i;
-    int * peak_positions = (int *) calloc(len, sizeof(int));
 
     for (i = 0; i < len - 1; ++i){
         value = arr[i];
@@ -155,17 +155,12 @@ int find_peaks(float *arr, long len, float thresh){
             peak_positions[i] = 1;
         }
     }
-    for (i = 0; i < len; ++i){
-        if (peak_positions[i] != 1){
-            arr[i] = 0;
-        }
-    }
-    free(peak_positions);
     return 0;
 }
 
 
-int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads){
+int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads,
+                     unsigned int *peak_positions){
     int i, ret_val = 0;
     long * start_inds = (long *) calloc(n, sizeof(long));
     long start_ind = 0;
@@ -177,7 +172,7 @@ int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
-        ret_val += find_peaks(&arr[start_inds[i]], len, thresholds[i]);
+        ret_val += find_peaks(&arr[start_inds[i]], len, thresholds[i], &peak_positions[start_inds[i]]);
     }
 
     free(start_inds);
