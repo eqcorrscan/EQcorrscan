@@ -899,8 +899,11 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
         stream_channel = stream.select(id=seed_id.split('_')[0])[0]
+        # Normalize data to endure no float overflow
+        stream_data = stream_channel.data / (np.max(
+            np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
-            {seed_id: stream_channel.data.astype(np.float32)})
+            {seed_id: stream_data.astype(np.float32)})
         stream_offset = int(
             round(stream_channel.stats.sampling_rate *
                   (stream_channel.stats.starttime - stream_start)))

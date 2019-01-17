@@ -18,6 +18,8 @@
     are small and close together (e.g. in noisy data).
 * multi-find peaks makes use of openMP parallelism for more efficient
   memory usage #249
+* enforce normalization of continuous data before correlation to avoid float32
+  overflow errors that result in correlation errors (see pr #292).
 
 ## 0.3.3
 * Make test-script more stable.
