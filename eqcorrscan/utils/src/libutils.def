@@ -3,7 +3,9 @@ EXPORTS
     find_peaks
     multi_find_peaks
     decluster
+    decluster_ll
     multi_decluster
+    multi_decluster_ll
     normxcorr_fftw
     normxcorr_fftw_threaded
     normxcorr_time
