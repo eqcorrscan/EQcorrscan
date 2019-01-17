@@ -15,7 +15,7 @@ from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream
 
 from eqcorrscan.utils.catalog_utils import filter_picks
-from eqcorrscan.utils.clustering import space_cluster
+from eqcorrscan.utils.clustering import catalog_cluster
 from eqcorrscan.core import subspace
 
 # Set up logging
@@ -46,7 +46,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
          for event in cat for pick in event.picks]))
     # In this tutorial we will only work on one cluster, defined spatially.
     # You can work on multiple clusters, or try to whole set.
-    clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
+    clusters = catalog_cluster(
+        catalog=cat, metric="distance", thresh=2, show=False)
     # We will work on the largest cluster
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     # This cluster contains 32 events, we will now download and trim the

@@ -59,6 +59,9 @@ XCORR_STREAM_METHODS = ('multithread', 'multiprocess', 'concurrent',
 # these implement the array interface
 XCOR_ARRAY_METHODS = ('array_xcorr')
 
+# Gain shift for low-variance stabilization
+MULTIPLIER = 1e8
+
 
 class CorrelationError(Exception):
     """ Error handling for correlation functions. """
@@ -175,9 +178,9 @@ def pool_boy(Pool, traces, **kwargs):
     pool.join()
 
 
-def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
+def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     # get parameter iterator
     params = ((template_dict[sid], stream_dict[sid], pad_dict[sid])
@@ -189,7 +192,10 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
     except KeyboardInterrupt as e:  # pragma: no cover
         pool.terminate()
         raise e
-    cccsums = np.sum(xcorrs, axis=0)
+    if stack:
+        cccsums = np.sum(xcorrs, axis=0)
+    else:
+        cccsums = np.asarray(xcorrs).swapaxes(0, 1)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -202,34 +208,43 @@ def _pool_normxcorr(templates, stream, pool, func, *args, **kwargs):
 def _general_multithread(func):
     """ return the general multithreading function using func """
 
-    def multithread(templates, stream, *args, **kwargs):
+    def multithread(templates, stream, stack=True, *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            return _pool_normxcorr(
+                templates, stream, stack=stack, pool=pool, func=func)
 
     return multithread
 
 
 def _general_multiprocess(func):
-    def multiproc(templates, stream, *args, **kwargs):
+    def multiproc(templates, stream, stack=True, *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
-            return _pool_normxcorr(templates, stream, pool=pool, func=func)
+            return _pool_normxcorr(
+                templates, stream, stack=stack, pool=pool, func=func)
 
     return multiproc
 
 
 def _general_serial(func):
-    def stream_xcorr(templates, stream, *args, **kwargs):
+    def stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         no_chans = np.zeros(len(templates))
         chans = [[] for _ in range(len(templates))]
-        array_dict_tuple = _get_array_dicts(templates, stream)
+        array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
         stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-        cccsums = np.zeros([len(templates),
-                            len(stream[0]) - len(templates[0][0]) + 1])
-        for seed_id in seed_ids:
+        if stack:
+            cccsums = np.zeros([len(templates),
+                                len(stream[0]) - len(templates[0][0]) + 1])
+        else:
+            cccsums = np.zeros([len(templates), len(seed_ids),
+                                len(stream[0]) - len(templates[0][0]) + 1])
+        for chan_no, seed_id in enumerate(seed_ids):
             tr_cc, tr_chans = func(template_dict[seed_id],
                                    stream_dict[seed_id],
                                    pad_dict[seed_id])
-            cccsums = np.sum([cccsums, tr_cc], axis=0)
+            if stack:
+                cccsums = np.sum([cccsums, tr_cc], axis=0)
+            else:
+                cccsums[:, chan_no] = tr_cc
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
@@ -369,7 +384,6 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :return: np.ndarray channels used
     """
     import bottleneck
-    from scipy.signal.signaltools import _centered
 
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
@@ -395,13 +409,26 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
                        fftshape)[:, 0:template_length + stream_length - 1]
-    res = ((_centered(res, stream_length - template_length + 1)) -
+    res = ((_centered(res, (templates.shape[0],
+                            stream_length - template_length + 1))) -
            norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
     # res[np.isinf(res)] = 0.0
     for i, pad in enumerate(pads):  # range(len(pads)):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
+
+
+def _centered(arr, newshape):
+    """
+    Hack of scipy.signaltools._centered
+    """
+    newshape = np.asarray(newshape)
+    currshape = np.array(arr.shape)
+    startind = (currshape - newshape) // 2
+    endind = startind + newshape
+    myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
+    return arr[tuple(myslice)]
 
 
 @register_array_xcorr('time_domain')
@@ -548,9 +575,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     # Check that stream is non-zero and above variance threshold
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
         # Apply gain
-        stream *= 1e8
+        stream *= MULTIPLIER
         Logger.warning("Low variance found for, applying gain "
                        "to stabilise correlations")
+        multiplier = MULTIPLIER
+    else:
+        multiplier = 1
     ret = func(
         np.ascontiguousarray(norm.flatten(order='C'), np.float32),
         template_length, n_templates,
@@ -571,7 +601,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         Logger.warning(
             "Low variance found in {0} positions, check result.".format(
                 variance_warning[0]))
-
+    # Remove variance correction
+    stream /= multiplier
     return ccc, used_chans
 
 
@@ -579,7 +610,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
 # threads) using the openMP threaded functions.
 
 @time_multi_normxcorr.register('concurrent')
-def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
+def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     """
     Use the threaded time-domain routine for concurrency
 
@@ -605,15 +636,22 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
     """
     no_chans = np.zeros(len(templates))
     chans = [[] for _ in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-    cccsums = np.zeros([len(templates),
-                        len(stream[0]) - len(templates[0][0]) + 1])
-    for seed_id in seed_ids:
+    if stack:
+        cccsums = np.zeros([len(templates),
+                            len(stream[0]) - len(templates[0][0]) + 1])
+    else:
+        cccsums = np.zeros([len(templates), len(seed_ids),
+                            len(stream[0]) - len(templates[0][0]) + 1])
+    for chan_no, seed_id in enumerate(seed_ids):
         tr_cc, tr_chans = time_multi_normxcorr(
             template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
             True)
-        cccsums = np.sum([cccsums, tr_cc], axis=0)
+        if stack:
+            cccsums = np.sum([cccsums, tr_cc], axis=0)
+        else:
+            cccsums[:, chan_no] = tr_cc
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
             if state:
@@ -625,7 +663,7 @@ def _time_threaded_normxcorr(templates, stream, *args, **kwargs):
 @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
-def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
+def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     """
     Apply fftw normxcorr routine concurrently.
 
@@ -665,13 +703,13 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
         num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream)
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -682,7 +720,8 @@ def _fftw_stream_xcorr(templates, stream, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, cores_outer, *args, **kwargs):
+                         cores_inner, cores_outer, stack=True, *args,
+                         **kwargs):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -716,7 +755,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags=native_str('C_CONTIGUOUS')),
+        ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -752,17 +792,26 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     assert(fft_len >= template_len)
     template_array = np.ascontiguousarray(
         [template_array[x] for x in seed_ids], dtype=np.float32)
+    multipliers = {}
     for x in seed_ids:
         # Check that stream is non-zero and above variance threshold
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
-            stream_array *= 1e8
+            stream_array[x] *= MULTIPLIER
             Logger.warning("Low variance found for {0}, applying gain "
                            "to stabilise correlations".format(x))
+            multipliers.update({x: MULTIPLIER})
+        else:
+            multipliers.update({x: 1})
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
-    cccs = np.zeros((n_templates, image_len - template_len + 1),
-                    np.float32)
+    if stack:
+        cccs = np.zeros((n_templates, image_len - template_len + 1),
+                        np.float32)
+    else:
+        cccs = np.zeros(
+            (n_templates, n_channels, image_len - template_len + 1),
+            dtype=np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray(
         [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
@@ -773,7 +822,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
-        cores_inner, variance_warnings)
+        cores_inner, variance_warnings, int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret not in [0, 999]:
@@ -790,10 +839,12 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                        "zeros in data? If not, consider increasing gain.")
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
-            Logger.warning("Low variance found in {0} places for {1},"
-                           " check result.".format(variance_warning,
-                                                   seed_ids[i]))
-
+            Logger.warning(
+                "Low variance found in {0} places for {1}, check "
+                "result.".format(variance_warning, seed_ids[i]))
+    # Remove gain
+    for i, x in enumerate(seed_ids):
+        stream_array[i] *= multipliers[x]
     return cccs, used_chans
 
 # ------------------------------- stream_xcorr functions
@@ -830,7 +881,7 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-def _get_array_dicts(templates, stream, copy_streams=True):
+def _get_array_dicts(templates, stream, stack, copy_streams=True):
     """ prepare templates and stream, return dicts """
     # Do some reshaping
     # init empty structures for data storage
@@ -843,6 +894,7 @@ def _get_array_dicts(templates, stream, copy_streams=True):
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
         t_starts.append(min([tr.stats.starttime for tr in template]))
+    stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     # pull common channels out of streams and templates and put in dicts
@@ -850,13 +902,23 @@ def _get_array_dicts(templates, stream, copy_streams=True):
         temps_with_seed = [template[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
+        stream_channel = stream.select(id=seed_id.split('_')[0])[0]
+        # Normalize data to endure no float overflow
+        stream_data = stream_channel.data / (np.max(
+            np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
-            {seed_id: stream.select(
-                id=seed_id.split('_')[0])[0].data.astype(np.float32)})
-        pad_list = [
-            int(round(template[i].stats.sampling_rate *
-                      (template[i].stats.starttime - t_starts[j])))
-            for j, template in zip(range(len(templates)), templates)]
+            {seed_id: stream_data.astype(np.float32)})
+        stream_offset = int(
+            round(stream_channel.stats.sampling_rate *
+                  (stream_channel.stats.starttime - stream_start)))
+        if stack:
+            pad_list = [
+                int(round(template[i].stats.sampling_rate *
+                          (template[i].stats.starttime -
+                           t_starts[j]))) - stream_offset
+                for j, template in zip(range(len(templates)), templates)]
+        else:
+            pad_list = [0 for _ in range(len(templates))]
         pad_dict.update({seed_id: pad_list})
 
     return stream_dict, template_dict, pad_dict, seed_ids

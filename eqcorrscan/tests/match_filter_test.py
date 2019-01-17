@@ -231,7 +231,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -554,7 +554,7 @@ class TestNCEDCCases(unittest.TestCase):
         templates = [self.templates[0].copy()]
         templates[0][0].data = np.concatenate([templates[0][0].data,
                                                np.random.randn(10)])
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
@@ -1007,17 +1007,22 @@ class TestMatchObjectLight(unittest.TestCase):
 
     def test_party_decluster(self):
         """Test the decluster method on party."""
-        for trig_int in [40, 15, 3600]:
+        trig_ints = [40, 15, 3600]
+        trig_ints = [3600]
+        for trig_int in trig_ints:
             for metric in ['avg_cor', 'cor_sum']:
                 declust = self.party.copy().decluster(
                     trig_int=trig_int, metric=metric)
                 declustered_dets = [
                     d for family in declust for d in family.detections]
                 for det in declustered_dets:
-                    time_difs = [abs(det.detect_time - d.detect_time)
-                                 for d in declustered_dets if d != det]
-                    for dif in time_difs:
-                        self.assertTrue(dif > trig_int)
+                    for d in declustered_dets:
+                        if d == det:
+                            continue
+                        dif = abs(det.detect_time - d.detect_time)
+                        print('Time dif: {0} trig_int: {1}'.format(
+                            dif, trig_int))
+                        self.assertGreater(dif, trig_int)
                 with self.assertRaises(IndexError):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
@@ -1095,8 +1100,9 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_slicing_by_name(self):
         """Check that slicing by template name works as expected"""
         t_name = self.tribe[2].name
-        self.assertTrue(self.tribe[2] == self.tribe[t_name])
-        self.assertTrue(self.party[2] == self.party[t_name])
+        self.assertEqual(self.tribe[2], self.tribe[t_name])
+        t_name = self.party[2].template.name
+        self.assertEqual(self.party[2], self.party[t_name])
 
     def test_template_io(self):
         """Test template read/write."""

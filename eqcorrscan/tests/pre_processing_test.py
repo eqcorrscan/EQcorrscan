@@ -9,11 +9,14 @@ from __future__ import unicode_literals
 import unittest
 import os
 import numpy as np
+import glob
 
-from obspy import read, Trace, UTCDateTime
+from random import shuffle
+from copy import deepcopy
+from obspy import read, Trace, UTCDateTime, Stream
 
-from eqcorrscan.utils.pre_processing import process, dayproc, shortproc
-from eqcorrscan.utils.pre_processing import _check_daylong
+from eqcorrscan.utils.pre_processing import (
+    process, dayproc, shortproc, _check_daylong, _prep_data_for_correlation)
 
 
 class TestPreProcessing(unittest.TestCase):
@@ -306,6 +309,116 @@ class TestPreProcessing(unittest.TestCase):
         self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
         self.assertTrue(np.all(
             processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
+
+
+class TestDataPrep(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            'similar_events_processed')
+        stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_list = [read(stream_file)
+                       for stream_file in stream_files]
+        cls.stream_list = stream_list
+
+    def test_order_irrevelant(self):
+        """ Early on the order of streams input was affecting output. """
+        st1 = self.stream_list[0].copy()
+
+        ordered_streams = sorted(
+            self.stream_list, key=lambda s: s[0].stats.starttime)
+        shuffled_streams = deepcopy(ordered_streams)
+        shuffle(shuffled_streams)
+
+        order_prepped_st1, order_prepped_streams = _prep_data_for_correlation(
+            stream=st1, templates=ordered_streams, force_stream_epoch=False)
+        shuff_prepped_st1, shuff_prepped_streams = _prep_data_for_correlation(
+            stream=st1, templates=shuffled_streams, force_stream_epoch=False)
+
+        self.assertEqual(order_prepped_st1, shuff_prepped_st1)
+        shuff_prepped_streams = sorted(
+            shuff_prepped_streams, key=lambda s: s[0].stats.starttime)
+
+        for ordered, shuffled in zip(order_prepped_streams,
+                                     shuff_prepped_streams):
+            for tr_ordered, tr_shuffled in zip(ordered, shuffled):
+                self.assertEqual(tr_ordered, tr_shuffled)
+
+    def test_correct_padding(self):
+        """check that nans are put where they are supposed to be """
+        _, prepped_streams = _prep_data_for_correlation(
+            stream=self.stream_list[0], templates=deepcopy(self.stream_list),
+            force_stream_epoch=False)
+
+        for original, prepped in zip(self.stream_list, prepped_streams):
+            for tr in prepped:
+                original_tr = original.select(id=tr.id)
+                if len(original_tr) == 0:
+                    self.assertTrue(np.all(np.isnan(tr.data)))
+                else:
+                    self.assertEqual(tr, original_tr[0])
+
+    def test_continuous_data_removal(self):
+        """Check that data that should be removed are."""
+        st = read()
+        templates = []
+        for i in range(20):
+            template = Stream()
+            for _tr in st[1:]:
+                tr = _tr.copy()
+                tr.stats.starttime += i * 100
+                tr.data = np.random.randn(200)
+                template += tr
+            templates.append(template)
+        continuous_data = st
+        for tr in continuous_data:
+            tr.data = np.random.randn(200 * 20)
+
+        continuous_data, templates = _prep_data_for_correlation(
+            stream=continuous_data, templates=templates,
+            force_stream_epoch=True)
+        self.assertEqual(len(continuous_data), 2)
+        for template in templates:
+            self.assertEqual(len(template), 2)
+
+    def test_length_checking(self):
+        """Check that lengths are fixed"""
+        st = read()
+        templates = []
+        for i in range(20):
+            template = Stream()
+            for _tr in st:
+                tr = _tr.copy()
+                tr.stats.starttime += i * 100
+                tr.data = np.random.randn(200)
+                template += tr
+            templates.append(template)
+        continuous_data = st
+        for i, tr in enumerate(continuous_data):
+            tr.data = np.random.randn((200 * 20) + ((i + 1) * 5))
+            tr.stats.starttime += (i + 1) * 5
+        min_start = min([tr.stats.starttime for tr in continuous_data])
+        max_end = max([tr.stats.endtime for tr in continuous_data])
+        data_len = (
+            (max_end - min_start) * continuous_data[0].stats.sampling_rate) + 1
+
+        continuous_data_prepped, templates = _prep_data_for_correlation(
+            stream=continuous_data.copy(), templates=templates,
+            force_stream_epoch=True)
+
+        for tr in continuous_data_prepped:
+            self.assertEqual(tr.stats.npts, data_len)
+            self.assertEqual(tr.stats.starttime, min_start)
+            self.assertEqual(tr.stats.endtime, max_end)
+
+        continuous_data_prepped, templates = _prep_data_for_correlation(
+            stream=continuous_data, templates=templates,
+            force_stream_epoch=False)
+
+        for tr in continuous_data_prepped:
+            self.assertEqual(
+                tr.stats.npts, (200 * 20) + (len(continuous_data) * 5))
 
 
 if __name__ == '__main__':
