@@ -291,11 +291,12 @@ def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks,
         peak_vals = arrays
         peak_indices = [np.arange(arr.shape[0]) for arr in arrays]
         peak_mapper = {i: i for i in range(len(peak_indices))}
-    peaks = _multi_decluster(
-        peaks=peak_vals, indices=peak_indices, trig_int=trig_int,
-        thresholds=thresholds, cores=cores)
-    peaks = [sorted(_peaks, key=lambda peak: peak[1], reverse=False)
-             for _peaks in peaks]
+    if len(peak_indices) > 0:
+        peaks = _multi_decluster(
+            peaks=peak_vals, indices=peak_indices, trig_int=trig_int,
+            thresholds=thresholds, cores=cores)
+        peaks = [sorted(_peaks, key=lambda peak: peak[1], reverse=False)
+                 for _peaks in peaks]
     out_peaks = []
     for i in range(arrays.shape[0]):
         if i in peak_mapper.keys():
@@ -331,8 +332,10 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     total_length = lengths.sum()
 
-    for var in [trig_int, lengths.max(), max(
-            [_indices.max() for _indices in indices])]:
+    max_indexes = [_indices.max() for _indices in indices]
+    print(max_indexes)
+    max_index = max(max_indexes)
+    for var in [trig_int, lengths.max(), max_index]:
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
             func = utilslib.multi_decluster
@@ -363,6 +366,8 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     peaks_sorted = np.empty(total_length, dtype=np.float32)
     indices_sorted = np.empty_like(peaks_sorted, dtype=np.float32)
 
+    # TODO: When doing full decluster from match-filter, all lengths will be
+    # TODO: the same - would be more efficient to use numpy sort on 2D matrix
     start_ind = 0
     end_ind = 0
     for _peaks, _indices, length in zip(peaks, indices, lengths):

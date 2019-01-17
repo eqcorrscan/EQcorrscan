@@ -4265,10 +4265,13 @@ def match_filter(template_names, template_list, st, threshold,
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     if peak_cores is None:
         peak_cores = cores
+    outtic = default_timer()
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
         full_peaks=full_peaks, cores=peak_cores)
+    outtoc = default_timer()
+    Logger.info("Finding peaks took {0} s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
