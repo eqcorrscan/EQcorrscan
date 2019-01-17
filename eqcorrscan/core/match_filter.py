@@ -605,7 +605,7 @@ class Party(object):
         else:
             raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
-        detect_vals = np.array([d[1] for d in detect_info])
+        detect_vals = np.array([d[1] for d in detect_info], dtype=np.float32)
         detect_times = np.array([
             _total_microsec(d[0].datetime, min_det.datetime)
             for d in detect_info])
@@ -615,9 +615,9 @@ class Party(object):
         # Need to match both the time and the detection value
         declustered_detections = []
         for ind in peaks_out:
-            matching_time_indeces = np.where(detect_times == ind[-1])[0]
-            matches = matching_time_indeces[
-                np.where(detect_vals[matching_time_indeces] == ind[0])[0][0]]
+            matching_time_indices = np.where(detect_times == ind[-1])[0]
+            matches = matching_time_indices[
+                np.where(detect_vals[matching_time_indices] == ind[0])[0][0]]
             declustered_detections.append(all_detections[matches])
         # Convert this list into families
         template_names = list(set([d.template_name
@@ -4265,10 +4265,13 @@ def match_filter(template_names, template_list, st, threshold,
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     if peak_cores is None:
         peak_cores = cores
+    outtic = default_timer()
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
         full_peaks=full_peaks, cores=peak_cores)
+    outtoc = default_timer()
+    Logger.info("Finding peaks took {0} s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')

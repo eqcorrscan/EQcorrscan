@@ -81,7 +81,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 

@@ -128,6 +128,9 @@ class TestTutorialScripts(unittest.TestCase):
         print("Running subspace")
         detections = subspace.run_tutorial(plot=False, cores=1, verbose=True)
         print("Subspace ran")
+        if not len(detections) == 11:
+            for detection in detections:
+                print(detection)
         self.assertEqual(len(detections), 11)
 
 
