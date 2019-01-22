@@ -278,8 +278,8 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
                     # Make sure that using both parallel methods gives the same
                     # result
                     cc_out = time_func(
-                        func, name, multichannel_templates, multichannel_stream,
-                        cores=1, cores_outer=cores)
+                        func, name, multichannel_templates,
+                        multichannel_stream, cores=1, cores_outer=cores)
                     out["{0}.{1}_outer".format(name, cores)] = cc_out
                 print("Running shorter, fixed fft-len")
                 # Make sure that running with a pre-defined fft-len works
@@ -505,11 +505,9 @@ class TestArrayCorrelateFunctions:
     def test_single_channel_similar(self, array_ccs):
         """ ensure each of the correlation methods return similar answers
         given the same input data """
-        cc_list = list(array_ccs.values())
         cc_names = list(array_ccs.keys())
         print(cc_names)
         for key1, key2 in itertools.combinations(cc_names, 2):
-            #for cc1, cc2 in itertools.combinations(cc_list, 2):
             cc1 = array_ccs[key1]
             cc2 = array_ccs[key2]
             if not np.allclose(cc1, cc2, atol=self.atol):
