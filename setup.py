@@ -81,7 +81,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
@@ -265,8 +265,8 @@ class CustomBuildExt(build_ext):
         else:
             compiler = self.compiler
 
-        # Hack around OSX setting a -m flag
         cfg_vars = sysconfig.get_config_vars()
+        # Hack around OSX setting a -m flag
         if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
             print("System C-flags:")
             print(cfg_vars["CFLAGS"])
@@ -286,7 +286,25 @@ class CustomBuildExt(build_ext):
             cfg_vars["CFLAGS"] = " ".join(cflags)
             print("Editted C-flags:")
             print(cfg_vars["CFLAGS"])
-            os.environ["CFLAGS"] = " ".join(cflags)
+        for key in ["CFLAGS", "LDFLAGS", "LDSHARED"]:
+            if key in cfg_vars:
+                print("System C-flags:")
+                print(cfg_vars[key])
+                cflags = list(set(cfg_vars[key].split()))
+                if "-fuse-linker-plugin" in cflags:
+                    cflags.remove("-fuse-linker-plugin") 
+                if "-ffat-lto-objects" in cflags:
+                    cflags.remove("-ffat-lto-objects")
+                if "-flto-partition=none" in cflags:
+                    cflags.remove("-flto-partition=none")
+                cflags = list(set(cflags))
+                if "gcc" in cflags:
+                    cflags.remove("gcc")
+                    cflags.insert(0, "gcc")
+                cfg_vars[key] = " ".join(cflags)
+                print("Editted C-flags:")
+                print(cfg_vars[key])
+
         if compiler == 'msvc':
             # Add msvc specific hacks
 
