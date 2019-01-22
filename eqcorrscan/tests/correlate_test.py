@@ -152,7 +152,6 @@ def array_template():
     return a set of templates, generated with random, for correlation tests.
     """
     return random.randn(200, 200)
-    # return random.randn(2, 200)
 
 
 @pytest.fixture(scope='module')

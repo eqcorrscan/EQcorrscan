@@ -273,7 +273,7 @@ int normxcorr_fftw_main(
     num_threads:    Number of threads to parallel internal calculations over
     stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
   */
-    long i, t, chunk, n_chunks, chunk_len, remainder, startind;
+    long i, t, chunk, n_chunks, chunk_len, startind, step_len;
     int status = 0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
@@ -294,39 +294,23 @@ int normxcorr_fftw_main(
     //  Compute fft of template
     fftwf_execute_dft_r2c(pa, template_ext, outa);
 
-    if (fft_len >= image_len)
-    {
+    if (fft_len >= image_len){
         n_chunks = 1;
         chunk_len = image_len;
-        remainder = image_len;
-    } else
-    {
-        n_chunks = image_len / fft_len + (image_len % fft_len > 0);
-        chunk_len = image_len / n_chunks;
-        remainder = image_len - ((n_chunks * chunk_len) - ((template_len - 1) * n_chunks));
-        if (remainder > chunk_len){
-            n_chunks += remainder / chunk_len + (remainder % chunk_len > 0);
-            remainder = image_len - ((n_chunks * chunk_len) - ((template_len - 1) * n_chunks));
-        }
-        if (remainder > 0){
-            n_chunks += 1;
-        } else {
-            remainder = chunk_len;
-        }
+        step_len = chunk_len;
+    } else {
+        chunk_len = fft_len;
+        step_len = fft_len - (template_len - 1);
+        n_chunks = (image_len - chunk_len) / step_len + ((image_len - chunk_len) % step_len > 0);
+        if (n_chunks * step_len < image_len){n_chunks += 1;}
     }
-    for (chunk = 0; chunk < n_chunks; ++chunk)
-    {
-        startind = (chunk * chunk_len) - (chunk * (template_len - 1));
-        printf("Startind: %ld\n", startind);
-        if (chunk == n_chunks - 1)
-        {
-            chunk_len = remainder;
-        }
+    for (chunk = 0; chunk < n_chunks; ++chunk){
+        startind = chunk * step_len;
+        if (startind + chunk_len > image_len){
+            chunk_len = image_len - startind;}
+
         memset(image_ext, 0, (size_t) fft_len * sizeof(float));
-        for (i = 0; i < chunk_len; ++i)
-        {
-            image_ext[i] = image[startind + i];
-        }
+        for (i = 0; i < chunk_len; ++i){image_ext[i] = image[startind + i];}
         status += normxcorr_fftw_internal(
             template_len, n_templates, &image[startind], chunk_len, chan,
             n_chans, &ncc[startind], image_len, fft_len, template_ext,
@@ -371,13 +355,13 @@ int normxcorr_fftw_internal(
     // Allocate mean and var arrays
     mean = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     if (mean == NULL) {
-        printf("Error allocating mean in normxcorr_fftw_main\n");
+        printf("Error allocating mean in normxcorr_fftw_internal\n");
         free(norm_sums);
         return 1;
     }
     var = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     if (var == NULL) {
-        printf("Error allocating var in normxcorr_fftw_main\n");
+        printf("Error allocating var in normxcorr_fftw_internal\n");
         free(norm_sums);
         free(mean);
         return 1;
@@ -405,7 +389,7 @@ int normxcorr_fftw_internal(
         for (t = 0; t < n_templates; ++t){
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
             c /= stdev;
-            status += set_ncc(t, 0, chan, n_chans, template_len, image_len,
+            status += set_ncc(t, 0, chan, n_chans, template_len, ncc_len,
                               (float) c, used_chans, pad_array, ncc, stack_option);
         }
         if (var[0] <= WARN_DIFF){
@@ -442,7 +426,7 @@ int normxcorr_fftw_internal(
                     double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
                     c /= stdev;
                     status += set_ncc(t, i, chan, n_chans, template_len,
-                                      image_len, (float) c, used_chans,
+                                      ncc_len, (float) c, used_chans,
                                       pad_array, ncc, stack_option);
                 }
             }
@@ -476,7 +460,8 @@ static inline int set_ncc(
     int status = 0;
 
     if (used_chans[t] && (i >= pad_array[t])) {
-        size_t ncc_index = (t * n_chans * ((size_t) image_len - template_len + 1)) + (chan * ((size_t) image_len - template_len + 1) + i - pad_array[t]);
+        size_t ncc_index = (t * n_chans * ((size_t) image_len - template_len + 1)) +
+            (chan * ((size_t) image_len - template_len + 1) + i - pad_array[t]);
 
         if (isnanf(value)) {
             // set NaNs to zero
