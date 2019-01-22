@@ -81,7 +81,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
@@ -292,7 +292,7 @@ class CustomBuildExt(build_ext):
                 print(cfg_vars[key])
                 cflags = list(set(cfg_vars[key].split()))
                 if "-fuse-linker-plugin" in cflags:
-                    cflags.remove("-fuse-linker-plugin") 
+                    cflags.remove("-fuse-linker-plugin")
                 if "-ffat-lto-objects" in cflags:
                     cflags.remove("-ffat-lto-objects")
                 if "-flto-partition=none" in cflags:
