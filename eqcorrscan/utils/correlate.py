@@ -567,8 +567,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         Logger.warning(
             "FFT length of {0} is shorter than the template, setting to "
             "{1}".format(
-                fftshape, next_fast_len(template_len + image_len - 1)))
-        fftshape = next_fast_len(template_len + image_len - 1)
+                fftshape, next_fast_len(template_length + stream_length - 1)))
+        fftshape = next_fast_len(template_length + stream_length - 1)
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
