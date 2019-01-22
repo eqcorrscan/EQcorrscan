@@ -533,10 +533,9 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
                          float *image, long image_len, float *ncc, long fft_len, int *used_chans,
-                         int *pad_array, int num_threads_outer, int num_threads_inner,
-                         int *variance_warning, int stack_option)
+                         int *pad_array, int num_threads_inner, int *variance_warning, int stack_option)
     {
-    int i, chan, n_chans;
+    int i, chan, n_chans, num_threads_outer=1;
     int r=0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     float **template_ext = NULL;
@@ -683,7 +682,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     px = fftwf_plan_dft_c2r_2d(n_templates, fft_len, out[0], ccc[0], FFTW_ESTIMATE);
 
     /* loop over the channels */
-    #pragma omp parallel for num_threads(num_threads_outer)
+    /* #pragma omp parallel for num_threads(num_threads_outer) */
     for (i = 0; i < n_channels; ++i){
         int tid = 0; /* each thread has its own workspace */
 

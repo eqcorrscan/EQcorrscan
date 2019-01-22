@@ -25,6 +25,8 @@
   2 ** 13.  This was found to be consistently the fastest length in testing.
   This can be changed by the user by passing the `fft_len` keyword argument.
   See PR #285.
+* Outer-loop parallelism has been disabled for all systems now. This was not
+  useful in most situations and is hard to maintain.
 
 ## 0.3.3
 * Make test-script more stable.
