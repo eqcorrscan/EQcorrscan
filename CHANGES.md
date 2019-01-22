@@ -20,6 +20,11 @@
   memory usage #249
 * enforce normalization of continuous data before correlation to avoid float32
   overflow errors that result in correlation errors (see pr #292).
+* Add SEC-C style chunked cross-correlations.  This is both faster and more
+  memory efficient.  This is now used by default with an fft length of
+  2 ** 13.  This was found to be consistently the fastest length in testing.
+  This can be changed by the user by passing the `fft_len` keyword argument.
+  See PR #285.
 
 ## 0.3.3
 * Make test-script more stable.
