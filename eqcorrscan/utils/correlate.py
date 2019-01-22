@@ -701,7 +701,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
     num_cores_inner = kwargs.pop('cores', None)
-    if num_cores_inner is None :
+    if num_cores_inner is None:
         num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
 
     chans = [[] for _i in range(len(templates))]
