@@ -563,8 +563,13 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
         fftshape = min(
             2 ** 13, next_fast_len(template_length + stream_length - 1))
-    assert(fftshape >= template_length)
-    # # Normalize and flip the templates
+    if fftshape < template_length:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(
+                fftshape, next_fast_len(template_len + image_len - 1)))
+        fftshape = next_fast_len(template_len + image_len - 1)
+    # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
 
@@ -794,7 +799,11 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         # In testing, 2**13 consistently comes out fastest - setting to
         # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
         fft_len = min(2 ** 13, next_fast_len(template_len + image_len - 1))
-    assert(fft_len >= template_len)
+    if fft_len < template_len:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(fft_len, next_fast_len(template_len + image_len - 1)))
+        fft_len = next_fast_len(template_len + image_len - 1)
     template_array = np.ascontiguousarray(
         [template_array[x] for x in seed_ids], dtype=np.float32)
     multipliers = {}
