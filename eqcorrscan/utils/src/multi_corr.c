@@ -313,9 +313,9 @@ int normxcorr_fftw_main(
         for (i = 0; i < chunk_len; ++i){image_ext[i] = image[startind + i];}
         status += normxcorr_fftw_internal(
             template_len, n_templates, &image[startind], chunk_len, chan,
-            n_chans, &ncc[startind], image_len, fft_len, template_ext,
+            n_chans, &ncc[0], image_len, fft_len, template_ext,
             image_ext, norm_sums, ccc, outa, outb, out, pb, px, used_chans,
-            pad_array, num_threads, variance_warning, stack_option);
+            pad_array, num_threads, variance_warning, stack_option, startind);
     }
     free(norm_sums);
     return status;
@@ -327,8 +327,44 @@ int normxcorr_fftw_internal(
     float *template_ext, float *image_ext, float *norm_sums, float *ccc,
     fftwf_complex *outa, fftwf_complex *outb, fftwf_complex *out,
     fftwf_plan pb, fftwf_plan px, int *used_chans, int *pad_array,
-    int num_threads, int *variance_warning, int stack_option)
+    int num_threads, int *variance_warning, int stack_option, long offset)
 {
+  /*
+    Internal function for chunking cross-correlations
+    template_len:   Length of template
+    n_templates:    Number of templates
+    image:          Image signal (to scan through) - in this case this is a pointer to the starting index of the
+                    image for this chunk
+    image_len:      Length of image chunk (not complete length of image)
+    chan:           Channel number - used for stacking, otherwise set to 0
+    n_chans:        Number of channels - used for stacking, otherwise set to 1
+    ncc:            Output for cross-correlation - should be pointer to memory. This should be the whole ncc, not just
+                    the ncc starting at this chunk because padding requires negative indexing.
+                    Shapes and output determined by stack_option:
+        1:          Output stack correlograms, ncc must be
+                    (n_templates x image_len - template_len + 1) long.
+        0:          Output individual channel correlograms, ncc must be
+                    (n_templates x image_len - template_len + 1) long and initialised
+                    to zero before passing into this function.
+    ncc_len:        Total length of the ncc (not just the chunk).
+    fft_len:        Size for fft
+    template_ext:   Input FFTW array for template transform (must be allocated)
+    image_ext:      Input FFTW array for image transform (must be allocated)
+    norm_sums:      Normalised, summed templates
+    ccc:            Output FFTW array for reverse transform (must be allocated)
+    outa:           Output FFTW array for template transform (must be computed)
+    outb:           Output FFTW array for image transform (must be allocated)
+    out:            Input array for reverse transform (must be allocated)
+    pb:             Forward plan for image
+    px:             Reverse plan
+    used_chans:     Array to fill with number of channels used per template - must
+                    be n_templates long
+    pad_array:      Array of pads, should be n_templates long
+    num_threads:    Number of threads to parallel internal calculations over
+    variance_warning: Pointer to array to store warnings for variance issues
+    stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
+    offset:         Offset for position of chunk in ncc (for a pad of zero).
+  */
     long i, t, startind;
     long N2 = fft_len / 2 + 1;
     int status = 0, unused_corr = 0;
@@ -389,7 +425,7 @@ int normxcorr_fftw_internal(
         for (t = 0; t < n_templates; ++t){
             double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[0]);
             c /= stdev;
-            status += set_ncc(t, 0, chan, n_chans, template_len, ncc_len,
+            status += set_ncc(t, offset, chan, n_chans, template_len, ncc_len,
                               (float) c, used_chans, pad_array, ncc, stack_option);
         }
         if (var[0] <= WARN_DIFF){
@@ -425,7 +461,7 @@ int normxcorr_fftw_internal(
                 for (t = 0; t < n_templates; ++t){
                     double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[i]);
                     c /= stdev;
-                    status += set_ncc(t, i, chan, n_chans, template_len,
+                    status += set_ncc(t, i + offset, chan, n_chans, template_len,
                                       ncc_len, (float) c, used_chans,
                                       pad_array, ncc, stack_option);
                 }
@@ -462,6 +498,8 @@ static inline int set_ncc(
     if (used_chans[t] && (i >= pad_array[t])) {
         size_t ncc_index = (t * n_chans * ((size_t) image_len - template_len + 1)) +
             (chan * ((size_t) image_len - template_len + 1) + i - pad_array[t]);
+//        printf("ncc_index: %ld\ttemplate: %ld\tindex: %ld\tpad: %i\tvalue: %f\n",
+//               ncc_index, t, i, pad_array[t], value);
 
         if (isnanf(value)) {
             // set NaNs to zero

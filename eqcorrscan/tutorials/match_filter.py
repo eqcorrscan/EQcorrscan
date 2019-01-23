@@ -22,7 +22,8 @@ logging.basicConfig(
     format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
-def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(), **kwargs):
+def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(),
+                 **kwargs):
     """Main function to run the tutorial dataset."""
     # First we want to load our templates
     template_names = glob.glob('tutorial_template_*.ms')

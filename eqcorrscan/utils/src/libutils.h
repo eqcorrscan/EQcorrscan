@@ -72,7 +72,7 @@ int normxcorr_fftw_main(float*, long, long, float*, long, int, int, float*, long
 int normxcorr_fftw_internal(
     long, long, float*, long, int, int, float*, long, long, float*, float*, float*,
     float*, fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan,
-    fftwf_plan, int*, int*, int, int*, int);
+    fftwf_plan, int*, int*, int, int*, int, long);
 
 int normxcorr_fftw_threaded(
     float*, long, long, float*, long, float*, long, int*, int*, int*);

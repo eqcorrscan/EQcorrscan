@@ -127,8 +127,10 @@ def read_gappy_real_data():
 def read_real_multichannel_templates():
     import glob
     tutorial_templates = glob.glob(
-        join(pytest.test_data_path, "tutorial_template_?.ms"))
-    return [read(f) for f in tutorial_templates]
+        join(pytest.test_data_path, "tutorial_template_0.ms"))
+
+    t = read(tutorial_templates[0])
+    return [t.select(station="POWZ") + t.select(station="HOWZ")]
 
 
 def get_real_multichannel_data():
@@ -137,12 +139,9 @@ def get_real_multichannel_data():
     from eqcorrscan.utils.pre_processing import shortproc
 
     t1 = UTCDateTime("2016-01-04T12:00:00.000000Z")
-    t2 = t1 + 3600
+    t2 = t1 + 600
     bulk = [('NZ', 'POWZ', '*', 'EHZ', t1, t2),
-            ('NZ', 'HOWZ', '*', 'EHZ', t1, t2),
-            ('NZ', 'DVHZ', '*', 'EHZ', t1, t2),
-            ('NZ', 'BFZ', '*', 'HHZ', t1, t2),
-            ('NZ', 'CPWZ', '*', 'EHZ', t1, t2)]
+            ('NZ', 'HOWZ', '*', 'EHZ', t1, t2)]
     client = Client("GEONET")
     st = client.get_waveforms_bulk(bulk)
     st = shortproc(
@@ -336,22 +335,19 @@ def stream_cc_dict(stream_cc_output_dict):
 def real_stream_cc_output_dict(real_templates, real_multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
     out = {}
+    fft_len = next_fast_len(
+        real_templates[0][0].stats.npts +
+        real_multichannel_stream[0].stats.npts + 1)
+    short_fft_len = 2 ** 8
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
             print("Running {0} with {1} cores".format(name, cores))
 
             cc_out = time_func(func, name, real_templates,
-                               real_multichannel_stream, cores=cores)
+                               real_multichannel_stream, cores=cores,
+                               fft_len=short_fft_len)
             out["{0}.{1}".format(name, cores)] = cc_out
             if "fftw" in name:
-                if cores > 1:
-                    print("Running outer core parallel")
-                    # Make sure that using both parallel methods gives the same
-                    # result
-                    cc_out = time_func(
-                        func, name, real_templates,
-                        real_multichannel_stream, cores=1, cores_outer=cores)
-                    out["{0}.{1}_outer".format(name, cores)] = cc_out
                 print("Running fixed fft-len: {0}".format(fft_len))
                 # Make sure that running with a pre-defined fft-len works
                 cc_out = time_func(
