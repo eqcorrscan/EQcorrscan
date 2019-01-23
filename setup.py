@@ -270,39 +270,31 @@ class CustomBuildExt(build_ext):
         if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
             print("System C-flags:")
             print(cfg_vars["CFLAGS"])
-            cflags = list(set(cfg_vars["CFLAGS"].split()))
-            if "-m" in cflags:
-                cflags.remove("-m")
-            if "-isysroot" in cflags:
-                cflags.remove("-isysroot")
-            # Remove sdk links
-            sdk_flags = []
-            for cflag in cflags:
-                if cflag.endswith(".sdk"):
-                    sdk_flags.append(cflag)
-            for cflag in sdk_flags:
-                cflags.remove(cflag)
-            cflags = list(set(cflags))
+            cflags = []
+            for flag in cfg_vars["CFLAGS"].split():
+                if flag in ["-m", "-isysroot"]:
+                    continue
+                # Remove sdk links
+                if flag.endswith(".sdk"):
+                    continue
+                cflags.append(flag)
             cfg_vars["CFLAGS"] = " ".join(cflags)
             print("Editted C-flags:")
             print(cfg_vars["CFLAGS"])
+        # Remove unsupported C-flags
+        unsupported_flags = [
+            "-fuse-linker-plugin", "-ffat-lto-objects", "-flto-partition=none"]
         for key in ["CFLAGS", "LDFLAGS", "LDSHARED"]:
             if key in cfg_vars:
-                print("System C-flags:")
+                print("System {0}:".format(key))
                 print(cfg_vars[key])
-                cflags = list(set(cfg_vars[key].split()))
-                if "-fuse-linker-plugin" in cflags:
-                    cflags.remove("-fuse-linker-plugin")
-                if "-ffat-lto-objects" in cflags:
-                    cflags.remove("-ffat-lto-objects")
-                if "-flto-partition=none" in cflags:
-                    cflags.remove("-flto-partition=none")
-                cflags = list(set(cflags))
-                if "gcc" in cflags:
-                    cflags.remove("gcc")
-                    cflags.insert(0, "gcc")
-                cfg_vars[key] = " ".join(cflags)
-                print("Editted C-flags:")
+                flags = []
+                for flag in cfg_vars[key].split():
+                    if flag in unsupported_flags:
+                        continue
+                    flags.append(flag)
+                cfg_vars[key] = " ".join(flags)
+                print("Editted {0}:".format(key))
                 print(cfg_vars[key])
 
         if compiler == 'msvc':
