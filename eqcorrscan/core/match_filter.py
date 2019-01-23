@@ -4266,8 +4266,8 @@ def match_filter(template_names, template_list, st, threshold,
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = default_timer()
-    Logger.info(' '.join(['Looping over templates and streams took:',
-                          str(outtoc - outtic), 's']))
+    Logger.info('Looping over templates and streams took: {0:.4f}s'.format(
+        outtoc - outtic))
     Logger.debug(
         'The shape of the returned cccsums is: {0}'.format(cccsums.shape))
     Logger.debug(
@@ -4291,7 +4291,7 @@ def match_filter(template_names, template_list, st, threshold,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
         full_peaks=full_peaks, cores=peak_cores)
     outtoc = default_timer()
-    Logger.info("Finding peaks took {0} s".format(outtoc - outtic))
+    Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
