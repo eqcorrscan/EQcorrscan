@@ -1842,7 +1842,8 @@ class Template(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                pre_processed=False, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               ignore_length=False, overlap="calculate", full_peaks=False):
+               ignore_length=False, overlap="calculate", full_peaks=False,
+               **kwargs):
         """
         Detect using a single template within a continuous stream.
 
@@ -1901,13 +1902,19 @@ class Template(object):
         :param overlap:
             Either None, "calculate" or a float of number of seconds to
             overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calcualting cross-correlation sums. Setting
+            the delay-and-stack in calculating cross-correlation sums. Setting
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
-        :type full_peaks:
-        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+        :type full_peaks: bool
+        :param full_peaks:
+            See :func:`eqcorrscan.utils.findpeaks.find_peaks2_short`
 
         :returns: Family of detections.
+
+
+        .. Note::
+            When using the "fftw" correlation backend the length of the fft
+            can be set. See :mod:`eqcorrscan.utils.correlate` for more info.
 
         .. Note::
             `stream` must not be pre-processed. If your data contain gaps
@@ -1978,7 +1985,7 @@ class Template(object):
             plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
-            overlap=overlap, full_peaks=full_peaks)
+            overlap=overlap, full_peaks=full_peaks, **kwargs)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
@@ -2527,6 +2534,10 @@ class Tribe(object):
             detections.
 
         .. Note::
+            When using the "fftw" correlation backend the length of the fft
+            can be set. See :mod:`eqcorrscan.utils.correlate` for more info.
+
+        .. Note::
             `stream` must not be pre-processed. If your data contain gaps
             you should *NOT* fill those gaps before using this method.
             The pre-process functions (called within) will fill the gaps
@@ -2723,6 +2734,11 @@ class Tribe(object):
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
             detections.
+
+
+        .. Note::
+            When using the "fftw" correlation backend the length of the fft
+            can be set. See :mod:`eqcorrscan.utils.correlate` for more info.
 
         .. Note::
             Detections are not corrected for `pre-pick`, the
@@ -4056,6 +4072,10 @@ def match_filter(template_names, template_list, st, threshold,
         Number of processes to use for parallel peak-finding (if different to
         `cores`).
 
+    .. Note::
+        When using the "fftw" correlation backend the length of the fft
+        can be set. See :mod:`eqcorrscan.utils.correlate` for more info.
+
     .. note::
         **Returns:**
 
@@ -4246,8 +4266,8 @@ def match_filter(template_names, template_list, st, threshold,
     if len(cccsums[0]) == 0:
         raise MatchFilterError('Correlation has not run, zero length cccsum')
     outtoc = default_timer()
-    Logger.info(' '.join(['Looping over templates and streams took:',
-                          str(outtoc - outtic), 's']))
+    Logger.info('Looping over templates and streams took: {0:.4f}s'.format(
+        outtoc - outtic))
     Logger.debug(
         'The shape of the returned cccsums is: {0}'.format(cccsums.shape))
     Logger.debug(
@@ -4271,7 +4291,7 @@ def match_filter(template_names, template_list, st, threshold,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
         full_peaks=full_peaks, cores=peak_cores)
     outtoc = default_timer()
-    Logger.info("Finding peaks took {0} s".format(outtoc - outtic))
+    Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
