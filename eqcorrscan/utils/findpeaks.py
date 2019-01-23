@@ -186,7 +186,7 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
         return peaks
     else:
-        print('No peaks for you!')
+        Logger.info('No peaks for you!')
         return []
 
 
@@ -333,7 +333,6 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     total_length = lengths.sum()
 
     max_indexes = [_indices.max() for _indices in indices]
-    print(max_indexes)
     max_index = max(max_indexes)
     for var in [trig_int, lengths.max(), max_index]:
         if var == ctypes.c_long(var).value:

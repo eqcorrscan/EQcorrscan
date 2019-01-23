@@ -557,9 +557,19 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     template_length = templates.shape[1]
     stream_length = len(stream)
     n_templates = templates.shape[0]
-    fftshape = next_fast_len(template_length + stream_length - 1)
-
-    # # Normalize and flip the templates
+    fftshape = kwargs.get("fft_len")
+    if fftshape is None:
+        # In testing, 2**13 consistently comes out fastest - setting to
+        # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
+        fftshape = min(
+            2 ** 13, next_fast_len(template_length + stream_length - 1))
+    if fftshape < template_length:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(
+                fftshape, next_fast_len(template_length + stream_length - 1)))
+        fftshape = next_fast_len(template_length + stream_length - 1)
+    # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
 
@@ -690,15 +700,9 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
-    num_cores_inner = kwargs.get('cores')
-    num_cores_outer = kwargs.get('cores_outer')
-    if num_cores_inner is None and num_cores_outer is None:
+    num_cores_inner = kwargs.pop('cores', None)
+    if num_cores_inner is None:
         num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
-        num_cores_outer = 1
-    elif num_cores_inner is not None and num_cores_outer is None:
-        num_cores_outer = 1
-    elif num_cores_outer is not None and num_cores_inner is None:
-        num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
@@ -707,7 +711,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer, stack=stack)
+        stack=stack, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -718,7 +722,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, cores_outer, stack=True):
+                         cores_inner, stack=True, *args, **kwargs):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -750,7 +754,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
@@ -783,10 +787,18 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     n_channels = len(seed_ids)
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
-    fft_len = next_fast_len(template_len + image_len - 1)
-    template_array = np.ascontiguousarray([template_array[x]
-                                           for x in seed_ids],
-                                          dtype=np.float32)
+    fft_len = kwargs.get("fft_len")
+    if fft_len is None:
+        # In testing, 2**13 consistently comes out fastest - setting to
+        # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
+        fft_len = min(2 ** 13, next_fast_len(template_len + image_len - 1))
+    if fft_len < template_len:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(fft_len, next_fast_len(template_len + image_len - 1)))
+        fft_len = next_fast_len(template_len + image_len - 1)
+    template_array = np.ascontiguousarray(
+        [template_array[x] for x in seed_ids], dtype=np.float32)
     multipliers = {}
     for x in seed_ids:
         # Check that stream is non-zero and above variance threshold
@@ -808,16 +820,15 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
             (n_templates, n_channels, image_len - template_len + 1),
             dtype=np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
-    pad_array_np = np.ascontiguousarray([pad_array[seed_id]
-                                         for seed_id in seed_ids],
-                                        dtype=np.intc)
+    pad_array_np = np.ascontiguousarray(
+        [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
     variance_warnings = np.ascontiguousarray(
         np.zeros(n_channels), dtype=np.intc)
 
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
-        image_len, cccs, fft_len, used_chans_np, pad_array_np, cores_outer,
+        image_len, cccs, fft_len, used_chans_np, pad_array_np,
         cores_inner, variance_warnings, int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")

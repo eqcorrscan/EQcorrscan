@@ -22,7 +22,8 @@ logging.basicConfig(
     format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
-def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
+def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(),
+                 **kwargs):
     """Main function to run the tutorial dataset."""
     # First we want to load our templates
     template_names = glob.glob('tutorial_template_*.ms')
@@ -78,7 +79,7 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
         print('Downloading seismic data, this may take a while')
         st = client.get_waveforms_bulk(bulk_info)
         # Merge the stream, it will be downloaded in chunks
-        st.merge(fill_value='interpolate')
+        st.merge()
 
         # Pre-process the data to set frequency band and sampling rate
         # Note that this is, and MUST BE the same as the parameters used for
@@ -95,7 +96,7 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count()):
             template_names=template_names, template_list=templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
             plotvar=plot, plotdir='.', cores=num_cores,
-            plot_format='png')
+            plot_format='png', **kwargs)
 
         # Now lets try and work out how many unique events we have just to
         # compare with the GeoNet catalog of 20 events on this day in this
