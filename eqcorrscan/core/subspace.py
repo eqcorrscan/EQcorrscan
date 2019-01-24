@@ -27,12 +27,13 @@ import copy
 import scipy
 
 from obspy import Trace, UTCDateTime, Stream
-from obspy.core.event import Event, CreationInfo, ResourceIdentifier, Comment,\
-    WaveformStreamID, Pick
+from obspy.core.event import (
+    Event, CreationInfo, ResourceIdentifier, Comment, WaveformStreamID, Pick)
 
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.utils import findpeaks, pre_processing, stacking, plotting
-from eqcorrscan.core.match_filter import Detection, extract_from_stream
+from eqcorrscan.core.match_filter import Detection
+from eqcorrscan.core.match_filter.helpers import extract_from_stream
 from eqcorrscan.utils.plotting import subspace_detector_plot, subspace_fc_plot
 
 

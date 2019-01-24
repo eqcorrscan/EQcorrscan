@@ -14,6 +14,7 @@ recursive-include eqcorrscan/utils *.py
 recursive-include eqcorrscan/tutorials *.py
 recursive-include eqcorrscan/doc *
 recursive-include eqcorrscan/core *.py
+recursive-include eqcorrscan/core/match_filter *.py
 recursive-include eqcorrscan/helpers *.py
 recursive-include eqcorrscan/tests *.py
 include eqcorrscan/utils/src/libutils.def

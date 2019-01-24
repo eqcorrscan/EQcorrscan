@@ -17,12 +17,11 @@ from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
-from eqcorrscan.core.match_filter import MatchFilterError
-from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
-from eqcorrscan.core.match_filter import read_detections, get_catalog
-from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
-from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
-from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
+from eqcorrscan.core.match_filter import (
+    MatchFilterError, normxcorr2, Detection, read_detections, get_catalog,
+    write_catalog, extract_from_stream, Tribe, Template, Party, Family,
+    read_party, read_tribe, _spike_test)
+from eqcorrscan.core.match_filter.match_filter import match_filter
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks

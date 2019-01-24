@@ -5,8 +5,8 @@ See notes and warnings on correlations here: correlation_warnings_
 
 .. _correlation_warnings: utils.correlate.html#notes-on-accuracy
 
-.. currentmodule:: eqcorrscan.core.match_filter
-.. automodule:: eqcorrscan.core.match_filter
+.. currentmodule:: eqcorrscan.core.match_filter.match_filter
+.. automodule:: eqcorrscan.core.match_filter.match_filter
 
     .. comment to end block
 
@@ -15,11 +15,11 @@ See notes and warnings on correlations here: correlation_warnings_
     .. toctree::
         :maxdepth: 1
 
-        core.match_filter.Detection
-        core.match_filter.Family
-        core.match_filter.Party
-        core.match_filter.Template
-        core.match_filter.Tribe
+        core.match_filter.match_filter.detection.Detection
+        core.match_filter.match_filter.family.Family
+        core.match_filter.party.Party
+        core.match_filter.match_filter.template.Template
+        core.match_filter.match_filter.tribe.Tribe
 
     Functions
     ---------
