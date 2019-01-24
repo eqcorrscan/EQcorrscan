@@ -497,7 +497,7 @@ def match_filter(template_names, template_list, st, threshold,
 
         >>> import obspy
         >>> import numpy as np
-        >>> from eqcorrscan.core.match_filter.match_filter import match_filter
+        >>> from eqcorrscan.core.match_filter.matched_filter import match_filter
         >>> from eqcorrscan.utils.correlate import time_multi_normxcorr
         >>> # define a custom xcorr function
         >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):

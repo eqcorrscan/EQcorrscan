@@ -33,7 +33,7 @@ from obspy.core.event import Comment, CreationInfo
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.core.match_filter.party import Party
 from eqcorrscan.core.match_filter.helpers import _safemembers, _par_read
-from eqcorrscan.core.match_filter.match_filter import (
+from eqcorrscan.core.match_filter.matched_filter import (
     _group_detect, MatchFilterError)
 from eqcorrscan.core import template_gen
 from eqcorrscan.utils.pre_processing import _check_daylong

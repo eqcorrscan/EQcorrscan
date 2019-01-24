@@ -21,7 +21,7 @@ from eqcorrscan.core.match_filter import (
     MatchFilterError, normxcorr2, Detection, read_detections, get_catalog,
     write_catalog, extract_from_stream, Tribe, Template, Party, Family,
     read_party, read_tribe, _spike_test)
-from eqcorrscan.core.match_filter.match_filter import match_filter
+from eqcorrscan.core.match_filter.matched_filter import match_filter
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks

@@ -10,21 +10,25 @@
 # Import mapping to let users ignore the refactoring
 from eqcorrscan.core.match_filter.party import Party, read_party  # NOQA
 from eqcorrscan.core.match_filter.family import Family  # NOQA
-from eqcorrscan.core.match_filter.template import Template  # NOQA
+from eqcorrscan.core.match_filter.template import (  # NOQA
+    Template, read_template)  # NOQA
 from eqcorrscan.core.match_filter.tribe import Tribe, read_tribe  # NOQA
 from eqcorrscan.core.match_filter.detection import (  # NOQA
     Detection, read_detections, get_catalog, write_catalog)  # NOQA
-from eqcorrscan.core.match_filter.match_filter import MatchFilterError  # NOQA
+from eqcorrscan.core.match_filter.matched_filter import (  # NOQA
+    MatchFilterError, match_filter)  # NOQA
 from eqcorrscan.core.match_filter.helpers import (  # NOQA
-    normxcorr2, extract_from_stream, _spike_test)  # NOQA
+    normxcorr2, extract_from_stream, _spike_test, temporary_directory)  # NOQA
 
 CAT_EXT_MAP = {"QUAKEML": "xml", "SC3ML": "xml"}  # , "NORDIC": "out"}
 # TODO: add in nordic support once bugs fixed upstream - 1.2.0 Obspy PR #2195
 
 
 __all__ = [
-    'detection', 'family', 'helpers', 'match_filter', 'party', 'template',
-    'tribe']
+    'Party', 'read_party', 'Family', 'Template', 'read_template', 'Tribe',
+    'read_tribe', 'Detection', 'read_detections', 'get_catalog',
+    'write_catalog', 'MatchFilterError',
+    'normxcorr2', 'extract_from_stream', '_spike_test', 'temporary_directory']
 
 
 if __name__ == '__main__':

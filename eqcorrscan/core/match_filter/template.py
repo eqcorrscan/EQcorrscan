@@ -29,7 +29,7 @@ from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
-from eqcorrscan.core.match_filter.match_filter import (
+from eqcorrscan.core.match_filter.matched_filter import (
     _group_detect, MatchFilterError)
 from eqcorrscan.core import template_gen
 

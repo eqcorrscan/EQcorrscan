@@ -30,12 +30,12 @@ import numpy as np
 from obspy import Catalog, Stream, read_events
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
-from eqcorrscan.core.match_filter.match_filter import MatchFilterError
+from eqcorrscan.core.match_filter.matched_filter import (
+    MatchFilterError, _group_process)
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.helpers import (
     _total_microsec, temporary_directory, _safemembers, _templates_match)
-from eqcorrscan.core.match_filter.match_filter import _group_process
 
 from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin

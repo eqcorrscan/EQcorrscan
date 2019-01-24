@@ -51,7 +51,7 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     :param multiplier: Multiplier of range to define a spike.
     :type multiplier: float
     """
-    from eqcorrscan.core.match_filter.match_filter import MatchFilterError
+    from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
     for tr in stream:
         if (tr.data > 2 * np.max(np.sort(
@@ -249,7 +249,7 @@ def _par_read(dirname, compressed=True):
     :type compressed: bool
     :param compressed: Whether the directory is compressed or not.
     """
-    from eqcorrscan.core.match_filter.match_filter import MatchFilterError
+    from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
     from eqcorrscan.core.match_filter.template import Template
 
     templates = []
