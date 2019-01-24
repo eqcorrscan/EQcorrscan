@@ -1,7 +1,7 @@
-match_filter.Detection
-======================
+match_filter.detection.Detection
+================================
 
-.. currentmodule:: eqcorrscan.core.match_filter
+.. currentmodule:: eqcorrscan.core.match_filter.detection
 
 .. autoclass:: Detection
 

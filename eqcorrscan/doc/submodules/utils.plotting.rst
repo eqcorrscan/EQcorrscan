@@ -29,7 +29,7 @@ arguments.
        pretty_template_plot
        spec_trace
        subspace_detector_plot
-       SVD_plot
+       svd_plot
        threeD_gridplot
        threeD_seismplot
        triple_plot
