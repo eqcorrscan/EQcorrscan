@@ -1,7 +1,7 @@
-match_filter.Family
-===================
+match_filter.family.Family
+==========================
 
-.. currentmodule:: eqcorrscan.core.match_filter
+.. currentmodule:: eqcorrscan.core.match_filter.family
 
 .. autoclass:: Family
 

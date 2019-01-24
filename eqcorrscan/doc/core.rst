@@ -13,6 +13,19 @@ miniseed files, where each file is a single template.
 
 .. _Obspy: http://docs.obspy.org/
 
+
+API-docs
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   submodules/core.bright_lights
+   submodules/core.lag_calc
+   submodules/core.match_filter
+   submodules/core.subspace
+   submodules/core.template_gen
+
 Brightness
 ----------
 bright_lights_ contains a series of functions to detect events using the
@@ -90,15 +103,3 @@ in the clustering_ module.
 .. _subspace: submodules/core.subspace.html
 .. _Harris: https://e-reports-ext.llnl.gov/pdf/335299.pdf
 .. _clustering: submodules/utils.clustering.html
-
-API-docs
---------
-
-.. toctree::
-   :maxdepth: 1
-
-   submodules/core.bright_lights
-   submodules/core.lag_calc
-   submodules/core.match_filter
-   submodules/core.subspace
-   submodules/core.template_gen

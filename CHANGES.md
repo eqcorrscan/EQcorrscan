@@ -27,6 +27,10 @@
   See PR #285.
 * Outer-loop parallelism has been disabled for all systems now. This was not
   useful in most situations and is hard to maintain.
+* Improved support for compilation on RedHat systems
+* Refactored match-filter into smaller files. Namespace remains the same.
+  This was done to ease maintenance - the match_filter.py file had become
+  massive and was slow to load and process in IDEs.
 
 ## 0.3.3
 * Make test-script more stable.
