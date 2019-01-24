@@ -22,7 +22,7 @@ import tempfile
 import logging
 
 import numpy as np
-from obspy import UTCDateTime, Stream
+from obspy import Stream
 from obspy.core.event import Event
 
 from eqcorrscan.utils.correlate import get_array_xcorr
@@ -77,6 +77,7 @@ def _total_microsec(t1, t2):
 
     .. rubric:: Example
 
+    >>> from obspy import UTCDateTime
     >>> print(_total_microsec(UTCDateTime(2013, 1, 1).datetime,
     ...                       UTCDateTime(2014, 1, 1).datetime))
     -31536000000000

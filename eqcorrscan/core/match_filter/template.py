@@ -19,14 +19,13 @@ from __future__ import unicode_literals
 
 import copy
 import getpass
-import glob
 import os
 import re
 import shutil
 import logging
 
 import numpy as np
-from obspy import Stream, read
+from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
@@ -85,6 +84,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> print(Template())
         Template()
         >>> template = Template(
@@ -119,6 +119,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -210,6 +211,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -227,6 +229,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -242,6 +245,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -274,6 +278,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -312,6 +317,7 @@ class Template(object):
 
         .. rubric:: Example
 
+        >>> from obspy import read
         >>> template_a = Template(
         ...     name='a', st=read(), lowcut=2.0, highcut=8.0, samp_rate=100,
         ...     filt_order=4, process_length=3600, prepick=0.5)
@@ -527,7 +533,7 @@ class Template(object):
 
         >>> # Get the path to the test data
         >>> import eqcorrscan
-        >>> import os
+        >>> import os, glob
         >>> TEST_PATH = (
         ...     os.path.dirname(eqcorrscan.__file__) + '/tests/test_data')
         >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')

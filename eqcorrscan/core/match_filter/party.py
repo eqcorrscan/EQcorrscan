@@ -27,7 +27,7 @@ import logging
 from os.path import join
 
 import numpy as np
-from obspy import Catalog, UTCDateTime, Stream, read_events
+from obspy import Catalog, Stream, read_events
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.match_filter import MatchFilterError
@@ -977,4 +977,3 @@ if __name__ == "__main__":
             os.remove(f)
         elif os.path.isdir(f):
             shutil.rmtree(f)
-

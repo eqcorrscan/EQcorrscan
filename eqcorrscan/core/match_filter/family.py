@@ -23,7 +23,7 @@ import os
 import shutil
 import logging
 
-from obspy import UTCDateTime, read
+from obspy import UTCDateTime
 
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
 from eqcorrscan.utils.plotting import cumulative_detections
@@ -480,6 +480,7 @@ class Family(object):
         .. rubric:: Example
 
         >>> from eqcorrscan import Template, Detection
+        >>> from obspy import read
         >>> family = Family(
         ...     template=Template(name='a', st=read()), detections=[
         ...     Detection(template_name='a', detect_time=UTCDateTime(0) + 200,

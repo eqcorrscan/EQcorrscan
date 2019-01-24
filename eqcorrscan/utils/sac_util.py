@@ -163,7 +163,8 @@ def sactoevent(st):
             phase_hint = tr.stats.sac['ka'].split()[0]
         except KeyError:
             Logger.debug(
-                'No pick in position {0} for trace {1}'.format(pick_key, tr.id))
+                'No pick in position {0} for trace {1}'.format(
+                    pick_key, tr.id))
             continue
         Logger.info(
             'Found pick in position {0} for {1}'.format(pick_key, tr.id))
