@@ -1,0 +1,53 @@
+before_script:
+  - apt-get update -qq && apt-get install -y -qq libfftw3-dev libgl1-mesa-glx
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda config --add channels conda-forge
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
+  - source activate test-environment
+  - conda install h5py
+  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
+  - pip freeze
+  - conda list
+
+test_eqcorrscan:
+  script:
+    # Complete the install
+    - python setup.py install
+    - python setup.py build_ext --inplace
+    # Run the various test steps
+    - py.test --runslow -m "not serial and not network" -n 2
+    - py.test -m "serial and not network" --cov-append
+    - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py::TestTutorialScripts::test_subspace --cov-append
+    - py.test -m "network" -n 2
+    - py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+    # Combine the output and report to coverage
+    - ls -a
+    - mv .coverage ../.coverage.empty
+    - cd ..
+    - coverage combine
+    - codecov
+
+test_eqcorrscan_mkl:
+  script:
+    # Complete install
+    - conda install -q mkl mkl-include
+    - python setup.py install
+    - python setup.py build_ext --inplace
+    # Run the various test steps
+    - py.test --runslow -m "not serial and not network" -n 2
+    - py.test -m "serial and not network" --cov-append
+    - py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py::TestTutorialScripts::test_subspace --cov-append
+    - py.test -m "network" -n 2
+    - py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+    # Combine the output and report to coverage
+    - ls -a
+    - mv .coverage ../.coverage.empty
+    - cd ..
+    - coverage combine
+    - codecov
