@@ -639,8 +639,8 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     unnamed = False
     if template_names is None:
         template_names = list(range(len(templates)))
+        template_names = [str(l) for l in template_names]
         unnamed = True
-
     # Check that all sampling rates are the same
     samp_rate = stream[0].stats.sampling_rate
     for tr in stream:
