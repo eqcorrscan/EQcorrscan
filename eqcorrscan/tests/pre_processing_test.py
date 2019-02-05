@@ -359,6 +359,24 @@ class TestDataPrep(unittest.TestCase):
                 else:
                     self.assertEqual(tr, original_tr[0])
 
+    def test_duplicate_template_channels(self):
+        """
+        Check that duplicate template channels result in duplicate template
+        channels but not stream channels.
+        """
+        templates = deepcopy(self.stream_list)
+        templates.sort(key=lambda t: t[0].stats.starttime)
+        stream = deepcopy(self.stream_list[0])
+        additional_channel = templates[0][0]
+        additional_channel.stats.starttime += 30
+        templates[0] += additional_channel
+        assert len(templates[0]) == 10
+        continuous_data, templates = _prep_data_for_correlation(
+            stream=stream, templates=templates, force_stream_epoch=True)
+        for template in templates:
+            assert len(template) == 10
+        assert len(continuous_data) == 9
+
     def test_continuous_data_removal(self):
         """Check that data that should be removed are."""
         st = read()

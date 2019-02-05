@@ -22,6 +22,7 @@ from collections import Counter
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
+from obspy.core.trace import Stats
 from obspy.signal.filter import bandpass, lowpass, highpass
 
 
@@ -634,159 +635,134 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
 
     :return: stream, templates, template_names (if template_names given)
     """
-    from copy import deepcopy
-
-    unnamed = False
-    if template_names is None:
-        template_names = list(range(len(templates)))
-        template_names = [str(l) for l in template_names]
-        unnamed = True
-    # Check that all sampling rates are the same
+    n_templates = len(templates)
     samp_rate = stream[0].stats.sampling_rate
     for tr in stream:
-        if not tr.stats.sampling_rate == samp_rate:
+        if tr.stats.sampling_rate != samp_rate:
             raise NotImplementedError("Sampling rates differ")
     for template in templates:
         for tr in template:
-            if not tr.stats.sampling_rate == samp_rate:
+            if tr.stats.sampling_rate != samp_rate:
                 raise NotImplementedError("Sampling rates differ")
-    # Perform a check that the continuous data are all the same length
+
+    out_stream = Stream()
+
+    named = True
+    if template_names is None:
+        named = False
+        template_names = range(n_templates)
+
+    # Work out shapes.
+    stream_start = min([tr.stats.starttime for tr in stream])
+    stream_end = max([tr.stats.endtime for tr in stream])
     if force_stream_epoch:
-        min_start_time = min([tr.stats.starttime for tr in stream])
-        max_end_time = max([tr.stats.endtime for tr in stream])
-        longest_trace_length = (
-                stream[0].stats.sampling_rate *
-                (max_end_time - min_start_time))
-        longest_trace_length += 1
+        stream_length = int(samp_rate * (stream_end - stream_start)) + 1
     else:
-        longest_trace_length = max([tr.stats.npts for tr in stream])
-    for tr in stream:
-        if not tr.stats.npts == longest_trace_length:
-            Logger.info(
-                'Data for {0} is not as long as needed, padding'.format(tr.id))
+        stream_length = max([tr.stats.npts for tr in stream])
+
+    template_length = set(
+        [tr.stats.npts for template in templates for tr in template])
+    if len(template_length) > 1:
+        raise NotImplementedError("Template traces not all the same length")
+    template_length = template_length.pop()
+
+    stream_ids = [tr.id for tr in stream]
+
+    # Need to ensure that a channel can be in the template multiple times.
+    template_ids = {}
+    for template in templates:
+        # Only include those in the stream.
+        stachans_in_template = [
+            tr.id for tr in template if tr.id in stream_ids]
+        stachans_in_template = Counter(stachans_in_template)
+        for stachan in stachans_in_template.keys():
+            stachans = stachans_in_template[stachan]
+            if stachan not in template_ids.keys():
+                template_ids.update({stachan: stachans})
+            elif stachans_in_template[stachan] > template_ids[stachan]:
+                template_ids.update({stachan: stachans})
+    seed_ids = sorted(
+        [key.split('.') + [i] for key, value in template_ids.items()
+         for i in range(value)])
+    seed_ids = [('.'.join(seed_id[0:-1]), seed_id[-1]) for seed_id in seed_ids]
+
+    for channel_number, seed_id in enumerate(template_ids.keys()):
+        stream_data = np.zeros(stream_length, dtype=np.float32)
+        stream_channel = stream.select(id=seed_id)
+        if len(stream_channel) > 1:
+            raise NotImplementedError(
+                "Multiple channels in continuous data for {0}".format(seed_id))
+        stream_channel = stream_channel[0]
+        if stream_channel.stats.npts == stream_length:
+            stream_data = stream_channel.data
+        else:
+            Logger.info('Data for {0} is not as long as needed, '
+                        'padding'.format(stream_channel.id))
             if force_stream_epoch:
-                start_pad = np.zeros(
-                    int(tr.stats.sampling_rate *
-                        (tr.stats.starttime - min_start_time)))
-                end_pad = np.zeros(
-                    int(tr.stats.sampling_rate *
-                        (max_end_time - tr.stats.endtime)))
+                start_pad = int(samp_rate * (
+                        stream_channel.stats.starttime - stream_start))
+                end_pad = stream_length - (
+                        start_pad + stream_channel.stats.npts)
                 # In some cases there will be one sample missing when sampling
                 # time-stamps are not set consistently between channels, this
                 # results in start_pad and end_pad being len==0
-                if len(start_pad) == 0 and len(end_pad) == 0:
-                    Logger.debug(
-                        "start and end pad are both zero, padding at one end")
-                    if (tr.stats.starttime - min_start_time) > (
-                       max_end_time - tr.stats.endtime):
-                        start_pad = np.zeros(
-                            int(longest_trace_length - tr.stats.npts))
+                if start_pad == 0 and end_pad == 0:
+                    Logger.debug("Start and end pad are both zero, padding "
+                                 "at one end")
+                    if (stream_channel.stats.starttime - stream_start) > (
+                       stream_end - stream_channel.stats.endtime):
+                        start_pad = int(
+                            stream_length - stream_channel.stats.npts)
                     else:
-                        end_pad = np.zeros(
-                            int(longest_trace_length - tr.stats.npts))
-                tr.stats.starttime -= len(start_pad) / tr.stats.sampling_rate
+                        end_pad = int(
+                            stream_length - stream_channel.stats.npts)
+                stream_channel.stats.starttime -= (start_pad / samp_rate)
             else:
-                start_pad = np.zeros(0)
-                end_pad = np.zeros(longest_trace_length - tr.stats.npts)
-            tr.data = np.concatenate([start_pad, tr.data, end_pad])
-    # Perform check that all template lengths are internally consistent
-    for i, temp in enumerate(templates):
-        if len(set([tr.stats.npts for tr in temp])) > 1:
-            msg = ('Template %s contains traces of differing length, this is '
-                   'not currently supported' % template_names[i])
-            raise NotImplementedError(msg)
-    Logger.debug('Ensuring all template channels have matches in'
-                 ' continuous data')
-    template_stachan = {}
-    # Work out what station-channel pairs are in the templates, including
-    # duplicate station-channel pairs.  We will use this information to fill
-    # all templates with the same station-channel pairs
-    for template in templates:
-        stachans_in_template = []
-        for tr in template:
-            stachans_in_template.append((tr.stats.network, tr.stats.station,
-                                         tr.stats.location, tr.stats.channel))
-        stachans_in_template = dict(Counter(stachans_in_template))
-        for stachan in stachans_in_template.keys():
-            stachans = stachans_in_template[stachan]
-            if stachan not in template_stachan.keys():
-                template_stachan.update({stachan: stachans})
-            elif stachans_in_template[stachan] > template_stachan[stachan]:
-                template_stachan.update({stachan: stachans})
-    # Remove un-matched channels from templates.
-    _template_stachan = deepcopy(template_stachan)
-    for stachan in template_stachan.keys():
-        if not stream.select(network=stachan[0], station=stachan[1],
-                             location=stachan[2], channel=stachan[3]):
-            # Remove stachan from list of dictionary of template_stachans
-            _template_stachan.pop(stachan)
-            Logger.info('Removing template channel {0}.{1}.{2}.{3} due to'
-                        ' no matches in continuous data'.format(
-                            stachan[0], stachan[1], stachan[2], stachan[3]))
-            # Remove template traces rather than adding NaN data
-            for template in templates:
-                if template.select(network=stachan[0], station=stachan[1],
-                                   location=stachan[2], channel=stachan[3]):
-                    for tr in template.select(
-                            network=stachan[0], station=stachan[1],
-                            location=stachan[2], channel=stachan[3]):
-                        template.remove(tr)
-    template_stachan = _template_stachan
-    # Remove un-needed channels from continuous data.
-    for tr in stream:
-        if not (tr.stats.network, tr.stats.station,
-                tr.stats.location, tr.stats.channel) in \
-                template_stachan.keys():
-            Logger.info(
-                'Removing channel in continuous data for %s:'
-                ' no match in template' % (tr.id))
-            stream.remove(tr)
-    # Check for duplicate channels
-    stachans = [(tr.stats.network, tr.stats.station,
-                 tr.stats.location, tr.stats.channel) for tr in stream]
-    c_stachans = Counter(stachans)
-    for key in c_stachans.keys():
-        if c_stachans[key] > 1:
-            msg = ('Multiple channels for %s.%s.%s.%s, likely a data issue'
-                   % (key[0], key[1], key[2], key[3]))
-            raise NotImplementedError(msg)
-    # Pad out templates to have all channels
-    _templates = []
-    used_template_names = []
-    for template, template_name in zip(templates, template_names):
-        if len(template) == 0:
-            msg = ('No channels matching in continuous data for ' +
-                   'template' + template_name)
-            Logger.warning(msg)
-            continue
-        for stachan in template_stachan.keys():
-            number_of_channels = len(template.select(
-                network=stachan[0], station=stachan[1], location=stachan[2],
-                channel=stachan[3]))
-            if number_of_channels < template_stachan[stachan]:
-                missed_channels = template_stachan[stachan] - \
-                                  number_of_channels
-                nulltrace = Trace()
-                nulltrace.stats.update(
-                    {'network': stachan[0], 'station': stachan[1],
-                     'location': stachan[2], 'channel': stachan[3],
-                     'sampling_rate': template[0].stats.sampling_rate,
-                     'starttime': template[0].stats.starttime,
-                     'not_in_original': True})
-                nulltrace.data = np.array([np.NaN] * len(template[0].data),
-                                          dtype=np.float32)
-                for dummy in range(missed_channels):
-                    template += nulltrace
-        template.sort()
-        _templates.append(template)
-        used_template_names.append(template_name)
-        # Quick check that this has all worked
-        if len(template) != max([len(t) for t in templates]):
-            raise Exception('Internal error forcing same template '
-                            'lengths, report this error.')
-    if not unnamed:
-        return stream, _templates, used_template_names
-    return stream, _templates
+                start_pad = 0
+                end_pad = stream_length - stream_channel.stats.npts
+            if end_pad == 0:
+                stream_data[start_pad:] = stream_channel.data
+            else:
+                stream_data[start_pad:-end_pad] = stream_channel.data
+        header = stream_channel.stats.copy()
+        header.npts = stream_length
+        out_stream += Trace(data=stream_data, header=header)
+
+    # Initialize nan template for speed.
+    nan_channel = np.full(template_length, np.nan, dtype=np.float32)
+    nan_template = Stream()
+    for _seed_id in seed_ids:
+        net, sta, loc, chan = _seed_id[0].split('.')
+        nan_template += Trace(
+            data=nan_channel, header=Stats({
+                'network': net, 'station': sta, 'location': loc,
+                'channel': chan, 'starttime': UTCDateTime(),
+                'npts': template_length, 'sampling_rate': samp_rate}))
+    out_templates, out_template_names = ([], [])
+    for template_name, template in zip(template_names, templates):
+        template_starttime = min([tr.stats.starttime for tr in template])
+        out_template = Stream()
+        channel_count = 0
+        for channel_number, _seed_id in enumerate(seed_ids):
+            seed_id, channel_index = _seed_id
+            try:
+                template_channel = template.select(id=seed_id)[channel_index]
+                channel_count += 1
+            except IndexError:
+                # No channel or no duplicate channel, so NaN remains.
+                template_channel = nan_template[channel_number]
+                template_channel.stats.starttime = template_starttime
+            out_template += template_channel
+        if channel_count > 0:
+            out_templates.append(out_template)
+            out_template_names.append(template_name)
+        else:
+            Logger.debug(
+                "Template {0} has no matching channels - not using".format(
+                    template_name))
+    if named:
+        return out_stream, out_templates, out_template_names
+    return out_stream, out_templates
 
 
 if __name__ == "__main__":
