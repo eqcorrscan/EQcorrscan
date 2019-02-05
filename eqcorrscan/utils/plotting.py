@@ -443,7 +443,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
     else:
-        fig = ax.figure()
+        fig = ax.get_figure()
     # Make sure not to pad at edges
     ax.margins(0, 0)
     min_date = min([min(_d) for _d in dates])
