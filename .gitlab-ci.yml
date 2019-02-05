@@ -11,7 +11,7 @@ before_script:
   - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
   - source activate test-environment
   - conda install h5py
-  - pip install pep8-naming pytest pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
+  - pip install pep8-naming 'pytest<4.0' pytest-cov pytest-pep8 pytest-xdist pytest-rerunfailures codecov Cython
   - pip freeze
   - conda list
 
