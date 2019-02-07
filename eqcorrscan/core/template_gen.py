@@ -340,7 +340,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 Logger.error('Event is not within data time-span')
                 continue
             # Read in pick info
-            Logger.info("I have found the following picks")
+            Logger.debug("I have found the following picks")
             for pick in event.picks:
                 if not pick.waveform_id:
                     Logger.warning(
