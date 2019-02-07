@@ -339,7 +339,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 Logger.error('Event is not within data time-span')
                 continue
             # Read in pick info
-            Logger.info("I have found the following picks")
+            Logger.debug("I have found the following picks")
             for pick in event.picks:
                 if not pick.waveform_id:
                     Logger.warning(
@@ -751,7 +751,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             used_tr = True
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
-    if plot:
+    if plot and len(st1) > 0:
         fig1 = tplot(st1, background=stplot, picks=picks_copy,
                      title='Template for ' + str(st1[0].stats.starttime),
                      show=False, return_figure=True)
