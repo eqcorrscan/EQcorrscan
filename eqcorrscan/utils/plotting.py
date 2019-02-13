@@ -45,6 +45,8 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type savefile: str
     :type return_figure: bool
     """
+    import matplotlib.pyplot as plt
+    
     title = kwargs.get("title") or None
     show = kwargs.get("show")
     if show is None:
@@ -61,6 +63,8 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
         print("Saved figure to {0}".format(savefile))
     if return_fig:
         return fig
+    fig.clf()
+    plt.close(fig)
     return None
 
 
