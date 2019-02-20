@@ -43,7 +43,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 import logging
-import copy
 import os
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
@@ -340,7 +339,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 Logger.error('Event is not within data time-span')
                 continue
             # Read in pick info
-            Logger.info("I have found the following picks")
+            Logger.debug("I have found the following picks")
             for pick in event.picks:
                 if not pick.waveform_id:
                     Logger.warning(
@@ -450,10 +449,9 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
         if len(delay) == 0:
             Logger.error("No matching template channel found for stack channel"
                          " {0}.{1}".format(tr.stats.station, tr.stats.channel))
-            new_template.remove(tr)
         else:
             for d in delay:
-                out += tr.copy().trim(
+                out += tr.trim(
                     starttime=tr.stats.starttime + d + pre_pad - pre_pick,
                     endtime=tr.stats.starttime + d + pre_pad + length -
                     pre_pick)
@@ -606,13 +604,14 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.utils.plotting import noise_plot
     from eqcorrscan.core.bright_lights import _rms
-    picks_copy = copy.deepcopy(picks)  # Work on a copy of the picks and leave
+
     # the users picks intact.
     if not isinstance(swin, list):
         swin = [swin]
     for _swin in swin:
         assert _swin in ['P', 'all', 'S', 'P_all', 'S_all']
-    for pick in picks_copy:
+    picks_copy = []
+    for pick in picks:
         if not pick.waveform_id:
             Logger.warning(
                 "Pick not associated with waveform, will not use it: "
@@ -626,6 +625,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 " {0}".format(pick))
             picks_copy.remove(pick)
             continue
+        picks_copy.append(pick)
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
@@ -706,7 +706,6 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         tr = st.select(
             station=_starttime['station'], channel=_starttime['channel'])[0]
         Logger.info("Found Trace {0}".format(tr))
-        noise_amp = _rms(tr.data)
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:
@@ -752,7 +751,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             used_tr = True
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
-    if plot:
+    if plot and len(st1) > 0:
         fig1 = tplot(st1, background=stplot, picks=picks_copy,
                      title='Template for ' + str(st1[0].stats.starttime),
                      show=False, return_figure=True)

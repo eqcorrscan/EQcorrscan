@@ -751,6 +751,8 @@ class Tribe(object):
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
         """
+        from obspy.clients.fdsn.client import FDSNException
+
         party = Party()
         buff = 300
         # Apply a buffer, often data downloaded is not the correct length
@@ -807,6 +809,21 @@ class Tribe(object):
                     Logger.info(
                         "Downloaded data for {0} traces".format(len(st)))
                     break
+                except FDSNException as e:
+                    if "Split the request in smaller parts" in " ".join(e.args):
+                        Logger.warning(
+                            "Datacentre does not support large requests: "
+                            "splitting request into smaller chunks")
+                        st = Stream()
+                        for _bulk in bulk_info:
+                            try:
+                                st += client.get_waveforms_bulk([_bulk])
+                            except Exception as e:
+                                Logger.error(e)
+                                continue
+                        Logger.info("Downloaded data for {0} traces".format(
+                            len(st)))
+                        break
                 except Exception as e:
                     Logger.error(e)
                     continue
