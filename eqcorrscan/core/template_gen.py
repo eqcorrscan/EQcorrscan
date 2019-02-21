@@ -576,15 +576,17 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
 
-    .. note:: By convention templates are generated with P-phases on the \
-        vertical channel and S-phases on the horizontal channels, normal \
-        seismograph naming conventions are assumed, where Z denotes vertical \
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented \
-        or not.  To this end we will **only** use Z channels if they have a \
-        P-pick, and will use one or other horizontal channels **only** if \
+    .. note::
+        By convention templates are generated with P-phases on the
+        vertical channel and S-phases on the horizontal channels, normal
+        seismograph naming conventions are assumed, where Z denotes vertical
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
+        or not.  To this end we will **only** use Z channels if they have a
+        P-pick, and will use one or other horizontal channels **only** if
         there is an S-pick on it.
 
-    .. note:: swin argument: Setting to `P` will return only data for channels
+    .. note::
+        swin argument: Setting to `P` will return only data for channels
         with P picks, starting at the pick time (minus the prepick).
         Setting to `S` will return only data for channels with
         S picks, starting at the S-pick time (minus the prepick)
@@ -598,8 +600,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         channels. `S_all` will return cut traces starting at the S-pick
         time for all channels.
 
-    .. warning:: If there is no phase_hint included in picks, and swin=all, \
-        all channels with picks will be used.
+    .. warning::
+        If there is no phase_hint included in picks, and swin=all, all
+        channels with picks will be used.
     """
     from eqcorrscan.utils.plotting import pretty_template_plot as tplot
     from eqcorrscan.utils.plotting import noise_plot
@@ -616,23 +619,28 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             Logger.warning(
                 "Pick not associated with waveform, will not use it: "
                 "{0}".format(pick))
-            picks_copy.remove(pick)
             continue
         if not pick.waveform_id.station_code or not \
                 pick.waveform_id.channel_code:
             Logger.warning(
                 "Pick not associated with a channel, will not use it:"
                 " {0}".format(pick))
-            picks_copy.remove(pick)
             continue
         picks_copy.append(pick)
+    if len(picks_copy) == 0:
+        return Stream()
+    st_copy = Stream()
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
         if np.all(tr.data.astype(np.float16) == 0):
             Logger.error("Trace is all zeros at float16 level, either gain or "
                          "check. Not using in template: {0}".format(tr))
-            st.remove(tr)
+            continue
+        st_copy += tr
+    st = st_copy
+    if len(st) == 0:
+        return st
     # Get the earliest pick-time and use that if we are not using delayed.
     picks_copy.sort(key=lambda p: p.time)
     first_pick = picks_copy[0]
