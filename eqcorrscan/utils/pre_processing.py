@@ -750,7 +750,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
                 channel_count += 1
             except IndexError:
                 # No channel or no duplicate channel, so NaN remains.
-                template_channel = nan_template[channel_number]
+                template_channel = nan_template[channel_number].copy()
                 template_channel.stats.starttime = template_starttime
             out_template += template_channel
         if channel_count > 0:
