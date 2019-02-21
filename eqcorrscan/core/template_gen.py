@@ -417,8 +417,9 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
     :param highcut: If pre_processed=False then this is required, highcut in \
         Hz, defaults to False
     :type filt_order: int
-    :param filt_order: If pre_processed=False then this is required, filter \
-        order, defaults to False
+    :param filt_order:
+        If pre_processed=False then this is required, filter order, defaults
+        to False
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -451,7 +452,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
                          " {0}.{1}".format(tr.stats.station, tr.stats.channel))
         else:
             for d in delay:
-                out += tr.trim(
+                out += tr.copy().trim(
                     starttime=tr.stats.starttime + d + pre_pad - pre_pick,
                     endtime=tr.stats.starttime + d + pre_pad + length -
                     pre_pick)
