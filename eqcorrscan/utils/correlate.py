@@ -601,6 +601,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         Logger.critical('Error in C code (possible normalisation error)')
         Logger.critical('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
         Logger.critical('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
+        Logger.critical('Recommend checking your data for spikes, clipping '
+                        'or artefacts')
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
         Logger.warning("Some correlations not computed, are there "
