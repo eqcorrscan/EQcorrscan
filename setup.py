@@ -186,7 +186,7 @@ def export_symbols(*path):
     return [s.strip() for s in lines if s.strip() != '']
 
 
-def get_extensions():
+def get_extensions(no_mkl=False):
     from distutils.extension import Extension
 
     if READ_THE_DOCS:
@@ -241,7 +241,10 @@ def get_extensions():
         common_extension_args['extra_link_args'] = extra_link_args
         common_extension_args['extra_compile_args'] = extra_compile_args
         common_extension_args['export_symbols'] = exp_symbols
-        mkl = get_mkl()
+        if no_mkl:
+            mkl = None
+        else:
+            mkl = get_mkl()
         if mkl is not None:
             # use MKL if we have it
             common_extension_args['include_dirs'].extend(mkl[0])
@@ -395,6 +398,10 @@ def setup_package():
         setup_args['setup_requires'] = build_requires
         setup_args['install_requires'] = install_requires
 
+    no_mkl = False
+    if "--no-mkl" in sys.argv:
+        no_mkl = True
+        sys.argv.remove("--no-mkl")
     if len(sys.argv) >= 2 and (
         '--help' in sys.argv[1:] or
         sys.argv[1] in ('--help-commands', 'egg_info', '--version',
@@ -406,7 +413,7 @@ def setup_package():
             'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
             'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
             'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
-        setup_args['ext_modules'] = get_extensions()
+        setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
     if os.path.isdir("build"):

@@ -1,4 +1,7 @@
 ## Current
+* Add --no-mkl flag for setup.py to force the FFTW correlation routines not
+  to compile against intels mkl.  On NeSI systems mkl is currently causing
+  issues.
 * BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
   the Earth when changing hemispheres. We now use the Haversine formula, which
   should give better results at short distances, and does not use a flat-Earth
