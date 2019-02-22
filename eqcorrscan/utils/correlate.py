@@ -541,6 +541,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS'))]
     restype = ctypes.c_int
 
@@ -579,6 +581,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
     variance_warning = np.ascontiguousarray([0], dtype=np.intc)
+    missed_corr = np.ascontiguousarray([0], dtype=np.intc)
 
     # Check that stream is non-zero and above variance threshold
     if not np.all(stream == 0) and np.var(stream) < 1e-8:
@@ -594,19 +597,21 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
-        used_chans_np, pads_np, variance_warning)
+        used_chans_np, pads_np, variance_warning, missed_corr)
     if ret < 0:
         raise MemoryError()
-    elif ret not in [0, 999]:
+    elif ret > 0:
         Logger.critical('Error in C code (possible normalisation error)')
         Logger.critical('Maximum ccc %f at %i' % (ccc.max(), ccc.argmax()))
         Logger.critical('Minimum ccc %f at %i' % (ccc.min(), ccc.argmin()))
         Logger.critical('Recommend checking your data for spikes, clipping '
                         'or artefacts')
         raise CorrelationError("Internal correlation error")
-    elif ret == 999:
-        Logger.warning("Some correlations not computed, are there "
-                       "zeros in data? If not, consider increasing gain.")
+    if missed_corr[0]:
+        Logger.warning(
+            "{0} correlations not computed, are there gaps in the "
+            "data? If not, consider increasing gain".format(
+                missed_corr[0]))
     if variance_warning[0] and variance_warning[0] > template_length:
         Logger.warning(
             "Low variance found in {0} positions, check result.".format(
@@ -759,6 +764,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.intc,
+                               flags=native_str('C_CONTIGUOUS')),
         ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
@@ -773,6 +780,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         fft-length
         used channels (stacked as per templates)
         pad array (stacked as per templates)
+        num thread inner
+        variance warnings
+        missed correlation warnings (usually due to gaps)
+        stack option
     '''
 
     # pre processing
@@ -826,15 +837,17 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
     variance_warnings = np.ascontiguousarray(
         np.zeros(n_channels), dtype=np.intc)
+    missed_correlations = np.ascontiguousarray(
+        np.zeros(n_channels), dtype=np.intc)
 
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np,
-        cores_inner, variance_warnings, int(stack))
+        cores_inner, variance_warnings, missed_correlations, int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
-    elif ret not in [0, 999]:
+    elif ret > 0:
         Logger.critical('Error in C code (possible normalisation error)')
         Logger.critical(
             'Maximum cccs %f at %s' %
@@ -845,9 +858,12 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         Logger.critical('Recommend checking your data for spikes, clipping '
                         'or artefacts')
         raise CorrelationError("Internal correlation error")
-    elif ret == 999:
-        Logger.warning("Some correlations not computed, are there "
-                       "zeros in data? If not, consider increasing gain.")
+    for i, missed_corr in enumerate(missed_correlations):
+        if missed_corr:
+            Logger.warning(
+                "{0} correlations not computed on {1}, are there gaps in the "
+                "data? If not, consider increasing gain".format(
+                    missed_corr, seed_ids[i]))
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
             Logger.warning(

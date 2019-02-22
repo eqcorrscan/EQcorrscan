@@ -30,7 +30,8 @@ static inline int set_ncc(
 // Single-channel functions
 int normxcorr_fftw_threaded(float *templates, long template_len, long n_templates,
                             float *image, long image_len, float *ncc, long fft_len,
-                            int *used_chans, int *pad_array, int *variance_warning) {
+                            int *used_chans, int *pad_array, int *variance_warning,
+                            int *missed_corr) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -48,7 +49,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     long N2 = fft_len / 2 + 1;
     long i, t, startind;
     int status = 0;
-    int flatline_count = 0;
+    int flatline_count = 0, unused_corr = 0;
     double mean, stdev, old_mean, new_samp, old_samp, var=0.0, sum=0.0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
     float * template_ext = (float *) calloc(fft_len * n_templates, sizeof(float));
@@ -119,7 +120,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
         if (var <= WARN_DIFF){
             variance_warning[0] = 1;
         }
-    }
+    } else {unused_corr += 1;}
     // Center and divide by length to generate scaled convolution
     for(i = 1; i < (image_len - template_len + 1); ++i){
         // Need to cast to double otherwise we end up with annoying floating
@@ -144,8 +145,9 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
             if (var <= WARN_DIFF){
                 variance_warning[0] += 1;
             }
-        }
+        } else {unused_corr += 1;}
     }
+    missed_corr[0] = unused_corr;
     //  Clean up
     fftwf_destroy_plan(pa);
     fftwf_destroy_plan(pb);
@@ -168,7 +170,8 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 
 int normxcorr_fftw(float *templates, long template_len, long n_templates,
                    float *image, long image_len, float *ncc, long fft_len,
-                   int *used_chans, int *pad_array, int *variance_warning){
+                   int *used_chans, int *pad_array, int *variance_warning,
+                   int *missed_corr){
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -210,7 +213,7 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
     status = normxcorr_fftw_main(
         templates, template_len, n_templates, image, image_len, 0, 1, ncc,
         fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
-        used_chans, pad_array, 1, variance_warning, 0);
+        used_chans, pad_array, 1, variance_warning, missed_corr, 0);
 
     // free memory and plans
     fftwf_destroy_plan(pa);
@@ -238,7 +241,7 @@ int normxcorr_fftw_main(
     float *template_ext, float *image_ext, float *ccc, fftwf_complex *outa,
     fftwf_complex *outb, fftwf_complex *out, fftwf_plan pa, fftwf_plan pb,
     fftwf_plan px, int *used_chans, int *pad_array, int num_threads,
-    int *variance_warning, int stack_option) {
+    int *variance_warning, int *missed_corr, int stack_option) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   for a single-channel
@@ -271,11 +274,12 @@ int normxcorr_fftw_main(
                     be n_templates long
     pad_array:      Array of pads, should be n_templates long
     num_threads:    Number of threads to parallel internal calculations over
+    variance_warning: Pointer to array to store warnings for variance issues
+    missed_corr:    Pointer to array to store warnings for unused correlations
     stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
   */
     long i, t, chunk, n_chunks, chunk_len, startind, step_len;
     int status = 0;
-    int * chunk_status;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
@@ -305,7 +309,6 @@ int normxcorr_fftw_main(
         n_chunks = (image_len - chunk_len) / step_len + ((image_len - chunk_len) % step_len > 0);
         if (n_chunks * step_len < image_len){n_chunks += 1;}
     }
-    chunk_status = (int *) calloc(n_chunks, sizeof(int));
     for (chunk = 0; chunk < n_chunks; ++chunk){
         startind = chunk * step_len;
         if (startind + chunk_len > image_len){
@@ -313,26 +316,13 @@ int normxcorr_fftw_main(
 
         memset(image_ext, 0, (size_t) fft_len * sizeof(float));
         for (i = 0; i < chunk_len; ++i){image_ext[i] = image[startind + i];}
-        chunk_status[chunk] = normxcorr_fftw_internal(
+        status += normxcorr_fftw_internal(
             template_len, n_templates, &image[startind], chunk_len, chan,
             n_chans, &ncc[0], image_len, fft_len, template_ext,
             image_ext, norm_sums, ccc, outa, outb, out, pb, px, used_chans,
-            pad_array, num_threads, variance_warning, stack_option, startind);
+            pad_array, num_threads, variance_warning, missed_corr,
+            stack_option, startind);
     }
-    // Error handling
-    for (i = 0; i < n_chunks; ++i){
-        if (chunk_status[i] != 999 && chunk_status[i] != 0){
-            // Some error internally, must catch this
-            status += chunk_status[i];
-        } else if (chunk_status[i] == 999 && status == 0){
-            status = chunk_status[i];
-        } else if (status == 999 && chunk_status[i] == 999){
-            status = 999;
-        } else if (status == 999 && chunk_status[i] != 999){
-            status += chunk_status[i];
-        } else if (status != 0){status += chunk_status[i];}
-    }
-    free(chunk_status);
     free(norm_sums);
     return status;
 }
@@ -343,7 +333,8 @@ int normxcorr_fftw_internal(
     float *template_ext, float *image_ext, float *norm_sums, float *ccc,
     fftwf_complex *outa, fftwf_complex *outb, fftwf_complex *out,
     fftwf_plan pb, fftwf_plan px, int *used_chans, int *pad_array,
-    int num_threads, int *variance_warning, int stack_option, long offset)
+    int num_threads, int *variance_warning, int *missed_corr,
+    int stack_option, long offset)
 {
   /*
     Internal function for chunking cross-correlations
@@ -378,6 +369,7 @@ int normxcorr_fftw_internal(
     pad_array:      Array of pads, should be n_templates long
     num_threads:    Number of threads to parallel internal calculations over
     variance_warning: Pointer to array to store warnings for variance issues
+    missed_corr:    Pointer to array to store warnings for unused correlations
     stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
     offset:         Offset for position of chunk in ncc (for a pad of zero).
   */
@@ -448,7 +440,7 @@ int normxcorr_fftw_internal(
             variance_warning[0] = 1;
         }
     } else {
-        unused_corr = 1;
+        unused_corr += 1;
     }
 
     // pre-compute the mean and var so we can parallelise the calculation
@@ -483,20 +475,16 @@ int normxcorr_fftw_internal(
                 }
             }
             else {
-                unused_corr = 1;
+                unused_corr += 1;
             }
             if (var[i] <= WARN_DIFF){
                 variance_warning[0] += 1;
             }
         } else {
-            unused_corr = 1;
+            unused_corr += 1;
         }
     }
-    if (unused_corr == 1){
-        if (status == 0){
-           status = 999;
-        }
-    }
+    missed_corr[0] = unused_corr;
 
     //  Clean up
     free(mean);
@@ -521,8 +509,8 @@ static inline int set_ncc(
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
-                   ncc_index, t, i, value);
+//            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
+//                   ncc_index, t, i, value);
             status = 1;
         }
         else if (value > 1.0) {
@@ -586,10 +574,11 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
                          float *image, long image_len, float *ncc, long fft_len, int *used_chans,
-                         int *pad_array, int num_threads_inner, int *variance_warning, int stack_option)
+                         int *pad_array, int num_threads_inner, int *variance_warning, int *missed_corr,
+                         int stack_option)
     {
     int i, chan, n_chans, num_threads_outer=1;
-    int r=0;
+    int r = 0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     float **template_ext = NULL;
     float **image_ext = NULL;
@@ -760,31 +749,33 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
                                  &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
-                                 stack_option);
-        if (results[i] != 0 && results[i] != 999){
+                                 &missed_corr[i], stack_option);
+        if (results[i] != 0){
             printf("Some error on channel %i, status: %i\n", i, results[i]);
         }
     }
 
     // Conduct error handling
     for (i = 0; i < n_channels; ++i){
-        if (results[i] != 999 && results[i] != 0){
-            // Some error internally, must catch this
-            r += results[i];
-        } else if (results[i] == 999 && r == 0){
-            // First time unused correlation raised and no prior errors
-            r = results[i];
-        } else if (r == 999 && results[i] == 999){
-            // Unused correlations raised multiple times
-            r = 999;
-        } else if (r == 999 && results[i] != 999){
-            // Some error internally.
-            r += results[i];
-        } else if (r != 0){
-            // Any other error
-            r += results[i];
-        }
+        r += results[i];
     }
+//        if (results[i] != 999 && results[i] != 0){
+//            // Some error internally, must catch this
+//            r += results[i];
+//        } else if (results[i] == 999 && r == 0){
+//            // First time unused correlation raised and no prior errors
+//            r = results[i];
+//        } else if (r == 999 && results[i] == 999){
+//            // Unused correlations raised multiple times
+//            r = 999;
+//        } else if (r == 999 && results[i] != 999){
+//            // Some error internally.
+//            r += results[i];
+//        } else if (r != 0){
+//            // Any other error
+//            r += results[i];
+//        }
+//    }
     free(results);
     /* free fftw memory */
     free_fftwf_arrays(num_threads_outer, template_ext, image_ext, ccc, outa, outb, out);
