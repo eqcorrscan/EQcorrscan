@@ -275,6 +275,7 @@ int normxcorr_fftw_main(
   */
     long i, t, chunk, n_chunks, chunk_len, startind, step_len;
     int status = 0;
+    int * chunk_status;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
@@ -304,6 +305,7 @@ int normxcorr_fftw_main(
         n_chunks = (image_len - chunk_len) / step_len + ((image_len - chunk_len) % step_len > 0);
         if (n_chunks * step_len < image_len){n_chunks += 1;}
     }
+    chunk_status = (int *) calloc(n_chunks, sizeof(int));
     for (chunk = 0; chunk < n_chunks; ++chunk){
         startind = chunk * step_len;
         if (startind + chunk_len > image_len){
@@ -311,12 +313,26 @@ int normxcorr_fftw_main(
 
         memset(image_ext, 0, (size_t) fft_len * sizeof(float));
         for (i = 0; i < chunk_len; ++i){image_ext[i] = image[startind + i];}
-        status += normxcorr_fftw_internal(
+        chunk_status[chunk] = normxcorr_fftw_internal(
             template_len, n_templates, &image[startind], chunk_len, chan,
             n_chans, &ncc[0], image_len, fft_len, template_ext,
             image_ext, norm_sums, ccc, outa, outb, out, pb, px, used_chans,
             pad_array, num_threads, variance_warning, stack_option, startind);
     }
+    // Error handling
+    for (i = 0; i < n_chunks; ++i){
+        if (chunk_status[i] != 999 && chunk_status[i] != 0){
+            // Some error internally, must catch this
+            status += chunk_status[i];
+        } else if (chunk_status[i] == 999 && status == 0){
+            status = chunk_status[i];
+        } else if (status == 999 && chunk_status[i] == 999){
+            status = 999;
+        } else if (status == 999 && chunk_status[i] != 999){
+            status += chunk_status[i];
+        } else if (status != 0){status += chunk_status[i];}
+    }
+    free(chunk_status);
     free(norm_sums);
     return status;
 }
@@ -478,7 +494,7 @@ int normxcorr_fftw_internal(
     }
     if (unused_corr == 1){
         if (status == 0){
-            status = 999;
+           status = 999;
         }
     }
 
@@ -498,8 +514,6 @@ static inline int set_ncc(
     if (used_chans[t] && (i >= pad_array[t])) {
         size_t ncc_index = (t * n_chans * ((size_t) image_len - template_len + 1)) +
             (chan * ((size_t) image_len - template_len + 1) + i - pad_array[t]);
-//        printf("ncc_index: %ld\ttemplate: %ld\tindex: %ld\tpad: %i\tvalue: %f\n",
-//               ncc_index, t, i, pad_array[t], value);
 
         if (isnanf(value)) {
             // set NaNs to zero
@@ -507,6 +521,8 @@ static inline int set_ncc(
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
+            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
+                   ncc_index, t, i, value);
             status = 1;
         }
         else if (value > 1.0) {
@@ -522,7 +538,6 @@ static inline int set_ncc(
             ncc[ncc_index] = value;
         } else {status = 2;}
     }
-
     return status;
 }
 
@@ -746,6 +761,9 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
                                  &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
                                  stack_option);
+        if (results[i] != 0 && results[i] != 999){
+            printf("Some error on channel %i, status: %i\n", i, results[i]);
+        }
     }
 
     // Conduct error handling

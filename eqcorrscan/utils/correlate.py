@@ -842,6 +842,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         Logger.critical(
             'Minimum cccs %f at %s' %
             (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
+        Logger.critical('Recommend checking your data for spikes, clipping '
+                        'or artefacts')
         raise CorrelationError("Internal correlation error")
     elif ret == 999:
         Logger.warning("Some correlations not computed, are there "
