@@ -484,7 +484,7 @@ int normxcorr_fftw_internal(
             unused_corr += 1;
         }
     }
-    missed_corr[0] = unused_corr;
+    missed_corr[0] += unused_corr;
 
     //  Clean up
     free(mean);
