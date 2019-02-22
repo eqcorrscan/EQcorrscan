@@ -67,15 +67,15 @@ int multi_find_peaks(float*, long, int, float*, int, unsigned int*);
 int normxcorr_fftw_main(float*, long, long, float*, long, int, int, float*, long,
                         float*, float*, float*, fftwf_complex*, fftwf_complex*,
                         fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan,
-                        int*, int*, int, int*, int);
+                        int*, int*, int, int*, int*, int);
 
 int normxcorr_fftw_internal(
     long, long, float*, long, int, int, float*, long, long, float*, float*, float*,
     float*, fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan,
-    fftwf_plan, int*, int*, int, int*, int, long);
+    fftwf_plan, int*, int*, int, int*, int*, int, long);
 
 int normxcorr_fftw_threaded(
-    float*, long, long, float*, long, float*, long, int*, int*, int*);
+    float*, long, long, float*, long, float*, long, int*, int*, int*, int*);
 
 void free_fftwf_arrays(
     int, float**, float**, float**, fftwf_complex**, fftwf_complex**,
@@ -87,9 +87,9 @@ void free_fftw_arrays(
 
 int multi_normxcorr_fftw(
     float*, long, long, long, float*, long, float*, long, int*, int*, int,
-    int*, int);
+    int*, int*, int);
 
-int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*);
+int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*, int*);
 
 // time_corr functions
 int normxcorr_time_threaded(float*, int, float*, int, float*, int);
