@@ -55,7 +55,7 @@ jobs:
             . venv/bin/activate
             py.test -m "network" -n 2
             py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
-            py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+            py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-append
 
       - run:
           name: Upload to codecov
