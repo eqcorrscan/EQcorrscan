@@ -18,6 +18,12 @@ from obspy import Stream, read
 from eqcorrscan.core import subspace
 
 
+superslow = pytest.mark.skipif(
+    not pytest.config.getoption("--runsuperslow"),
+    reason="need --runsuperslow option to run"
+)
+
+
 class SimpleSubspaceMethods(unittest.TestCase):
     """
     Tests that do not require data to be downloaded.
@@ -97,6 +103,7 @@ class SimpleSubspaceMethods(unittest.TestCase):
         self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
+@superslow
 @pytest.mark.network
 class SubspaceTestingMethods(unittest.TestCase):
     """
@@ -381,7 +388,7 @@ def get_test_data():
     """
     from obspy import UTCDateTime
     from eqcorrscan.utils.catalog_utils import filter_picks
-    from eqcorrscan.utils.clustering import space_cluster
+    from eqcorrscan.utils.clustering import catalog_cluster
     from obspy.clients.fdsn import Client
 
     client = Client("GEONET")
@@ -393,7 +400,8 @@ def get_test_data():
     stachans = list(set([
         (pick.waveform_id.station_code, pick.waveform_id.channel_code)
         for event in cat for pick in event.picks]))
-    clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
+    clusters = catalog_cluster(
+        catalog=cat, thresh=2, show=False, metric='distance')
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     client = Client('GEONET')
     design_set = []
@@ -405,7 +413,8 @@ def get_test_data():
         t1 = event.origins[0].time + 5
         t2 = t1 + 15.1
         for station, channel in stachans:
-            bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
+            bulk_info.append(
+                ('NZ', station, '10', channel[0:2] + '?', t1, t2))
         st += client.get_waveforms_bulk(bulk=bulk_info)
     for event in cluster:
         t1 = event.origins[0].time + 5
@@ -413,7 +422,7 @@ def get_test_data():
         design_set.append(st.copy().trim(t1, t2))
     t1 = UTCDateTime(2016, 5, 11, 19)
     t2 = UTCDateTime(2016, 5, 11, 20)
-    bulk_info = [('NZ', stachan[0], '*', stachan[1][0:2] + '?', t1, t2)
+    bulk_info = [('NZ', stachan[0], '10', stachan[1][0:2] + '?', t1, t2)
                  for stachan in stachans]
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)

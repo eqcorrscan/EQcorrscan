@@ -6,7 +6,6 @@ data available online.
 import logging
 
 from obspy.clients.fdsn import Client
-from obspy import read_events
 from obspy.core.event import Catalog
 
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -23,9 +22,6 @@ def mktemplates(
         publicIDs=['2016p008122', '2016p008353',
                    '2016p008155', '2016p008194']):
     """Functional wrapper to make templates"""
-    # We want to download some QuakeML files from the New Zealand GeoNet
-    # network, GeoNet currently doesn't support FDSN event queries, so we
-    # have to work around to download quakeml from their quakeml.geonet site.
 
     client = Client(network_code)
     # We want to download a few events from an earthquake sequence, these are
@@ -33,15 +29,12 @@ def mktemplates(
 
     catalog = Catalog()
     for publicID in publicIDs:
-        if network_code == 'GEONET':
-            data_stream = client._download(
-                'http://quakeml.geonet.org.nz/quakeml/1.2/' + publicID)
-            data_stream.seek(0, 0)
-            catalog += read_events(data_stream, format="quakeml")
-            data_stream.close()
-        else:
+        try:
             catalog += client.get_events(
                 eventid=publicID, includearrivals=True)
+        except TypeError:
+            # Cope with some FDSN services not implementing includearrivals
+            catalog += client.get_events(eventid=publicID)
 
     # Lets plot the catalog to see what we have
     if plot:
