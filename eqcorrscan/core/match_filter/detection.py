@@ -248,6 +248,8 @@ class Detection(object):
                 continue
             elif tr.stats.__contains__("not_in_original"):
                 continue
+            elif np.all(np.isnan(tr.data)):
+                continue  # The channel contains no data and was not used.
             else:
                 pick_time = self.detect_time + (
                         tr.stats.starttime - min_template_tm)

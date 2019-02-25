@@ -34,6 +34,12 @@
 * Refactored match-filter into smaller files. Namespace remains the same.
   This was done to ease maintenance - the match_filter.py file had become
   massive and was slow to load and process in IDEs.
+* Refactored `_prep_data_for_correlation` to reduce looping for speed, 
+  now approximately six times faster than previously (minor speed-up)
+  * Now explicitly doesn't allow templates with different length traces - 
+    previously this was ignored and templates with different length 
+    channels to other templates had their channels padded with zeros or 
+    trimmed.
 
 ## 0.3.3
 * Make test-script more stable.

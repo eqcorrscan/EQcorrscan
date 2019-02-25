@@ -1246,6 +1246,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
     party_in.sort()
     for fam, check_fam in zip(party, party_in):
+        assert fam.template.name == check_fam.template.name
         fam.detections.sort(key=lambda d: d.detect_time)
         check_fam.detections.sort(key=lambda d: d.detect_time)
         for det, check_det in zip(fam.detections, check_fam.detections):
@@ -1294,6 +1295,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print("{0}: new: {1}\tcheck-against: {2}".format(
                             key, det.__dict__[key], check_det.__dict__[key]))
+                        print(det)
+                        print(check_det)
                     assert (abs(
                         det.__dict__[key] - check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
