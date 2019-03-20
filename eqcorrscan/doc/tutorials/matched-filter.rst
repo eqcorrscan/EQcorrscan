@@ -11,41 +11,41 @@ Match-filter objects
 
 The match-filter module contains five objects:
 
- - :doc:`Tribe </submodules/core.match_filter.Tribe>`
- - :doc:`Template </submodules/core.match_filter.Template>`
- - :doc:`Party </submodules/core.match_filter.Party>`
- - :doc:`Family </submodules/core.match_filter.Family>`
- - :doc:`Detection </submodules/core.match_filter.Detection>`
+ - :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>`
+ - :doc:`Template </submodules/core.match_filter.template.Template>`
+ - :doc:`Party </submodules/core.match_filter.party.Party>`
+ - :doc:`Family </submodules/core.match_filter.family.Family>`
+ - :doc:`Detection </submodules/core.match_filter.detection.Detection>`
 
-The :doc:`Tribe </submodules/core.match_filter.Tribe>` object is a container for
-multiple :doc:`Template </submodules/core.match_filter.Template>` objects.
-:doc:`Templates </submodules/core.match_filter.Template>` contain the waveforms
+The :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>` object is a container for
+multiple :doc:`Template </submodules/core.match_filter.template.Template>` objects.
+:doc:`Templates </submodules/core.match_filter.template.Template>` contain the waveforms
 of the template alongside the metadata used to generate the template.  Both
-:doc:`Templates </submodules/core.match_filter.Template>` and
-:doc:`Tribes </submodules/core.match_filter.Tribe>` can be written to disk as
+:doc:`Templates </submodules/core.match_filter.template.Template>` and
+:doc:`Tribes </submodules/core.match_filter.tribe.Tribe>` can be written to disk as
 tar archives containing the waveform data in miniseed format, event catalogues
-associated with the :doc:`Templates </submodules/core.match_filter.Template>`
+associated with the :doc:`Templates </submodules/core.match_filter.template.Template>`
 (if provided) in quakeml format and meta-data in a csv file.  This archives
 can be read back in or transferred between machines.
 
-The :doc:`Detection </submodules/core.match_filter.Detection>`,
-:doc:`Family </submodules/core.match_filter.Family>` and
-:doc:`Party </submodules/core.match_filter.Party>` objects are heirachical,
-a single :doc:`Detection </submodules/core.match_filter.Detection>` object
+The :doc:`Detection </submodules/core.match_filter.detection.Detection>`,
+:doc:`Family </submodules/core.match_filter.family.Family>` and
+:doc:`Party </submodules/core.match_filter.party.Party>` objects are heirachical,
+a single :doc:`Detection </submodules/core.match_filter.detection.Detection>` object
 describes a single event detection, and contains information regarding how
 the detection was made, what time it was made at alongside other useful
 information, it does not store the
-:doc:`Template </submodules/core.match_filter.Template>` object used for the
+:doc:`Template </submodules/core.match_filter.template.Template>` object used for the
 detection, but does store a reference to the name of the
-:doc:`Template </submodules/core.match_filter.Template>`.
-:doc:`Family </submodules/core.match_filter.Family>` objects are containers
-for multiple :doc:`Detections </submodules/core.match_filter.Detection>` made
-using a single :doc:`Template </submodules/core.match_filter.Template>`
+:doc:`Template </submodules/core.match_filter.template.Template>`.
+:doc:`Family </submodules/core.match_filter.family.Family>` objects are containers
+for multiple :doc:`Detections </submodules/core.match_filter.detection.Detection>` made
+using a single :doc:`Template </submodules/core.match_filter.template.Template>`
 (name chosen to match the literature).  These objects do contain the
-:doc:`Template </submodules/core.match_filter.Template>` used for the detections,
+:doc:`Template </submodules/core.match_filter.template.Template>` used for the detections,
 and as such can be used to re-create the list of detections is necessary.
-:doc:`Party </submodules/core.match_filter.Party>` objects are containers for
-multiple :doc:`Family </submodules/core.match_filter.Family>` objects.  All
+:doc:`Party </submodules/core.match_filter.party.Party>` objects are containers for
+multiple :doc:`Family </submodules/core.match_filter.family.Family>` objects.  All
 objects in the detection heirachy have read and write methods - we recommend
 writing to tar archives (default) for Party and Family objects, as this will
 store all metadata used in detection, which should allow for straightforward
@@ -54,7 +54,7 @@ reproduction of results.
 Template creation
 -----------------
 
-:doc:`Templates </submodules/core.match_filter.Template>` have a construct
+:doc:`Templates </submodules/core.match_filter.template.Template>` have a construct
 method which accesses the functions in
 :doc:`template_gen </submodules/core.template_gen>`.  Template.construct
 only has access to methods that work on individual events, and not catalogs; for
@@ -161,7 +161,6 @@ generate re-picked catalogues using lag-calc:
      >>> stream = stream.merge().sort(['station'])
      >>> repicked_catalog = party.lag_calc(stream, pre_processed=False,
      ...                                   shift_len=0.2, min_cc=0.4) # doctest:+ELLIPSIS
-     5 Trace(s) in Stream:...
 
 By using the above examples you can go from a standard catalog available from
 data centers, to a matched-filter detected and cross-correlation repicked
@@ -177,7 +176,7 @@ can be as simple as:
 
 .. code-block:: python
 
-     from eqcorrscan.core import match_filter
+     from eqcorrscan.core.match_filter import match_filter
      from eqcorrscan.utils import pre_processing
      from obspy import read
 
@@ -192,7 +191,7 @@ can be as simple as:
      template_names = ['template_1', 'template_2']
      for template_file in template_names:
           templates.append(read(template_file))
-     detections = match_filter.match_filter(
+     detections = match_filter(
           template_names=template_names, template_list=templates, st=st,
           threshold=8, threshold_type='MAD', trig_int=6, plotvar=False, cores=4)
 
@@ -233,8 +232,8 @@ to ensure stable correlations.
 If you provide data with filled gaps (e.g. you used `st = st.merge(fill_value=0)` to
 either:
 
-* :doc:`Tribe.detect </submodules/core.match_filter.Tribe.detect>`,
-* :doc:`Template.detect </submodules/core.match_filter.Template.detect>`,
+* :doc:`Tribe.detect </submodules/core.match_filter.tribe.Tribe.detect>`,
+* :doc:`Template.detect </submodules/core.match_filter.template.Template.detect>`,
 * :doc:`shortproc </submodules/utils.pre_processing.shortproc>`,
 * :doc:`dayproc </submodules/utils.pre_processing.dayproc>`,
 

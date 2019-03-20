@@ -1,53 +1,15 @@
 match_filter
-------------
+============
 
-See notes and warnings on correlations here: correlation_warnings_
+Classes and functions for matched-filtering.
 
-.. _correlation_warnings: utils.correlate.html#notes-on-accuracy
+.. toctree::
+   :maxdepth: 1
 
-.. currentmodule:: eqcorrscan.core.match_filter
-.. automodule:: eqcorrscan.core.match_filter
-
-    .. comment to end block
-
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
-
-        core.match_filter.Detection
-        core.match_filter.Family
-        core.match_filter.Party
-        core.match_filter.Template
-        core.match_filter.Tribe
-
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
-
-       extract_from_stream
-       get_catalog
-       match_filter
-       normxcorr2
-       read_detections
-       read_tribe
-       read_party
-       read_template
-       write_catalog
-
-    .. comment to end block
-
-    Private Functions
-    -----------------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
-
-       _group_process
-       _group_detect
-       _write_family
-       _read_family
-       _total_microsec
-       _test_event_similarity
+   core.match_filter.detection
+   core.match_filter.family
+   core.match_filter.helpers
+   core.match_filter.matched_filter
+   core.match_filter.party
+   core.match_filter.template
+   core.match_filter.tribe

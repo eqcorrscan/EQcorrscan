@@ -1,3 +1,46 @@
+## Current
+* Add --no-mkl flag for setup.py to force the FFTW correlation routines not
+  to compile against intels mkl.  On NeSI systems mkl is currently causing
+  issues.
+* BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
+  the Earth when changing hemispheres. We now use the Haversine formula, which
+  should give better results at short distances, and does not use a flat-Earth
+  approximation, so is better suited to larger distances as well.
+* Add C-openmp parallel distance-clustering (speed-ups of ~100 times).
+* Allow option to not stack correlations in correlation functions.
+* Use compiled correlation functions for correlation clustering (speed-up).
+* Add time-clustering for catalogs and change how space-time cluster works
+  so that it uses the time-clustering, rather than just throwing out events
+  outside the time-range.
+* Changed all prints to calls to logging, as a result, debug is no longer
+  an argument for function calls.
+* `find-peaks` replaced by compiled peak finding routine - more efficient
+  both in memory and time #249 - approx 50x faster
+  * Note that the results of the C-func and the Python functions are slightly
+    different.  The C function (now the default) is more stable when peaks
+    are small and close together (e.g. in noisy data).
+* multi-find peaks makes use of openMP parallelism for more efficient
+  memory usage #249
+* enforce normalization of continuous data before correlation to avoid float32
+  overflow errors that result in correlation errors (see pr #292).
+* Add SEC-C style chunked cross-correlations.  This is both faster and more
+  memory efficient.  This is now used by default with an fft length of
+  2 ** 13.  This was found to be consistently the fastest length in testing.
+  This can be changed by the user by passing the `fft_len` keyword argument.
+  See PR #285.
+* Outer-loop parallelism has been disabled for all systems now. This was not
+  useful in most situations and is hard to maintain.
+* Improved support for compilation on RedHat systems
+* Refactored match-filter into smaller files. Namespace remains the same.
+  This was done to ease maintenance - the match_filter.py file had become
+  massive and was slow to load and process in IDEs.
+* Refactored `_prep_data_for_correlation` to reduce looping for speed, 
+  now approximately six times faster than previously (minor speed-up)
+  * Now explicitly doesn't allow templates with different length traces - 
+    previously this was ignored and templates with different length 
+    channels to other templates had their channels padded with zeros or 
+    trimmed.
+
 ## 0.3.3
 * Make test-script more stable.
 * Fix bug where `set_xcorr` as context manager did not correctly reset
@@ -40,6 +83,11 @@
   should no-longer happen.
 * Add `select` method to `Party` and `Tribe` to allow selection of a 
   specific family/template.
+* Use a compiled C peak-finding function instead of scipy ndimage - speed-up
+  of about 2x in testing.
+* BUG-FIX: When `full_peaks=True` for `find_peaks2_short` values that were not
+  above their neighbours were returned. Now only values greater than their two
+  neighbours are returned.
 * Add ability to "retry" downloading in `Tribe.client_detect`.
 * Change behaviour of template_gen for data that are daylong, but do not start
   within 1 minute of a day-break - previous versions enforced padding to
@@ -76,6 +124,7 @@
   path on installation of EQcorrscan) that will download all the relevant 
   data and run the tests on the installed package - no need to clone 
   EQcorrscan to run tests!
+
 
 ## 0.3.1
 * Cleaned imports in utils modules

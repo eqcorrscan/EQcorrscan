@@ -14,7 +14,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import warnings
+import logging
 import datetime as dt
 import copy
 import os
@@ -31,6 +31,9 @@ from obspy.signal.cross_correlation import xcorr
 from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
 
 
+Logger = logging.getLogger(__name__)
+
+
 def _finalise_figure(fig, **kwargs):  # pragma: no cover
     """
     Internal function to wrap up a figure.
@@ -42,8 +45,12 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type savefile: str
     :type return_figure: bool
     """
+    import matplotlib.pyplot as plt
+    
     title = kwargs.get("title") or None
-    show = kwargs.get("show") or False
+    show = kwargs.get("show")
+    if show is None:
+        show = True
     save = kwargs.get("save") or False
     savefile = kwargs.get("savefile") or "EQcorrscan_figure.png"
     return_fig = kwargs.get("return_figure") or False
@@ -56,6 +63,8 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
         print("Saved figure to {0}".format(savefile))
     if return_fig:
         return fig
+    fig.clf()
+    plt.close(fig)
     return None
 
 
@@ -151,7 +160,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, **kwargs):
     import matplotlib.pyplot as plt
     if cc is None or shift is None:
         if not isinstance(cc_vec, np.ndarray):
-            print('Given cc: %s and shift: %s' % (cc, shift))
+            Logger.error('Given cc: %s and shift: %s' % (cc, shift))
             raise IOError('Must provide either cc_vec, or cc and shift')
         shift = np.abs(cc_vec).argmax()
         cc = cc_vec[shift]
@@ -204,8 +213,9 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
     """
     import matplotlib.pyplot as plt
     if len(cccsum) != len(trace.data):
-        print('cccsum is: ' +
-              str(len(cccsum)) + ' trace is: ' + str(len(trace.data)))
+        Logger.error(
+            'cccsum is: ' + str(len(cccsum)) + ' trace is: ' +
+            str(len(trace.data)))
         msg = ' '.join(['cccsum and trace must have the',
                         'same number of data points'])
         raise ValueError(msg)
@@ -307,7 +317,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
 
 def cumulative_detections(dates=None, template_names=None, detections=None,
                           plot_grouped=False, group_name=None, rate=False,
-                          plot_legend=True, ax=None, **kwargs):
+                          binsize=None, plot_legend=True, ax=None, **kwargs):
     """
     Plot cumulative detections or detection rate in time.
 
@@ -332,6 +342,8 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :param rate:
         Whether or not to plot the rate of detection per day. Only works for
         plot_grouped=True
+    :type binsize: int
+    :param binsize: Bin size for rate plotting in seconds.
     :type plot_legend: bool
     :param plot_legend:
         Specify whether to plot legend of template names. Defaults to True.
@@ -399,8 +411,10 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                     'black', 'firebrick', 'purple', 'darkgoldenrod', 'gray'])
     linestyles = cycle(['-', '-.', '--', ':'])
     # Check that dates is a list of lists
-    if not detections:
-        if type(dates[0]) != list:
+    if detections is None:
+        if not isinstance(dates, list):
+            raise IndexError("No detections or dates given")
+        if not isinstance(dates[0], list):
             dates = [dates]
     else:
         dates = []
@@ -425,7 +439,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         for template_dates in dates:
             _dates += template_dates
         dates = [_dates]
-        if group_name:
+        if group_name is not None:
             template_names = group_name
         else:
             template_names = ['All templates']
@@ -433,7 +447,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
     else:
-        fig = ax.figure()
+        fig = ax.get_figure()
     # Make sure not to pad at edges
     ax.margins(0, 0)
     min_date = min([min(_d) for _d in dates])
@@ -451,18 +465,28 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
             if not plot_grouped:
                 msg = 'Plotting rate only implemented for plot_grouped=True'
                 raise NotImplementedError(msg)
-            if 31 < (max_date - min_date).days < 365:
-                bins = (max_date - min_date).days
-                ax.set_ylabel('Detections per day')
-            elif (max_date - min_date).days <= 31:
-                bins = (max_date - min_date).days * 4
-                ax.set_ylabel('Detections per 6 hour bin')
+            if binsize is None:
+                if 365 <= (max_date - min_date).days:
+                    binsize = 7 * 86400
+                    ax.set_ylabel('Detections per week')
+                elif 31 < (max_date - min_date).days < 365:
+                    binsize = 86400
+                    ax.set_ylabel('Detections per day')
+                elif 1 < (max_date - min_date).days <= 31:
+                    binsize = 6 * 3600
+                    ax.set_ylabel('Detections per 6 hours')
+                elif 3600 < (max_date - min_date).total_seconds() <= 86400:
+                    binsize = 900
+                    ax.set_ylabel('Detections per 15 minutes')
+                else:
+                    binsize = 60
+                    ax.set_ylabel('Detections per minute')
             else:
-                bins = (max_date - min_date).days // 7
-                ax.set_ylabel('Detections per week')
-            if len(plot_dates) <= 10:
-                bins = 1
-            ax.hist(mdates.date2num(plot_dates), bins=bins,
+                ax.set_ylabel('Detections per {0} seconds'.format(binsize))
+            bins = np.arange(
+                min_date, max_date + dt.timedelta(seconds=binsize),
+                dt.timedelta(seconds=binsize))
+            ax.hist(mdates.date2num(plot_dates), bins=mdates.date2num(bins),
                     label='Rate of detections', color='darkgrey',
                     alpha=0.5)
         else:
@@ -659,21 +683,21 @@ def multi_event_singlechan(streams, catalog, station, channel,
     if isinstance(short_streams, Stream):
         short_streams = [short_streams]
     st_list = deepcopy(short_streams)
-    print(short_cat)
+    Logger.debug(short_cat)
     for i, event in enumerate(short_cat):
         # Extract the appropriate pick
         _pick = [pick for pick in event.picks if
                  pick.waveform_id.station_code == station and
                  pick.waveform_id.channel_code == channel]
         if len(_pick) == 0:
-            print('No pick for channel')
+            Logger.info('No pick for channel')
             continue
         else:
             _pick = _pick[0]
         if st_list[i].select(station=station, channel=channel):
             tr = st_list[i].select(station=station, channel=channel)[0]
         else:
-            print('No data for ' + _pick.waveform_id.station_code)
+            Logger.info('No data for ' + _pick.waveform_id.station_code)
             continue
         tr.detrend('linear')
         if freqmin:
@@ -690,7 +714,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                                '.', tr.stats.channel, '\n',
                                'Suggest removing pick from event at time ',
                                str(_pick.time)])
-                warnings.warn(msg)
+                Logger.warning(msg)
             else:
                 al_traces.append(tr_cut)
                 al_picks.append(_pick)
@@ -703,7 +727,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                            '.', tr.stats.channel, '\n',
                            'Suggest removing pick from event at time ',
                            str(event.picks[0].time)])
-            warnings.warn(msg)
+            Logger.warning(msg)
             continue
         traces.append(tr)
     if realign:
@@ -711,7 +735,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
                         al_traces[0].stats.sampling_rate)
         shifts = align_traces(al_traces, shift_len)[0]
         for i in range(len(shifts)):
-            print('Shifting by ' + str(shifts[i]) + ' seconds')
+            Logger.info('Shifting by ' + str(shifts[i]) + ' seconds')
             _pick.time -= shifts[i]
             traces[i].trim(al_picks[i].time - pre_pick,
                            al_picks[i].time + clip - pre_pick,
@@ -722,7 +746,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     else:
         stack = 'linstack'
     for tr in traces:
-        print(tr)
+        Logger.debug(tr)
     fig = multi_trace_plot(
         traces=traces, corr=True, stack=stack, show=False, return_figure=True)
     plt.subplots_adjust(hspace=0)
@@ -906,7 +930,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
         if not image:
             msg = ' '.join(['No data for', template_tr.stats.station,
                             template_tr.stats.channel])
-            print(msg)
+            Logger.info(msg)
             continue
         image = image.merge()[0]
         # Downsample if needed
@@ -1088,8 +1112,8 @@ def obspy_3d_plot(inventory, catalog, size=(10.5, 7.5), **kwargs):
                                  sta.elevation / 1000 -
                                  sta.channels[0].depth / 1000))
             else:
-                warnings.warn('No channel information attached, '
-                              'setting elevation without depth')
+                Logger.warning('No channel information attached, '
+                               'setting elevation without depth')
                 all_stas.append((sta.latitude, sta.longitude,
                                  sta.elevation / 1000))
     fig = threeD_seismplot(
@@ -1284,7 +1308,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
         import os
         TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
         test_file = os.path.join(
-            TEST_PATH, 'REA', 'TEST_', '01-0411-15L.S201309'
+            TEST_PATH, 'REA', 'TEST_', '01-0411-15L.S201309')
         test_wavefile = os.path.join(
             TEST_PATH, 'WAV', 'TEST_', '2013-09-01-0410-35.DFDPC_024_00')
         event = read_events(test_file)[0]
@@ -1443,7 +1467,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
         if len(tr_picks) == 0:
             msg = 'No pick for chanel %s' % tr.stats.station + ', ' + \
                   tr.stats.channel
-            print(msg)
+            Logger.info(msg)
         else:
             pick = tr_picks[0]
             delay = pick.time - mintime
@@ -1676,7 +1700,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
     import matplotlib.pyplot as plt
     figures = []
     for sval, stachan in zip(svalues, stachans):
-        print(stachan)
+        Logger.info(stachan)
         plot_traces = [SVStream.select(station=stachan[0],
                                        channel=stachan[1])[0]
                        for SVStream in svstreams]
@@ -1690,7 +1714,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
             ylab = 'SV %s = %s' % (i + 1, round(sval[i] / len(sval), 2))
             axes[i].set_ylabel(ylab, rotation=0)
             axes[i].yaxis.set_ticks([])
-            print(i)
+            Logger.debug(i)
         axes[-1].set_xlabel('Time (s)')
         plt.subplots_adjust(hspace=0)
         fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
@@ -1781,7 +1805,7 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
         synth_tr = synthetic.select(station=stachan[0],
                                     channel=stachan[1])[0]
         shift, corr = xcorr(real_tr, synth_tr, 2)
-        print('Shifting by: ' + str(shift) + ' samples')
+        Logger.info('Shifting by: ' + str(shift) + ' samples')
         if corr < 0:
             synth_tr.data = synth_tr.data * -1
             corr = corr * -1
@@ -1862,10 +1886,10 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     magnitudes.sort()
     # Check that there are no nans or infs
     if np.isnan(magnitudes).any():
-        warnings.warn('Found nan values, removing them')
+        Logger.warning('Found nan values, removing them')
         magnitudes = [mag for mag in magnitudes if not np.isnan(mag)]
     if np.isinf(magnitudes).any():
-        warnings.warn('Found inf values, removing them')
+        Logger.warning('Found inf values, removing them')
         magnitudes = [mag for mag in magnitudes if not np.isinf(mag)]
     fig, ax1 = plt.subplots()
     # Set up the bins, the bin-size could be a variables
@@ -2099,7 +2123,7 @@ def subspace_detector_plot(detector, stachans, size, **kwargs):
     if np.isinf(detector.dimension):
         msg = ' '.join(['Infinite subspace dimension. Only plotting as many',
                         'dimensions as events in design set'])
-        warnings.warn(msg)
+        Logger.warning(msg)
         nrows = detector.v[0].shape[1]
     else:
         nrows = detector.dimension

@@ -11,8 +11,12 @@ import importlib
 import sys
 import warnings
 
-from eqcorrscan.core.match_filter import (  # NOQA
-    match_filter, Detection, Party, Tribe, Family, Template)
+
+from eqcorrscan.core.match_filter.party import Party  # NOQA
+from eqcorrscan.core.match_filter.family import Family  # NOQA
+from eqcorrscan.core.match_filter.detection import Detection  # NOQA
+from eqcorrscan.core.match_filter.tribe import Tribe  # NOQA
+from eqcorrscan.core.match_filter.template import Template  # NOQA
 from eqcorrscan.core.subspace import Detector, read_detector  # NOQA
 from eqcorrscan.core.lag_calc import lag_calc  # NOQA
 

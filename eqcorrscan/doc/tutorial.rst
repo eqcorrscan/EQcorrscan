@@ -51,7 +51,31 @@ making pretty plots (:doc:`plotting </submodules/utils.plotting>`),
 and processing seismic data in the same way repeatedly using |Obspy|'s
 functionality (:doc:`pre_processing </submodules/utils.pre_processing>`).
 
-What follows is an expanding set of tutorials that should take you
+As of EQcorrscan v.0.4.0, output is controlled by the |logging| module.
+This allows the user to decide now much output is needed (via the `level`
+option), and where output should be sent (either to a file, stdout, or both).
+By default, if no logging parameters are set before calling EQcorrscan functions
+only messages of WARNING or above are printed to stdout. To make things a little
+prettier you can begin your work using something like:
+
+.. code-block:: python
+
+  import logging
+
+  logging.basciConfig(
+      level=logging.INFO,
+      format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
+
+This will output messages at level INFO and above (quite verbose), in messages
+like:
+
+.. code-block:: python
+
+  2018-06-25 22:48:17,113	eqcorrscan.utils.pre_processing	INFO	Working on: NZ.CPWZ.10.EHZ
+
+For more options, see the |logginghowto| guide.
+
+The following is an expanding set of tutorials that should take you
 through some of the key functionality of the EQcorrscan package.
 
 .. toctree::
@@ -76,3 +100,11 @@ through some of the key functionality of the EQcorrscan package.
 .. |Obspy| raw:: html
 
   <a href="https://github.com/obspy/obspy/wiki" target="_blank">Obspy</a>
+
+.. |logging| raw:: html
+
+  <a href="https://docs.python.org/3/library/logging.html" target="_blank">Logging</a>
+
+.. |logginghowto| raw:: html
+
+  <a href="https://docs.python.org/3/howto/logging.html#logging-basic-tutorial" target="_blank">Logging HOWTO</a>

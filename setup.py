@@ -81,7 +81,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
@@ -186,7 +186,7 @@ def export_symbols(*path):
     return [s.strip() for s in lines if s.strip() != '']
 
 
-def get_extensions():
+def get_extensions(no_mkl=False):
     from distutils.extension import Extension
 
     if READ_THE_DOCS:
@@ -201,7 +201,9 @@ def get_extensions():
 
     sources = [os.path.join('eqcorrscan', 'utils', 'src', 'multi_corr.c'),
                os.path.join('eqcorrscan', 'utils', 'src', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c')]
+               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c'),
+               os.path.join('eqcorrscan', 'utils', 'src',
+                            'distance_cluster.c')]
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
@@ -239,7 +241,10 @@ def get_extensions():
         common_extension_args['extra_link_args'] = extra_link_args
         common_extension_args['extra_compile_args'] = extra_compile_args
         common_extension_args['export_symbols'] = exp_symbols
-        mkl = get_mkl()
+        if no_mkl:
+            mkl = None
+        else:
+            mkl = get_mkl()
         if mkl is not None:
             # use MKL if we have it
             common_extension_args['include_dirs'].extend(mkl[0])
@@ -263,28 +268,38 @@ class CustomBuildExt(build_ext):
         else:
             compiler = self.compiler
 
-        # Hack around OSX setting a -m flag
         cfg_vars = sysconfig.get_config_vars()
+        # Hack around OSX setting a -m flag
         if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
             print("System C-flags:")
             print(cfg_vars["CFLAGS"])
-            cflags = list(set(cfg_vars["CFLAGS"].split()))
-            if "-m" in cflags:
-                cflags.remove("-m")
-            if "-isysroot" in cflags:
-                cflags.remove("-isysroot")
-            # Remove sdk links
-            sdk_flags = []
-            for cflag in cflags:
-                if cflag.endswith(".sdk"):
-                    sdk_flags.append(cflag)
-            for cflag in sdk_flags:
-                cflags.remove(cflag)
-            cflags = list(set(cflags))
+            cflags = []
+            for flag in cfg_vars["CFLAGS"].split():
+                if flag in ["-m", "-isysroot"]:
+                    continue
+                # Remove sdk links
+                if flag.endswith(".sdk"):
+                    continue
+                cflags.append(flag)
             cfg_vars["CFLAGS"] = " ".join(cflags)
             print("Editted C-flags:")
             print(cfg_vars["CFLAGS"])
-            os.environ["CFLAGS"] = " ".join(cflags)
+        # Remove unsupported C-flags
+        unsupported_flags = [
+            "-fuse-linker-plugin", "-ffat-lto-objects", "-flto-partition=none"]
+        for key in ["CFLAGS", "LDFLAGS", "LDSHARED"]:
+            if key in cfg_vars:
+                print("System {0}:".format(key))
+                print(cfg_vars[key])
+                flags = []
+                for flag in cfg_vars[key].split():
+                    if flag in unsupported_flags:
+                        continue
+                    flags.append(flag)
+                cfg_vars[key] = " ".join(flags)
+                print("Editted {0}:".format(key))
+                print(cfg_vars[key])
+
         if compiler == 'msvc':
             # Add msvc specific hacks
 
@@ -384,6 +399,10 @@ def setup_package():
         setup_args['setup_requires'] = build_requires
         setup_args['install_requires'] = install_requires
 
+    no_mkl = False
+    if "--no-mkl" in sys.argv:
+        no_mkl = True
+        sys.argv.remove("--no-mkl")
     if len(sys.argv) >= 2 and (
         '--help' in sys.argv[1:] or
         sys.argv[1] in ('--help-commands', 'egg_info', '--version',
@@ -391,10 +410,11 @@ def setup_package():
         # For these actions, NumPy is not required.
         pass
     else:
-        setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
-                                  'eqcorrscan.core', 'eqcorrscan.utils.lib',
-                                  'eqcorrscan.tutorials', 'eqcorrscan.tests']
-        setup_args['ext_modules'] = get_extensions()
+        setup_args['packages'] = [
+            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
+            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
+        setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
     if os.path.isdir("build"):

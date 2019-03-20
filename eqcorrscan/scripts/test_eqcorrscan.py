@@ -187,7 +187,7 @@ def run_tests(arg_list):
         arg_list.append("--runslow")
     arg_list.extend(
         ["--ignore", "EGG-INFO", "--ignore", PKG_PATH + "/utils/lib",
-         "--doctest-modules", "--cov-config",
+         "--doctest-modules", "--cov", "--cov-config",
          os.path.join(WORKING_DIR, ".coveragerc"), "--ignore=setup.py"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
@@ -206,7 +206,7 @@ def run_tests(arg_list):
             os.remove(os.path.join(PKG_PATH, ".coveragerc"))
             os.remove(os.path.join(PKG_PATH, "conftest.py"))
         if ret != 0:
-            raise SystemExit("Failed test")
+            raise SystemExit("Failed tests")
 
 
 if __name__ == "__main__":

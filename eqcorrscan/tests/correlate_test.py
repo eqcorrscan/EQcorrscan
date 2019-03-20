@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import copy
 import itertools
-import warnings
+import logging
 from collections import defaultdict
 from functools import wraps
 from os.path import join
@@ -14,14 +14,20 @@ import numpy as np
 import pytest
 from multiprocessing import cpu_count
 from obspy import Trace, Stream, read
+from scipy.fftpack import next_fast_len
 
 import eqcorrscan.utils.correlate as corr
 from eqcorrscan.utils.correlate import register_array_xcorr
 from eqcorrscan.utils.timer import time_func
+from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 # set seed state for consistent arrays
 random = np.random.RandomState(7)
 
+log = logging.getLogger(corr.__name__)
+_log_handler = MockLoggingHandler(level='DEBUG')
+log.addHandler(_log_handler)
+log_messages = _log_handler.messages
 
 # -------------------------- helper functions
 
@@ -53,8 +59,12 @@ chans = ['EHZ', 'EHN', 'EHE']
 stas = ['COVA', 'FOZ', 'LARB', 'GOVA', 'MTFO', 'MTBA']
 n_templates = 20
 stream_len = 100000
+unstacked_stream_len = 10000
+# Use a reduced length for unstacked to conserve memory
 template_len = 200
 gap_start = 5000
+# fft_len = 2 ** 13
+fft_len = next_fast_len(stream_len + template_len + 1)
 
 
 def generate_multichannel_stream():
@@ -114,6 +124,31 @@ def read_gappy_real_data():
     return st
 
 
+def read_real_multichannel_templates():
+    import glob
+    tutorial_templates = glob.glob(
+        join(pytest.test_data_path, "tutorial_template_0.ms"))
+
+    t = read(tutorial_templates[0])
+    return [t.select(station="POWZ") + t.select(station="HOWZ")]
+
+
+def get_real_multichannel_data():
+    from obspy.clients.fdsn import Client
+    from obspy import UTCDateTime
+    from eqcorrscan.utils.pre_processing import shortproc
+
+    t1 = UTCDateTime("2016-01-04T12:00:00.000000Z")
+    t2 = t1 + 600
+    bulk = [('NZ', 'POWZ', '*', 'EHZ', t1, t2),
+            ('NZ', 'HOWZ', '*', 'EHZ', t1, t2)]
+    client = Client("GEONET")
+    st = client.get_waveforms_bulk(bulk)
+    st = shortproc(
+        st.merge(), lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
+        starttime=t1, endtime=t2)
+    return st
+
 # ----------------------------- module fixtures
 
 
@@ -139,7 +174,7 @@ starting_index = 500
 @pytest.fixture(scope='module')
 def array_template():
     """
-    return a set of templates, generated with randomn, for correlation tests.
+    return a set of templates, generated with random, for correlation tests.
     """
     return random.randn(200, 200)
 
@@ -176,6 +211,13 @@ def array_ccs(array_template, array_stream, pads):
         print("Running %s" % name)
         cc, _ = time_func(func, name, array_template, array_stream, pads)
         out[name] = cc
+        if "fftw" in name:
+            print("Running fixed len fft")
+            fft_len = next_fast_len(
+                max(len(array_stream) // 4, len(array_template)))
+            cc, _ = time_func(func, name, array_template, array_stream, pads,
+                              fft_len=fft_len)
+            out[name + "_fixed_len"] = cc
     return out
 
 
@@ -186,13 +228,23 @@ def array_ccs_low_amp(array_template, array_stream, pads):
      as the cc calculated by said function.
      This specifically tests low amplitude streams as raised in issue #181."""
     out = {}
+    arr_stream = array_stream * 10e-8
     for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
         func = corr.get_array_xcorr(name)
         print("Running {0} with low-variance".format(name))
-        with warnings.catch_warnings(record=True) as w:
-            cc, _ = time_func(
-                func, name, array_template, array_stream * 10e-8, pads)
-            out[name] = (cc, w)
+        _log_handler.reset()
+        cc, _ = time_func(
+            func, name, array_template, arr_stream, pads)
+        out[name] = (cc, copy.deepcopy(log_messages['warning']))
+        if "fftw" in name:
+            print("Running fixed len fft")
+            _log_handler.reset()
+            fft_len = next_fast_len(
+                max(len(array_stream) // 4, len(array_template)))
+            cc, _ = time_func(func, name, array_template, array_stream, pads,
+                              fft_len=fft_len)
+            out[name + "_fixed_len"] = (
+                cc, copy.deepcopy(log_messages['warning']))
     return out
 
 # stream fixtures
@@ -226,6 +278,16 @@ def gappy_real_data_template():
     return read_gappy_real_template()
 
 
+@pytest.fixture(scope='module')
+def real_templates():
+    return read_real_multichannel_templates()
+
+
+@pytest.fixture(scope='module')
+def real_multichannel_stream():
+    return get_real_multichannel_data()
+
+
 # a dict of all registered stream functions (this is a bit long)
 stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
                 for fname in sorted(corr.XCORR_FUNCS_ORIGINAL.keys())
@@ -245,14 +307,21 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
             cc_out = time_func(func, name, multichannel_templates,
                                multichannel_stream, cores=cores)
             out["{0}.{1}".format(name, cores)] = cc_out
-            if "fftw" in name and cores > 1:
-                print("Running outer core parallel")
-                # Make sure that using both parallel methods gives the same
-                # result
+            if "fftw" in name:
+                if cores > 1:
+                    print("Running outer core parallel")
+                    # Make sure that using both parallel methods gives the same
+                    # result
+                    cc_out = time_func(
+                        func, name, multichannel_templates,
+                        multichannel_stream, cores=1, cores_outer=cores)
+                    out["{0}.{1}_outer".format(name, cores)] = cc_out
+                print("Running fixed fft-len: {0}".format(fft_len))
+                # Make sure that running with a pre-defined fft-len works
                 cc_out = time_func(
                     func, name, multichannel_templates, multichannel_stream,
-                    cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = cc_out
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = cc_out
     return out
 
 
@@ -263,6 +332,39 @@ def stream_cc_dict(stream_cc_output_dict):
 
 
 @pytest.fixture(scope='module')
+def real_stream_cc_output_dict(real_templates, real_multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    out = {}
+    fft_len = next_fast_len(
+        real_templates[0][0].stats.npts +
+        real_multichannel_stream[0].stats.npts + 1)
+    short_fft_len = 2 ** 8
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            print("Running {0} with {1} cores".format(name, cores))
+
+            cc_out = time_func(func, name, real_templates,
+                               real_multichannel_stream, cores=cores,
+                               fft_len=short_fft_len)
+            out["{0}.{1}".format(name, cores)] = cc_out
+            if "fftw" in name:
+                print("Running fixed fft-len: {0}".format(fft_len))
+                # Make sure that running with a pre-defined fft-len works
+                cc_out = time_func(
+                    func, name, real_templates, real_multichannel_stream,
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = cc_out
+    return out
+
+
+@pytest.fixture(scope='module')
+def real_stream_cc_dict(real_stream_cc_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0]
+            for name, result in real_stream_cc_output_dict.items()}
+
+
+@pytest.fixture(scope='module')
 def gappy_stream_cc_output_dict(
         multichannel_templates, gappy_multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
@@ -270,21 +372,30 @@ def gappy_stream_cc_output_dict(
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
-            # Check for same result both single and multi-threaded
             print("Running {0} with {1} cores".format(name, cores))
-            with warnings.catch_warnings(record=True) as w:
-                cc_out = time_func(func, name, multichannel_templates,
-                                   gappy_multichannel_stream, cores=cores)
-                out["{0}.{1}".format(name, cores)] = (cc_out, w)
-            if "fftw" in name and cores > 1:
-                print("Running outer core parallel")
-                # Make sure that using both parallel methods gives the same
-                # result
-                with warnings.catch_warnings(record=True) as w:
+            _log_handler.reset()
+            cc_out = time_func(func, name, multichannel_templates,
+                               gappy_multichannel_stream, cores=cores)
+            out["{0}.{1}".format(name, cores)] = (
+                cc_out, copy.deepcopy(log_messages['warning']))
+            if "fftw" in name:
+                if cores > 1:
+                    print("Running outer core parallel")
+                    _log_handler.reset()
+                    # Make sure that using both parallel methods gives the same
+                    # result
                     cc_out = time_func(
                         func, name, multichannel_templates,
                         gappy_multichannel_stream, cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
+                    out["{0}.{1}_outer".format(name, cores)] = (
+                        cc_out, copy.deepcopy(log_messages['warning']))
+                print("Running shorter, fixed fft-len")
+                # Make sure that running with a pre-defined fft-len works
+                cc_out = time_func(
+                    func, name, multichannel_templates,
+                    gappy_multichannel_stream, cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = (
+                    cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
 
@@ -303,20 +414,31 @@ def gappy_real_cc_output_dict(
     out = {}
     for name, func in stream_funcs.items():
         for cores in [1, cpu_count()]:
+            _log_handler.reset()
             print("Running {0} with {1} cores".format(name, cores))
-            with warnings.catch_warnings(record=True) as w:
-                cc_out = time_func(func, name, gappy_real_data_template,
-                                   gappy_real_data, cores=cores)
-                out["{0}.{1}".format(name, cores)] = (cc_out, w)
-            if "fftw" in name and cores > 1:
-                print("Running outer core parallel")
-                # Make sure that using both parallel methods gives the same
-                # result
-                with warnings.catch_warnings(record=True) as w:
+            cc_out = time_func(func, name, gappy_real_data_template,
+                               gappy_real_data, cores=cores)
+            out["{0}.{1}".format(name, cores)] = (
+                cc_out, copy.deepcopy(log_messages['warning']))
+            if "fftw" in name:
+                if cores > 1:
+                    _log_handler.reset()
+                    print("Running outer core parallel")
+                    # Make sure that using both parallel methods gives the same
+                    # result
                     cc_out = time_func(
                         func, name, gappy_real_data_template,
                         gappy_real_data, cores=1, cores_outer=cores)
-                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
+                    out["{0}.{1}_outer".format(name, cores)] = (
+                        cc_out, copy.deepcopy(log_messages['warning']))
+                _log_handler.reset()
+                print("Running shorter, fixed fft-len")
+                # Make sure that running with a pre-defined fft-len works
+                cc_out = time_func(
+                    func, name, gappy_real_data_template, gappy_real_data,
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = (
+                    cc_out, copy.deepcopy(log_messages['warning']))
     return out
 
 
@@ -326,6 +448,118 @@ def gappy_real_cc_dict(gappy_real_cc_output_dict):
     return {name: (result[0][0], result[1])
             for name, result in gappy_real_cc_output_dict.items()}
 
+
+# ------------------------------------ unstacked setup
+
+@pytest.fixture(scope='module')
+def stream_cc_output_dict_unstacked(
+        multichannel_templates, multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    for tr in multichannel_stream:
+        tr.data = tr.data[0:unstacked_stream_len]
+    multichannel_templates = multichannel_templates[0:5]
+    out = {}
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            print("Running {0} with {1} cores".format(name, cores))
+
+            cc_out = time_func(func, name, multichannel_templates,
+                               multichannel_stream, cores=cores, stack=False)
+            out["{0}.{1}".format(name, cores)] = cc_out
+            if "fftw" in name and cores > 1:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                cc_out = time_func(
+                    func, name, multichannel_templates, multichannel_stream,
+                    cores=1, cores_outer=cores, stack=False)
+                out["{0}.{1}_outer".format(name, cores)] = cc_out
+    return out
+
+
+@pytest.fixture(scope='module')
+def stream_cc_dict_unstacked(stream_cc_output_dict_unstacked):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0]
+            for name, result in stream_cc_output_dict_unstacked.items()}
+
+
+@pytest.fixture(scope='module')
+def gappy_stream_cc_output_dict_unstacked(
+        multichannel_templates, gappy_multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    import warnings
+
+    for tr in gappy_multichannel_stream:
+        tr.data = tr.data[0:unstacked_stream_len]
+    multichannel_templates = multichannel_templates[0:5]
+    out = {}
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            # Check for same result both single and multi-threaded
+            print("Running {0} with {1} cores".format(name, cores))
+            with warnings.catch_warnings(record=True) as w:
+                cc_out = time_func(func, name, multichannel_templates,
+                                   gappy_multichannel_stream, cores=cores,
+                                   stack=False)
+                out["{0}.{1}".format(name, cores)] = (cc_out, w)
+            if "fftw" in name and cores > 1:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                with warnings.catch_warnings(record=True) as w:
+                    cc_out = time_func(
+                        func, name, multichannel_templates,
+                        gappy_multichannel_stream, cores=1, cores_outer=cores,
+                        stack=False)
+                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
+    return out
+
+
+@pytest.fixture(scope='module')
+def gappy_stream_cc_dict_unstacked(gappy_stream_cc_output_dict_unstacked):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: (result[0][0], result[1])
+            for name, result in gappy_stream_cc_output_dict_unstacked.items()}
+
+
+@pytest.fixture(scope='module')
+def gappy_real_cc_output_dict_unstacked(
+        gappy_real_data_template, gappy_real_data):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    import warnings
+
+    for tr in gappy_real_data:
+        tr.data = tr.data[0:unstacked_stream_len]
+    out = {}
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            print("Running {0} with {1} cores".format(name, cores))
+            with warnings.catch_warnings(record=True) as w:
+                cc_out = time_func(func, name, gappy_real_data_template,
+                                   gappy_real_data, cores=cores, stack=False)
+                out["{0}.{1}".format(name, cores)] = (cc_out, w)
+            if "fftw" in name and cores > 1:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                with warnings.catch_warnings(record=True) as w:
+                    cc_out = time_func(
+                        func, name, gappy_real_data_template,
+                        gappy_real_data, cores=1, cores_outer=cores,
+                        stack=False)
+                out["{0}.{1}_outer".format(name, cores)] = (cc_out, w)
+    return out
+
+
+@pytest.fixture(scope='module')
+def gappy_real_cc_dict_unstacked(gappy_real_cc_output_dict_unstacked):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: (result[0][0], result[1])
+            for name, result in gappy_real_cc_output_dict_unstacked.items()}
 
 # ----------------------------------- tests
 
@@ -339,12 +573,19 @@ class TestArrayCorrelateFunctions:
     def test_single_channel_similar(self, array_ccs):
         """ ensure each of the correlation methods return similar answers
         given the same input data """
-        cc_list = list(array_ccs.values())
-        for cc1, cc2 in itertools.combinations(cc_list, 2):
+        cc_names = list(array_ccs.keys())
+        print(cc_names)
+        for key1, key2 in itertools.combinations(cc_names, 2):
+            cc1 = array_ccs[key1]
+            cc2 = array_ccs[key2]
+            if not np.allclose(cc1, cc2, atol=self.atol):
+                print("{0} does not match {1}".format(key1, key2))
+                np.save("cc1.npy", cc1)
+                np.save("cc2.npy", cc2)
             assert np.allclose(cc1, cc2, atol=self.atol)
 
-    def test_test_autocorrelation(self, array_ccs):
-        """ ensure an auto correlationoccurred in each of ccs where it is
+    def test_autocorrelation(self, array_ccs):
+        """ ensure an autocorrelation occurred in each of ccs where it is
         expected, defined by starting_index variable """
         for name, cc in array_ccs.items():
             assert np.isclose(cc[0, starting_index], 1., atol=self.atol)
@@ -358,8 +599,7 @@ class TestArrayCorrelateFunctions:
             assert np.median(cc) != 0.0
             if name == 'fftw':
                 assert len(warning) == 1
-                assert issubclass(warning[-1].category, UserWarning)
-                assert "Low variance found" in str(warning[-1].message)
+                assert "Low variance found" in warning[-1]
 
 
 @pytest.mark.serial
@@ -378,6 +618,21 @@ class TestStreamCorrelateFunctions:
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             assert np.allclose(cc_1, cc, atol=self.atol)
 
+    def test_real_multi_channel_xcorr(self, real_stream_cc_dict):
+        """ test various correlation methods with multiple channels """
+        # get correlation results into a list
+        cc_names = list(real_stream_cc_dict.keys())
+        cc_list = [real_stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol):
+                print("{0} does not match {1}".format(cc_names[0], cc_name))
+                np.save("cc1.npy", cc_1)
+                np.save("cc2.npy", cc)
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
     def test_gappy_multi_channel_xcorr(self, gappy_stream_cc_dict):
         """
         test various correlation methods with multiple channels and a gap.
@@ -393,8 +648,7 @@ class TestStreamCorrelateFunctions:
             if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
                                 'fftw_concurrent']:
                 assert len(warning) == 1
-                assert issubclass(warning[-1].category, UserWarning)
-                assert "are there zeros" in str(warning[-1].message)
+                assert "are there zeros" in warning[-1]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
@@ -417,6 +671,85 @@ class TestStreamCorrelateFunctions:
         cc_names = list(gappy_real_cc_dict.keys())
         cc_list = [gappy_real_cc_dict[cc_name][0] for cc_name in cc_names]
         warning_list = [gappy_real_cc_dict[cc_name][1]
+                        for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        for cc_name, warning in zip(cc_names, warning_list):
+            # fftw_multiprocess doesn't warn?
+            if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
+                                'fftw_concurrent']:
+                assert len(warning) == 1
+                assert issubclass(warning[-1].category, UserWarning)
+                assert "are there zeros" in str(warning[-1].message)
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol * 100):
+                print("{0} does not match the master {1}".format(
+                    cc_name, cc_names[0]))
+                print(np.where((cc_1 - cc) > self.atol * 100))
+                np.save("cc.npy", cc)
+                np.save("cc_1.npy", cc_1)
+                assert np.allclose(cc_1, cc, atol=self.atol * 100)
+
+
+@pytest.mark.serial
+class TestStreamCorrelateFunctionsUnstacked:
+    """ same thing as TestArrayCorrelateFunction but for stream interface """
+    atol = TestArrayCorrelateFunctions.atol
+
+    def test_multi_channel_xcorr(self, stream_cc_dict_unstacked):
+        """ test various correlation methods with multiple channels """
+        # get correlation results into a list
+        cc_names = list(stream_cc_dict_unstacked.keys())
+        cc_list = [stream_cc_dict_unstacked[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
+    def test_gappy_multi_channel_xcorr(self, gappy_stream_cc_dict_unstacked):
+        """
+        test various correlation methods with multiple channels and a gap.
+        """
+        # get correlation results into a list
+        cc_names = list(gappy_stream_cc_dict_unstacked.keys())
+        cc_list = [gappy_stream_cc_dict_unstacked[cc_name][0]
+                   for cc_name in cc_names]
+        warning_list = [gappy_stream_cc_dict_unstacked[cc_name][1]
+                        for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        for cc_name, warning in zip(cc_names, warning_list):
+            # fftw_multiprocess doesn't warn?
+            if cc_name[0:4] in ['fftw_stream_xcorr', 'fftw_multithread',
+                                'fftw_concurrent']:
+                assert len(warning) == 1
+                assert issubclass(warning[-1].category, UserWarning)
+                assert "are there zeros" in str(warning[-1].message)
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol * 10):
+                print("{0} does not match the master {1}".format(
+                    cc_name, cc_names[0]))
+                print(np.where((cc_1 - cc) > self.atol * 10))
+                np.save("cc.npy", cc)
+                np.save("cc_1.npy", cc_1)
+                assert np.allclose(cc_1, cc, atol=self.atol * 10)
+
+    def test_gappy_real_multi_channel_xcorr(
+            self, gappy_real_cc_dict_unstacked):
+        """
+        test various correlation methods with multiple channels and a gap.
+
+        This test used to fail internally when the variance threshold was too
+        low.
+        """
+        # get correlation results into a list
+        cc_names = list(gappy_real_cc_dict_unstacked.keys())
+        cc_list = [gappy_real_cc_dict_unstacked[cc_name][0]
+                   for cc_name in cc_names]
+        warning_list = [gappy_real_cc_dict_unstacked[cc_name][1]
                         for cc_name in cc_names]
         cc_1 = cc_list[0]
         for cc_name, warning in zip(cc_names, warning_list):

@@ -406,5 +406,6 @@ class FullTestCases(unittest.TestCase):
                                 self.assertTrue(corr_correction <
                                                 max_shift_len)
 
+
 if __name__ == '__main__':
     unittest.main()

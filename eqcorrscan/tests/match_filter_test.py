@@ -17,12 +17,11 @@ from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
-from eqcorrscan.core.match_filter import MatchFilterError
-from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
-from eqcorrscan.core.match_filter import read_detections, get_catalog
-from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
-from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
-from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
+from eqcorrscan.core.match_filter import (
+    MatchFilterError, normxcorr2, Detection, read_detections, get_catalog,
+    write_catalog, extract_from_stream, Tribe, Template, Party, Family,
+    read_party, read_tribe, _spike_test)
+from eqcorrscan.core.match_filter.matched_filter import match_filter
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -163,7 +162,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False, debug=3)
+                     plotvar=False)
 
 
 @pytest.mark.network
@@ -205,7 +204,7 @@ class TestGeoNetCase(unittest.TestCase):
         print('Processing continuous data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1)
+            num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -231,7 +230,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -367,7 +366,7 @@ class TestNCEDCCases(unittest.TestCase):
         cls.unproc_st = st.copy()
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -554,7 +553,7 @@ class TestNCEDCCases(unittest.TestCase):
         templates = [self.templates[0].copy()]
         templates[0][0].data = np.concatenate([templates[0][0].data,
                                                np.random.randn(10)])
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
@@ -613,8 +612,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         cls.tribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len,
-            debug=0)
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
         print(cls.tribe)
         cls.onehztribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
@@ -622,7 +620,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.party = Party().read(
             filename=os.path.join(
@@ -682,7 +680,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent', debug=0)
+            xcorr_func='fftw', concurrency='concurrent')
         self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
@@ -693,8 +691,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            debug=2)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -1009,17 +1006,22 @@ class TestMatchObjectLight(unittest.TestCase):
 
     def test_party_decluster(self):
         """Test the decluster method on party."""
-        for trig_int in [40, 15, 3600]:
+        trig_ints = [40, 15, 3600]
+        trig_ints = [3600]
+        for trig_int in trig_ints:
             for metric in ['avg_cor', 'cor_sum']:
                 declust = self.party.copy().decluster(
                     trig_int=trig_int, metric=metric)
                 declustered_dets = [
                     d for family in declust for d in family.detections]
                 for det in declustered_dets:
-                    time_difs = [abs(det.detect_time - d.detect_time)
-                                 for d in declustered_dets if d != det]
-                    for dif in time_difs:
-                        self.assertTrue(dif > trig_int)
+                    for d in declustered_dets:
+                        if d == det:
+                            continue
+                        dif = abs(det.detect_time - d.detect_time)
+                        print('Time dif: {0} trig_int: {1}'.format(
+                            dif, trig_int))
+                        self.assertGreater(dif, trig_int)
                 with self.assertRaises(IndexError):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
@@ -1097,8 +1099,9 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_slicing_by_name(self):
         """Check that slicing by template name works as expected"""
         t_name = self.tribe[2].name
-        self.assertTrue(self.tribe[2] == self.tribe[t_name])
-        self.assertTrue(self.party[2] == self.party[t_name])
+        self.assertEqual(self.tribe[2], self.tribe[t_name])
+        t_name = self.party[2].template.name
+        self.assertEqual(self.party[2], self.party[t_name])
 
     def test_template_io(self):
         """Test template read/write."""
@@ -1243,6 +1246,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
     party_in.sort()
     for fam, check_fam in zip(party, party_in):
+        assert fam.template.name == check_fam.template.name
         fam.detections.sort(key=lambda d: d.detect_time)
         check_fam.detections.sort(key=lambda d: d.detect_time)
         for det, check_det in zip(fam.detections, check_fam.detections):
@@ -1291,6 +1295,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print("{0}: new: {1}\tcheck-against: {2}".format(
                             key, det.__dict__[key], check_det.__dict__[key]))
+                        print(det)
+                        print(check_det)
                     assert (abs(
                         det.__dict__[key] - check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
@@ -1303,17 +1309,15 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert det.__dict__[key] == check_det.__dict__[key]
 
 
-def test_match_filter(
-        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
-        threshold=10, template_excess=False, stream_excess=False):
+def test_match_filter(plotvar=False, extract_detections=False,
+                      threshold_type='MAD', threshold=10,
+                      template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
 
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz to use
-    :type debug: int
-    :param debug: Debug level, higher the number the more output.
     """
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
@@ -1351,7 +1355,7 @@ def test_match_filter(
     detections = match_filter(
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
-        plotvar=plotvar, plotdir='.', cores=1, debug=debug, output_cat=False,
+        plotvar=plotvar, plotdir='.', cores=1, output_cat=False,
         extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]
@@ -1385,13 +1389,6 @@ def test_match_filter(
                 kfalse += 1
             print('Minimum difference in samples is: ' + str(min_diff))
     # print('Catalog created is of length: ' + str(len(out_cat)))
-    # Plot the detections
-    if debug > 3:
-        for i, template in enumerate(templates):
-            times = [d.detect_time.datetime for d in detections
-                     if d.template_name == template_names[i]]
-            print(times)
-            # plotting.detection_multiplot(data, template, times)
     # Set an 'acceptable' ratio of positive to false detections
     print(str(ktrue) + ' true detections and ' + str(kfalse) +
           ' false detections')

@@ -33,5 +33,6 @@ class TestImport(unittest.TestCase):
             i += 1
         self.assertEqual(i, 0)
 
+
 if __name__ == '__main__':
     unittest.main()
