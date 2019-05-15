@@ -625,6 +625,8 @@ def match_filter(template_names, template_list, st, threshold,
                 rawthresh=thresholds[i], plotdir=plotdir,
                 plot_format=plot_format, i=i)
         if all_peaks[i]:
+            Logger.info("Found {0} peaks for template {1}".format(
+                len(all_peaks[i]), _template_names[i]))
             for peak in all_peaks[i]:
                 detecttime = (
                         stream[0].stats.starttime +
@@ -639,8 +641,12 @@ def match_filter(template_names, template_list, st, threshold,
                 detections.append(detection)
                 if output_cat:
                     det_cat.append(detection.event)
+        else:
+            Logger.info("Found 0 peaks for template {0}".format(
+                _template_names[i]))
         if extract_detections:
             detection_streams = extract_from_stream(stream, detections)
+    print("Debug marker")
     del stream, templates
     if output_cat and not extract_detections:
         return detections, det_cat
