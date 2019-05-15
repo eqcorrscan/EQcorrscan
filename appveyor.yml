@@ -42,7 +42,7 @@ install:
   #      else
   #        PYFLAKES="pyflakes=0.9.0"
   #      fi
-  - "conda install -q --yes pip obspy numpy=1.14 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml pytest==3.10"
+  - "conda install -q --yes pip obspy numpy=1.14 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml pytest"
   # additional dependecies
   - "pip install pyimgur"
 
