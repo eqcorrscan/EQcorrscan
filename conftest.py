@@ -122,6 +122,9 @@ def append_name(list_like):
 # https://docs.pytest.org/en/latest/deprecations.html#pytest-namespace
 def pytest_configure():
     pytest.append_name = append_name
+    pytest.test_path = TEST_PATH
+    pytest.test_data_path = TEST_DATA_PATH
+    pytest.pkg_path = PKG_PATH
 
 
 # Over-ride the -n auto in travis as this goes of the wall
