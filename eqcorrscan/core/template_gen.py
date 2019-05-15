@@ -79,7 +79,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
                  all_horiz=False, delayed=True, plot=False,
                  return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, **kwargs):
+                 num_cores=False, save_progress=False, skip_short_chans=False,
+                 **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -133,6 +134,11 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :param save_progress:
         Whether to save the resulting party at every data step or not.
         Useful for long-running processes.
+    :type skip_short_chans: bool
+    :param skip_short_chans:
+        Whether to ignore channels that have insufficient length data or not.
+        Useful when the quality of data is not known, e.g. when downloading
+        old, possibly triggered data from a datacentre
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -306,6 +312,19 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 starttime = starttime.date
             else:
                 daylong = False
+            # Check if the required amount of data have been downloaded - skip
+            # channels if arg set.
+            if skip_short_chans:
+                _st = Stream()
+                for tr in st:
+                    _len = tr.stats.endtime - tr.stats.starttime
+                    if _len < process_len * .8:
+                        Logger.info(
+                            "Data for {0} are too short, skipping".format(
+                                tr.id))
+                    else:
+                        _st += tr
+                st = _st
             if daylong:
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
