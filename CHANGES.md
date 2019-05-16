@@ -44,6 +44,7 @@
   to provide data of unknown length and short channels will not be used, rather
   than generating an error. This is useful for downloading data from 
   datacentres via the `from_client` method.
+* Remove pytest_namespace in conftest.py to support pytest 4.x
 
 ## 0.3.3
 * Make test-script more stable.
