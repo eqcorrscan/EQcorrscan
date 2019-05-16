@@ -40,6 +40,10 @@
     previously this was ignored and templates with different length 
     channels to other templates had their channels padded with zeros or 
     trimmed.
+* Add `skip_short_channels` option to template generation.  This allows users 
+  to provide data of unknown length and short channels will not be used, rather
+  than generating an error. This is useful for downloading data from 
+  datacentres via the `from_client` method.
 * Remove pytest_namespace in conftest.py to support pytest 4.x
 
 ## 0.3.3
