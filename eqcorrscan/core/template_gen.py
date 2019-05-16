@@ -294,6 +294,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 all_channels=all_channels)
         Logger.info('Pre-processing data')
         st.merge()
+        if len(st) == 0:
+            Logger.info("No data")
+            continue
         if process:
             data_len = max([len(tr.data) / tr.stats.sampling_rate
                             for tr in st])
@@ -317,7 +320,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             if skip_short_chans:
                 _st = Stream()
                 for tr in st:
-                    _len = tr.stats.endtime - tr.stats.starttime
+                    if np.ma.is_masked(tr.data):
+                        _len = np.ma.count(tr.data) * tr.stats.delta
+                    else:
+                        _len = tr.stats.npts * tr.stats.delta
                     if _len < process_len * .8:
                         Logger.info(
                             "Data for {0} are too short, skipping".format(
@@ -325,6 +331,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     else:
                         _st += tr
                 st = _st
+                if len(st) == 0:
+                    Logger.info("No data")
+                    continue
             if daylong:
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
