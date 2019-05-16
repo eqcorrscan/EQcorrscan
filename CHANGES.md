@@ -40,6 +40,7 @@
     previously this was ignored and templates with different length 
     channels to other templates had their channels padded with zeros or 
     trimmed.
+* Remove pytest_namespace in conftest.py to support pytest 4.x
 
 ## 0.3.3
 * Make test-script more stable.
