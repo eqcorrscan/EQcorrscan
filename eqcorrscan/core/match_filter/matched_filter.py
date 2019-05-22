@@ -263,7 +263,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         'filt_order': master.filt_order,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'parallel': parallel,
-        'num_cores': cores}
+        'num_cores': cores, 'ignore_length': ignore_length}
     # Processing always needs to be run to account for gaps - pre-process will
     # check whether filtering and resampling needs to be done.
     if daylong:
@@ -272,7 +272,6 @@ def _group_process(template_group, parallel, cores, stream, daylong,
                 'Processing day-long data, but template was cut from %i s long'
                 ' data, will reduce correlations' % master.process_length)
         func = dayproc
-        kwargs.update({'ignore_length': ignore_length})
         # Check that data all start on the same day, otherwise strange
         # things will happen...
         starttimes = [tr.stats.starttime.date for tr in stream]
