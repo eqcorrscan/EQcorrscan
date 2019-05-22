@@ -819,6 +819,7 @@ class Tribe(object):
                             try:
                                 st += client.get_waveforms_bulk([_bulk])
                             except Exception as e:
+                                Logger.error("No data for {0}".format(_bulk))
                                 Logger.error(e)
                                 continue
                         Logger.info("Downloaded data for {0} traces".format(

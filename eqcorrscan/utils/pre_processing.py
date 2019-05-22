@@ -64,7 +64,7 @@ def _check_daylong(tr):
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
               num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False, fill_gaps=True):
+              seisan_chan_names=False, fill_gaps=True, ignore_length=False):
     """
     Basic function to bandpass and downsample.
 
@@ -203,7 +203,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'starttime': starttime,
             'clip': clip, 'seisan_chan_names': seisan_chan_names,
-            'fill_gaps': fill_gaps, 'length': length})
+            'fill_gaps': fill_gaps, 'length': length,
+            'ignore_length': ignore_length})
                    for tr in st]
         pool.close()
         try:
@@ -219,7 +220,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, starttime=starttime,
                 clip=clip, seisan_chan_names=seisan_chan_names,
-                fill_gaps=fill_gaps, length=length)
+                fill_gaps=fill_gaps, length=length,
+                ignore_length=ignore_length)
     if tracein:
         st.merge()
         return st[0]
