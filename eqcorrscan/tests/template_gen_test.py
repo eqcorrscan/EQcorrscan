@@ -446,6 +446,17 @@ class TestEdgeGen(unittest.TestCase):
         template = _template_gen(self.picks, st, 10)
         self.assertEqual(len(template), 10)
 
+    @pytest.mark.network
+    def test_triggered_data(self):
+        client = Client("GEONET")
+        catalog = client.get_events(eventid="1481730")
+        templates = template_gen(
+            "from_client", lowcut=2., highcut=15., samp_rate=40., swin="all",
+            filt_order=4, prepick=0.2, catalog=catalog, length=3.0,
+            client_id="GEONET", all_horiz=True, process_len=600,
+            min_snr=5., skip_short_chans=True)
+        self.assertEqual(len(templates), 0)
+
 
 class TestDayLong(unittest.TestCase):
     @classmethod

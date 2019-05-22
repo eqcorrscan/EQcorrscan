@@ -1918,7 +1918,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     x = []
     y = []
     for i, magnitude in enumerate(mag_steps):
-        if magnitude >= completeness <= max_mag:
+        if completeness <= magnitude <= max_mag:
             x.append(magnitude)
             y.append(cdf[i])
     fit = np.polyfit(x, np.log10(y), 1)

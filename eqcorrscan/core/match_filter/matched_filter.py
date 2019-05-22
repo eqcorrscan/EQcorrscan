@@ -645,7 +645,6 @@ def match_filter(template_names, template_list, st, threshold,
                 _template_names[i]))
         if extract_detections:
             detection_streams = extract_from_stream(stream, detections)
-    print("Debug marker")
     del stream, templates
     if output_cat and not extract_detections:
         return detections, det_cat
