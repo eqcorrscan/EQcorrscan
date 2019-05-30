@@ -64,7 +64,8 @@ def _check_daylong(tr):
 
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
               num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False, fill_gaps=True, ignore_length=False):
+              seisan_chan_names=False, fill_gaps=True, ignore_length=False,
+              ignore_bad_data=False):
     """
     Basic function to bandpass and downsample.
 
@@ -101,6 +102,15 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         rather than SEED convention of three) - defaults to True.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type ignore_length: bool
+    :param ignore_length:
+        Whether to allow data that are less than 80% of the requested length.
+        Defaults to False which will error if short data are found.
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
 
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
@@ -204,7 +214,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             'samp_rate': samp_rate, 'starttime': starttime,
             'clip': clip, 'seisan_chan_names': seisan_chan_names,
             'fill_gaps': fill_gaps, 'length': length,
-            'ignore_length': ignore_length})
+            'ignore_length': ignore_length,
+            'ignore_bad_data': ignore_bad_data})
                    for tr in st]
         pool.close()
         try:
@@ -221,7 +232,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 samp_rate=samp_rate, starttime=starttime,
                 clip=clip, seisan_chan_names=seisan_chan_names,
                 fill_gaps=fill_gaps, length=length,
-                ignore_length=ignore_length)
+                ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
     if tracein:
         st.merge()
         return st[0]
@@ -230,7 +241,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
 
 def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False, fill_gaps=True):
+            seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -265,6 +276,11 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
         rather than SEED convention of three) - defaults to True.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
 
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -356,7 +372,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             'lowcut': lowcut, 'highcut': highcut, 'filt_order': filt_order,
             'samp_rate': samp_rate, 'starttime': starttime, 'clip': True,
             'ignore_length': ignore_length, 'length': 86400,
-            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps})
+            'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps,
+            'ignore_bad_data': ignore_bad_data})
                    for tr in st]
         pool.close()
         try:
@@ -372,7 +389,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
                 tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
                 samp_rate=samp_rate, starttime=starttime, clip=True,
                 length=86400, ignore_length=ignore_length,
-                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps)
+                seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+                ignore_bad_data=ignore_bad_data)
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
@@ -384,7 +402,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
 
 def process(tr, lowcut, highcut, filt_order, samp_rate,
             starttime=False, clip=False, length=86400,
-            seisan_chan_names=False, ignore_length=False, fill_gaps=True):
+            seisan_chan_names=False, ignore_length=False, fill_gaps=True,
+            ignore_bad_data=False):
     """
     Basic function to process data, usually called by dayproc or shortproc.
 
@@ -421,6 +440,11 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     :param ignore_length: See warning in dayproc.
     :type fill_gaps: bool
     :param fill_gaps: Whether to pad any gaps found with zeros or not.
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
 
     :return: Processed trace.
     :type: :class:`obspy.core.stream.Trace`
@@ -456,7 +480,15 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         msg = ("Data have more zeros than actual data, please check the raw",
                " data set-up and manually sort it: " + tr.stats.station + "." +
                tr.stats.channel)
-        raise ValueError(msg)
+        if not ignore_bad_data:
+            raise ValueError(msg)
+        else:
+            Logger.warning(msg)
+            return Trace(data=np.array([]), header={
+                "station": tr.stats.station, "channel": tr.stats.channel,
+                "network": tr.stats.network, "location": tr.stats.location,
+                "starttime": tr.stats.starttime,
+                "sampling_rate": tr.stats.sampling_rate})
     tr = tr.detrend('simple')
     # Detrend data before filtering
     Logger.debug('I have {0} data points for {1} before processing'.format(
@@ -472,12 +504,21 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
                 tr.id))
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
-            raise NotImplementedError(
+            msg = (
                 "Data for {0}.{1} is {2:.2f} seconds long, which is less than "
                 "80 percent of the desired length ({3} seconds), will not "
                 "pad".format(
                     tr.stats.station, tr.stats.channel,
                     tr.stats.endtime - tr.stats.starttime, length))
+            if not ignore_bad_data:
+                raise NotImplementedError(msg)
+            else:
+                Logger.warning(msg)
+                return Trace(data=np.array([]), header={
+                    "station": tr.stats.station, "channel": tr.stats.channel,
+                    "network": tr.stats.network, "location": tr.stats.location,
+                    "starttime": tr.stats.starttime,
+                    "sampling_rate": tr.stats.sampling_rate})
         # trim, then calculate length of any pads required
         pre_pad_secs = tr.stats.starttime - starttime
         post_pad_secs = (starttime + length) - tr.stats.endtime
@@ -554,8 +595,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         if not tr.stats.sampling_rate * length == tr.stats.npts:
-                raise ValueError('Data are not daylong for ' +
-                                 tr.stats.station + '.' + tr.stats.channel)
+            raise ValueError('Data are not daylong for ' +
+                             tr.stats.station + '.' + tr.stats.channel)
     # Replace the gaps with zeros
     if gappy:
         tr = _zero_pad_gaps(tr, gaps, fill_gaps=fill_gaps)

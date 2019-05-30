@@ -45,6 +45,11 @@
   than generating an error. This is useful for downloading data from 
   datacentres via the `from_client` method.
 * Remove pytest_namespace in conftest.py to support pytest 4.x
+* Add `ignore_bad_data` kwarg for all processing functions, if set to True
+  (defaults to False for continuity) then any errors related to bad data at 
+  process-time will be supressed and empty traces returned.  This is useful 
+  for downloading data from  datacentres via the `from_client` method when
+  data quality is not known.
 
 ## 0.3.3
 * Make test-script more stable.

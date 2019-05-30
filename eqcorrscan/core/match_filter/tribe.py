@@ -416,8 +416,9 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
                daylong=False, parallel_process=True, xcorr_func=None,
                concurrency=None, cores=None, ignore_length=False,
-               group_size=None, overlap="calculate", full_peaks=False,
-               save_progress=False, process_cores=None, **kwargs):
+               ignore_bad_data=False, group_size=None, overlap="calculate",
+               full_peaks=False, save_progress=False, process_cores=None,
+               **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -465,6 +466,11 @@ class Tribe(object):
             are there for at least 80% of the day, if you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
         :type group_size: int
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
@@ -594,7 +600,8 @@ class Tribe(object):
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap,
-                full_peaks=full_peaks, process_cores=process_cores, **kwargs)
+                full_peaks=full_peaks, process_cores=process_cores,
+                ignore_bad_data=ignore_bad_data, **kwargs)
             party += group_party
             if save_progress:
                 party.write("eqcorrscan_temporary_party")
@@ -608,9 +615,10 @@ class Tribe(object):
                       threshold_type, trig_int, plotvar, min_gap=None,
                       daylong=False, parallel_process=True, xcorr_func=None,
                       concurrency=None, cores=None, ignore_length=False,
-                      group_size=None, return_stream=False,
-                      full_peaks=False, save_progress=False,
-                      process_cores=None, retries=3, **kwargs):
+                      ignore_bad_data=False, group_size=None,
+                      return_stream=False, full_peaks=False,
+                      save_progress=False, process_cores=None, retries=3,
+                      **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -666,6 +674,11 @@ class Tribe(object):
             are there for at least 80% of the day, if you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
         :type group_size: int
         :param group_size:
             Maximum number of templates to run at once, use to reduce memory
@@ -877,7 +890,8 @@ class Tribe(object):
                     plotvar=plotvar, daylong=daylong,
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
-                    ignore_length=ignore_length, group_size=group_size,
+                    ignore_length=ignore_length,
+                    ignore_bad_data=ignore_bad_data, group_size=group_size,
                     overlap=None, full_peaks=full_peaks,
                     process_cores=process_cores, **kwargs)
                 if save_progress:

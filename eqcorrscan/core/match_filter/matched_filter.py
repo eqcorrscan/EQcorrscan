@@ -75,8 +75,9 @@ class MatchFilterError(Exception):
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   plotvar, group_size=None, pre_processed=False, daylong=False,
                   parallel_process=True, xcorr_func=None, concurrency=None,
-                  cores=None, ignore_length=False, overlap="calculate",
-                  full_peaks=False, process_cores=None, **kwargs):
+                  cores=None, ignore_length=False, ignore_bad_data=False,
+                  overlap="calculate", full_peaks=False, process_cores=None,
+                  **kwargs):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -182,7 +183,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         streams = _group_process(
             template_group=templates, parallel=parallel_process,
             cores=process_cores, stream=stream, daylong=daylong,
-            ignore_length=ignore_length, overlap=overlap)
+            ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
+            overlap=overlap)
     else:
         Logger.warning('Not performing any processing on the continuous data.')
         streams = [stream]
@@ -230,7 +232,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
 
 
 def _group_process(template_group, parallel, cores, stream, daylong,
-                   ignore_length, overlap):
+                   ignore_length, ignore_bad_data, overlap):
     """
     Process data into chunks based on template processing length.
 
@@ -252,6 +254,11 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         are there for at least 80% of the day, if you don't want this check
         (which will raise an error if too much data are missing) then set
         ignore_length=True.  This is not recommended!
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
     :type overlap: float
     :param overlap: Number of seconds to overlap chunks by.
 
@@ -263,7 +270,8 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         'filt_order': master.filt_order,
         'highcut': master.highcut, 'lowcut': master.lowcut,
         'samp_rate': master.samp_rate, 'parallel': parallel,
-        'num_cores': cores, 'ignore_length': ignore_length}
+        'num_cores': cores, 'ignore_length': ignore_length,
+        'ignore_bad_data': ignore_bad_data}
     # Processing always needs to be run to account for gaps - pre-process will
     # check whether filtering and resampling needs to be done.
     if daylong:
