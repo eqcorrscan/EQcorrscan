@@ -47,7 +47,7 @@ class LagCalcError(Exception):
 
 def _xcorr_interp(ccc, dt):
     """
-    Intrpolate around the maximum correlation value for sub-sample precision.
+    Interpolate around the maximum correlation value for sub-sample precision.
 
     :param ccc: Cross-correlation array
     :type ccc: numpy.ndarray
@@ -75,11 +75,11 @@ def _xcorr_interp(ccc, dt):
     num_samples = last_sample - first_sample + 1
     if num_samples < 3:
         raise IndexError(
-            "Less than 3 samples selected for fit to cross correlation: "
+            "Fewer than 3 samples selected for fit to cross correlation: "
             "{0}".format(num_samples))
     if num_samples < 5:
         Logger.warning(
-            "Less than 5 samples selected for fit to cross correlation: "
+            "Fewer than 5 samples selected for fit to cross correlation: "
             "{0}".format(num_samples))
     coeffs, residual = scipy.polyfit(
         cc_t[first_sample:last_sample + 1],
