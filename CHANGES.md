@@ -50,6 +50,7 @@
   process-time will be supressed and empty traces returned.  This is useful 
   for downloading data from  datacentres via the `from_client` method when
   data quality is not known.
+* Added relative amplitude measurements to `utils.mag_calc`.
 
 ## 0.3.3
 * Make test-script more stable.

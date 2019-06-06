@@ -486,6 +486,132 @@ def _pairwise(iterable):
         return zip(a, b)
 
 
+def _snr(tr, noise_window, signal_window):
+    """
+    Compute ratio of maximum signal amplitude to rms noise amplitude.
+
+    :type tr: `obspy.core.Trace`
+    :param tr: Trace to compute signal-to-noise ratio for
+    :type noise_window: tuple of UTCDateTime
+    :param noise_window: (start, end) of window to use for noise
+    :type signal_window: tuple of UTCDateTime
+    :param signal_window: (start, end) of window to use for signal
+
+    :rtype: float
+    :return: Signal-to-noise ratio.
+    """
+    from eqcorrscan.core.bright_lights import _rms
+
+    noise_amp = _rms(
+        tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
+    signal_amp = tr.slice(
+        starttime=signal_window[0], endtime=signal_window[1]).data.max()
+    return signal_amp / noise_amp
+
+
+def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0, use_s_picks=False):
+    """
+    Compute the relative amplitudes between two streams.
+
+    Uses standard deviation of amplitudes within trace. Relative amplitudes are
+    computed as:
+
+    .. math::
+
+       \frac{std(tr2)}{std(tr1)}
+
+    where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
+    from st2.  The standard deviation of the amplitudes is computed in the
+    signal window given. If the ratio of amplitudes between the signal window
+    and the noise window is below `min_snr` then no result is returned for that
+    trace. Windows are computed relative to the first pick for that station.
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+
+    :rtype: dict
+    :return: Dictionary of relative amplitudes keyed by seed-id
+    """
+    from obspy import Stream
+
+    amplitudes = {}
+    for tr1 in st1:
+        picks1 = [p for p in event1.picks
+                  if p.waveform_id.station_code == tr1.stats.station]
+        if len(picks1) == 0:
+            Logger.info("No pick for {0}".format(tr1.id))
+            continue
+        picks1.sort(key=lambda p: p.time)
+        for _pick1 in picks1:
+            if _pick1.phase_hint == 'S' and not use_s_picks:
+                continue
+            pick1 = _pick1
+            break
+        else:
+            Logger.info("No suitable pick found for {0}".format(tr1.id))
+            continue
+        snr1 = _snr(
+            tr1, (pick1.time + noise_window[0], pick1.time + noise_window[1]),
+            (pick1.time + signal_window[0], pick1.time + signal_window[1]))
+        if snr1 <= min_snr:
+            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
+                snr1, min_snr, tr1.id))
+            continue
+        tr2 = [tr for tr in st2 if tr.id == tr1.id]
+        if len(tr2) == 0:
+            Logger.info("No matched traces for {0}".format(tr1.id))
+            continue
+        tr2 = Stream(tr2).merge()[0]
+        picks2 = [p for p in event2.picks
+                  if p.waveform_id.station_code == tr2.stats.station]
+        if len(picks2) == 0:
+            Logger.info("No pick for {0}".format(tr2.id))
+            continue
+        picks2.sort(key=lambda p: p.time)
+        for _pick2 in picks2:
+            if _pick2.phase_hint == 'S' and not use_s_picks:
+                continue
+            pick2 = _pick2
+            break
+        else:
+            Logger.info("No suitable pick found for {0}".format(tr1.id))
+            continue
+        snr2 = _snr(
+            tr2, (pick2.time + noise_window[0], pick2.time + noise_window[1]),
+            (pick2.time + signal_window[0], pick2.time + signal_window[1]))
+        if snr2 <= min_snr:
+            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
+                snr2, min_snr, tr2.id))
+            continue
+        # If we get here, actually compute the ratio in the signal windows
+        amp1 = tr1.slice(starttime=pick1.time + signal_window[0],
+                         endtime=pick1.time + signal_window[1]).data.std()
+        amp2 = tr2.slice(starttime=pick2.time + signal_window[0],
+                         endtime=pick2.time + signal_window[1]).data.std()
+        amplitudes.update({tr1.id: amp2 / amp1})
+    return amplitudes
+
+
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
