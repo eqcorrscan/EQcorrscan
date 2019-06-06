@@ -248,6 +248,93 @@ class TestRelativeAmplitudes(unittest.TestCase):
         for value in relative_amplitudes.values():
             self.assertEqual(value, scale_factor)
 
+    def test_no_suitable_picks_event1(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="S",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_suitable_picks_event2(self):
+        import copy
+
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = copy.deepcopy(event1)
+        for pick in event2.picks:
+            pick.phase_hint = "S"
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_picks_event2(self):
+        import copy
+
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = copy.deepcopy(event1)
+        event2.picks = []
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_picks_event1(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event()
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_low_snr(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1[0].data += np.random.randn(st1[0].stats.npts) * st1[0].data.max()
+        st2 = st1.copy()
+        st2[1].data += np.random.randn(st2[1].stats.npts) * st2[1].data.max()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 1)
+        for value in relative_amplitudes.values():
+            self.assertAlmostEqual(value, scale_factor)
+
     @pytest.mark.network
     def test_real_near_repeat(self):
         client = Client("GEONET")
