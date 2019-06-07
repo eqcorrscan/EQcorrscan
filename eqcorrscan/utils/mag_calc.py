@@ -35,7 +35,7 @@ from obspy import UTCDateTime
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
-from eqcorrscan.core.match_filter import MatchFilterError
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.utils.catalog_utils import _get_origin
 
 

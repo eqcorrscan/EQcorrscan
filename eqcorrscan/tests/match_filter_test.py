@@ -18,10 +18,11 @@ from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core.match_filter import (
-    MatchFilterError, normxcorr2, Detection, read_detections, get_catalog,
+    normxcorr2, Detection, read_detections, get_catalog,
     write_catalog, extract_from_stream, Tribe, Template, Party, Family,
     read_party, read_tribe, _spike_test)
-from eqcorrscan.core.match_filter.matched_filter import match_filter
+from eqcorrscan.core.match_filter.matched_filter import (
+    match_filter, MatchFilterError)
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -788,6 +789,14 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
+
+    def test_party_mag_calc_preprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.lag_calc(
+            stream=self.st, pre_processed=True, relative_magnitudes=True)
+        self.assertEqual(len(catalog), 3)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
 
     @pytest.mark.network
     def test_day_long_methods(self):

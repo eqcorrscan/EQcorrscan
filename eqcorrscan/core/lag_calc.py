@@ -333,8 +333,7 @@ def _day_loop(detection_streams, template, min_cc, detections,
                 detect_chans=detections[i].no_chans,
                 horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans))
-    temp_catalog = Catalog()
-    temp_catalog.events = [event_tup[1] for event_tup in events_list]
+    temp_catalog = Catalog([event_tup[1] for event_tup in events_list])
     return temp_catalog
 
 
@@ -617,6 +616,10 @@ def lag_calc(detections, detect_data, template_names, templates,
                 horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, parallel=parallel)
+            # Add template-name as comment to events
+            for event in template_cat:
+                event.comments.append(Comment(
+                    "Detected using template: {0}".format(template[0])))
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):

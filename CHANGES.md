@@ -53,7 +53,10 @@
 * Added relative amplitude measurements as
   `utils.mag_calc.relative_amplitude`.
 * Added relative magnitude calculation using relative amplitudes weighted by
-  correlations to `utils.mag_calc.relativ_magnitude`.
+  correlations to `utils.mag_calc.relative_magnitude`.
+* Added `relative_magnitudes` argument to 
+  `eqcorrscan.core.match_filter.party.Party.lag_calc` to provide an in-flow
+  way to compute relative magnitudes for detected events.
 
 ## 0.3.3
 * Make test-script more stable.
