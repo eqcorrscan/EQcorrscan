@@ -14,7 +14,8 @@ from eqcorrscan.core.match_filter.template import (  # NOQA
     Template, read_template)  # NOQA
 from eqcorrscan.core.match_filter.tribe import Tribe, read_tribe  # NOQA
 from eqcorrscan.core.match_filter.detection import (  # NOQA
-    Detection, read_detections, get_catalog, write_catalog)  # NOQA
+    Detection, read_detections, get_catalog, write_catalog,  #NOQA
+    write_detections)  # NOQA
 from eqcorrscan.core.match_filter.matched_filter import (  # NOQA
     MatchFilterError, match_filter)  # NOQA
 from eqcorrscan.core.match_filter.helpers import (  # NOQA
@@ -28,7 +29,8 @@ __all__ = [
     'Party', 'read_party', 'Family', 'Template', 'read_template', 'Tribe',
     'read_tribe', 'Detection', 'read_detections', 'get_catalog',
     'write_catalog', 'MatchFilterError',
-    'normxcorr2', 'extract_from_stream', '_spike_test', 'temporary_directory']
+    'normxcorr2', 'extract_from_stream', '_spike_test', 'temporary_directory',
+    'write_detections']
 
 
 if __name__ == '__main__':

@@ -34,6 +34,7 @@ from eqcorrscan.core.match_filter.matched_filter import (
     MatchFilterError, _group_process)
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.core.match_filter.family import Family
+from eqcorrscan.core.match_filter.detection import write_detections
 from eqcorrscan.core.match_filter.helpers import (
     _total_microsec, temporary_directory, _safemembers, _templates_match)
 
@@ -635,8 +636,8 @@ class Party(object):
                 raise MatchFilterError(
                     'Will not overwrite existing file: %s' % filename)
             for family in self.families:
-                for detection in family.detections:
-                    detection.write(fname=filename, append=True)
+                write_detections(fname=filename, detections=family.detections,
+                                 mode="a")
         elif format.lower() == 'tar':
             if os.path.exists(filename):
                 raise IOError('Will not overwrite existing file: %s'
