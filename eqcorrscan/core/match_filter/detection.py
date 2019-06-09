@@ -202,7 +202,8 @@ class Detection(object):
             _f.write(header + '\n')  # Write a header for the file
             _f.write(print_str)
 
-    def _calculate_event(self, template=None, template_st=None):
+    def _calculate_event(self, template=None, template_st=None,
+                         estimate_origin=True):
         """
         Calculate an event for this detection using a given template.
 
@@ -212,6 +213,10 @@ class Detection(object):
         :param template_st:
             Template stream, used to calculate pick times, not needed if
             template is given.
+        :type estimate_origin: bool
+        :param estimate_origin:
+            Whether to include an estimate of the origin based on the template
+            origin.
 
         .. rubric:: Note
             Works in place on Detection - over-writes previous events.
@@ -230,6 +235,8 @@ class Detection(object):
             prefix='smi:local'))
         ev.creation_info = CreationInfo(
             author='EQcorrscan', creation_time=UTCDateTime())
+        ev.comments.append(
+            Comment(test="Template: {0}".format(self.template_name)))
         ev.comments.append(
             Comment(text='threshold={0}'.format(self.threshold)))
         ev.comments.append(
@@ -259,6 +266,40 @@ class Detection(object):
                         station_code=tr.stats.station,
                         channel_code=tr.stats.channel,
                         location_code=tr.stats.location)))
+        if estimate_origin:
+            try:
+                template_origin = (template.event.preferred_origin() or
+                                   template.event.origins[0])
+            except IndexError:
+                template_origin = None
+            if template_origin:
+                for pick in ev.picks:
+                    comparison_pick = [
+                        p for p in template.event.picks
+                        if p.waveform_stream_id.get_seed_string() ==
+                            pick.waveform_stream_id.get_seed_string()]
+                    comparison_pick = [p for p in comparison_pick
+                                       if p.phase_hint == pick.phase_hint]
+                    if len(comparison_pick) > 0:
+                        break
+                else:
+                    Logger.error("Could not compute relative origin: no picks")
+                    self.event = ev
+                    return
+                origin_time = pick.time - (
+                        comparison_pick[0].time - template_origin.time)
+                # Calculate based on difference between pick and origin?
+                _origin = template_origin.copy()
+                _origin.time = origin_time
+                _origin.evaluation_mode = "automatic"
+                _origin.evaluation_status = "preliminary"
+                _origin.creation_info = CreationInfo(
+                    author='EQcorrscan', creation_time=UTCDateTime())
+                _origin.comments.append(Comment(
+                    text="Origin automatically calculated based on template"
+                         "origin: use with caution."))
+                _origin.arrivals = []
+                _origin.composite_times = []
         self.event = ev
         return
 
