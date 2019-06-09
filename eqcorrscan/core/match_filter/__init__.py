@@ -14,7 +14,7 @@ from eqcorrscan.core.match_filter.template import (  # NOQA
     Template, read_template)  # NOQA
 from eqcorrscan.core.match_filter.tribe import Tribe, read_tribe  # NOQA
 from eqcorrscan.core.match_filter.detection import (  # NOQA
-    Detection, read_detections, get_catalog, write_catalog,  #NOQA
+    Detection, read_detections, get_catalog, write_catalog,  # NOQA
     write_detections)  # NOQA
 from eqcorrscan.core.match_filter.matched_filter import (  # NOQA
     MatchFilterError, match_filter)  # NOQA
