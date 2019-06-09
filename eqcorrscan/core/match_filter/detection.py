@@ -201,7 +201,7 @@ class Detection(object):
             'Channel list', 'Detection value', 'Threshold', 'Threshold type',
             'Input threshold', 'Detection type'])
         with open(fname, mode) as _f:
-            if not append:
+            if mode == "w":
                 _f.write(header + '\n')  # Write a header for the file
             _f.write(self._print_str() + '\n')
 
@@ -312,8 +312,6 @@ def read_detections(fname, encoding="UTF8"):
         lines = _f.read().decode(encoding).splitlines()
     detections = []
     for index, line in enumerate(lines):
-        if index == 0:
-            continue  # Skip header
         if line.rstrip().split('; ')[0] == 'Template name':
             continue  # Skip any repeated headers
         detection = line.rstrip().split('; ')

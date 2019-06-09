@@ -743,7 +743,8 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 overlap='calculate', process_cores=None):
+                 overlap='calculate', process_cores=None,
+                 ignore_bad_data=False):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -793,6 +794,11 @@ class Party(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -873,7 +879,8 @@ class Party(object):
                 processed_streams = _group_process(
                     template_group=group, cores=process_cores,
                     parallel=parallel, stream=stream.copy(), daylong=False,
-                    ignore_length=False, overlap=lap)
+                    ignore_length=False, overlap=lap,
+                    ignore_bad_data=ignore_bad_data)
                 processed_stream = Stream()
                 for p in processed_streams:
                     processed_stream += p
