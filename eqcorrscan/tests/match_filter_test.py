@@ -1135,6 +1135,15 @@ class TestMatchObjectLight(unittest.TestCase):
             if os.path.isfile('test_party_out.tgz'):
                 os.remove('test_party_out.tgz')
 
+    def test_party_write_csv(self):
+        """ There was an issue (#298) where the header was repeated."""
+        party = Party().read()
+        party.write("test_party.csv", format="csv")
+        with open("test_party.csv", "rb") as f:
+            lines = f.read().decode().split("\n")
+        self.assertEqual(len(lines), 6)
+        os.remove("test_party.csv")
+
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_out_no_cat.tgz'):
