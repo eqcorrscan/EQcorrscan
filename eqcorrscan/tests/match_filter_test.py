@@ -1161,7 +1161,8 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(
                 filename='test_party_out_no_cat',
                 write_detection_catalog=False)
-            party_back = read_party(fname='test_party_out_no_cat.tgz')
+            party_back = read_party(fname='test_party_out_no_cat.tgz',
+                                    estimate_origin=False)
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
             if os.path.isfile('test_party_out_no_cat.tgz'):
@@ -1175,7 +1176,7 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(filename='test_party_out_no_cat2')
             party_back = read_party(
                 fname='test_party_out_no_cat2.tgz',
-                read_detection_catalog=False)
+                read_detection_catalog=False, estimate_origin=False)
             # creation times will differ - hack around this to make comparison
             # easier
             for family in self.party:
