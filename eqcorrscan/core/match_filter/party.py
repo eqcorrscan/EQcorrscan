@@ -653,7 +653,7 @@ class Party(object):
                         all_cat += family.catalog
                     if not len(all_cat) == 0:
                         all_cat.write(
-                            join(temp_dir, 'catalog{0}'.format(
+                            join(temp_dir, 'catalog.{0}'.format(
                                 CAT_EXT_MAP[catalog_format])),
                             format=catalog_format)
                 for i, family in enumerate(self.families):
@@ -669,7 +669,8 @@ class Party(object):
             self.get_catalog().write(filename=filename, format=format)
         return self
 
-    def read(self, filename=None, read_detection_catalog=True):
+    def read(self, filename=None, read_detection_catalog=True,
+             estimate_origin=True):
         """
         Read a Party from a file.
 
@@ -681,6 +682,11 @@ class Party(object):
         :param read_detection_catalog:
             Whether to read the detection catalog or not, if False, catalog
             will be regenerated - for large catalogs this can be faster.
+        :type estimate_origins: bool
+        :param estimate_origins:
+            If True and no catalog is found, or read_detection_catalog is False
+            then new events with origins estimated from the template origin
+            time will be created.
 
         .. rubric:: Example
 
@@ -733,7 +739,8 @@ class Party(object):
                         f.template.name == family.template.name][0]
                     new_family = False
                 family.detections = _read_family(
-                    fname=family_file, all_cat=all_cat, template=template[0])
+                    fname=family_file, all_cat=all_cat, template=template[0],
+                    estimate_origin=estimate_origin)
                 if new_family:
                     families.append(family)
             shutil.rmtree(temp_dir)
@@ -954,7 +961,7 @@ class Party(object):
         return self
 
 
-def read_party(fname=None, read_detection_catalog=True):
+def read_party(fname=None, read_detection_catalog=True, *args, **kwargs):
     """
     Read detections and metadata from a tar archive.
 
@@ -970,7 +977,8 @@ def read_party(fname=None, read_detection_catalog=True):
     :return: :class:`eqcorrscan.core.match_filter.Party`
     """
     party = Party()
-    party.read(filename=fname, read_detection_catalog=read_detection_catalog)
+    party.read(filename=fname, read_detection_catalog=read_detection_catalog,
+               *args, **kwargs)
     return party
 
 

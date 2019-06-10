@@ -205,7 +205,8 @@ class Detection(object):
                 _f.write(header + '\n')  # Write a header for the file
             _f.write(self._print_str() + '\n')
 
-    def _calculate_event(self, template=None, template_st=None):
+    def _calculate_event(self, template=None, template_st=None,
+                         estimate_origin=True):
         """
         Calculate an event for this detection using a given template.
 
@@ -215,10 +216,14 @@ class Detection(object):
         :param template_st:
             Template stream, used to calculate pick times, not needed if
             template is given.
+        :type estimate_origin: bool
+        :param estimate_origin:
+            Whether to include an estimate of the origin based on the template
+            origin.
 
         .. rubric:: Note
             Works in place on Detection - over-writes previous events.
-            Does not correct for pre-pick.
+            Corrects for prepick if template given.
         """
         if template is not None and template.name != self.template_name:
             Logger.info("Template names do not match: {0}: {1}".format(
@@ -234,6 +239,8 @@ class Detection(object):
         ev.creation_info = CreationInfo(
             author='EQcorrscan', creation_time=UTCDateTime())
         ev.comments.append(
+            Comment(test="Template: {0}".format(self.template_name)))
+        ev.comments.append(
             Comment(text='threshold={0}'.format(self.threshold)))
         ev.comments.append(
             Comment(text='detect_val={0}'.format(self.detect_val)))
@@ -243,6 +250,9 @@ class Detection(object):
                     ' '.join([str(pair) for pair in self.chans]))))
         if template is not None:
             template_st = template.st
+            template_prepick = template.prepick
+        else:
+            template_prepick = 0
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
@@ -256,12 +266,54 @@ class Detection(object):
             else:
                 pick_time = self.detect_time + (
                         tr.stats.starttime - min_template_tm)
+                pick_time += template_prepick
                 ev.picks.append(Pick(
                     time=pick_time, waveform_id=WaveformStreamID(
                         network_code=tr.stats.network,
                         station_code=tr.stats.station,
                         channel_code=tr.stats.channel,
                         location_code=tr.stats.location)))
+        if estimate_origin and template is not None:
+            try:
+                template_origin = (template.event.preferred_origin() or
+                                   template.event.origins[0])
+            except IndexError:
+                template_origin = None
+            if template_origin:
+                for pick in ev.picks:
+                    comparison_pick = [
+                        p for p in template.event.picks
+                        if p.waveform_id.get_seed_string() ==
+                        pick.waveform_id.get_seed_string()]
+                    comparison_pick = [p for p in comparison_pick
+                                       if p.phase_hint == pick.phase_hint]
+                    if len(comparison_pick) > 0:
+                        break
+                else:
+                    Logger.error("Could not compute relative origin: no picks")
+                    self.event = ev
+                    return
+                origin_time = pick.time - (
+                        comparison_pick[0].time - template_origin.time)
+                # Calculate based on difference between pick and origin?
+                _origin = template_origin.copy()
+                _origin.resource_id = ResourceIdentifier(
+                    id="EQcorrscan/{0}_{1}".format(
+                        self.template_name, det_time),
+                    prefix="smi:local")
+                _origin.quality = None
+                _origin.origin_uncertainty = None
+                _origin.time = origin_time
+                _origin.evaluation_mode = "automatic"
+                _origin.evaluation_status = "preliminary"
+                _origin.creation_info = CreationInfo(
+                    author='EQcorrscan', creation_time=UTCDateTime())
+                _origin.comments.append(Comment(
+                    text="Origin automatically calculated based on template"
+                         "origin: use with caution."))
+                _origin.arrivals = []
+                _origin.composite_times = []
+                ev.origins = [_origin]
         self.event = ev
         return
 
