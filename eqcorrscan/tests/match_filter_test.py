@@ -983,6 +983,11 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertAlmostEqual(
             test_detection_altered.event.origins[0].time,
             template.event.origins[0].time, 1)
+        for pick in test_detection_altered.event.picks:
+            matched_pick = [p for p in template.event.picks
+                            if p.waveform_id == pick.waveform_id and
+                            p.phase_hint == pick.phase_hint]
+            self.assertEqual(len(matched_pick), 1)
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""

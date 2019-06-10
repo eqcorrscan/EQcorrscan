@@ -276,7 +276,7 @@ class Detection(object):
                         channel_code=tr.stats.channel,
                         location_code=tr.stats.location))
                 template_pick = [p for p in template_picks
-                                 if p.waveform_id.get_seed_string ==
+                                 if p.waveform_id.get_seed_string() ==
                                  new_pick.waveform_id.get_seed_string()]
                 if len(template_pick) == 0:
                     new_pick.phase_hint = None

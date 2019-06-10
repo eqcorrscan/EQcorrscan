@@ -613,7 +613,7 @@ def _get_pick_for_station(event, station, use_s_picks):
         return None
     picks.sort(key=lambda p: p.time)
     for pick in picks:
-        if pick.phase_hint == 'S' and not use_s_picks:
+        if pick.phase_hint[0].upper() == 'S' and not use_s_picks:
             continue
         return pick
     Logger.info("No suitable pick found for {0}".format(station))
