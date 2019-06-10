@@ -960,7 +960,8 @@ class Party(object):
                             station_magnitude_id=sta_mag.resource_id,
                             weight=1.))
                         av_mag += sta_mag.mag
-                    av_mag /= len(delta_mag)
+                    if len(delta_mag) > 0:
+                        av_mag /= len(delta_mag)
                     # Compute average magnitude
                     event.magnitudes.append(Magnitude(
                         mag=av_mag, magnitude_type=t_mag.magnitude_type,
