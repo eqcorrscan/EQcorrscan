@@ -263,7 +263,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), len(st1))
         for value in relative_amplitudes.values():
-            self.assertEqual(value, scale_factor)
+            self.assertAlmostEqual(value, scale_factor)
 
     def test_no_suitable_picks_event1(self):
         scale_factor = 0.2
