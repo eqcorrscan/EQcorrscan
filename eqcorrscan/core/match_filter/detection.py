@@ -165,6 +165,12 @@ class Detection(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def _print_str(self):
+        return "{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}".format(
+            self.template_name, self.detect_time, self.no_chans,
+            self.chans, self.detect_val, self.threshold,
+            self.threshold_type, self.threshold_input, self.typeofdet)
+
     def copy(self):
         """
         Returns a copy of the detection.
@@ -194,13 +200,10 @@ class Detection(object):
             'Template name', 'Detection time (UTC)', 'Number of channels',
             'Channel list', 'Detection value', 'Threshold', 'Threshold type',
             'Input threshold', 'Detection type'])
-        print_str = "{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}\n".format(
-            self.template_name, self.detect_time, self.no_chans,
-            self.chans, self.detect_val, self.threshold,
-            self.threshold_type, self.threshold_input, self.typeofdet)
         with open(fname, mode) as _f:
-            _f.write(header + '\n')  # Write a header for the file
-            _f.write(print_str)
+            if mode == "w":
+                _f.write(header + '\n')  # Write a header for the file
+            _f.write(self._print_str() + '\n')
 
     def _calculate_event(self, template=None, template_st=None):
         """
@@ -263,6 +266,31 @@ class Detection(object):
         return
 
 
+def write_detections(detections, fname, mode='a'):
+    """
+    Write a list of detections to a file.
+
+    :type detections: List of Detection
+    :param detections: List of detection objects to write
+    :type fname: str
+    :param fname: Filename to write to
+    :type mode: str
+    :param mode: 'a' for append, or 'w' for write (will overwrite old files)
+    """
+    assert mode in {"a", "w"}
+    lines = []
+    if mode == "w" or not os.path.isfile(fname):
+        lines.append('; '.join([
+            'Template name', 'Detection time (UTC)', 'Number of channels',
+            'Channel list', 'Detection value', 'Threshold', 'Threshold type',
+            'Input threshold', 'Detection type']))
+    lines.extend([d._print_str() for d in detections])
+    lines = "\n".join(lines)
+    lines += "\n"
+    with open(fname, mode=mode) as f:
+        f.write(lines)
+
+
 def read_detections(fname, encoding="UTF8"):
     """
     Read detections from a file to a list of Detection objects.
@@ -284,8 +312,6 @@ def read_detections(fname, encoding="UTF8"):
         lines = _f.read().decode(encoding).splitlines()
     detections = []
     for index, line in enumerate(lines):
-        if index == 0:
-            continue  # Skip header
         if line.rstrip().split('; ')[0] == 'Template name':
             continue  # Skip any repeated headers
         detection = line.rstrip().split('; ')
