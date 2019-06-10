@@ -56,6 +56,9 @@
 * Picks in detection.event are now corrected for prepick *if* the template is
   given. This is now standard in all Tribe, Party and Family methods. Picks will
   not be corrected for prepick in match_filter.
+* Fix #298 where the header was repeated in detection csv files. Also added
+  a `write_detections` function to `eqcorrscan.core.match_filter.detection`
+  to streamline writing detections.
 
 ## 0.3.3
 * Make test-script more stable.
