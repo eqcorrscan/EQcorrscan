@@ -220,7 +220,7 @@ class Detection(object):
 
         .. rubric:: Note
             Works in place on Detection - over-writes previous events.
-            Does not correct for pre-pick.
+            Corrects for prepick if template given.
         """
         if template is not None and template.name != self.template_name:
             Logger.info("Template names do not match: {0}: {1}".format(
@@ -247,6 +247,9 @@ class Detection(object):
                     ' '.join([str(pair) for pair in self.chans]))))
         if template is not None:
             template_st = template.st
+            template_prepick = template.prepick
+        else:
+            template_prepick = 0
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
@@ -260,13 +263,14 @@ class Detection(object):
             else:
                 pick_time = self.detect_time + (
                         tr.stats.starttime - min_template_tm)
+                pick_time += template_prepick
                 ev.picks.append(Pick(
                     time=pick_time, waveform_id=WaveformStreamID(
                         network_code=tr.stats.network,
                         station_code=tr.stats.station,
                         channel_code=tr.stats.channel,
                         location_code=tr.stats.location)))
-        if estimate_origin:
+        if estimate_origin and template is not None:
             try:
                 template_origin = (template.event.preferred_origin() or
                                    template.event.origins[0])
@@ -276,8 +280,8 @@ class Detection(object):
                 for pick in ev.picks:
                     comparison_pick = [
                         p for p in template.event.picks
-                        if p.waveform_stream_id.get_seed_string() ==
-                            pick.waveform_stream_id.get_seed_string()]
+                        if p.waveform_id.get_seed_string() ==
+                           pick.waveform_id.get_seed_string()]
                     comparison_pick = [p for p in comparison_pick
                                        if p.phase_hint == pick.phase_hint]
                     if len(comparison_pick) > 0:
@@ -290,6 +294,12 @@ class Detection(object):
                         comparison_pick[0].time - template_origin.time)
                 # Calculate based on difference between pick and origin?
                 _origin = template_origin.copy()
+                _origin.resource_id = ResourceIdentifier(
+                    id="EQcorrscan/{0}_{1}".format(
+                        self.template_name, det_time),
+                    prefix="smi:local")
+                _origin.quality = None
+                _origin.origin_uncertainty = None
                 _origin.time = origin_time
                 _origin.evaluation_mode = "automatic"
                 _origin.evaluation_status = "preliminary"
@@ -300,6 +310,7 @@ class Detection(object):
                          "origin: use with caution."))
                 _origin.arrivals = []
                 _origin.composite_times = []
+                ev.origins = [_origin]
         self.event = ev
         return
 

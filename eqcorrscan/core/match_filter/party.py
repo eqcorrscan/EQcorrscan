@@ -652,7 +652,7 @@ class Party(object):
                         all_cat += family.catalog
                     if not len(all_cat) == 0:
                         all_cat.write(
-                            join(temp_dir, 'catalog{0}'.format(
+                            join(temp_dir, 'catalog.{0}'.format(
                                 CAT_EXT_MAP[catalog_format])),
                             format=catalog_format)
                 for i, family in enumerate(self.families):

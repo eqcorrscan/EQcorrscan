@@ -50,6 +50,12 @@
   process-time will be supressed and empty traces returned.  This is useful 
   for downloading data from  datacentres via the `from_client` method when
   data quality is not known.
+* Events constructed from detections now include estimated origins alongside
+  the picks. These origins are time-shifted versions of the template origin and
+  should be used with caution. They are corrected for prepick.
+* Picks in detection.event are now corrected for prepick *if* the template is
+  given. This is now standard in all Tribe, Party and Family methods. Picks will
+  not be corrected for prepick in match_filter.
 
 ## 0.3.3
 * Make test-script more stable.
