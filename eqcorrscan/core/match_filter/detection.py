@@ -251,8 +251,10 @@ class Detection(object):
         if template is not None:
             template_st = template.st
             template_prepick = template.prepick
+            template_picks = template.event.picks
         else:
             template_prepick = 0
+            template_picks = []
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
@@ -267,12 +269,30 @@ class Detection(object):
                 pick_time = self.detect_time + (
                         tr.stats.starttime - min_template_tm)
                 pick_time += template_prepick
-                ev.picks.append(Pick(
+                new_pick = Pick(
                     time=pick_time, waveform_id=WaveformStreamID(
                         network_code=tr.stats.network,
                         station_code=tr.stats.station,
                         channel_code=tr.stats.channel,
-                        location_code=tr.stats.location)))
+                        location_code=tr.stats.location))
+                template_pick = [p for p in template_picks
+                                 if p.waveform_id.get_seed_string ==
+                                 new_pick.waveform_id.get_seed_string()]
+                if len(template_pick) == 0:
+                    new_pick.phase_hint = None
+                elif len(template_pick) == 1:
+                    new_pick.phase_hint = template_pick[0].phase_hint
+                else:
+                    # Multiple picks for this trace in template
+                    similar_traces = template_st.select(id=tr.id)
+                    similar_traces.sort()
+                    _index = similar_traces.traces.index(tr)
+                    try:
+                        new_pick.phase_hint = sorted(
+                            template_pick, key=lambda p: p.time)[_index]
+                    except IndexError:
+                        Logger.error("No pick for trace")
+                ev.picks.append(new_pick)
         if estimate_origin and template is not None:
             try:
                 template_origin = (template.event.preferred_origin() or
