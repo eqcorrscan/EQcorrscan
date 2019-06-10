@@ -616,7 +616,8 @@ def _write_family(family, filename):
     return
 
 
-def _read_family(fname, all_cat, template, encoding="UTF8"):
+def _read_family(fname, all_cat, template, encoding="UTF8",
+                 estimate_origin=True):
     """
     Internal function to read csv family files.
 
@@ -656,7 +657,8 @@ def _read_family(fname, all_cat, template, encoding="UTF8"):
                 det_dict.update({key: float(value)})
         detection = Detection(**det_dict)
         if gen_event:
-            detection._calculate_event(template=template)
+            detection._calculate_event(
+                template=template, estimate_origin=estimate_origin)
         detections.append(detection)
     return detections
 

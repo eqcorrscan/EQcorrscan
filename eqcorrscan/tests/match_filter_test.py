@@ -967,13 +967,22 @@ class TestMatchObjectLight(unittest.TestCase):
         test_detection_altered = test_detection.copy()
         # Make sure they are equal going into this.
         self.assertEqual(test_detection, test_detection_altered)
-        test_detection_altered._calculate_event(template=template)
+        test_detection_altered._calculate_event(
+            template=template, estimate_origin=False)
         self.assertEqual(test_detection, test_detection_altered)
-        test_detection_altered._calculate_event(template_st=template.st)
+        test_detection_altered._calculate_event(
+            template_st=template.st, estimate_origin=False)
+        for p in test_detection_altered.event.picks:
+            p.time += template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         # Check that detection is left alone if wrong template given
         test_detection_altered._calculate_event(
             template=self.party[1].template)
+        # Check that the origin gets assigned with a useful time
+        test_detection_altered._calculate_event(template=template)
+        self.assertAlmostEqual(
+            test_detection_altered.event.origins[0].time,
+            template.event.origins[0].time, 1)
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
@@ -1161,7 +1170,8 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(
                 filename='test_party_out_no_cat',
                 write_detection_catalog=False)
-            party_back = read_party(fname='test_party_out_no_cat.tgz')
+            party_back = read_party(fname='test_party_out_no_cat.tgz',
+                                    estimate_origin=False)
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
             if os.path.isfile('test_party_out_no_cat.tgz'):
@@ -1175,7 +1185,7 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(filename='test_party_out_no_cat2')
             party_back = read_party(
                 fname='test_party_out_no_cat2.tgz',
-                read_detection_catalog=False)
+                read_detection_catalog=False, estimate_origin=False)
             # creation times will differ - hack around this to make comparison
             # easier
             for family in self.party:
