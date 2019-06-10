@@ -924,7 +924,7 @@ class Party(object):
             if relative_magnitudes:
                 for event in temp_cat:
                     det = [d for d in det_group
-                        if str(d.id) == str(event.resource_id)][0]
+                           if str(d.id) == str(event.resource_id)][0]
                     corr_dict = {
                         p.waveform_id.get_seed_string():
                             float(p.comments[0].text.split("=")[-1])
