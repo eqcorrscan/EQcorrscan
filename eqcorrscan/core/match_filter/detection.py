@@ -284,7 +284,7 @@ class Detection(object):
                     comparison_pick = [
                         p for p in template.event.picks
                         if p.waveform_id.get_seed_string() ==
-                           pick.waveform_id.get_seed_string()]
+                        pick.waveform_id.get_seed_string()]
                     comparison_pick = [p for p in comparison_pick
                                        if p.phase_hint == pick.phase_hint]
                     if len(comparison_pick) > 0:
