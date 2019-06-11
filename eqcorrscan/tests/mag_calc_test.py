@@ -224,14 +224,19 @@ class TestRelativeAmplitudes(unittest.TestCase):
         client = Client("GEONET")
         cls.event1 = client.get_events(eventid="2016p912302")[0]
         cls.event2 = client.get_events(eventid="3470170")[0]
+        shared_chans = {p1.waveform_id.get_seed_string()
+                        for p1 in cls.event1.picks}.intersection(
+            {p2.waveform_id.get_seed_string() for p2 in cls.event2.picks})
         bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
                  p.waveform_id.location_code, p.waveform_id.channel_code,
-                 p.time - 20, p.time + 60) for p in cls.event1.picks]
+                 p.time - 20, p.time + 60) for p in cls.event1.picks
+                if p.waveform_id.get_seed_string() in shared_chans]
         st1 = client.get_waveforms_bulk(bulk)
         cls.st1 = st1.detrend().filter("bandpass", freqmin=2, freqmax=20)
         bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
                  p.waveform_id.location_code, p.waveform_id.channel_code,
-                 p.time - 20, p.time + 60) for p in cls.event2.picks]
+                 p.time - 20, p.time + 60) for p in cls.event2.picks
+                if p.waveform_id.get_seed_string() in shared_chans]
         st2 = client.get_waveforms_bulk(bulk)
         cls.st2 = st2.detrend().filter("bandpass", freqmin=2, freqmax=20)
 

@@ -944,7 +944,7 @@ class Party(object):
                     delta_mag = relative_magnitude(
                         st1=template.st, st2=processed_stream,
                         event1=template.event, event2=event,
-                        correlations=corr_dict, **kwargs)
+                        correlations=corr_dict, min_cc=min_cc, **kwargs)
                     # Add station magnitudes
                     sta_contrib = []
                     av_mag = 0.0
