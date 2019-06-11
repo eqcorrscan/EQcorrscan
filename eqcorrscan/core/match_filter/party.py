@@ -935,7 +935,7 @@ class Party(object):
                     try:
                         t_mag = (
                             template.event.preferred_magnitude() or
-                            template.event.megnitudes[0])
+                            template.event.magnitudes[0])
                     except IndexError:
                         Logger.info(
                             "No template magnitude, relative magnitudes cannot"
