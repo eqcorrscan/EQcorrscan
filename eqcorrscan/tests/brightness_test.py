@@ -1,11 +1,6 @@
 """
 A series of test functions for the core.bright_lights module in EQcorrscan.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import numpy as np
 import os

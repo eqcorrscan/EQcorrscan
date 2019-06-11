@@ -8,8 +8,6 @@ addons:
 matrix:
   include:
     - os: linux
-      env: PYTHON_VERSION=2.7 MKL=0 PYTEST=1
-    - os: linux
       env: PYTHON_VERSION=3.6 MKL=0 PYTEST=1
     - os: linux
       env: PYTHON_VERSION=3.7 MKL=1 PYTEST=1

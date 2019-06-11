@@ -1,12 +1,6 @@
 """
 Functions to test the synth_seis generation.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import numpy as np
 from obspy import Stream

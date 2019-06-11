@@ -2,11 +2,6 @@
 Functions for testing the tutorials - written as a somewhat monolithic test
 because we need certain behaviour.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import os
 import pytest

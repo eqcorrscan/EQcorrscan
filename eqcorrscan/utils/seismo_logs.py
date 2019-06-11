@@ -15,11 +15,6 @@ to flag data that has more than a threshold timing issue.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import datetime as dt
 import re
 import os

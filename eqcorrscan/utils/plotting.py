@@ -8,11 +8,6 @@ Utility code for most of the plots used as part of the EQcorrscan package.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
 import logging
 import datetime as dt
@@ -56,11 +51,11 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     return_fig = kwargs.get("return_figure") or False
     if title:
         fig.suptitle(title)
-    if show:
-        fig.show()
     if save:
         fig.savefig(savefile)
-        print("Saved figure to {0}".format(savefile))
+        Logger.info("Saved figure to {0}".format(savefile))
+    if show:
+        plt.show()
     if return_fig:
         return fig
     fig.clf()
