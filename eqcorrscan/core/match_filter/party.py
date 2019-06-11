@@ -941,10 +941,16 @@ class Party(object):
                             "No template magnitude, relative magnitudes cannot"
                             " be computed for {0}".format(event.resource_id))
                         continue
+                    # Set the signal-window to be the template length
+                    signal_window = (
+                        -template.prepick,
+                        min([tr.stats.npts * tr.stats.delta
+                             for tr in template.st]) - template.prepick)
                     delta_mag = relative_magnitude(
                         st1=template.st, st2=processed_stream,
                         event1=template.event, event2=event,
-                        correlations=corr_dict, min_cc=min_cc, **kwargs)
+                        correlations=corr_dict, min_cc=min_cc,
+                        signal_window=signal_window, **kwargs)
                     # Add station magnitudes
                     sta_contrib = []
                     av_mag = 0.0

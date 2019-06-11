@@ -790,13 +790,43 @@ class TestMatchObjectHeavy(unittest.TestCase):
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
-    def test_party_mag_calc_preprocessed(self):
+    def test_party_mag_calc_unpreprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.lag_calc(
-            stream=self.st, pre_processed=True, relative_magnitudes=True)
+            stream=self.unproc_st, pre_processed=False,
+            relative_magnitudes=True, min_snr=0)
         self.assertEqual(len(catalog), 3)
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Detected using template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
+
+    def test_party_mag_calc_preprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.lag_calc(
+            stream=self.st, pre_processed=True, relative_magnitudes=True,
+            min_snr=0)
+        self.assertEqual(len(catalog), 3)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Detected using template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
 
     @pytest.mark.network
     def test_day_long_methods(self):

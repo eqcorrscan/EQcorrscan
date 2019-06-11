@@ -589,6 +589,8 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
                          endtime=pick1.time + signal_window[1]).data.std()
         amp2 = tr2.slice(starttime=pick2.time + signal_window[0],
                          endtime=pick2.time + signal_window[1]).data.std()
+        Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
+            tr1.id, amp2/amp1))
         amplitudes.update({tr1.id: amp2 / amp1})
     return amplitudes
 
@@ -716,6 +718,8 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
             continue
         # Weight and add to relative_magnitudes
         rel_mag = math.log10(amplitude_ratio) * cc
+        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
+            tr1.id, rel_mag))
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
         return relative_magnitudes, correlations

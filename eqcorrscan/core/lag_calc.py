@@ -615,7 +615,7 @@ def lag_calc(detections, detect_data, template_names, templates,
             # Add template-name as comment to events
             for event in template_cat:
                 event.comments.append(Comment(
-                    "Detected using template: {0}".format(template[0])))
+                    text="Detected using template: {0}".format(template[0])))
             initial_cat += template_cat
             if plot:
                 for i, event in enumerate(template_cat):
