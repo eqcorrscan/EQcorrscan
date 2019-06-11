@@ -155,11 +155,10 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
     checksum = 0
     used_chans = 0
     for tr in template:
-        temp_net = tr.stats.network
         temp_sta = tr.stats.station
         temp_chan = tr.stats.channel
-        Logger.debug('Working on: %s.%s.%s' % (temp_net, temp_sta, temp_chan))
-        image = detection.select(station=temp_sta, channel=temp_chan)
+        Logger.debug('Working on: {0}'.format(tr.id))
+        image = detection.select(id=tr.id)
         if len(image) == 0 or sum(image[0].data) == 0:
             Logger.error('No match in image.')
             continue
@@ -216,8 +215,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
         # Only take the S-pick with the best correlation
         elif temp_chan[-1] in horizontal_chans:
             phase = 'S'
-            Logger.debug('Making S-pick on: {0}.{1}.{2}'.format(
-                temp_net, temp_sta, temp_chan))
+            Logger.debug('Making S-pick on: {0}'.format(tr.id))
             if temp_sta not in s_stachans.keys():
                 s_stachans[temp_sta] = ((temp_chan, np.amax(ccc),
                                          picktime))
@@ -228,9 +226,7 @@ def _channel_loop(detection, template, min_cc, detection_id, interpolate, i,
                     continue
         else:
             phase = None
-        _waveform_id = WaveformStreamID(
-            network_code=temp_net, station_code=temp_sta,
-            channel_code=temp_chan)
+        _waveform_id = WaveformStreamID(seed_string=tr.id)
         event.picks.append(Pick(
             waveform_id=_waveform_id, time=picktime,
             method_id=ResourceIdentifier('EQcorrscan'), phase_hint=phase,

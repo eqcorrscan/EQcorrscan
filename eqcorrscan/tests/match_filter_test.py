@@ -801,7 +801,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
     @pytest.mark.network
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
-        client = Client('NCEDC')
+        client = Client('NCEDC', timeout=300)
         t1 = UTCDateTime(2004, 9, 28)
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
                      for stachan in self.template_stachans]
