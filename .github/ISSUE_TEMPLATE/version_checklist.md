@@ -1,6 +1,9 @@
 ---
 name: Version Checklist
 about: Track standard to-do for a release
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
