@@ -520,7 +520,7 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
 
     .. math::
 
-       \frac{std(tr2)}{std(tr1)}
+       \\frac{std(tr2)}{std(tr1)}
 
     where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
     from st2.  The standard deviation of the amplitudes is computed in the
@@ -630,15 +630,15 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     """
     Compute the relative magnitudes between two events.
 
-    See :func: relative_amplitude for information on how relative amplitudes
-    are calculated. To compute relative magnitudes from relative amplitudes
-    this function weights the amplitude ratios by the cross-correlation of the
-    two events. The relation used is similar to Schaff and Richards (2014)
-    and is:
+    See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
+    on how relative amplitudes are calculated. To compute relative magnitudes
+    from relative amplitudes this function weights the amplitude ratios by
+    the cross-correlation of the two events. The relation used is similar to
+    Schaff and Richards (2014) and is:
 
     .. math::
 
-        \delta m = \log{\frac{std(tr2)}{std(tr1)}} x CC
+        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
 
     :type st1: `obspy.core.stream.Stream`
     :param st1: Stream for event1
