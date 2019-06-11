@@ -665,7 +665,9 @@ class Party(object):
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
-                with tarfile.open(filename + '.tgz', "w:gz") as tar:
+                if not filename.endswith('.tgz'):
+                    filename = filename + ".tgz"
+                with tarfile.open(filename, "w:gz") as tar:
                     tar.add(temp_dir, arcname=os.path.basename(filename))
         else:
             Logger.warning('Writing only the catalog component, metadata '
@@ -962,16 +964,16 @@ class Party(object):
                         av_mag += sta_mag.mag
                     if len(delta_mag) > 0:
                         av_mag /= len(delta_mag)
-                    # Compute average magnitude
-                    event.magnitudes.append(Magnitude(
-                        mag=av_mag, magnitude_type=t_mag.magnitude_type,
-                        method_id=ResourceIdentifier("relative"),
-                        station_count=len(delta_mag),
-                        evaluation_mode="manual",
-                        station_magnitude_contributions=sta_contrib,
-                        creation_info=CreationInfo(
-                                author="EQcorrscan",
-                                creation_time=UTCDateTime())))
+                        # Compute average magnitude
+                        event.magnitudes.append(Magnitude(
+                            mag=av_mag, magnitude_type=t_mag.magnitude_type,
+                            method_id=ResourceIdentifier("relative"),
+                            station_count=len(delta_mag),
+                            evaluation_mode="manual",
+                            station_magnitude_contributions=sta_contrib,
+                            creation_info=CreationInfo(
+                                    author="EQcorrscan",
+                                    creation_time=UTCDateTime())))
         return catalog
 
     def get_catalog(self):

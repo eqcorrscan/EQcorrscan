@@ -66,9 +66,9 @@ install:
 script:
    - export MPLBACKEND=Agg
    - if [[ "$PYTEST" == "0" ]]; then
-     test_eqcorrscan.py --ci --runslow -m "not serial and not network" -n 2;
+     test_eqcorrscan.py --ci -v --runslow -m "not serial and not network" -n 2;
      else
-     py.test --runslow -m "not serial and not network" -n 2;
+     py.test -v --runslow -m "not serial and not network" -n 2;
      fi
    - if [[ "$PYTEST" == "0" ]]; then
      export OMP_NUM_THREADS=2;
