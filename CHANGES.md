@@ -59,6 +59,8 @@
 * Fix #298 where the header was repeated in detection csv files. Also added
   a `write_detections` function to `eqcorrscan.core.match_filter.detection`
   to streamline writing detections.
+* Add warning about unused data when using `Tribe.detect` methods with data that
+  do not fit into chunks. Fixes #291.
 
 ## 0.3.3
 * Make test-script more stable.
