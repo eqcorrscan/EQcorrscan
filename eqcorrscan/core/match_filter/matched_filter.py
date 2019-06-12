@@ -327,9 +327,10 @@ def _group_process(template_group, parallel, cores, stream, daylong,
                 "requested length, will not use this.".format(
                     tr.stats.starttime, tr.stats.endtime))
     if _endtime < stream[0].stats.endtime:
-        Logger.warning("Last bit of data between {0} and {1} will go unused "
-                       "because it is shorter than a chunk of {2} s".format(
-            _endtime, stream[0].stats.endtime, process_length))
+        Logger.warning(
+            "Last bit of data between {0} and {1} will go unused "
+            "because it is shorter than a chunk of {2} s".format(
+                _endtime, stream[0].stats.endtime, process_length))
     return processed_streams
 
 
