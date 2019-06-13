@@ -59,6 +59,7 @@
 * Fix #298 where the header was repeated in detection csv files. Also added
   a `write_detections` function to `eqcorrscan.core.match_filter.detection`
   to streamline writing detections.
+* Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
 
 ## 0.3.3
 * Make test-script more stable.
