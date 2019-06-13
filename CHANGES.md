@@ -61,6 +61,7 @@
   to streamline writing detections.
 * Add warning about unused data when using `Tribe.detect` methods with data that
   do not fit into chunks. Fixes #291.
+* Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
 
 ## 0.3.3
 * Make test-script more stable.
