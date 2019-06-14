@@ -10,15 +10,16 @@ import glob
 import logging
 
 from obspy.core.util import NamedTemporaryFile
-from obspy import UTCDateTime, read, read_events
+from obspy.core.event import Event, Pick, WaveformStreamID
+from obspy import UTCDateTime, read, read_events, Trace
 from obspy.clients.fdsn import Client
 from obspy.clients.iris import Client as OldIris_Client
 from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils import mag_calc
-from eqcorrscan.utils.mag_calc import dist_calc, _sim_WA, _max_p2t
-from eqcorrscan.utils.mag_calc import _GSE2_PAZ_read, _find_resp, _pairwise
-from eqcorrscan.utils.mag_calc import svd_moments, amp_pick_event
+from eqcorrscan.utils.mag_calc import (
+    dist_calc, _sim_WA, _max_p2t, _GSE2_PAZ_read, _find_resp, _pairwise,
+    svd_moments, amp_pick_event, _snr, relative_amplitude, relative_magnitude)
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
@@ -208,6 +209,174 @@ class TestMagCalcMethods(unittest.TestCase):
                                     stachans=stachans, event_list=event_list)
         self.assertEqual(len(M), len(stream_list))
         self.assertEqual(len(events_out), len(stream_list))
+
+
+class TestRelativeAmplitudes(unittest.TestCase):
+    """Test the relative amplitude methods."""
+    @classmethod
+    @pytest.mark.network
+    def setUpClass(cls):
+        client = Client("GEONET")
+        cls.event1 = client.get_events(eventid="2016p912302")[0]
+        cls.event2 = client.get_events(eventid="3470170")[0]
+        shared_chans = {p1.waveform_id.get_seed_string()
+                        for p1 in cls.event1.picks}.intersection(
+            {p2.waveform_id.get_seed_string() for p2 in cls.event2.picks})
+        bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
+                 p.waveform_id.location_code, p.waveform_id.channel_code,
+                 p.time - 20, p.time + 60) for p in cls.event1.picks
+                if p.waveform_id.get_seed_string() in shared_chans]
+        st1 = client.get_waveforms_bulk(bulk)
+        cls.st1 = st1.detrend().filter("bandpass", freqmin=2, freqmax=20)
+        bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
+                 p.waveform_id.location_code, p.waveform_id.channel_code,
+                 p.time - 20, p.time + 60) for p in cls.event2.picks
+                if p.waveform_id.get_seed_string() in shared_chans]
+        st2 = client.get_waveforms_bulk(bulk)
+        cls.st2 = st2.detrend().filter("bandpass", freqmin=2, freqmax=20)
+
+    def test_snr(self):
+        noise = np.random.randn(100)
+        signal = np.random.randn(100)
+        signal[50] = 100
+        trace = Trace(data=np.concatenate([noise, signal]))
+        trace.stats.sampling_rate = 1.
+        snr = _snr(
+            tr=trace,
+            noise_window=(trace.stats.starttime, trace.stats.starttime + 100),
+            signal_window=(trace.stats.starttime + 100, trace.stats.endtime))
+        self.assertLessEqual(abs(100 - snr), 30)
+
+    def test_scaled_event(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), len(st1))
+        for value in relative_amplitudes.values():
+            self.assertAlmostEqual(value, scale_factor)
+
+    def test_no_suitable_picks_event1(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="S",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_suitable_picks_event2(self):
+        import copy
+
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = copy.deepcopy(event1)
+        for pick in event2.picks:
+            pick.phase_hint = "S"
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_picks_event2(self):
+        import copy
+
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = copy.deepcopy(event1)
+        event2.picks = []
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_no_picks_event1(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1.filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st1.copy()
+        event1 = Event()
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 0)
+
+    def test_low_snr(self):
+        scale_factor = 0.2
+        st1 = read()
+        st1[0].data += np.random.randn(st1[0].stats.npts) * st1[0].data.max()
+        st2 = st1.copy()
+        st2[1].data += np.random.randn(st2[1].stats.npts) * st2[1].data.max()
+        event1 = Event(picks=[
+            Pick(time=tr.stats.starttime + 5, phase_hint="P",
+                 waveform_id=WaveformStreamID(seed_string=tr.id))
+            for tr in st1])
+        event2 = event1
+        for tr in st2:
+            tr.data *= scale_factor
+        relative_amplitudes = relative_amplitude(
+            st1=st1, st2=st2, event1=event1, event2=event2)
+        self.assertEqual(len(relative_amplitudes), 1)
+        for value in relative_amplitudes.values():
+            self.assertAlmostEqual(value, scale_factor)
+
+    def test_real_near_repeat(self):
+        relative_amplitudes = relative_amplitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2)
+        for seed_id, ratio in relative_amplitudes.items():
+            self.assertLess(abs(0.8 - ratio), 0.1)
+
+    def test_real_near_repeat_magnitudes(self):
+        relative_magnitudes, correlations = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            return_correlations=True)
+        for seed_id, mag_diff in relative_magnitudes.items():
+            self.assertLess(abs(mag_diff + 0.15), 0.1)
+
+    def test_real_near_repeat_magnitudes_corr_provided(self):
+        relative_magnitudes = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            correlations={tr.id: 1.0 for tr in self.st1})
+        for seed_id, mag_diff in relative_magnitudes.items():
+            self.assertLess(abs(mag_diff + 0.15), 0.1)
+
+    def test_real_near_repeat_magnitudes_bad_corr(self):
+        relative_magnitudes = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            correlations={tr.id: 0.2 for tr in self.st1})
+        self.assertEqual(len(relative_magnitudes), 0)
 
 
 class TestAmpPickEvent(unittest.TestCase):

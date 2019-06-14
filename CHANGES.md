@@ -50,6 +50,13 @@
   process-time will be supressed and empty traces returned.  This is useful 
   for downloading data from  datacentres via the `from_client` method when
   data quality is not known.
+* Added relative amplitude measurements as
+  `utils.mag_calc.relative_amplitude`.
+* Added relative magnitude calculation using relative amplitudes weighted by
+  correlations to `utils.mag_calc.relative_magnitude`.
+* Added `relative_magnitudes` argument to 
+  `eqcorrscan.core.match_filter.party.Party.lag_calc` to provide an in-flow
+  way to compute relative magnitudes for detected events.
 * Events constructed from detections now include estimated origins alongside
   the picks. These origins are time-shifted versions of the template origin and
   should be used with caution. They are corrected for prepick.
@@ -60,6 +67,9 @@
   a `write_detections` function to `eqcorrscan.core.match_filter.detection`
   to streamline writing detections.
 * Remove support for Python 2.7.
+* Add warning about unused data when using `Tribe.detect` methods with data that
+  do not fit into chunks. Fixes #291.
+* Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
 
 ## 0.3.3
 * Make test-script more stable.

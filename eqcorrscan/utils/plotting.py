@@ -2265,8 +2265,7 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
     # Resample here to maintain shape better
     cccsum_hist = cccsum_plot.copy()
-    cccsum_hist = cccsum_hist.decimate(int(stream[0].stats.
-                                           sampling_rate / 10)).data
+    cccsum_hist = _plotting_decimation(cccsum_hist, 10e5, 4).data
     cccsum_plot = chunk_data(cccsum_plot, 10, 'Maxabs').data
     # Enforce same length
     stream_plot.data = stream_plot.data[0:len(cccsum_plot)]

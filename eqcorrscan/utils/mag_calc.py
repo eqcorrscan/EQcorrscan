@@ -30,7 +30,7 @@ from obspy import UTCDateTime
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
-from eqcorrscan.core.match_filter import MatchFilterError
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.utils.catalog_utils import _get_origin
 
 
@@ -479,6 +479,246 @@ def _pairwise(iterable):
         return itertools.izip(a, b)
     else:
         return zip(a, b)
+
+
+def _snr(tr, noise_window, signal_window):
+    """
+    Compute ratio of maximum signal amplitude to rms noise amplitude.
+
+    :type tr: `obspy.core.Trace`
+    :param tr: Trace to compute signal-to-noise ratio for
+    :type noise_window: tuple of UTCDateTime
+    :param noise_window: (start, end) of window to use for noise
+    :type signal_window: tuple of UTCDateTime
+    :param signal_window: (start, end) of window to use for signal
+
+    :rtype: float
+    :return: Signal-to-noise ratio.
+    """
+    from eqcorrscan.core.bright_lights import _rms
+
+    noise_amp = _rms(
+        tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
+    signal_amp = tr.slice(
+        starttime=signal_window[0], endtime=signal_window[1]).data.max()
+    return signal_amp / noise_amp
+
+
+def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0,
+                       use_s_picks=False):
+    """
+    Compute the relative amplitudes between two streams.
+
+    Uses standard deviation of amplitudes within trace. Relative amplitudes are
+    computed as:
+
+    .. math::
+
+       \\frac{std(tr2)}{std(tr1)}
+
+    where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
+    from st2.  The standard deviation of the amplitudes is computed in the
+    signal window given. If the ratio of amplitudes between the signal window
+    and the noise window is below `min_snr` then no result is returned for that
+    trace. Windows are computed relative to the first pick for that station.
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+
+    :rtype: dict
+    :return: Dictionary of relative amplitudes keyed by seed-id
+    """
+    from obspy import Stream
+
+    amplitudes = {}
+    for tr1 in st1:
+        pick1 = _get_pick_for_station(
+            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
+        if pick1 is None:
+            continue
+        snr1 = _snr(
+            tr1, (pick1.time + noise_window[0], pick1.time + noise_window[1]),
+            (pick1.time + signal_window[0], pick1.time + signal_window[1]))
+        if snr1 <= min_snr:
+            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
+                snr1, min_snr, tr1.id))
+            continue
+        tr2 = [tr for tr in st2 if tr.id == tr1.id]
+        if len(tr2) == 0:
+            Logger.info("No matched traces for {0}".format(tr1.id))
+            continue
+        tr2 = Stream(tr2).merge()[0]
+        pick2 = _get_pick_for_station(
+            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
+        if pick2 is None:
+            continue
+        snr2 = _snr(
+            tr2, (pick2.time + noise_window[0], pick2.time + noise_window[1]),
+            (pick2.time + signal_window[0], pick2.time + signal_window[1]))
+        if snr2 <= min_snr:
+            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
+                snr2, min_snr, tr2.id))
+            continue
+        # If we get here, actually compute the ratio in the signal windows
+        amp1 = tr1.slice(starttime=pick1.time + signal_window[0],
+                         endtime=pick1.time + signal_window[1]).data.std()
+        amp2 = tr2.slice(starttime=pick2.time + signal_window[0],
+                         endtime=pick2.time + signal_window[1]).data.std()
+        Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
+            tr1.id, amp2/amp1))
+        amplitudes.update({tr1.id: amp2 / amp1})
+    return amplitudes
+
+
+def _get_pick_for_station(event, station, use_s_picks):
+    """
+    Get the first reported pick for a given station.
+
+    :type event: `obspy.core.event.Event`
+    :param event: Event with at least picks
+    :type station: str
+    :param station: Station to get pick for
+    :type use_s_picks: bool
+    :param use_s_picks: Whether to allow S-picks to be returned
+
+    :rtype: `obspy.core.event.Pick`
+    :return: First reported pick for station
+    """
+    picks = [p for p in event.picks if p.waveform_id.station_code == station]
+    if len(picks) == 0:
+        Logger.info("No pick for {0}".format(station))
+        return None
+    picks.sort(key=lambda p: p.time)
+    for pick in picks:
+        if pick.phase_hint and pick.phase_hint[0].upper() == 'S'\
+                and not use_s_picks:
+            continue
+        return pick
+    Logger.info("No suitable pick found for {0}".format(station))
+    return None
+
+
+def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
+                       use_s_picks=False, correlations=None, shift=.2,
+                       return_correlations=False):
+    """
+    Compute the relative magnitudes between two events.
+
+    See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
+    on how relative amplitudes are calculated. To compute relative magnitudes
+    from relative amplitudes this function weights the amplitude ratios by
+    the cross-correlation of the two events. The relation used is similar to
+    Schaff and Richards (2014) and is:
+
+    .. math::
+
+        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type min_cc: float
+    :param min_cc:
+        Minimum inter-event correlation (between -1 and 1) allowed to make a
+        measurement.
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+    :type correlations: dict
+    :param correlations:
+        Pre-computed dictionary of correlations keyed by seed-id. If None
+        (default) then correlations will be computed for the provided data in
+        the `signal_window`.
+    :type shift: float
+    :param shift:
+        Shift length for correlations in seconds - maximum correlation within
+        a window between +/- shift of the P-pick will be used to weight the
+        magnitude.
+    :type return_correlations: bool
+    :param return_correlations:
+        If true will also return maximum correlations as a dictionary.
+
+    :rtype: dict
+    :return: Dictionary of relative magnitudes keyed by seed-id
+    """
+    import math
+    from obspy.signal.cross_correlation import correlate
+
+    relative_magnitudes = {}
+    compute_correlations = False
+    if correlations is None:
+        correlations = {}
+        compute_correlations = True
+    relative_amplitudes = relative_amplitude(
+        st1=st1, st2=st2, event1=event1, event2=event2,
+        noise_window=noise_window, signal_window=signal_window,
+        min_snr=min_snr, use_s_picks=use_s_picks)
+    for seed_id, amplitude_ratio in relative_amplitudes.items():
+        tr1 = st1.select(id=seed_id)[0]
+        tr2 = st2.select(id=seed_id)[0]
+        pick1 = _get_pick_for_station(
+            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
+        pick2 = _get_pick_for_station(
+            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
+        if compute_correlations:
+            cc = correlate(
+                tr1.slice(
+                    starttime=pick1.time + signal_window[0],
+                    endtime=pick1.time + signal_window[1]),
+                tr2.slice(
+                    starttime=pick2.time + signal_window[0],
+                    endtime=pick2.time + signal_window[1]),
+                shift=int(shift * tr1.stats.sampling_rate))
+            cc = cc.max()
+            correlations.update({seed_id: cc})
+        else:
+            cc = correlations.get(seed_id, 0.0)
+        if cc < min_cc:
+            continue
+        # Weight and add to relative_magnitudes
+        rel_mag = math.log10(amplitude_ratio) * cc
+        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
+            tr1.id, rel_mag))
+        relative_magnitudes.update({seed_id: rel_mag})
+    if return_correlations:
+        return relative_magnitudes, correlations
+    return relative_magnitudes
 
 
 def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,

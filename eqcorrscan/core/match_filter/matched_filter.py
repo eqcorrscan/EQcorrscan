@@ -268,12 +268,14 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         'ignore_bad_data': ignore_bad_data}
     # Processing always needs to be run to account for gaps - pre-process will
     # check whether filtering and resampling needs to be done.
+    process_length = master.process_length
     if daylong:
         if not master.process_length == 86400:
             Logger.warning(
                 'Processing day-long data, but template was cut from %i s long'
                 ' data, will reduce correlations' % master.process_length)
         func = dayproc
+        process_length = 86400
         # Check that data all start on the same day, otherwise strange
         # things will happen...
         starttimes = [tr.stats.starttime.date for tr in stream]
@@ -289,24 +291,40 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
     data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
-    chunk_len_samps = (master.process_length - overlap) * master.samp_rate
-    n_chunks = int(data_len_samps / chunk_len_samps)
+    chunk_len_samps = (process_length - overlap) * master.samp_rate
+    n_chunks = int(data_len_samps // chunk_len_samps)
     if n_chunks == 0:
         Logger.error('Data must be process_length or longer, not computing')
+    _endtime = starttime
     for i in range(n_chunks):
         kwargs.update(
-            {'starttime': starttime + (i * (master.process_length - overlap))})
+            {'starttime': starttime + (i * (process_length - overlap))})
         if not daylong:
-            kwargs.update(
-                {'endtime': kwargs['starttime'] + master.process_length})
-            chunk_stream = stream.slice(starttime=kwargs['starttime'],
-                                        endtime=kwargs['endtime']).copy()
+            _endtime = kwargs['starttime'] + process_length
+            kwargs.update({'endtime': _endtime})
         else:
-            chunk_stream = stream.copy()
+            _endtime = kwargs['starttime'] + 86400
+        chunk_stream = stream.slice(starttime=kwargs['starttime'],
+                                    endtime=_endtime).copy()
         for tr in chunk_stream:
             tr.data = tr.data[0:int(
-                master.process_length * tr.stats.sampling_rate)]
-        processed_streams.append(func(st=chunk_stream, **kwargs))
+                process_length * tr.stats.sampling_rate)]
+        _chunk_stream_lengths = [tr.stats.endtime - tr.stats.starttime
+                                 for tr in chunk_stream]
+        if min(_chunk_stream_lengths) >= .8 * process_length:
+            processed_streams.append(func(st=chunk_stream, **kwargs))
+        else:
+            tr = chunk_stream[_chunk_stream_lengths.index(
+                min(_chunk_stream_lengths))]
+            Logger.warning(
+                "Data chunk starting {0} and ending {1} is below 80% of the "
+                "requested length, will not use this.".format(
+                    tr.stats.starttime, tr.stats.endtime))
+    if _endtime < stream[0].stats.endtime:
+        Logger.warning(
+            "Last bit of data between {0} and {1} will go unused "
+            "because it is shorter than a chunk of {2} s".format(
+                _endtime, stream[0].stats.endtime, process_length))
     return processed_streams
 
 
