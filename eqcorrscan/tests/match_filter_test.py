@@ -18,10 +18,11 @@ from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
 from eqcorrscan.core.match_filter import (
-    MatchFilterError, normxcorr2, Detection, read_detections, get_catalog,
+    normxcorr2, Detection, read_detections, get_catalog,
     write_catalog, extract_from_stream, Tribe, Template, Party, Family,
     read_party, read_tribe, _spike_test)
-from eqcorrscan.core.match_filter.matched_filter import match_filter
+from eqcorrscan.core.match_filter.matched_filter import (
+    match_filter, MatchFilterError)
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -789,10 +790,48 @@ class TestMatchObjectHeavy(unittest.TestCase):
         catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
+    def test_party_mag_calc_unpreprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.lag_calc(
+            stream=self.unproc_st, pre_processed=False,
+            relative_magnitudes=True, min_snr=0)
+        self.assertEqual(len(catalog), 3)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Detected using template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
+
+    def test_party_mag_calc_preprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.lag_calc(
+            stream=self.st, pre_processed=True, relative_magnitudes=True,
+            min_snr=0)
+        self.assertEqual(len(catalog), 3)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Detected using template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
+
     @pytest.mark.network
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
-        client = Client('NCEDC')
+        client = Client('NCEDC', timeout=300)
         t1 = UTCDateTime(2004, 9, 28)
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
                      for stachan in self.template_stachans]
@@ -974,6 +1013,11 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertAlmostEqual(
             test_detection_altered.event.origins[0].time,
             template.event.origins[0].time, 1)
+        for pick in test_detection_altered.event.picks:
+            matched_pick = [p for p in template.event.picks
+                            if p.waveform_id == pick.waveform_id and
+                            p.phase_hint == pick.phase_hint]
+            self.assertEqual(len(matched_pick), 1)
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""

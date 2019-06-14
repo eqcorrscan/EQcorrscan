@@ -50,6 +50,13 @@
   process-time will be supressed and empty traces returned.  This is useful 
   for downloading data from  datacentres via the `from_client` method when
   data quality is not known.
+* Added relative amplitude measurements as
+  `utils.mag_calc.relative_amplitude`.
+* Added relative magnitude calculation using relative amplitudes weighted by
+  correlations to `utils.mag_calc.relative_magnitude`.
+* Added `relative_magnitudes` argument to 
+  `eqcorrscan.core.match_filter.party.Party.lag_calc` to provide an in-flow
+  way to compute relative magnitudes for detected events.
 * Events constructed from detections now include estimated origins alongside
   the picks. These origins are time-shifted versions of the template origin and
   should be used with caution. They are corrected for prepick.

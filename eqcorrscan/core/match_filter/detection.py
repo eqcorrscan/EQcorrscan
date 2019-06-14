@@ -25,7 +25,8 @@ import logging
 import numpy as np
 from obspy import Catalog, UTCDateTime
 from obspy.core.event import (
-    Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier)
+    Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier,
+    Origin)
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
 
@@ -39,19 +40,21 @@ class Detection(object):
     correlation sums.
 
     :type template_name: str
-    :param template_name: The name of the template for which this \
-        detection was made.
+    :param template_name:
+        The name of the template for which this detection was made.
     :type detect_time: obspy.core.utcdatetime.UTCDateTime
     :param detect_time: Time of detection as an obspy UTCDateTime object
     :type no_chans: int
-    :param no_chans: The number of channels for which the cross-channel \
-        correlation sum was calculated over.
+    :param no_chans:
+        The number of channels for which the cross-channel correlation sum
+        was calculated over.
     :type detect_val: float
-    :param detect_val: The raw value of the cross-channel correlation sum \
-        for this detection.
+    :param detect_val:
+        The raw value of the cross-channel correlation sum for this detection.
     :type threshold: float
-    :param threshold: The value of the threshold used for this detection, \
-        will be the raw threshold value related to the cccsum.
+    :param threshold:
+        The value of the threshold used for this detection, will be the raw
+        threshold value related to the cccsum.
     :type typeofdet: str
     :param typeofdet: Type of detection, STA, corr, bright
     :type threshold_type: str
@@ -276,7 +279,7 @@ class Detection(object):
                         channel_code=tr.stats.channel,
                         location_code=tr.stats.location))
                 template_pick = [p for p in template_picks
-                                 if p.waveform_id.get_seed_string ==
+                                 if p.waveform_id.get_seed_string() ==
                                  new_pick.waveform_id.get_seed_string()]
                 if len(template_pick) == 0:
                     new_pick.phase_hint = None
@@ -289,7 +292,8 @@ class Detection(object):
                     _index = similar_traces.traces.index(tr)
                     try:
                         new_pick.phase_hint = sorted(
-                            template_pick, key=lambda p: p.time)[_index]
+                            template_pick,
+                            key=lambda p: p.time)[_index].phase_hint
                     except IndexError:
                         Logger.error("No pick for trace")
                 ev.picks.append(new_pick)
@@ -316,26 +320,35 @@ class Detection(object):
                 origin_time = pick.time - (
                         comparison_pick[0].time - template_origin.time)
                 # Calculate based on difference between pick and origin?
-                _origin = template_origin.copy()
-                _origin.resource_id = ResourceIdentifier(
+                _origin = Origin(ResourceIdentifier(
                     id="EQcorrscan/{0}_{1}".format(
-                        self.template_name, det_time),
-                    prefix="smi:local")
-                _origin.quality = None
-                _origin.origin_uncertainty = None
-                _origin.time = origin_time
-                _origin.evaluation_mode = "automatic"
-                _origin.evaluation_status = "preliminary"
-                _origin.creation_info = CreationInfo(
-                    author='EQcorrscan', creation_time=UTCDateTime())
-                _origin.comments.append(Comment(
-                    text="Origin automatically calculated based on template"
-                         "origin: use with caution."))
-                _origin.arrivals = []
-                _origin.composite_times = []
+                        self.template_name, det_time), prefix="smi:local"),
+                    time=origin_time, evaluation_mode="automatic",
+                    evaluation_status="preliminary",
+                    creation_info=CreationInfo(
+                        author='EQcorrscan', creation_time=UTCDateTime()),
+                    comments=[Comment(
+                        text="Origin automatically assigned based on template"
+                             " origin: use with caution.")],
+                    latitude=template_origin.latitude,
+                    longitude=template_origin.longitude,
+                    depth=template_origin.depth,
+                    time_errors=template_origin.time_errors,
+                    latitude_errors=template_origin.latitude_errors,
+                    longitude_errors=template_origin.longitude_errors,
+                    depth_errors=template_origin.depth_errors,
+                    depth_type=template_origin.depth_type,
+                    time_fixed=False,
+                    epicenter_fixed=template_origin.epicenter_fixed,
+                    reference_system_id=template_origin.reference_system_id,
+                    method_id=template_origin.method_id,
+                    earth_model_id=template_origin.earth_model_id,
+                    origin_type=template_origin.origin_type,
+                    origin_uncertainty=template_origin.origin_uncertainty,
+                    region=template_origin.region)
                 ev.origins = [_origin]
         self.event = ev
-        return
+        return self
 
 
 def write_detections(detections, fname, mode='a'):

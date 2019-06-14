@@ -505,7 +505,7 @@ class Family(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 process_cores=None):
+                 process_cores=None, relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -548,6 +548,13 @@ class Family(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
+        :type relative_magnitudes: bool
+        :param relative_magnitudes:
+            Whether to calculate relative magnitudes or not. See
+            :func:`eqcorrscan.utils.mag_calc.relative_magnitude` for more
+            information. Keyword arguments `noise_window`, `signal_window` and
+            `min_snr` can be passed as additional keyword arguments to pass
+            through to `eqcorrscan.utils.mag_calc.relative_magnitude`.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -580,7 +587,8 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, parallel=parallel,
-            process_cores=process_cores)
+            process_cores=process_cores,
+            relative_magnitudes=relative_magnitudes, **kwargs)
         return cat
 
 
