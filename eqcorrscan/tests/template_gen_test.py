@@ -22,8 +22,7 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
 from eqcorrscan.core import template_gen as template_gen_module
 from eqcorrscan.core.template_gen import (
-    from_sac, _group_events, from_seishub, from_meta_file, from_client,
-    multi_template_gen, extract_from_stack, _template_gen, template_gen)
+    _group_events, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
@@ -50,8 +49,9 @@ class TestTemplateGeneration(unittest.TestCase):
             streamlist = [read(f) for f in glob.glob(test_files)]
             stream = read(test_files)
             for sac_files in [filelist, streamlist, stream]:
-                templates = from_sac(
-                    sac_files, lowcut=2.0, highcut=8.0, samp_rate=samp_rate,
+                templates = template_gen(
+                    method="from_sac", sac_files=sac_files, lowcut=2.0,
+                    highcut=8.0, samp_rate=samp_rate,
                     filt_order=4, length=length, swin='all', prepick=0.1,
                     plot=False)
                 self.assertEqual(len(templates), 1)
@@ -94,11 +94,11 @@ class TestTemplateGeneration(unittest.TestCase):
             maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
             endtime=UTCDateTime(2016, 5, 2))
         cat = filter_picks(catalog=cat, top_n_picks=5)
-        template = from_client(
-            catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
-            samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
-            swin='all', process_len=3600, plot=False,
-            delayed=False)[0]
+        template = template_gen(
+            method="from_client", catalog=cat, client_id='GEONET',
+            lowcut=None, highcut=None, samp_rate=100.0, filt_order=4,
+            length=10.0, prepick=0.5, swin='all', process_len=3600,
+            plot=False, delayed=False)[0]
         for tr in template:
             tr.stats.starttime.precision = 6
         starttime = template[0].stats.starttime
@@ -108,11 +108,11 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertTrue(abs((tr.stats.starttime - starttime)) <=
                             tr.stats.delta)
             self.assertEqual(tr.stats.npts, length)
-        template = from_client(
-            catalog=cat, client_id='GEONET', lowcut=None, highcut=None,
-            samp_rate=100.0, filt_order=4, length=10.0, prepick=0.5,
-            swin='P_all', process_len=3600, plot=False,
-            delayed=False)[0]
+        template = template_gen(
+            method="from_client", catalog=cat, client_id='GEONET',
+            lowcut=None, highcut=None, samp_rate=100.0, filt_order=4,
+            length=10.0, prepick=0.5, swin='P_all', process_len=3600,
+            plot=False, delayed=False)[0]
         for tr in template:
             tr.stats.starttime.precision = 6
         starttime = template[0].stats.starttime
@@ -144,10 +144,19 @@ class TestTemplateGeneration(unittest.TestCase):
         continuous_st = client.get_waveforms_bulk(bulk)
         continuous_st.merge(fill_value=0)
         # Test multi_template_gen
-        templates = multi_template_gen(catalog, continuous_st, length=3)
+        kwargs = {"process": False, "lowcut": None, "highcut": None,
+                  "filt_order": None, "swin": "all", "prepick": 0.05,
+                  "all_horiz": False, "delayed": True, "plot": False,
+                  "return_event": False, "min_snr": None,
+                  "samp_rate": continuous_st[0].stats.sampling_rate}
+        templates = template_gen(
+            method="from_meta_file", meta_file=catalog, st=continuous_st,
+            length=3, **kwargs)
         self.assertEqual(len(templates), 1)
         # Test without an event
-        templates = multi_template_gen(Catalog(), continuous_st, length=3)
+        templates = template_gen(
+            method="from_meta_file", meta_file=Catalog(),
+            st=continuous_st, length=3, **kwargs)
         self.assertEqual(len(templates), 0)
 
     @pytest.mark.network
@@ -192,8 +201,8 @@ class TestTemplateGeneration(unittest.TestCase):
         st = read(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'test_data', 'WAV', 'TEST_',
                                '2013-09-01-0410-35.DFDPC_024_00'))
-        templates = from_meta_file(
-            meta_file=sfile, st=st, lowcut=2,
+        templates = template_gen(
+            method="from_meta_file", meta_file=sfile, st=st, lowcut=2,
             highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
             swin='P_all')
         self.assertEqual(len(templates), 1)
@@ -207,8 +216,8 @@ class TestTemplateGeneration(unittest.TestCase):
             print(pick)
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
                             tr.stats.delta)
-        templates = from_meta_file(
-            meta_file=sfile, st=st, lowcut=2,
+        templates = template_gen(
+            method="from_meta_file", meta_file=sfile, st=st, lowcut=2,
             highcut=20, samp_rate=100, filt_order=4, length=6, prepick=0.2,
             swin='S_all')
         self.assertEqual(len(templates), 1)
@@ -255,10 +264,10 @@ class TestTemplateGeneration(unittest.TestCase):
 
         if sys.version_info.major == 3:
             try:
-                template = from_seishub(
-                    test_cat, url=test_url, lowcut=1.0, highcut=5.0,
-                    samp_rate=20, filt_order=4, length=3, prepick=0.5,
-                    swin='all', process_len=300)
+                template = template_gen(
+                    method="from_seishub", catalog=test_cat, url=test_url,
+                    lowcut=1.0, highcut=5.0, samp_rate=20, filt_order=4,
+                    length=3, prepick=0.5, swin='all', process_len=300)
             except URLError:
                 pass
         else:
@@ -298,9 +307,10 @@ class TestTemplateGeneration(unittest.TestCase):
                                '20130901T041115_missingwavid.xml')
         st = read(os.path.join(testing_path, 'WAV', 'TEST_',
                                '2013-09-01-0410-35.DFDPC_024_00'))
-        templates = from_meta_file(meta_file=quakeml, st=st, lowcut=2.0,
-                                   highcut=9.0, samp_rate=20.0, filt_order=3,
-                                   length=2, prepick=0.1, swin='S')
+        templates = template_gen(
+            method="from_meta_file", meta_file=quakeml, st=st, lowcut=2.0,
+            highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
+            swin='S')
         self.assertEqual(len(templates), 1)
 
 

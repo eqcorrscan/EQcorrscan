@@ -21,7 +21,6 @@ arguments.
        freq_mag
        interev_mag
        multi_event_singlechan
-       NR_plot
        obspy_3d_plot
        peaks_plot
        plot_repicked

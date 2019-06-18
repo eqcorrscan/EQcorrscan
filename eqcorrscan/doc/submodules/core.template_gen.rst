@@ -14,11 +14,5 @@ template_gen
 
        template_gen
        extract_from_stack
-       from_client
-       from_meta_file
-       from_sac
-       from_seishub
-       multi_template_gen
-       
 
     .. comment to end block

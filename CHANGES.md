@@ -73,6 +73,8 @@
   `.resample` to change the sampling rate of data. This is generally more
   stable and faster than resampling in the frequency domain, but will likely
   change the quality of correlations.
+* Removed depreciated `template_gen` functions and `bright_lights` and
+  `seismo_logs`. See #315
 
 ## 0.3.3
 * Make test-script more stable.
