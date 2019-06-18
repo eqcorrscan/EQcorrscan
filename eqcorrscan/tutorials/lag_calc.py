@@ -39,10 +39,10 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
                         pick.onset == 'emergent':
             catalog[3].picks.remove(pick)
     print('Generating templates')
-    templates = template_gen.from_client(
-        catalog=catalog, client_id='NCEDC', lowcut=2.0, highcut=9.0,
-        samp_rate=50.0, filt_order=4, length=3.0, prepick=0.15,
-        swin='all', process_len=3600)
+    templates = template_gen.template_gen(
+        method="from_client", catalog=catalog, client_id='NCEDC',
+        lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4, length=3.0,
+        prepick=0.15, swin='all', process_len=3600)
     # In this section we generate a series of chunks of data.
     start_time = UTCDateTime(2004, 9, 28, 17)
     end_time = UTCDateTime(2004, 9, 28, 20)
