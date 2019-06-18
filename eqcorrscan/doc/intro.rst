@@ -38,15 +38,14 @@ see |#242|.
 Functionality
 -------------
 
-Within :doc:`core </core>` you will find the core routines to generate templates,
-(:doc:`template_gen </submodules/core.template_gen>`) search for likely templates
-(:doc:`bright_lights </submodules/core.bright_lights>`),
+Within :doc:`core </core>` you will find the core routines to generate templates
+(:doc:`template_gen </submodules/core.template_gen>`),
 compute cross-channel correlations from these templates
 (:doc:`match_filter </submodules/core.match_filter>`), generate cross-correlation
 corrected pick-times (:doc:`lag_calc </submodules/core.lag_calc>`),
 and run subspace detection (:doc:`subspace </submodules/core.subspace>`).
 
-The bright_lights and match_filter submodules have been designed with parallel
+The match_filter submodules have been designed with parallel
 computing in mind, to the extent that the more cores and machines you have
 running them (generally) the better.  These rely on the python multiprocessing
 module, and some C extensions using openMP to handle parallelisation at
