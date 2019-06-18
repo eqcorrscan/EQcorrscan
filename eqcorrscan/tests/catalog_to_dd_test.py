@@ -2,11 +2,6 @@
 Functions to test the functions within the eqcorrscan.utils.catalog_to_dd.py \
 submodule.  Uses test data distributed with the EQcorrscan package.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import numpy as np
 import os

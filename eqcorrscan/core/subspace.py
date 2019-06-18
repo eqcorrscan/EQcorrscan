@@ -12,11 +12,6 @@ theory which can be found here: https://e-reports-ext.llnl.gov/pdf/335299.pdf
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
 import logging
 import time

@@ -13,11 +13,6 @@ Helper functions for reading data from archives for the EQcorrscan package.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import logging
 import glob
