@@ -20,21 +20,10 @@ API-docs
 .. toctree::
    :maxdepth: 1
 
-   submodules/core.bright_lights
    submodules/core.lag_calc
    submodules/core.match_filter
    submodules/core.subspace
    submodules/core.template_gen
-
-Brightness
-----------
-bright_lights_ contains a series of functions to detect events using the
-brightness-based beamforming method of `Frank et. al (2014)`_.  This has been
-tested significantly, but has failed to detect events unambiguously in the
-central Southern Alps.  As such development of these functions has ceased.
-
-.. _bright_lights: submodules/core.bright_lights.html
-.. _Frank et. al (2014): http://gji.oxfordjournals.org/content/197/2/1215.short
 
 Template generation
 -------------------

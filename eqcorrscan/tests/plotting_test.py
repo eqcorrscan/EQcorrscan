@@ -16,7 +16,7 @@ from eqcorrscan.utils.plotting import (
     chunk_data, xcorr_plot, triple_plot, peaks_plot,
     cumulative_detections, threeD_gridplot, multi_event_singlechan,
     detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
-    pretty_template_plot, plot_repicked, NR_plot, svd_plot, plot_synth_real,
+    pretty_template_plot, plot_repicked, svd_plot, plot_synth_real,
     freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot)
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
@@ -174,22 +174,6 @@ class StreamPlottingMethods(unittest.TestCase):
         tr.data = tr.data[0:len(ccc[0])]
         fig = triple_plot(cccsum=ccc[0], cccsum_hist=ccc[0], trace=tr,
                           threshold=0.8, show=False, return_figure=True)
-        return fig
-
-    @pytest.mark.mpl_image_compare
-    def test_network_response_plot(self):
-        detections = [(self.st[0].stats.starttime + 10).datetime, ]
-        false_detections = [(self.st[0].stats.starttime + 20).datetime, ]
-        _envelope = self.st.copy()
-        for tr in _envelope:
-            tr.data = filter.envelope(tr.data)
-        envelope = Stream(_envelope[0])
-        for tr in envelope[1:]:
-            envelope[0].data += tr.data
-        envelope.detrend()
-        fig = NR_plot(stream=self.st, NR_stream=envelope,
-                      detections=detections, false_detections=false_detections,
-                      show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare

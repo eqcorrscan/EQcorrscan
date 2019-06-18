@@ -13,7 +13,7 @@ from eqcorrscan.core import lag_calc
 from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
 from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
 from eqcorrscan.core.match_filter import normxcorr2, Detection
-from eqcorrscan.core.template_gen import from_meta_file
+from eqcorrscan.core.template_gen import template_gen
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
@@ -41,7 +41,7 @@ class TestMethods(unittest.TestCase):
                 tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
             item.update({'st': st, 'sfile': os.path.join(
                 cls.testing_path, item['sfile'])})
-            setattr(cls, item['name'], from_meta_file(
+            setattr(cls, item['name'], template_gen(method="from_meta_file",
                 meta_file=item['sfile'], lowcut=5, highcut=15, samp_rate=40,
                 filt_order=4, length=3, swin='all', prepick=0.05,
                 st=item['st'])[0])

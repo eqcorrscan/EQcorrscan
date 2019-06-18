@@ -13,7 +13,7 @@ import warnings
 
 __all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils', 'clustering',
            'correlate', 'despike', 'findpeaks', 'mag_calc', 'picker',
-           'plotting', 'pre_processing', 'sac_util', 'seismo_logs',
+           'plotting', 'pre_processing', 'sac_util',
            'stacking', 'synth_seis', 'timer', 'trigger', 'lib']
 
 # Cope with changes to name-space to remove most of the camel-case

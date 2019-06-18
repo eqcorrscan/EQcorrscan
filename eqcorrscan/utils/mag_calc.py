@@ -495,7 +495,7 @@ def _snr(tr, noise_window, signal_window):
     :rtype: float
     :return: Signal-to-noise ratio.
     """
-    from eqcorrscan.core.bright_lights import _rms
+    from eqcorrscan.core.template_gen import _rms
 
     noise_amp = _rms(
         tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
