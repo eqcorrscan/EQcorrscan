@@ -232,10 +232,10 @@ to ensure stable correlations.
 If you provide data with filled gaps (e.g. you used `st = st.merge(fill_value=0)` to
 either:
 
-* :doc:`Tribe.detect </submodules/core.match_filter.tribe.Tribe.detect>`,
-* :doc:`Template.detect </submodules/core.match_filter.template.Template.detect>`,
-* :doc:`shortproc </submodules/utils.pre_processing.shortproc>`,
-* :doc:`dayproc </submodules/utils.pre_processing.dayproc>`,
+* The `detect` method of :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>`,
+* The `detect` method of :doc:`Template </submodules/core.match_filter.template.Template>`,
+* :doc:`shortproc </submodules/autogen/eqcorrscan.utils.pre_processing.shortproc>`,
+* :doc:`dayproc </submodules/autogen/eqcorrscan.utils.pre_processing.dayproc>`,
 
 Then you will end up with the *wrong* result from the correlation or match_filter
 functions. You should provide data with gaps maintained, but merged

@@ -10,8 +10,7 @@ EQcorrscan
 A Python package for the detection and analysis of repeating and near-repeating seismicity.
 EQcorrscan contains an efficient, multi-parallel,
 :doc:`matched-filter </submodules/core.match_filter>` detection routine (template-matching), as well as
-routines to implement :doc:`subspace </submodules/core.subspace>` detection,
-and detection based on :doc:`brightness </submodules/core.bright_lights>`.
+routines to implement :doc:`subspace </submodules/core.subspace>` detection.
 
 Code is stored on |github|, the development branches are |github_dev|, or the
 latest stable release can be found |releases_link|.
@@ -48,7 +47,6 @@ Also within this package are:
 * :doc:`Peak finding algorithm (basic) </submodules/utils.findpeaks>`;
 * :doc:`Automatic amplitude picker for local magnitude scale </submodules/utils.mag_calc>`;
 * :doc:`Stacking routines </submodules/utils.stacking>` including phase-weighted stacking based on Thurber at al. (2014);
-* :doc:`Brightness based template creation </submodules/core.bright_lights>` based on the work of Frank et al. (2014)
 
 This package is written by the EQcorrscan developers, and is 
 distributed under the LGPL GNU Licence, Copyright EQcorrscan
