@@ -544,10 +544,12 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
     # Check sampling rate and resample
-    if tr.stats.sampling_rate != samp_rate:
+    if samp_rate is not None and tr.stats.sampling_rate != samp_rate:
         Logger.debug('Resampling')
-        tr.interpolate(sampling_rate=samp_rate, method="lanczos",
-                       a=20, window="lanczos")
+        tr.interpolate(
+            sampling_rate=samp_rate, method="lanczos",
+            a=20, window="lanczos",
+            npts=int(tr.stats.npts * samp_rate // tr.stats.sampling_rate))
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
