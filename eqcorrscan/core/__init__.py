@@ -11,8 +11,7 @@ import sys
 import importlib
 import warnings
 
-__all__ = ['template_gen', 'match_filter', 'bright_lights', 'lag_calc',
-           'subspace']
+__all__ = ['template_gen', 'match_filter', 'lag_calc', 'subspace']
 
 _import_map = {}
 
