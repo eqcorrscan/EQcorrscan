@@ -69,6 +69,10 @@
 * Add warning about unused data when using `Tribe.detect` methods with data that
   do not fit into chunks. Fixes #291.
 * Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
+* `utils.pre_processing` now uses the `.interpolate` method rather than
+  `.resample` to change the sampling rate of data. This is generally more
+  stable and faster than resampling in the frequency domain, but will likely
+  change the quality of correlations.
 
 ## 0.3.3
 * Make test-script more stable.

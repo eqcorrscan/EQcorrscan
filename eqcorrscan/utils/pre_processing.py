@@ -546,7 +546,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         Logger.debug('Resampling')
-        tr.resample(samp_rate)
+        tr.interpolate(sampling_rate=samp_rate, method="lanczos")
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
