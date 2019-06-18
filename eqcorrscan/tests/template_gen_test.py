@@ -22,8 +22,7 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
 from eqcorrscan.core import template_gen as template_gen_module
 from eqcorrscan.core.template_gen import (
-    _group_events, multi_template_gen, extract_from_stack, _template_gen,
-    template_gen)
+    _group_events, extract_from_stack, _template_gen, template_gen)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
@@ -145,10 +144,19 @@ class TestTemplateGeneration(unittest.TestCase):
         continuous_st = client.get_waveforms_bulk(bulk)
         continuous_st.merge(fill_value=0)
         # Test multi_template_gen
-        templates = multi_template_gen(catalog, continuous_st, length=3)
+        kwargs = {"process": False, "lowcut": None, "highcut": None,
+                  "filt_order": None, "swin": "all", "prepick": 0.05,
+                  "all_horiz": False, "delayed": True, "plot": False,
+                  "return_event": False, "min_snr": None,
+                  "samp_rate": continuous_st[0].stats.sampling_rate}
+        templates = template_gen(
+            method="from_meta_file", meta_file=catalog, st=continuous_st,
+            length=3, **kwargs)
         self.assertEqual(len(templates), 1)
         # Test without an event
-        templates = multi_template_gen(Catalog(), continuous_st, length=3)
+        templates = template_gen(
+            method="from_meta_file", meta_file=Catalog(),
+            st=continuous_st, length=3, **kwargs)
         self.assertEqual(len(templates), 0)
 
     @pytest.mark.network
@@ -256,10 +264,10 @@ class TestTemplateGeneration(unittest.TestCase):
 
         if sys.version_info.major == 3:
             try:
-                template = from_seishub(
-                    test_cat, url=test_url, lowcut=1.0, highcut=5.0,
-                    samp_rate=20, filt_order=4, length=3, prepick=0.5,
-                    swin='all', process_len=300)
+                template = template_gen(
+                    method="from_seishub", catalog=test_cat, url=test_url,
+                    lowcut=1.0, highcut=5.0, samp_rate=20, filt_order=4,
+                    length=3, prepick=0.5, swin='all', process_len=300)
             except URLError:
                 pass
         else:
