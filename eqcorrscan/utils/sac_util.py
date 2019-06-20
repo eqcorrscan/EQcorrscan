@@ -20,6 +20,10 @@ from obspy import Stream, UTCDateTime
 from obspy.core.event import Event, Origin, WaveformStreamID, Pick
 
 
+PICK_KEYS = ['t0', 't1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9', 'a']
+PHASE_KEYS = ["k{0}".format(pk) for pk in PICK_KEYS]
+
+
 Logger = logging.getLogger(__name__)
 
 
@@ -35,7 +39,8 @@ def sactoevent(st):
     """
     Convert SAC headers (picks only) to obspy event class.
 
-    Picks are taken from header values a, t[0-9].
+    Picks are taken from header values a, t[0-9]. A phase-hint in the
+    corresponding kt[0-9] slot is recommended.
 
     :type st: obspy.core.stream.Stream
     :param st: Stream of waveforms including SAC headers.
@@ -120,9 +125,7 @@ def sactoevent(st):
             second=tr.stats.sac.nzsec,
             microsecond=tr.stats.sac.nzmsec * 1000)
         # Possible pick locations are in the t[0-9] slot
-        for pick_number in range(10):
-            pick_key = 't' + str(pick_number)
-            phase_key = 'kt' + str(pick_number)
+        for pick_key, phase_key in zip(PICK_KEYS, PHASE_KEYS):
             try:
                 if tr.stats.sac[pick_key] == float_nan:
                     # in version 0.10.2 and before. rather than not include
@@ -132,11 +135,15 @@ def sactoevent(st):
                             pick_key, tr.id))
                     continue
                 pick_time = reference_time + tr.stats.sac[pick_key]
-                phase_hint = tr.stats.sac[phase_key].split()[0]
+                if phase_key in tr.stats.sac.keys():
+                    phase_hint = tr.stats.sac[phase_key].split()[0]
+                else:
+                    Logger.warning(
+                        "No phase hint found for pick in {0}".format(pick_key))
+                    phase_hint = None
             except KeyError:
-                Logger.debug(
-                    'No pick in position {0} for trace {1}'.format(
-                        pick_key, tr.id))
+                Logger.debug('No pick in position {0} for trace {1}'.format(
+                    pick_key, tr.id))
                 continue
             Logger.info(
                 'Found pick in position {0} for {1}'.format(pick_key, tr.id))
@@ -147,28 +154,6 @@ def sactoevent(st):
                         phase_hint=phase_hint,
                         time=pick_time)
             event.picks.append(pick)
-        # Also check header slots 'a' and 'ka'
-        try:
-            if tr.stats.sac['a'] == float_nan:
-                Logger.debug(
-                    'No pick in position {0} for trace {1}'.format(
-                        pick_key, tr.id))
-                continue
-            pick_time = reference_time + tr.stats.sac['a']
-            phase_hint = tr.stats.sac['ka'].split()[0]
-        except KeyError:
-            Logger.debug(
-                'No pick in position {0} for trace {1}'.format(
-                    pick_key, tr.id))
-            continue
-        Logger.info(
-            'Found pick in position {0} for {1}'.format(pick_key, tr.id))
-        waveform_id = WaveformStreamID(
-            station_code=tr.stats.station, network_code=tr.stats.network,
-            channel_code=tr.stats.channel)
-        pick = Pick(
-            waveform_id=waveform_id, phase_hint=phase_hint, time=pick_time)
-        event.picks.append(pick)
 
     return event
 

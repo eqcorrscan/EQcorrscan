@@ -142,7 +142,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         *Method specific arguments:*
 
         - `from_client` requires:
-            :param str client_id: string passable by obspy to generate Client
+            :param str client_id:
+                string passable by obspy to generate Client, or a Client
+                instance
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
@@ -155,6 +157,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             :param list sac_files:
                 osbpy.core.stream.Stream of sac waveforms, or list of paths to
                 sac waveforms.
+            .. note::
+                See `eqcorrscan.utils.sac_util.sactoevent` for details on
+                how pick information is collected.
         - `from_meta_file` requires:
             :param str meta_file: Path to obspy-readable event file.
             :param `obspy.core.stream.Stream` st:
@@ -240,7 +245,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             catalog=catalog, process_len=process_len, template_length=length,
             data_pad=data_pad)
         if method == 'from_client':
-            client = FDSNClient(kwargs.get('client_id', None))
+            if isinstance(kwargs.get('client_id'), str):
+                client = FDSNClient(kwargs.get('client_id', None))
+            else:
+                client = kwargs.get('client_id', None)
             available_stations = []
         else:
             client = SeisHubClient(kwargs.get('url', None), timeout=10)
