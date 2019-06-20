@@ -42,10 +42,10 @@ class EQcorrscanDeprecationWarning(UserWarning):
 
 
 if sys.version_info.major < 3:
-    warnings.warn(
-        "EQcorrscan will stop supporting Python 2.x in a forthcoming release."
+    raise NotImplementedError(
+        "EQcorrscan no longer supports Python 2.x"
         " See https://github.com/eqcorrscan/EQcorrscan/issues/242 to read "
-        "more.", EQcorrscanDeprecationWarning)
+        "more.")
 
 
 class EQcorrscanRestructureAndLoad(object):

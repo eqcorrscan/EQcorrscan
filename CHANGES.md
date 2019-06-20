@@ -66,6 +66,7 @@
 * Fix #298 where the header was repeated in detection csv files. Also added
   a `write_detections` function to `eqcorrscan.core.match_filter.detection`
   to streamline writing detections.
+* Remove support for Python 2.7.
 * Add warning about unused data when using `Tribe.detect` methods with data that
   do not fit into chunks. Fixes #291.
 * Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
