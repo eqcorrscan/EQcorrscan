@@ -664,10 +664,11 @@ def match_filter(template_names, template_list, st, threshold,
             Logger.debug("Found 0 peaks for template {0}".format(
                 _template_names[i]))
     Logger.info("Made {0} detections from {1} templates".format(
-        len(detections), len(templates))
+        len(detections), len(templates)))
     if extract_detections:
         detection_streams = extract_from_stream(stream, detections)
     del stream, templates
+
     if output_cat and not extract_detections:
         return detections, det_cat
     elif not extract_detections:
