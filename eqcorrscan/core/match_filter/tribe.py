@@ -595,7 +595,7 @@ class Tribe(object):
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap,
                 full_peaks=full_peaks, process_cores=process_cores,
-                ignore_bad_data=ignore_bad_data, **kwargs)
+                ignore_bad_data=ignore_bad_data, arg_check=False, **kwargs)
             party += group_party
             if save_progress:
                 party.write("eqcorrscan_temporary_party")

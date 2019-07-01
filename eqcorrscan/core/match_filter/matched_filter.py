@@ -333,7 +333,7 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
                  extract_detections=False, arg_check=True, full_peaks=False,
-                 peak_cores=None, **kwargs):
+                 peak_cores=None, spike_test=True, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -576,7 +576,13 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template sampling rate does not '
                         'match continuous data')
-    _spike_test(st)
+        for template in template_list:
+            for tr in template:
+                if isinstance(tr.data, np.ma.core.MaskedArray):
+                    raise MatchFilterError(
+                        'Template contains masked array, split first')
+    if spike_test:
+        _spike_test(st)
     if cores is not None:
         parallel = True
     else:
@@ -585,13 +591,9 @@ def match_filter(template_names, template_list, st, threshold,
         peak_cores = cores
     # Copy the stream here because we will muck about with it
     stream = st.copy()
-    templates = copy.deepcopy(template_list)
-    _template_names = copy.deepcopy(template_names)
-    for template in templates:
-        for tr in template:
-            if isinstance(tr.data, np.ma.core.MaskedArray):
-                raise MatchFilterError('Template contains masked array,'
-                                       ' split first')
+    templates = [t.copy() for t in template_list]
+    _template_names = template_names.copy()  # This can just be a shallow copy
+
     stream, templates, _template_names = _prep_data_for_correlation(
         stream=stream, templates=templates, template_names=_template_names)
     if len(templates) == 0:

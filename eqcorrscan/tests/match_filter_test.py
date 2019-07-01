@@ -549,7 +549,7 @@ class TestNCEDCCases(unittest.TestCase):
         templates = [self.templates[0].copy()]
         templates[0][0].data = np.concatenate([templates[0][0].data,
                                                np.random.randn(10)])
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AssertionError):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
