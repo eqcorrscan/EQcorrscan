@@ -494,7 +494,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         Logger.info(
-            'Data for {0} are not of daylong length, will zero pad'.format(
+            'Data for {0} are not long-enough, will zero pad'.format(
                 tr.id))
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
@@ -531,9 +531,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate * length == tr.stats.npts:
-                raise ValueError('Data are not daylong for ' +
-                                 tr.stats.station + '.' + tr.stats.channel)
+        if tr.stats.sampling_rate * length != tr.stats.npts:
+                raise ValueError('Data are not long enough for ' +
+                                 tr.stats.id)
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
