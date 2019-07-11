@@ -286,6 +286,10 @@ class Tribe(object):
         tribe_cat = Catalog()
         for t in self.templates:
             if t.event is not None:
+                # Check that the name in the comment matches the template name
+                for comment in t.event.comments:
+                    if comment.text.startswith("eqcorrscan_template_"):
+                        comment.text = "eqcorrscan_template_{0}".format(t.name)
                 tribe_cat.append(t.event)
         if len(tribe_cat) > 0:
             tribe_cat.write(
@@ -295,7 +299,10 @@ class Tribe(object):
             template.st.write(filename + '/' + template.name + '.ms',
                               format='MSEED')
         if compress:
-            with tarfile.open(filename + '.tgz', "w:gz") as tar:
+            if not filename.endswith(".tgz"):
+                Logger.info("Appending '.tgz' to filename.")
+                filename += ".tgz"
+            with tarfile.open(filename, "w:gz") as tar:
                 tar.add(filename, arcname=os.path.basename(filename))
             shutil.rmtree(filename)
         return self
