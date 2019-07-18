@@ -530,11 +530,15 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
         Logger.info('Downloading for start-time: {0} end-time: {1}'.format(
             starttime, endtime))
         Logger.debug('.'.join([net, sta, loc, chan]))
+        query_params = dict(
+            network=net, station=sta, location=loc, channel=chan,
+            starttime=starttime, endtime=endtime)
         try:
-            st += client.get_waveforms(net, sta, loc, chan,
-                                       starttime, endtime)
-        except Exception:
-            Logger.error('Found no data for this station')
+            st += client.get_waveforms(**query_params)
+        except Exception as e:
+            Logger.error(e)
+            Logger.error('Found no data for this station: {0}'.format(
+                query_params))
             dropped_pick_stations += 1
     if not st and dropped_pick_stations == len(event.picks):
         raise Exception('No data available, is the server down?')
