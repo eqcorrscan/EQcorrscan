@@ -280,24 +280,33 @@ class Tribe(object):
 
         if catalog_format not in CAT_EXT_MAP.keys():
             raise TypeError("{0} is not supported".format(catalog_format))
-        if not os.path.isdir(filename):
-            os.makedirs(filename)
-        self._par_write(filename)
+        dirname, ext = os.path.splitext(filename)
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+        self._par_write(dirname)
         tribe_cat = Catalog()
         for t in self.templates:
             if t.event is not None:
+                # Check that the name in the comment matches the template name
+                for comment in t.event.comments:
+                    if comment.text.startswith("eqcorrscan_template_"):
+                        comment.text = "eqcorrscan_template_{0}".format(t.name)
                 tribe_cat.append(t.event)
         if len(tribe_cat) > 0:
             tribe_cat.write(
-                os.path.join(filename, 'tribe_cat.{0}'.format(
+                os.path.join(dirname, 'tribe_cat.{0}'.format(
                     CAT_EXT_MAP[catalog_format])), format=catalog_format)
         for template in self.templates:
-            template.st.write(filename + '/' + template.name + '.ms',
-                              format='MSEED')
+            template.st.write(
+                os.path.join(dirname, '{0}.ms'.format(template.name)),
+                format='MSEED')
         if compress:
-            with tarfile.open(filename + '.tgz', "w:gz") as tar:
-                tar.add(filename, arcname=os.path.basename(filename))
-            shutil.rmtree(filename)
+            if not filename.endswith(".tgz"):
+                Logger.info("Appending '.tgz' to filename.")
+                filename += ".tgz"
+            with tarfile.open(filename, "w:gz") as tar:
+                tar.add(dirname, arcname=os.path.basename(dirname))
+            shutil.rmtree(dirname)
         return self
 
     def _par_write(self, dirname):
@@ -595,7 +604,7 @@ class Tribe(object):
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap,
                 full_peaks=full_peaks, process_cores=process_cores,
-                ignore_bad_data=ignore_bad_data, **kwargs)
+                ignore_bad_data=ignore_bad_data, arg_check=False, **kwargs)
             party += group_party
             if save_progress:
                 party.write("eqcorrscan_temporary_party")

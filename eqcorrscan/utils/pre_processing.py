@@ -13,7 +13,6 @@ import numpy as np
 import logging
 import datetime as dt
 
-from collections import Counter
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
@@ -495,7 +494,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         tr = tr.trim(starttime, starttime + length, nearest_sample=True)
     if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
         Logger.info(
-            'Data for {0} are not of daylong length, will zero pad'.format(
+            'Data for {0} are not long-enough, will zero pad'.format(
                 tr.id))
         if tr.stats.endtime - tr.stats.starttime < 0.8 * length\
            and not ignore_length:
@@ -532,9 +531,9 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate * length == tr.stats.npts:
-                raise ValueError('Data are not daylong for ' +
-                                 tr.stats.station + '.' + tr.stats.channel)
+        if tr.stats.sampling_rate * length != tr.stats.npts:
+                raise ValueError('Data are not long enough for ' +
+                                 tr.stats.id)
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
@@ -677,14 +676,12 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     :return: stream, templates, template_names (if template_names given)
     """
     n_templates = len(templates)
-    samp_rate = stream[0].stats.sampling_rate
-    for tr in stream:
-        if tr.stats.sampling_rate != samp_rate:
-            raise NotImplementedError("Sampling rates differ")
-    for template in templates:
-        for tr in template:
-            if tr.stats.sampling_rate != samp_rate:
-                raise NotImplementedError("Sampling rates differ")
+    template_samp_rates = {
+        tr.stats.sampling_rate for template in templates for tr in template}
+    stream_samp_rates = {tr.stats.sampling_rate for tr in stream}
+    samp_rates = template_samp_rates.union(stream_samp_rates)
+    assert len(samp_rates) == 1, "Sampling rates differ"
+    samp_rate = samp_rates.pop()
 
     out_stream = Stream()
 
@@ -701,27 +698,25 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     else:
         stream_length = max([tr.stats.npts for tr in stream])
 
-    template_length = set(
-        [tr.stats.npts for template in templates for tr in template])
-    if len(template_length) > 1:
-        raise NotImplementedError("Template traces not all the same length")
+    template_length = {
+        tr.stats.npts for template in templates for tr in template}
+    assert len(template_length) == 1, "Template traces not all the same length"
     template_length = template_length.pop()
 
-    stream_ids = [tr.id for tr in stream]
+    stream_ids = {tr.id for tr in stream}
 
     # Need to ensure that a channel can be in the template multiple times.
-    template_ids = {}
+    template_ids = {stream_id: [] for stream_id in stream_ids}
     for template in templates:
         # Only include those in the stream.
-        stachans_in_template = [
-            tr.id for tr in template if tr.id in stream_ids]
-        stachans_in_template = Counter(stachans_in_template)
-        for stachan in stachans_in_template.keys():
-            stachans = stachans_in_template[stachan]
-            if stachan not in template_ids.keys():
-                template_ids.update({stachan: stachans})
-            elif stachans_in_template[stachan] > template_ids[stachan]:
-                template_ids.update({stachan: stachans})
+        channels_in_template = {
+            tr.id for tr in template}.intersection(stream_ids)
+        for channel in channels_in_template:
+            template_ids[channel].append(len(template.select(id=channel)))
+
+    template_ids = {key: max(value) for key, value in template_ids.items()
+                    if len(value) > 0}
+
     seed_ids = sorted(
         [key.split('.') + [i] for key, value in template_ids.items()
          for i in range(value)])
@@ -774,33 +769,42 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     nan_template = Stream()
     for _seed_id in seed_ids:
         net, sta, loc, chan = _seed_id[0].split('.')
-        nan_template += Trace(
-            data=nan_channel, header=Stats({
-                'network': net, 'station': sta, 'location': loc,
-                'channel': chan, 'starttime': UTCDateTime(),
-                'npts': template_length, 'sampling_rate': samp_rate}))
-    out_templates, out_template_names = ([], [])
-    for template_name, template in zip(template_names, templates):
+        nan_template += Trace(header=Stats({
+            'network': net, 'station': sta, 'location': loc,
+            'channel': chan, 'starttime': UTCDateTime(),
+            'npts': template_length, 'sampling_rate': samp_rate}))
+
+    # Remove templates with no matching channels
+    filt = np.ones(len(template_names)).astype(bool)
+    for i, template in enumerate(templates):
+        template_ids = {tr.id for tr in template}
+        if len(template_ids.intersection(stream_ids)) == 0:
+            filt[i] = 0
+
+    _out = dict(zip(
+        [_tn for _tn, _filt in zip(template_names, filt) if _filt],
+        [_t for _t, _filt in zip(templates, filt) if _filt]))
+
+    if len(_out) != len(templates):
+        Logger.debug("Some templates not used due to no matching channels")
+
+    # Fill out the templates with nan channels
+    for template_name, template in _out.items():
         template_starttime = min([tr.stats.starttime for tr in template])
-        out_template = Stream()
-        channel_count = 0
+        out_template = nan_template.copy()
         for channel_number, _seed_id in enumerate(seed_ids):
             seed_id, channel_index = _seed_id
-            try:
-                template_channel = template.select(id=seed_id)[channel_index]
-                channel_count += 1
-            except IndexError:
-                # No channel or no duplicate channel, so NaN remains.
-                template_channel = nan_template[channel_number].copy()
-                template_channel.stats.starttime = template_starttime
-            out_template += template_channel
-        if channel_count > 0:
-            out_templates.append(out_template)
-            out_template_names.append(template_name)
-        else:
-            Logger.debug(
-                "Template {0} has no matching channels - not using".format(
-                    template_name))
+            template_channel = template.select(id=seed_id)
+            if len(template_channel) <= channel_index:
+                out_template[channel_number].data = nan_channel
+                out_template[channel_number].stats.starttime = template_starttime
+            else:
+                out_template[channel_number] = template_channel[channel_index]
+        _out.update({template_name: out_template})
+
+    out_templates = list(_out.values())
+    out_template_names = list(_out.keys())
+
     if named:
         return out_stream, out_templates, out_template_names
     return out_stream, out_templates

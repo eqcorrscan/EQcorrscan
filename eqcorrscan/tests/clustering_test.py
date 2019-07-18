@@ -455,7 +455,7 @@ class ClusteringTestWarnings(unittest.TestCase):
         st2 = self.st2.copy()
         for tr in st2:
             tr.stats.sampling_rate += 20
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AssertionError):
             cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
 
     def test_delay_grouping(self):

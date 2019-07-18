@@ -55,9 +55,14 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
         cross channel coherence, float - normalized by number of channels.
         locations of maximums
     :rtype: numpy.ndarray, numpy.ndarray
+
+    .. Note::
+        If no matching channels were found then the coherance and index for
+        that stream will be nan.
     """
     # Cut all channels in stream-list to be the correct length (shorter than
     # st1 if stack = False by shift_len).
+    n_streams = len(streams)
     df = st1[0].stats.sampling_rate
     end_trim = int((shift_len * df) / 2)
     _streams = []
@@ -71,8 +76,9 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
             _streams.append(_stream)
         streams = _streams
     # Check which channels are in st1 and match those in the stream_list
-    st1, streams = _prep_data_for_correlation(
-        stream=st1, templates=streams, force_stream_epoch=False)
+    st1, streams, stream_indexes = _prep_data_for_correlation(
+        stream=st1, templates=streams,
+        template_names=list(range(len(streams))), force_stream_epoch=False)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
@@ -82,7 +88,14 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
     positions = cccsums.argmax(axis=-1)
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
-    return coherances, positions
+    _coherances = np.empty(n_streams)
+    _positions = np.empty_like(_coherances)
+    _coherances.fill(np.nan)
+    _positions.fill(np.nan)
+    for coh_ind, stream_ind in enumerate(stream_indexes):
+        _coherances[stream_ind] = coherances[coh_ind]
+        _positions[stream_ind] = positions[coh_ind]
+    return _coherances, _positions
 
 
 def distance_matrix(stream_list, shift_len=0.0, cores=1):

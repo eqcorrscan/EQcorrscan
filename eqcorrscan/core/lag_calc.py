@@ -293,7 +293,7 @@ def _day_loop(detection_streams, template, min_cc, detections,
         num_cores = len(detection_streams)
     if parallel:
         pool = Pool(processes=num_cores)
-        Logger.info('Made pool of {0} workers'.format(num_cores))
+        Logger.debug('Made pool of {0} workers'.format(num_cores))
         # Parallel generation of events for each detection:
         # results will be a list of (i, event class)
         results = [pool.apply_async(
