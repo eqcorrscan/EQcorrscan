@@ -1,4 +1,7 @@
 ## Current
+* Renamed utils.clustering.cross_chan_coherence to 
+  utils.clustering.cross_chan_correlation to better reflect what it actually 
+  does.
 * Add --no-mkl flag for setup.py to force the FFTW correlation routines not
   to compile against intels mkl.  On NeSI systems mkl is currently causing
   issues.

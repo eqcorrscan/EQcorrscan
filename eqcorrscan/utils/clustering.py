@@ -27,13 +27,13 @@ from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
 Logger = logging.getLogger(__name__)
 
 
-def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
-                         concurrency="concurrent", cores=1, **kwargs):
+def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
+                           concurrency="concurrent", cores=1, **kwargs):
     """
-    Calculate cross-channel coherency.
+    Calculate cross-channel correlation.
 
-    Determine the cross-channel coherency between two streams of multichannel
-    seismic data.
+    Determine the cross-channel correlation between two streams of
+    multichannel seismic data.
 
     :type st1: obspy.core.stream.Stream
     :param st1: Stream one
@@ -52,7 +52,7 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
     :param cores: Number of threads to parallel over
 
     :returns:
-        cross channel coherence, float - normalized by number of channels.
+        cross channel correlation, float - normalized by number of channels.
         locations of maximums
     :rtype: numpy.ndarray, numpy.ndarray
 
@@ -89,7 +89,7 @@ def cross_chan_coherence(st1, streams, shift_len=0.0, xcorr_func='fftw',
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
     _coherances = np.empty(n_streams)
-    _positions = np.empty_like(_coherances)
+    _positions = np.empty((n_streams, no_chans.max()))
     _coherances.fill(np.nan)
     _positions.fill(np.nan)
     for coh_ind, stream_ind in enumerate(stream_indexes):
@@ -131,8 +131,8 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
     for i, master in enumerate(stream_list):
-        dist_list, _ = cross_chan_coherence(
-            st1=master.copy(), streams=deepcopy(stream_list),
+        dist_list, _ = cross_chan_correlation(
+            st1=master.copy(), streams=stream_list,
             shift_len=shift_len, xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
     assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)

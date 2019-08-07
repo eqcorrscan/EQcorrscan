@@ -16,7 +16,7 @@ from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.mag_calc import dist_calc
 from eqcorrscan.utils import clustering
 from eqcorrscan.utils.clustering import (
-    cross_chan_coherence, distance_matrix, cluster, group_delays, svd,
+    cross_chan_correlation, distance_matrix, cluster, group_delays, svd,
     empirical_svd, svd_to_stream, corr_cluster, dist_mat_km, catalog_cluster,
     space_time_cluster, remove_unclustered)
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
@@ -32,13 +32,13 @@ class ClusteringTests(unittest.TestCase):
 
     def test_cross_chan_coherence(self):
         """Initial test to ensure cross_chan_coherence runs."""
-        cccoh, _ = cross_chan_coherence(
+        cccoh, _ = cross_chan_correlation(
             st1=self.st1.copy(), streams=[self.st2.copy()])
         self.assertEqual(cccoh[0], 1)
 
     def test_cross_chan_coherence_shifted(self):
         """Initial test to ensure cross_chan_coherence runs."""
-        cccoh, _ = cross_chan_coherence(
+        cccoh, _ = cross_chan_correlation(
             st1=self.st1.copy(), streams=[self.st2.copy()], shift_len=0.2)
         self.assertEqual(round(cccoh[0], 6), 1)
 
@@ -47,7 +47,7 @@ class ClusteringTests(unittest.TestCase):
         st2 = self.st2.copy()
         for tr in st2:
             tr.data *= -1
-        cccoh, _ = cross_chan_coherence(
+        cccoh, _ = cross_chan_correlation(
             st1=self.st1.copy(), streams=[st2])
         self.assertEqual(cccoh[0], -1)
 
@@ -63,7 +63,7 @@ class ClusteringTests(unittest.TestCase):
             tr.data = tr.data[0:8000]
         for tr in st2:
             tr.data = tr.data[0:8000]
-        cccoh, _ = cross_chan_coherence(st1=st1, streams=[st2])
+        cccoh, _ = cross_chan_correlation(st1=st1, streams=[st2])
         self.assertTrue(cccoh[0] < 0.01)
 
     def test_distance_matrix(self):
@@ -154,9 +154,9 @@ class EfficientClustering(unittest.TestCase):
         for master in self.stream_list:
             shuffled_stream_list = [st.copy() for st in self.stream_list]
             shuffle(shuffled_stream_list)
-            cccoh, _ = cross_chan_coherence(
+            cccoh, _ = cross_chan_correlation(
                 st1=master.copy(), streams=self.stream_list)
-            cccoh_shuffled, _ = cross_chan_coherence(
+            cccoh_shuffled, _ = cross_chan_correlation(
                 st1=master.copy(), streams=shuffled_stream_list)
             cccoh.sort()
             cccoh_shuffled.sort()
@@ -170,9 +170,9 @@ class EfficientClustering(unittest.TestCase):
         for master in self.stream_list:
             shuffled_stream_list = [st.copy() for st in self.stream_list]
             shuffle(shuffled_stream_list)
-            cccoh, _ = cross_chan_coherence(
+            cccoh, _ = cross_chan_correlation(
                 st1=master, streams=self.stream_list, shift_len=shift)
-            cccoh_shuffled, _ = cross_chan_coherence(
+            cccoh_shuffled, _ = cross_chan_correlation(
                 st1=master, streams=shuffled_stream_list, shift_len=shift)
             cccoh.sort()
             cccoh_shuffled.sort()
@@ -456,7 +456,7 @@ class ClusteringTestWarnings(unittest.TestCase):
         for tr in st2:
             tr.stats.sampling_rate += 20
         with self.assertRaises(AssertionError):
-            cross_chan_coherence(st1=self.st1.copy(), streams=[st2])
+            cross_chan_correlation(st1=self.st1.copy(), streams=[st2])
 
     def test_delay_grouping(self):
         """Test grouping by delays"""
