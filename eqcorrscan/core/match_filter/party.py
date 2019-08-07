@@ -509,6 +509,8 @@ class Party(object):
         >>> len(party)
         3
         """
+        if self.__len__() == 0:
+            return self
         all_detections = []
         for fam in self.families:
             all_detections.extend(fam.detections)
