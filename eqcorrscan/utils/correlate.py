@@ -854,7 +854,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         raise CorrelationError("Internal correlation error")
     for i, missed_corr in enumerate(missed_correlations):
         if missed_corr:
-            Logger.warning(
+            Logger.debug(
                 "{0} correlations not computed on {1}, are there gaps in the "
                 "data? If not, consider increasing gain".format(
                     missed_corr, seed_ids[i]))
