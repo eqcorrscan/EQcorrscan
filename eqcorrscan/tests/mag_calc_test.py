@@ -18,8 +18,8 @@ from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils import mag_calc
 from eqcorrscan.utils.mag_calc import (
-    dist_calc, _sim_WA, _max_p2t, _GSE2_PAZ_read, _find_resp, _pairwise,
-    svd_moments, amp_pick_event, _snr, relative_amplitude, relative_magnitude)
+    dist_calc, _sim_WA, _max_p2t,_pairwise, svd_moments, amp_pick_event,
+    _snr, relative_amplitude, relative_magnitude)
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
@@ -52,44 +52,13 @@ class TestMagCalcMethods(unittest.TestCase):
         st = fdsn_client.get_waveforms(
             network='NZ', station='BFZ', location='10', channel='HHZ',
             starttime=t1, endtime=t2, attach_response=True)
+        inventory = fdsn_client.get_stations(
+            network='NZ', station='BFZ', location='10', channel='HHZ',
+            starttime=t1, endtime=t2, level="response")
         tr = st[0]
-        PAZ = {'poles': [-4.440 + 4.440j, -4.440 - 4.440j, -1.083 + 0.0j],
-               'zeros': [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0],
-               'sensitivity': 0.4,
-               'gain': 60077000.0}
-        tr_safe = tr.copy()
-        # Test with PAZ
-        _sim_WA(trace=tr, PAZ=PAZ, seedresp=None, water_level=10)
-        tr = tr_safe.copy()
-        # Test without PAZ or seedresp
-        _sim_WA(trace=tr, PAZ=None, seedresp=None, water_level=10)
-        tr = tr_safe.copy()
-        with open("Temp_resp", "w") as tf:
-            respf = tf.name
-            old_iris_client = OldIris_Client()
-            # fetch RESP information from "old" IRIS web service, see
-            # obspy.fdsn for accessing the new IRIS FDSN web services
-            old_iris_client.resp('NZ', 'BFZ', '10', 'HHZ', t1, t2,
-                                 filename=respf)
-            # Hack around unit issues
-        with open("Temp_resp", "r") as tf:
-            resp_contents = [line for line in tf]
-        corrected_contents = []
-        for line in resp_contents:
-            if "COUNT" in line:
-                line = line.replace("COUNT", "COUNTS")
-            corrected_contents.append(line)
-        with open("Temp_resp", "w") as tf:
-            for line in corrected_contents:
-                tf.write(line)
-        date = t1
-
-        seedresp = {
-            'filename': respf, 'date': date, 'network': tr.stats.network,
-            'station': tr.stats.station, 'channel': tr.stats.channel,
-            'location': tr.stats.location, 'units': 'DIS'}
-        _sim_WA(trace=tr, PAZ=None, seedresp=seedresp, water_level=10)
-        os.remove(respf)
+        # Test with inventory
+        _sim_WA(trace=tr, inventory=inventory, water_level=10)
+        # TODO: This doesn't really test the accuracy.
 
     def test_max_p2t(self):
         """Test the minding of maximum peak-to-trough."""
@@ -100,84 +69,6 @@ class TestMagCalcMethods(unittest.TestCase):
         self.assertTrue(amplitude > 15)
         self.assertTrue(amplitude < 25)
         self.assertEqual(round(time), 5)
-
-    def test_GSE_read(self):
-        """Test reading GSE PAZ."""
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
-        GSEfile = os.path.join(testing_path, 'POCR2SH_1.2008-01-01-0000_GSE')
-        PAZ, date, station, channel, sensor = _GSE2_PAZ_read(gsefile=GSEfile)
-        # Check that all the elements are there
-        self.assertEqual(date, dt.datetime(2008, 11, 6, 0, 0))
-        self.assertEqual(station, 'POCR2')
-        self.assertEqual(channel, 'SH1')
-        self.assertEqual(sensor, 'HS1-2')
-        self.assertTrue('gain' in PAZ)
-        self.assertTrue('poles' in PAZ)
-        self.assertTrue('sensitivity' in PAZ)
-        self.assertTrue('zeros' in PAZ)
-        # Check that we only cope with CAL2 files
-        with NamedTemporaryFile() as tf:
-            f = open(GSEfile, 'r')
-            corrf = open(tf.name, 'w')
-            corrf.write(f.readline().replace('CAL2', 'BOB2'))
-            for line in f:
-                corrf.write(line)
-            corrf.close()
-            f.close()
-            with self.assertRaises(IOError):
-                _GSE2_PAZ_read(gsefile=tf.name)
-        # Check that we only cope with PAZ2 files
-        with NamedTemporaryFile() as tf:
-            f = open(GSEfile, 'r')
-            corrf = open(tf.name, 'w')
-            corrf.write(f.readline())
-            corrf.write(f.readline().replace('PAZ2', 'BOB2'))
-            for line in f:
-                corrf.write(line)
-            corrf.close()
-            f.close()
-            with self.assertRaises(IOError):
-                _GSE2_PAZ_read(gsefile=tf.name)
-
-    def test_find_resp(self):
-        """Test the ability to find response info"""
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
-        station = 'POCR2'
-        channel = 'SH1'
-        network = 'AF'
-        time = dt.datetime(2008, 11, 9, 0, 0)
-
-        PAZ = _find_resp(station=station, channel=channel, network=network,
-                         time=time, delta=0.005, directory=testing_path)
-        # Will find the POCR2 respfile
-        self.assertTrue('gain' in PAZ)
-        self.assertTrue('poles' in PAZ)
-        self.assertTrue('sensitivity' in PAZ)
-        self.assertTrue('zeros' in PAZ)
-
-        station = 'GCSZ'
-        channel = 'EHZ'
-        network = 'NZ'
-        time = dt.datetime(2013, 1, 1, 0, 0)
-
-        resp = _find_resp(station=station, channel=channel, network=network,
-                          time=time, delta=0.005, directory=testing_path)
-        for key in ['channel', 'date', 'filename', 'location',
-                    'network', 'station', 'units']:
-            self.assertTrue(key in resp)
-
-        station = 'WZ01'
-        channel = 'ELE'
-        network = 'ZT'
-        time = dt.datetime(2013, 1, 1, 0, 0)
-
-        resp = _find_resp(station=station, channel=channel, network=network,
-                          time=time, delta=0.005, directory=testing_path)
-        for key in ['channel', 'date', 'filename', 'location',
-                    'network', 'station', 'units']:
-            self.assertTrue(key in resp)
 
     def test_pairwise(self):
         """Test the itertools wrapper"""
@@ -379,6 +270,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         self.assertEqual(len(relative_magnitudes), 0)
 
 
+# TODO: None of these actually test for accuracy.
 class TestAmpPickEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
