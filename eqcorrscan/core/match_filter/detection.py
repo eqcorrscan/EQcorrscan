@@ -17,7 +17,7 @@ import os
 import logging
 
 import numpy as np
-from obspy import Catalog, UTCDateTime
+from obspy import Catalog, UTCDateTime, Stream
 from obspy.core.event import (
     Comment, WaveformStreamID, Event, Pick, CreationInfo, ResourceIdentifier,
     Origin)
@@ -343,6 +343,53 @@ class Detection(object):
                 ev.origins = [_origin]
         self.event = ev
         return self
+
+    def extract_stream(self, stream, length, prepick):
+        """
+        Extract a cut stream of a given length around the detection.
+
+        :type stream: `obspy.core.stream.Stream`
+        :param stream: Stream of data to cut from
+        :type length: float
+        :param length: Length of data to extract in seconds.
+        :type prepick: float
+        :param prepick:
+            Length before the expected pick on each channel to start the cut
+            stream in seconds.
+
+        :rtype: `obspy.core.stream.Stream`
+        """
+        assert self.event, "Detection must have an event - use Detection._calculate_event()"
+        cut_stream = Stream()
+        valid_chans = {
+            (tr.stats.station, tr.stats.channel)
+            for tr in stream}.intersection(set(self.chans))
+        for station, channel in valid_chans:
+            _st = stream.select(station=station, channel=channel)
+            pick = [
+                p for p in self.event.picks
+                if p.waveform_id.station_code == station and
+                p.waveform_id.channel_code == channel]
+            if len(pick) == 0:
+                Logger.info("No pick for {0}.{1}".format(station, channel))
+                continue
+            elif len(pick) > 1:
+                Logger.info(
+                    "Multiple picks found for {0}.{1}, using earliest".format(
+                        station, channel))
+                pick.sort(key=lambda p: p.time)
+            pick = pick[0]
+            cut_start = pick.time - prepick
+            cut_end = cut_start + length
+            _st = _st.slice(starttime=cut_start, endtime=cut_end).copy()
+            # Minimum length check
+            for tr in _st:
+                if tr.stats.npts == length * tr.stats.sampling_rate:
+                    cut_stream += tr
+                else:
+                    Logger.info(
+                        "Insufficient data length for {0}".format(tr.id))
+        return cut_stream
 
 
 def write_detections(detections, fname, mode='a'):

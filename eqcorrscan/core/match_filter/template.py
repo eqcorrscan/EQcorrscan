@@ -598,6 +598,31 @@ def read_template(fname):
     return template
 
 
+def group_templates(templates):
+    """
+    Group templates into sets of similarly processed templates.
+
+    :type templates: List of Tribe of Templates
+    :return: List of Lists of Templates.
+    """
+    template_groups = []
+    for master in templates:
+        for group in template_groups:
+            if master in group:
+                break
+        else:
+            new_group = [master]
+            for slave in templates:
+                if master.same_processing(slave) and master != slave:
+                    new_group.append(slave)
+            template_groups.append(new_group)
+    # template_groups will contain an empty first list
+    for group in template_groups:
+        if len(group) == 0:
+            template_groups.remove(group)
+    return template_groups
+
+
 if __name__ == "__main__":
     import doctest
 

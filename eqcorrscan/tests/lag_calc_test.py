@@ -10,8 +10,7 @@ from obspy import read_events, read
 from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.core import lag_calc
-from eqcorrscan.core.lag_calc import _channel_loop, _xcorr_interp, LagCalcError
-from eqcorrscan.core.lag_calc import _day_loop, _prepare_data
+from eqcorrscan.core.lag_calc import _xcorr_interp, LagCalcError, _prepare_data
 from eqcorrscan.core.match_filter import normxcorr2, Detection
 from eqcorrscan.core.template_gen import template_gen
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler

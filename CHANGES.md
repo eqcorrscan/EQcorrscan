@@ -1,4 +1,10 @@
 ## Current
+* Wholesale re-write of lag-calc function and methods. External interface is
+  similar, but some arguments have been depreciated as they were unnecesary.
+  - This was done to make use of the new internal correlation functions which
+    are faster and more memory efficient.
+  - Party.lag_calc and Family.lag_calc now work in-place on the events in 
+    the grouping.
 * Renamed utils.clustering.cross_chan_coherence to 
   utils.clustering.cross_chan_correlation to better reflect what it actually 
   does.
