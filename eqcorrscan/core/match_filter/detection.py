@@ -384,7 +384,7 @@ class Detection(object):
             _st = _st.slice(starttime=cut_start, endtime=cut_end).copy()
             # Minimum length check
             for tr in _st:
-                if tr.stats.npts == length * tr.stats.sampling_rate:
+                if abs((tr.stats.endtime - tr.stats.starttime) - length) < tr.stats.delta:
                     cut_stream += tr
                 else:
                     Logger.info(

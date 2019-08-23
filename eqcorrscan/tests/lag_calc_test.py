@@ -2,227 +2,88 @@
 A series of test functions for the core functions in EQcorrscan.
 """
 import unittest
-import os
 import numpy as np
 import logging
 
-from obspy import read_events, read
-from obspy.io.nordic.core import readwavename
-
-from eqcorrscan.core import lag_calc
-from eqcorrscan.core.lag_calc import _xcorr_interp, LagCalcError, _prepare_data
-from eqcorrscan.core.match_filter import normxcorr2, Detection
-from eqcorrscan.core.template_gen import template_gen
+from eqcorrscan.utils.synth_seis import generate_synth_data
+from eqcorrscan.core.lag_calc import (
+    _xcorr_interp, LagCalcError, _prepare_data, lag_calc, xcorr_pick_family)
+from eqcorrscan.core.match_filter import Detection, Family, Party, Template
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
+np.random.seed(999)
 
-class TestMethods(unittest.TestCase):
+
+class SyntheticTests(unittest.TestCase):
+    """ Test lag-calc with synthetic data. """
     @classmethod
-    def setUpClass(cls):
-        log = logging.getLogger(lag_calc.__name__)
-        cls._log_handler = MockLoggingHandler(level='DEBUG')
-        log.addHandler(cls._log_handler)
-        cls.log_messages = cls._log_handler.messages
-        cls.testing_path = os.path.join(os.path.abspath(
-            os.path.dirname(__file__)), 'test_data', 'REA', 'TEST_')
-        cls.wave_path = os.path.join(os.path.abspath(
-            os.path.dirname(__file__)), 'test_data', 'WAV', 'TEST_')
-        key_dict = [
-            {'name': 'template', 'sfile': '21-1412-02L.S201309'},
-            {'name': 'detection', 'sfile': '21-1759-04L.S201309'},
-            {'name': 'template_spicks', 'sfile': '18-2120-53L.S201309'},
-            {'name': 'detection_spicks', 'sfile': '18-2350-08L.S201309'}]
-        for item in key_dict:
-            st = read(os.path.join(
-                cls.wave_path, readwavename(os.path.join(
-                    cls.testing_path, item['sfile']))[0]))
-            for tr in st:
-                tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-            item.update({'st': st, 'sfile': os.path.join(
-                cls.testing_path, item['sfile'])})
-            setattr(cls, item['name'], template_gen(method="from_meta_file",
-                meta_file=item['sfile'], lowcut=5, highcut=15, samp_rate=40,
-                filt_order=4, length=3, swin='all', prepick=0.05,
-                st=item['st'])[0])
-        detection_event = read_events(os.path.join(
-            cls.testing_path, '21-1759-04L.S201309'))[0]
-        detection_spicks_event = read_events(
-            os.path.join(cls.testing_path, '18-2350-07L.S201309'))[0]
-        cls.detections = [Detection(
-            detect_time=detection_event.origins[0].time, detect_val=2.0,
-            no_chans=5, threshold=1.9, typeofdet='corr', event=detection_event,
-            template_name='test_template', threshold_type='MAD',
-            threshold_input=8.0),
-                          Detection(
-            detect_time=detection_spicks_event.origins[0].time, detect_val=2.0,
-            no_chans=5, threshold=1.9, typeofdet='corr',
-            event=detection_spicks_event, template_name='test_template',
-            threshold_type='MAD', threshold_input=8.0)]
-        tstart = min(tr.stats.starttime for tr in cls.template)
-        cls.delays = {}
-        for tr in cls.template:
-            cls.delays.update({tr.stats.station + '.' + tr.stats.channel:
-                               tr.stats.starttime - tstart})
-
-    def setUp(self):
-        self._log_handler.reset()
-
-    def test_channel_loop(self):
-        """Test the main lag_calc function"""
-        i, event = _channel_loop(
-            detection=self.detection, template=self.template, min_cc=0.4, i=0,
-            detection_id='Tester_01', interpolate=False)
-        matched_traces = []
-        detection_stachans = [(tr.stats.station, tr.stats.channel)
-                              for tr in self.detection]
-        picked_stachans = [(pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code)
-                           for pick in event.picks]
-        for master_tr in self.template:
-            stachan = (master_tr.stats.station, master_tr.stats.channel)
-            if stachan in detection_stachans:
-                matched_traces.append(stachan)
-
-        for picked_stachan in picked_stachans:
-            self.assertTrue(picked_stachan in matched_traces)
-
-    def test_channel_loop_with_spicks(self):
-        """Test using s-picks."""
-        det_spicks = self.detection_spicks.copy()
-        det_spicks += det_spicks.select(station='GCSZ', channel='EZ')[0].copy()
-        det_spicks[-1].stats.channel = 'HA'
-        temp_spicks = self.template_spicks.copy()
-        temp_spicks += temp_spicks.select(
-            station='GCSZ', channel='EZ')[0].copy()
-        temp_spicks[-1].stats.channel = 'HA'
-        i, event = _channel_loop(
-            detection=det_spicks, template=temp_spicks, min_cc=0.2, i=0,
-            detection_id='Tester_01', interpolate=False)
-        self.assertEqual(len(self.log_messages['warning']), 1)
-        self.assertTrue(
-            'Cannot check if cccsum' in self.log_messages['warning'][0])
-        matched_traces = []
-        detection_stachans = [(tr.stats.station, tr.stats.channel)
-                              for tr in det_spicks]
-        picked_stachans = [(pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code)
-                           for pick in event.picks]
-        for master_tr in temp_spicks:
-            stachan = (master_tr.stats.station, master_tr.stats.channel)
-            if stachan in detection_stachans:
-                matched_traces.append(stachan)
-        for picked_stachan in picked_stachans:
-            self.assertTrue(picked_stachan in matched_traces)
-
-    def test_error_raised_if_cccsum_decreases(self):
-        """Check that we error if the cccsum is lowered."""
-        # Ensure that the result is the same regardless of threshold.
-        with self.assertRaises(LagCalcError):
-            _channel_loop(
-                detection=self.detection_spicks, template=self.template_spicks,
-                min_cc=0.0, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=8, detect_chans=13)
-        with self.assertRaises(LagCalcError):
-            _channel_loop(
-                detection=self.detection_spicks, template=self.template_spicks,
-                min_cc=0.4, i=0, detection_id='Tester_01', interpolate=False,
-                pre_lag_ccsum=8, detect_chans=13)
-
-    def test_interpolate(self):
-        """Test channel loop with interpolation."""
-        i, event = _channel_loop(
-            detection=self.detection, template=self.template, min_cc=0.4, i=0,
-            detection_id='Tester_01', interpolate=True)
-        matched_traces = []
-        detection_stachans = [(tr.stats.station, tr.stats.channel)
-                              for tr in self.detection]
-        picked_stachans = [(pick.waveform_id.station_code,
-                            pick.waveform_id.channel_code)
-                           for pick in event.picks]
-        for master_tr in self.template:
-            stachan = (master_tr.stats.station, master_tr.stats.channel)
-            if stachan in detection_stachans:
-                matched_traces.append(stachan)
-
-        for picked_stachan in picked_stachans:
-            self.assertTrue(picked_stachan in matched_traces)
-
-    def test_interp_normal(self):
-        synth_template = np.sin(np.arange(0, 4, 0.01))
-        image = np.zeros(1000)
-        image[200] = 1
-        image = np.convolve(image, synth_template)
-        ccc = normxcorr2(synth_template, image)
-        shift, coeff = _xcorr_interp(ccc, 0.01)
-        self.assertEqual(shift.round(), 2.0)
-        self.assertEqual(coeff.round(), 1.0)
-
-    def test_interp_not_enough_samples(self):
-        synth_template = np.sin(np.arange(0, 2, 0.001))
-        synth_detection = synth_template[11:]
-        synth_template = synth_template[0:-10]
-        ccc = normxcorr2(synth_detection, synth_template)[0]
-        with self.assertRaises(IndexError):
-            _xcorr_interp(ccc, 0.01)
-
-    def test_day_loop_serial(self):
-        """Test various implementations of parallel and non-parallel."""
-        catalog = _day_loop(
-            detection_streams=[self.detection, self.detection_spicks],
-            template=self.template, min_cc=0.4, detections=self.detections,
-            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
-            interpolate=False, cores=False, parallel=False)
-        self.assertEqual(len(catalog), 2)
-
-    def test_day_loop_parallel(self):
-        """Test various implementations of parallel and non-parallel."""
-        catalog = _day_loop(
-            detection_streams=[self.detection, self.detection_spicks],
-            template=self.template, min_cc=0.4, detections=self.detections,
-            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
-            interpolate=False, cores=False, parallel=True)
-        self.assertEqual(len(catalog), 2)
-
-    def test_day_loop_parallel_excess_cores(self):
-        """Test various implementations of parallel and non-parallel."""
-        catalog = _day_loop(
-            detection_streams=[self.detection, self.detection_spicks],
-            template=self.template, min_cc=0.4, detections=self.detections,
-            horizontal_chans=['E', 'N'], vertical_chans=['Z'],
-            interpolate=False, cores=10, parallel=True)
-        self.assertEqual(len(catalog), 2)
+    def setUpClass(cls) -> None:
+        samp_rate = 50
+        cls.t_length = .75
+        # Make some synthetic templates
+        templates, data, seeds = generate_synth_data(
+            nsta=5, ntemplates=5, nseeds=10, samp_rate=samp_rate,
+            t_length=cls.t_length, max_amp=10, max_lag=15, phaseout="both",
+            jitter=10)
+        # Rename channels
+        channel_mapper = {"SYN_Z": "HHZ", "SYN_H": "HHN"}
+        for tr in data:
+            tr.stats.channel = channel_mapper[tr.stats.channel]
+        for template in templates:
+            for tr in template:
+                tr.stats.channel = channel_mapper[tr.stats.channel]
+        cls.party = Party()
+        t = 0
+        data_start = data[0].stats.starttime
+        for template, template_seeds in zip(templates, seeds):
+            template_name = "template_{0}".format(t)
+            detections = []
+            for i, sample in enumerate(template_seeds["time"]):
+                det = Detection(
+                    template_name=template_name,
+                    detect_time=data_start + (sample / samp_rate),
+                    detect_val=template_seeds["SNR"][i], no_chans=len(data),
+                    chans=[(tr.stats.station, tr.stats.channel) for tr in data],
+                    threshold=0.0, threshold_input=0.0, threshold_type="abs",
+                    typeofdet="ccc")
+                det._calculate_event(
+                    template_st=template, estimate_origin=False)
+                detections.append(det)
+            # Make a fully formed Template
+            _template = Template(
+                name=template_name, st=template, lowcut=2.0, highcut=15.0,
+                 samp_rate=samp_rate, filt_order=4, process_length=86400,
+                 prepick=10. / samp_rate, event=None)
+            family = Family(template=_template, detections=detections)
+            cls.party += family
+            t += 1
+        cls.data = data
 
     def test_prepare_data(self):
-        detect_streams = _prepare_data(
-            detect_data=self.detection, detections=[self.detections[0]],
-            template=('test_template', self.template),
-            delays=self.delays, shift_len=0.5, plot=False)
-        self.assertEqual(len(detect_streams), 1)
+        shift_len = 0.2
+        detect_stream_dict = _prepare_data(
+            family=self.party[0], detect_data=self.data, shift_len=shift_len)
+        self.assertEqual(
+            len(detect_stream_dict), len(self.party[0].detections))
+        for detection_id, stream in detect_stream_dict.items():
+            detection = [d for d in self.party[0] if d.id == detection_id][0]
+            self.assertEqual(len(stream), detection.no_chans)
+            for tr in stream:
+                self.assertAlmostEqual(
+                    tr.stats.endtime - tr.stats.starttime,
+                    (2 * shift_len) + self.t_length, 1)
 
-    def test_no_matching_template(self):
-        detect_streams = _prepare_data(
-            detect_data=self.detection, detections=[self.detections[0]],
-            template=('fake_template', self.template),
-            delays=self.delays, shift_len=0.5, plot=False)
-        self.assertEqual(len(detect_streams), 0)
+    # def test_prepare_data_too_short(self):
+    #
+    # def test_prepare_data_masked(self):
+    #
+    def test_family_picking(self):
+        catalog = xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2)
 
-    def test_duplicate_channel_error(self):
-        detect_data = self.detection + self.detection
-        with self.assertRaises(LagCalcError):
-            _prepare_data(
-                detect_data=detect_data, detections=[self.detections[0]],
-                template=('test_template', self.template),
-                delays=self.delays, shift_len=0.5, plot=False)
-
-    def test_merged_data(self):
-        detect_data = self.detection.copy()
-        detect_data.cutout(starttime=detect_data[0].stats.starttime + 10,
-                           endtime=detect_data[0].stats.starttime + 12).merge()
-        detect_streams = _prepare_data(
-            detect_data=detect_data, detections=[self.detections[0]],
-            template=('fake_template', self.template),
-            delays=self.delays, shift_len=0.5, plot=False)
-        self.assertEqual(len(detect_streams), 0)
+    # def test_family_picking_cccsum_reduce(self):
+    #
+    # def test_lag_calc_api(self):
 
 
 class ShortTests(unittest.TestCase):

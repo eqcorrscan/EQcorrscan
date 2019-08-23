@@ -236,13 +236,19 @@ def _prepare_data(family, detect_data, shift_len):
     :type shift_len: float
     :param shift_len: Shift length in seconds allowed for picking.
 
-    :returns: Dictionaryy of detect_streams keyed by detection id
+    :returns: Dictionary of detect_streams keyed by detection id
               to be worked on
     :rtype: dict
     """
     lengths = {tr.stats.npts * tr.stats.delta for tr in family.template.st}
     assert len(lengths) == 1, "Template contains channels of different length"
-    length = lengths.pop() + (2 * shift_len)
+    length = lengths.pop() - (2 * shift_len)
+    # Enforce length be an integer number of samples
+    length_samples = length * family.template.samp_rate
+    if length_samples != int(length_samples):
+        length = round(length_samples) / family.template.samp_rate
+        Logger.info("Setting length to {0}s to give an integer number of "
+                    "samples".format(length))
     prepick = family.template.prepick + shift_len
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
