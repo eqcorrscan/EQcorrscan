@@ -42,7 +42,8 @@ class SyntheticTests(unittest.TestCase):
                 det = Detection(
                     template_name=template_name,
                     detect_time=data_start + (sample / samp_rate),
-                    detect_val=template_seeds["SNR"][i], no_chans=len(data),
+                    detect_val=template_seeds["SNR"][i] / len(data),
+                    no_chans=len(data),
                     chans=[(tr.stats.station, tr.stats.channel) for tr in data],
                     threshold=0.0, threshold_input=0.0, threshold_type="abs",
                     typeofdet="ccc")
@@ -79,7 +80,7 @@ class SyntheticTests(unittest.TestCase):
     #
     def test_family_picking(self):
         catalog = xcorr_pick_family(
-            family=self.party[0], stream=self.data, shift_len=0.2)
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=True)
 
     # def test_family_picking_cccsum_reduce(self):
     #

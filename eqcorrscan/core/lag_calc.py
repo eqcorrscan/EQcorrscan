@@ -14,11 +14,12 @@ import logging
 
 from collections import Counter
 
+from obspy import Stream, Trace
 from obspy.core.event import Catalog
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
-from eqcorrscan.utils.correlate import get_stream_xcorr
+from eqcorrscan.utils.correlate import get_stream_xcorr, _get_array_dicts
 from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.utils.plotting import plot_repicked
@@ -96,6 +97,69 @@ def _xcorr_interp(ccc, dt):
     return shift, coeff
 
 
+def _concatenate_and_correlate(streams, template, cores):
+    """
+    Concatenate a list of streams into one stream and correlate that with a
+    template.
+
+    All traces in a stream must have the same length.
+    """
+    channel_length = {tr.stats.npts for st in streams for tr in st}
+    assert len(channel_length) == 1, "Multiple lengths found."
+    channel_length = channel_length.pop()
+
+    samp_rate = {tr.stats.sampling_rate for st in streams for tr in st}
+    assert len(samp_rate) == 1, "Multiple sample rates found"
+    samp_rate = samp_rate.pop()
+
+    template_length = {tr.stats.npts for tr in template}
+    assert len(template_length) == 1, "Multiple data lengths in template"
+    template_length = template_length.pop()
+
+    # pre-define stream for efficiency
+    chans = list({tr.id for st in streams for tr in st})  # Need to maintain order
+    data = np.zeros((len(chans), channel_length * len(streams)),
+                    dtype=np.float32)
+
+    # concatenate detection streams together.
+    used_chans = [[] for _ in range(len(streams))]
+    concatenated_stream = Stream()
+    for i, chan in enumerate(chans):
+        start_index = 0
+        for j, stream in enumerate(streams):
+            tr = stream.select(id=chan)
+            if len(tr) == 0:
+                # No data for this channel in this stream
+                start_index += channel_length
+                continue
+            assert len(tr) == 1, "Multiple channels found for {0}".format(chan)
+            data[i][start_index:start_index + channel_length] = tr[0].data
+            start_index += channel_length
+            used_chans[j].append((chan.split('.')[1], chan.split('.')[-1]))
+        net, sta, loc, chan = chan.split('.')
+        concatenated_stream += Trace(
+            data=data[i], header=dict(network=net, station=sta, channel=chan,
+                                      location=loc, sampling_rate=samp_rate))
+    # Do correlations
+    xcorr_func = get_stream_xcorr(name_or_func="fftw")
+    ccc, _, _ = xcorr_func(
+        templates=[template], stream=concatenated_stream, stack=False,
+        cores=cores)
+
+    # Reshape ccc output
+    ccc_out = np.zeros((len(streams), len(chans),
+                        channel_length - template_length + 1),
+                       dtype=np.float32)
+    for i in range(len(streams)):
+        for j, chan in enumerate(chans):
+            if (chan.split('.')[1], chan.split('.')[-1]) not in used_chans[i]:
+                continue
+            index_start = i * channel_length
+            index_end = index_start + channel_length - template_length + 1
+            ccc_out[i][j] = ccc[0][j][index_start: index_end]
+    return ccc_out, used_chans
+
+
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
@@ -144,10 +208,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     detect_streams = [detect_streams_dict[detection_id]
                       for detection_id in detection_ids]
     # Correlation function needs a list of streams, we need to maintain order.
-    xcorr_func = get_stream_xcorr(name_or_func="fftw")
-    ccc, _, chans = xcorr_func(
-        templates=detect_streams, stream=family.template.st, stack=False,
-        cores=cores)
+    ccc, chans = _concatenate_and_correlate(
+        streams=detect_streams, template=family.template.st, cores=cores)
     for i, detection_id in enumerate(detection_ids):
         detection = [d for d in family.detections if d.id == detection_id][0]
         correlations = ccc[i]
@@ -242,7 +304,7 @@ def _prepare_data(family, detect_data, shift_len):
     """
     lengths = {tr.stats.npts * tr.stats.delta for tr in family.template.st}
     assert len(lengths) == 1, "Template contains channels of different length"
-    length = lengths.pop() - (2 * shift_len)
+    length = lengths.pop() + (2 * shift_len)
     # Enforce length be an integer number of samples
     length_samples = length * family.template.samp_rate
     if length_samples != int(length_samples):

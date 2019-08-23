@@ -387,6 +387,7 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
+    assert stream_length > template_length, "Template must be shorter than stream"
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
     stream_mean_array = bottleneck.move_mean(
@@ -472,9 +473,8 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     template_len = templates.shape[1]
     n_templates = templates.shape[0]
     image_len = stream.shape[0]
-    ccc_length = max(
-        image_len - template_len + 1,
-        template_len - image_len + 1)
+    ccc_length = image_len - template_len + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
     ccc = np.ascontiguousarray(
         np.empty(ccc_length * n_templates), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
@@ -573,9 +573,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         templates.std(axis=-1, keepdims=True) * template_length))
 
     norm = np.nan_to_num(norm)
-    ccc_length = max(
-        stream_length - template_length + 1,
-        template_length - stream_length + 1)
+    ccc_length = stream_length - template_length + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
     ccc = np.zeros((n_templates, ccc_length), np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
@@ -825,10 +824,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
             multipliers.update({x: 1})
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
-    ccc_length = max(image_len - template_len + 1,
-                     template_len - image_len + 1)
+    ccc_length = image_len - template_len + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
     if stack:
-        cccs = np.zeros((n_templates, ccc_length),np.float32)
+        cccs = np.zeros((n_templates, ccc_length), np.float32)
     else:
         cccs = np.zeros(
             (n_templates, n_channels, ccc_length), dtype=np.float32)
