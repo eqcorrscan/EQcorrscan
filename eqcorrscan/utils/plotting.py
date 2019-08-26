@@ -55,7 +55,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
         fig.savefig(savefile)
         Logger.info("Saved figure to {0}".format(savefile))
     if show:
-        plt.show()
+        plt.show(block=True)
     if return_fig:
         return fig
     fig.clf()

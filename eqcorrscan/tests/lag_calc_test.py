@@ -5,9 +5,14 @@ import unittest
 import numpy as np
 import logging
 
+from obspy import read
+
 from eqcorrscan.utils.synth_seis import generate_synth_data
+from eqcorrscan.utils.correlate import get_stream_xcorr
+from eqcorrscan.core import lag_calc as lag_calc_module
 from eqcorrscan.core.lag_calc import (
-    _xcorr_interp, LagCalcError, _prepare_data, lag_calc, xcorr_pick_family)
+    _xcorr_interp, LagCalcError, _prepare_data, lag_calc, xcorr_pick_family,
+    _concatenate_and_correlate)
 from eqcorrscan.core.match_filter import Detection, Family, Party, Template
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
@@ -24,7 +29,7 @@ class SyntheticTests(unittest.TestCase):
         templates, data, seeds = generate_synth_data(
             nsta=5, ntemplates=5, nseeds=10, samp_rate=samp_rate,
             t_length=cls.t_length, max_amp=10, max_lag=15, phaseout="both",
-            jitter=10)
+            jitter=2, noise=False, same_phase=True)
         # Rename channels
         channel_mapper = {"SYN_Z": "HHZ", "SYN_H": "HHN"}
         for tr in data:
@@ -53,8 +58,8 @@ class SyntheticTests(unittest.TestCase):
             # Make a fully formed Template
             _template = Template(
                 name=template_name, st=template, lowcut=2.0, highcut=15.0,
-                 samp_rate=samp_rate, filt_order=4, process_length=86400,
-                 prepick=10. / samp_rate, event=None)
+                samp_rate=samp_rate, filt_order=4, process_length=86400,
+                prepick=10. / samp_rate, event=None)
             family = Family(template=_template, detections=detections)
             cls.party += family
             t += 1
@@ -79,18 +84,66 @@ class SyntheticTests(unittest.TestCase):
     # def test_prepare_data_masked(self):
     #
     def test_family_picking(self):
-        catalog = xcorr_pick_family(
-            family=self.party[0], stream=self.data, shift_len=0.2, plot=True)
+        catalog_dict = xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False)
+        for event in catalog_dict.values():
+            for pick in event.picks:
+                self.assertEqual(pick.comments[0].text, 'cc_max=1.0')
 
     # def test_family_picking_cccsum_reduce(self):
     #
     # def test_lag_calc_api(self):
 
 
+class SimpleRealDataTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        st = read().detrend().filter("bandpass", freqmin=2, freqmax=20)
+        cls.template = st.slice(starttime=st[0].stats.starttime + 4,
+                                endtime=st[0].stats.starttime + 10).copy()
+        cls.shift_len = 1.0
+        cls.detect_streams = []
+        for i in range(1, 8):
+            cls.detect_streams.append(
+                st.slice(starttime=st[0].stats.starttime + i - cls.shift_len,
+                         endtime=st[0].stats.starttime + i + 6 + cls.shift_len
+                         ).copy())
+
+    def test_correlation_max_and_position(self):
+        ccc, chans = _concatenate_and_correlate(
+            streams=self.detect_streams, template=self.template, cores=1)
+        samp_rate = self.template[0].stats.sampling_rate
+        t_start, t_end = (
+            self.template[0].stats.starttime, self.template[0].stats.endtime)
+        for _ccc, detect_stream in zip(ccc, self.detect_streams):
+            d_start, d_end = (
+                detect_stream[0].stats.starttime, detect_stream[0].stats.endtime)
+            if d_start <= t_start and d_end >= t_end:
+                for ccc_chan in _ccc:
+                    self.assertEqual(ccc_chan.max(), 1.0)
+                    self.assertEqual(ccc_chan.argmax(),
+                                     samp_rate * (t_start - d_start))
+            else:
+                for ccc_chan in _ccc:
+                    self.assertNotEqual(ccc_chan.max(), 1.0)
+
+    def test_correlation_precision(self):
+        """Compare to correlation function outputs"""
+        ccc, chans = _concatenate_and_correlate(
+            streams=self.detect_streams, template=self.template, cores=1)
+        fftw_xcorr_func = get_stream_xcorr("fftw")
+        for _ccc, detect_stream in zip(ccc, self.detect_streams):
+            fftw_ccc, _, _ = fftw_xcorr_func(
+                templates=[self.template], stream=detect_stream, stack=False)
+            for chan_ccc, fftw_chan_ccc in zip(_ccc, fftw_ccc[0]):
+                self.assertTrue(np.allclose(
+                    chan_ccc, fftw_chan_ccc, atol=.00001))
+
+
 class ShortTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        log = logging.getLogger(lag_calc.__name__)
+        log = logging.getLogger(lag_calc_module.__name__)
         cls._log_handler = MockLoggingHandler(level='DEBUG')
         log.addHandler(cls._log_handler)
         cls.log_messages = cls._log_handler.messages

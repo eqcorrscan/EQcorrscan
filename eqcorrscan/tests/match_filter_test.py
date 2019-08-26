@@ -731,13 +731,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False).lag_calc(
             stream=self.unproc_st, pre_processed=False)
-        catalog = self.party.lag_calc(stream=self.unproc_st,
-                                      pre_processed=False)
-        self.assertEqual(len(catalog), 3)
-        # Check that the party is unaltered
-        self.assertEqual(self.party, read_party(
-            fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.tgz')))
+        catalog = self.party.copy().lag_calc(
+            stream=self.unproc_st, pre_processed=False)
+        self.assertEqual(len(catalog), 4)
         for ev1, ev2 in zip(catalog, chained_cat):
             ev1.picks.sort(key=lambda p: p.time)
             ev2.picks.sort(key=lambda p: p.time)
@@ -782,15 +778,16 @@ class TestMatchObjectHeavy(unittest.TestCase):
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
-        self.assertEqual(len(catalog), 3)
+        catalog = self.party.copy().lag_calc(
+            stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 4)
 
     def test_party_mag_calc_unpreprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.lag_calc(
+        catalog = self.party.copy().lag_calc(
             stream=self.unproc_st, pre_processed=False,
             relative_magnitudes=True, min_snr=0)
-        self.assertEqual(len(catalog), 3)
+        self.assertEqual(len(catalog), 4)
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
             template_id = [c.text.split(": ")[-1] for c in event.comments
@@ -806,10 +803,10 @@ class TestMatchObjectHeavy(unittest.TestCase):
 
     def test_party_mag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.lag_calc(
+        catalog = self.party.copy().lag_calc(
             stream=self.st, pre_processed=True, relative_magnitudes=True,
             min_snr=0)
-        self.assertEqual(len(catalog), 3)
+        self.assertEqual(len(catalog), 4)
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
             template_id = [c.text.split(": ")[-1] for c in event.comments
@@ -846,13 +843,14 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(day_party), 4)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
-        self.assertEqual(len(day_catalog), 3)
+        self.assertEqual(len(day_catalog), 4)
         pre_picked_cat = day_party.get_catalog()
         self.assertEqual(len(pre_picked_cat), 4)
 
     def test_family_lag_calc(self):
         """Test the lag-calc method on family."""
-        catalog = self.family.lag_calc(stream=self.st, pre_processed=True)
+        catalog = self.family.copy().lag_calc(
+            stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 1)
 
     def test_template_detect(self):

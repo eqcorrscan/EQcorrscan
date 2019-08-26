@@ -19,7 +19,7 @@ from obspy.core.event import Catalog
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import ResourceIdentifier, Comment
 
-from eqcorrscan.utils.correlate import get_stream_xcorr, _get_array_dicts
+from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.utils.plotting import plot_repicked
@@ -117,7 +117,8 @@ def _concatenate_and_correlate(streams, template, cores):
     template_length = template_length.pop()
 
     # pre-define stream for efficiency
-    chans = list({tr.id for st in streams for tr in st})  # Need to maintain order
+    chans = {tr.id for st in streams for tr in st}.intersection(
+        {tr.id for tr in template})
     data = np.zeros((len(chans), channel_length * len(streams)),
                     dtype=np.float32)
 
@@ -140,11 +141,20 @@ def _concatenate_and_correlate(streams, template, cores):
         concatenated_stream += Trace(
             data=data[i], header=dict(network=net, station=sta, channel=chan,
                                       location=loc, sampling_rate=samp_rate))
+    # Remove unnecesary channels from template
+    _template = Stream()
+    for tr in template:
+        if tr.id in chans:
+            _template += tr
     # Do correlations
     xcorr_func = get_stream_xcorr(name_or_func="fftw")
-    ccc, _, _ = xcorr_func(
-        templates=[template], stream=concatenated_stream, stack=False,
+    ccc, _, chan_order = xcorr_func(
+        templates=[_template], stream=concatenated_stream, stack=False,
         cores=cores)
+    # Re-order used_chans
+    chan_order = chan_order[0]
+    for _used_chans in used_chans:
+        _used_chans.sort(key=lambda chan: chan_order.index(chan))
 
     # Reshape ccc output
     ccc_out = np.zeros((len(streams), len(chans),
@@ -282,7 +292,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                         not in pick_stachans:
                     template_plot.remove(tr)
             plot_repicked(template=template_plot, picks=event.picks,
-                          det_stream=plot_stream)
+                          det_stream=plot_stream, show=True)
     return picked_dict
 
 
@@ -311,7 +321,7 @@ def _prepare_data(family, detect_data, shift_len):
         length = round(length_samples) / family.template.samp_rate
         Logger.info("Setting length to {0}s to give an integer number of "
                     "samples".format(length))
-    prepick = family.template.prepick + shift_len
+    prepick = shift_len
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
     for detect_stream in detect_streams_dict.values():
@@ -340,7 +350,7 @@ def lag_calc(detections, detect_data, template_names, templates,
              vertical_chans=['Z'], cores=1, interpolate=False,
              plot=False):
     """
-    Main lag-calculation function for detections of specific events.
+    Cross-correlation derived picking of seismic events.
 
     Overseer function to take a list of detection objects, cut the data for
     them to lengths of the same length of the template + shift_len on
