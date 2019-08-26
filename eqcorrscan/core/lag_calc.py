@@ -235,7 +235,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             else:
                 cc_max = np.amax(correlation)
                 shift = np.argmax(correlation) * delta
-            if np.isnan(cc_max):
+            if np.isnan(cc_max):  # pragma: no cover
                 Logger.error('Problematic trace, no cross correlation possible')
                 continue
             picktime = tr.stats.starttime + shift
@@ -262,7 +262,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         # Add template-name as comment to events
         event.comments.append(Comment(
             text="Detected using template: {0}".format(family.template.name)))
-        if used_chans == detection.no_chans:
+        if used_chans == detection.no_chans:  # pragma: no cover
             if detection.detect_val is not None and\
                checksum - detection.detect_val < -(0.3 * detection.detect_val):
                 msg = ('lag-calc has decreased cccsum from %f to %f - '
