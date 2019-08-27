@@ -76,7 +76,7 @@ script:
      py.test -m "serial and not network" --cov-append;
      fi
    - if [[ "$PYTEST" == "0" ]]; then
-     test_eqcorrscan.py --ci -n 2 -m "not serial and not network" --cov-append;
+     test_eqcorrscan.py --ci -n 2 -m "not serial and not network and not superslow" --cov-append;
      else
      py.test -n 2 -m "not serial and not network and not superslow" --cov-append;
      fi
