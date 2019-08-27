@@ -94,8 +94,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
         picked_catalog += lag_calc.lag_calc(
             detections=unique_detections, detect_data=st,
             template_names=template_names, templates=templates,
-            shift_len=shift_len, min_cc=min_cc, interpolate=False, plot=False,
-            parallel=True)
+            shift_len=shift_len, min_cc=min_cc, interpolate=False, plot=False)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
 
