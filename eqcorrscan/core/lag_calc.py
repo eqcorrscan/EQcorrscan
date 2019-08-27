@@ -274,7 +274,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                 'detection, but {1} are used here'.format(
                     detection.no_chans, used_chans))
         picked_dict.update({detection_id: event})
-    if plot:
+    if plot:  # pragma: no cover
         for i, event in enumerate(picked_dict.values()):
             if len(event.picks) == 0:
                 continue
@@ -324,16 +324,13 @@ def _prepare_data(family, detect_data, shift_len):
     prepick = shift_len
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
-    for detect_stream in detect_streams_dict.values():
-        for trace in detect_stream.copy():
+    for key, detect_stream in detect_streams_dict.items():
+        for i in range(len(detect_stream) - 1, -1, -1):
+            trace = detect_stream[i]
             if np.ma.is_masked(trace.data):
                 detect_stream.remove(trace)
                 Logger.warning("Masked array found for {0}, not supported, "
                                "removing.".format(trace.id))
-            elif trace.stats.endtime - trace.stats.starttime != length:
-                detect_stream.remove(trace)
-                Logger.warning("Trace too short for {0}, removing.".format(
-                    trace.id))
         stachans = [(tr.stats.station, tr.stats.channel)
                     for tr in detect_stream]
         c_stachans = Counter(stachans)
@@ -342,7 +339,13 @@ def _prepare_data(family, detect_data, shift_len):
                 raise LagCalcError(
                     'Multiple channels for {0}.{1}, likely a data '
                     'issue'.format(key[0], key[1]))
-    return detect_streams_dict
+    detect_streams_dict_out = {}
+    for key, detect_stream in detect_streams_dict.items():
+        if len(detect_stream) == 0:
+            Logger.info("No data for {0}".format(key))
+            continue
+        detect_streams_dict_out.update({key: detect_stream})
+    return detect_streams_dict_out
 
 
 def lag_calc(detections, detect_data, template_names, templates,
@@ -460,14 +463,16 @@ def lag_calc(detections, detect_data, template_names, templates,
     for template, template_name in zip(templates, template_names):
         Logger.info('Running lag-calc for template %s' % template[0])
         template_detections = [detection for detection in detections
-                               if detection.template_name == template[0]]
+                               if detection.template_name == template_name]
         for detection in template_detections:
             detection.event = detection.event or detection._calculate_event(
                 template_st=template)
         family = Family(
             detections=template_detections,
             template=Template(
-                name=template_name, st=template))  # Make a sparse template
+                name=template_name, st=template,
+                samp_rate=template[0].stats.sampling_rate))
+        # Make a sparse template
         if len(template_detections) > 0:
             template_dict = xcorr_pick_family(
                 family=family, stream=detect_data,

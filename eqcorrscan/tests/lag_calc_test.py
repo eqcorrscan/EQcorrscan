@@ -29,7 +29,7 @@ class SyntheticTests(unittest.TestCase):
         templates, data, seeds = generate_synth_data(
             nsta=5, ntemplates=5, nseeds=10, samp_rate=samp_rate,
             t_length=cls.t_length, max_amp=10, max_lag=15, phaseout="both",
-            jitter=2, noise=False, same_phase=True)
+            jitter=0, noise=False, same_phase=True)
         # Rename channels
         channel_mapper = {"SYN_Z": "HHZ", "SYN_H": "HHN"}
         for tr in data:
@@ -65,34 +65,89 @@ class SyntheticTests(unittest.TestCase):
             t += 1
         cls.data = data
 
-    def test_prepare_data(self):
-        shift_len = 0.2
-        detect_stream_dict = _prepare_data(
-            family=self.party[0], detect_data=self.data, shift_len=shift_len)
+    def _prepare_data_checks(self, detect_stream_dict, shift_len, family):
         self.assertEqual(
-            len(detect_stream_dict), len(self.party[0].detections))
+            len(detect_stream_dict), len(family.detections))
         for detection_id, stream in detect_stream_dict.items():
-            detection = [d for d in self.party[0] if d.id == detection_id][0]
+            detection = [d for d in family if d.id == detection_id][0]
             self.assertEqual(len(stream), detection.no_chans)
             for tr in stream:
                 self.assertAlmostEqual(
                     tr.stats.endtime - tr.stats.starttime,
                     (2 * shift_len) + self.t_length, 1)
 
-    # def test_prepare_data_too_short(self):
-    #
-    # def test_prepare_data_masked(self):
-    #
+    def test_prepare_data(self):
+        shift_len = 0.2
+        for family in self.party:
+            detect_stream_dict = _prepare_data(
+                family=family, detect_data=self.data, shift_len=shift_len)
+            self._prepare_data_checks(detect_stream_dict=detect_stream_dict,
+                                      family=family, shift_len=shift_len)
+
+    def test_prepare_data_too_short(self):
+        data = self.data.copy()
+        data.trim(self.party[0][0].detect_time,
+                  self.party[0][0].detect_time + 3)
+        shift_len = 0.2
+        detect_stream_dict = _prepare_data(
+            family=self.party[0], detect_data=data, shift_len=shift_len)
+        self.assertEqual(len(detect_stream_dict), 1)
+
+    def test_prepare_data_duplicate_channels(self):
+        data = self.data.copy()
+        data += data[0].copy()
+        with self.assertRaises(LagCalcError):
+            _prepare_data(
+                family=self.party[0], detect_data=data, shift_len=0.2)
+
+    def test_prepare_data_masked(self):
+        data = self.data.copy()
+        data.cutout(self.party[0][0].detect_time,
+                    self.party[0][0].detect_time + 3)
+        data.merge()
+        shift_len = 0.2
+        detect_stream_dict = _prepare_data(
+            family=self.party[0], detect_data=data, shift_len=shift_len)
+        short_key = self.party[0][0].id
+        for key, value in detect_stream_dict.items():
+            detection = [d for d in self.party[0] if d.id == key][0]
+            if key == short_key:
+                self.assertNotEqual(len(value), detection.no_chans)
+            else:
+                self.assertEqual(len(value), detection.no_chans)
+
     def test_family_picking(self):
         catalog_dict = xcorr_pick_family(
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False)
         for event in catalog_dict.values():
+            self.assertEqual(len(event.picks), len(self.data))
             for pick in event.picks:
-                self.assertEqual(pick.comments[0].text, 'cc_max=1.0')
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 5)
 
-    # def test_family_picking_cccsum_reduce(self):
-    #
-    # def test_lag_calc_api(self):
+    def test_family_picking_with_interpolation(self):
+        catalog_dict = xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
+            interpolate=True)
+        for event in catalog_dict.values():
+            for pick in event.picks:
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 5)
+
+    def test_lag_calc_api(self):
+        detections = [d for f in self.party for d in f]
+        templates = [f.template.st for f in self.party]
+        template_names = [f.template.name for f in self.party]
+        output_cat = lag_calc(
+            detections, self.data, template_names, templates,
+            shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
+            vertical_chans=['Z'], cores=1, interpolate=False,
+            plot=False)
+        self.assertEqual(len(output_cat), len(detections))
+        for event in output_cat:
+            self.assertEqual(len(event.picks), len(self.data))
 
 
 class SimpleRealDataTests(unittest.TestCase):

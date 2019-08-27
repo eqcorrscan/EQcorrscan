@@ -335,13 +335,13 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
             if jitter > 0:
                 offset += np.random.randint(-jitter, jitter)
             pad = np.zeros(abs(offset))
-            if offset > 0:
+            if offset >= 0:
                 tr_impulses = np.append(pad, impulses)[0:len(impulses)]
             elif offset < 0:
                 tr_impulses = np.append(impulses, pad)[-len(impulses):]
             # Convolve this with the template trace to give the daylong seeds
-            data[j].data += np.convolve(tr_impulses,
-                                        template_tr.data)[0:len(impulses)]
+            data[j].data += np.convolve(
+                tr_impulses, template_tr.data)[0:len(impulses)]
     # Add the noise
     if noise:
         for tr in data:
