@@ -125,7 +125,7 @@ class SyntheticTests(unittest.TestCase):
             for pick in event.picks:
                 self.assertTrue("cc_max=" in pick.comments[0].text)
                 self.assertAlmostEqual(
-                    float(pick.comments[0].text.split("=")[-1]), 1.0, 5)
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
 
     def test_family_picking_with_interpolation(self):
         catalog_dict = xcorr_pick_family(
@@ -135,7 +135,7 @@ class SyntheticTests(unittest.TestCase):
             for pick in event.picks:
                 self.assertTrue("cc_max=" in pick.comments[0].text)
                 self.assertAlmostEqual(
-                    float(pick.comments[0].text.split("=")[-1]), 1.0, 5)
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
 
     def test_lag_calc_api(self):
         detections = [d for f in self.party for d in f]
