@@ -58,7 +58,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
 
     all_detections = []
     picked_catalog = Catalog()
-    template_names = [str(template[0].stats.starttime)
+    template_names = [template[0].stats.starttime.strftime("%Y%m%d_%H%M%S")
                       for template in templates]
     for t1, t2 in chunks:
         print('Downloading and processing for start-time: %s' % t1)
