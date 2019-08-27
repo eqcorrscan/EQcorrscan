@@ -24,7 +24,7 @@ import numpy as np
 from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
 
-from eqcorrscan.core.match_filter.template import Template
+from eqcorrscan.core.match_filter.template import Template, group_templates
 from eqcorrscan.core.match_filter.party import Party
 from eqcorrscan.core.match_filter.helpers import _safemembers, _par_read
 from eqcorrscan.core.match_filter.matched_filter import (
@@ -579,21 +579,7 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
-        template_groups = []
-        for master in self.templates:
-            for group in template_groups:
-                if master in group:
-                    break
-            else:
-                new_group = [master]
-                for slave in self.templates:
-                    if master.same_processing(slave) and master != slave:
-                        new_group.append(slave)
-                template_groups.append(new_group)
-        # template_groups will contain an empty first list
-        for group in template_groups:
-            if len(group) == 0:
-                template_groups.remove(group)
+        template_groups = group_templates(self.templates)
         # now we can compute the detections for each group
         for group in template_groups:
             group_party = _group_detect(

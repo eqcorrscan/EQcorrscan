@@ -119,7 +119,7 @@ class TestEdgeCases:
 
     @pytest.fixture(scope='class', params=datasets)
     def dataset(self, request):
-        return request.getfuncargvalue(request.param)
+        return request.getfixturevalue(request.param)
 
     def test_python_speed(self, dataset, request):
         """ test that findpeaks works on each of the arrays and print the
@@ -221,14 +221,14 @@ class TestPeakFindSpeeds:
     @pytest.fixture(scope='class', params=datasets_1d)
     def dataset_1d(self, request):
         """ parametrize the 1d datasets """
-        return request.getfuncargvalue(request.param)
+        return request.getfixturevalue(request.param)
 
     # fixtures that create 2D datasets
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets_2d)
     def aggregated_1d_datasets(self, request):
         """ create a 2d numpy array of all the datasets """
-        return np.array([request.getfuncargvalue(x)[0]
+        return np.array([request.getfixturevalue(x)[0]
                          for x in self.datasets_1d])
 
     @pytest.fixture(scope='class')
@@ -240,7 +240,7 @@ class TestPeakFindSpeeds:
     @pytest.fixture(scope='class', params=datasets_2d)
     def dataset_2d(self, request):
         """ parametrize the 2d datasets """
-        return request.getfuncargvalue(request.param)
+        return request.getfixturevalue(request.param)
 
     # tests
     def test_python_speed(self, dataset_1d, request):

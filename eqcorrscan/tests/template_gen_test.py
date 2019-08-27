@@ -23,11 +23,6 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
-slow = pytest.mark.skipif(
-    not pytest.config.getoption("--runslow"),
-    reason="need --runslow option to run"
-)
-
 
 class TestTemplateGeneration(unittest.TestCase):
     """Test the reading a writing of pick info."""
@@ -482,7 +477,7 @@ class TestDayLong(unittest.TestCase):
             setattr(pick, 'phase_hint', 'P')
         cls.cat = Catalog([event])
 
-    @slow
+    @pytest.mark.slow
     def test_day_long_processing(self):
         templates = template_gen(
             method='from_meta_file', meta_file=self.cat, st=self.st,

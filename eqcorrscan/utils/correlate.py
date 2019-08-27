@@ -387,6 +387,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
+    assert stream_length > template_length, "Template must be shorter than " \
+                                            "stream"
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
     stream_mean_array = bottleneck.move_mean(
@@ -407,8 +409,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
                             stream_length - template_length + 1))) -
            norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
-    # res[np.isinf(res)] = 0.0
-    for i, pad in enumerate(pads):  # range(len(pads)):
+
+    for i, pad in enumerate(pads):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
 
@@ -472,8 +474,10 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     template_len = templates.shape[1]
     n_templates = templates.shape[0]
     image_len = stream.shape[0]
+    ccc_length = image_len - template_len + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
     ccc = np.ascontiguousarray(
-        np.empty((image_len - template_len + 1) * n_templates), np.float32)
+        np.empty(ccc_length * n_templates), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
     time_args = [t_array, template_len, n_templates,
                  np.ascontiguousarray(stream, np.float32), image_len, ccc]
@@ -570,8 +574,9 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         templates.std(axis=-1, keepdims=True) * template_length))
 
     norm = np.nan_to_num(norm)
-    ccc = np.zeros((n_templates, stream_length - template_length + 1),
-                   np.float32)
+    ccc_length = stream_length - template_length + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
+    ccc = np.zeros((n_templates, ccc_length), np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pads_np = np.ascontiguousarray(pads, dtype=np.intc)
     variance_warning = np.ascontiguousarray([0], dtype=np.intc)
@@ -647,12 +652,13 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     chans = [[] for _ in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    ccc_length = max(
+        len(stream[0]) - len(templates[0][0]) + 1,
+        len(templates[0][0]) - len(stream[0]) + 1)
     if stack:
-        cccsums = np.zeros([len(templates),
-                            len(stream[0]) - len(templates[0][0]) + 1])
+        cccsums = np.zeros([len(templates), ccc_length])
     else:
-        cccsums = np.zeros([len(templates), len(seed_ids),
-                            len(stream[0]) - len(templates[0][0]) + 1])
+        cccsums = np.zeros([len(templates), len(seed_ids), ccc_length])
     for chan_no, seed_id in enumerate(seed_ids):
         tr_cc, tr_chans = time_multi_normxcorr(
             template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
@@ -819,13 +825,13 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
             multipliers.update({x: 1})
     stream_array = np.ascontiguousarray([stream_array[x] for x in seed_ids],
                                         dtype=np.float32)
+    ccc_length = image_len - template_len + 1
+    assert ccc_length > 0, "Template must be shorter than stream"
     if stack:
-        cccs = np.zeros((n_templates, image_len - template_len + 1),
-                        np.float32)
+        cccs = np.zeros((n_templates, ccc_length), np.float32)
     else:
         cccs = np.zeros(
-            (n_templates, n_channels, image_len - template_len + 1),
-            dtype=np.float32)
+            (n_templates, n_channels, ccc_length), dtype=np.float32)
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray(
         [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
