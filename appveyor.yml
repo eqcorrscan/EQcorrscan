@@ -60,8 +60,8 @@ build: false
 test_script:
   - "%CMD_IN_ENV% python setup.py develop"
 #  - "%CMD_IN_ENV% python setup.py install"
-  - "%CMD_IN_ENV% py.test -n4 -m \"not serial and not network\""
-  - "%CMD_IN_ENV% py.test -m \"serial and not network\" --cov-append"
+  - "%CMD_IN_ENV% py.test -n4 -m \"not serial and not network and not superslow\""
+  - "%CMD_IN_ENV% py.test -m \"serial and not network and not superslow\" --cov-append"
 
 after_test:
   #  - "coverage combine"
