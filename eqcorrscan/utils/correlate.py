@@ -387,7 +387,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
-    assert stream_length > template_length, "Template must be shorter than stream"
+    assert stream_length > template_length, "Template must be shorter than " \
+                                            "stream"
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
     stream_mean_array = bottleneck.move_mean(

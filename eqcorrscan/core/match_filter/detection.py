@@ -359,7 +359,8 @@ class Detection(object):
 
         :rtype: `obspy.core.stream.Stream`
         """
-        assert self.event, "Detection must have an event - use Detection._calculate_event()"
+        assert self.event, "Detection must have an event - use Detection._" \
+                           "calculate_event()"
         cut_stream = Stream()
         valid_chans = {
             (tr.stats.station, tr.stats.channel)
@@ -384,7 +385,8 @@ class Detection(object):
             _st = _st.slice(starttime=cut_start, endtime=cut_end).copy()
             # Minimum length check
             for tr in _st:
-                if abs((tr.stats.endtime - tr.stats.starttime) - length) < tr.stats.delta:
+                if abs((tr.stats.endtime - tr.stats.starttime) -
+                       length) < tr.stats.delta:
                     cut_stream += tr
                 else:
                     Logger.info(

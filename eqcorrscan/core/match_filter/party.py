@@ -21,7 +21,7 @@ import logging
 from os.path import join
 
 import numpy as np
-from obspy import Catalog, read_events, UTCDateTime
+from obspy import Catalog, read_events
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -842,7 +842,7 @@ class Party(object):
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
-                _ = family.lag_calc(
+                family.lag_calc(
                     stream=processed_stream, pre_processed=True,
                     shift_len=shift_len, min_cc=min_cc,
                     horizontal_chans=horizontal_chans,
@@ -905,7 +905,7 @@ class Party(object):
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
-                _ = family.relative_magnitudes(
+                family.relative_magnitudes(
                     stream=processed_stream, pre_processed=True,
                     min_cc=min_cc, parallel=parallel,
                     process_cores=process_cores,

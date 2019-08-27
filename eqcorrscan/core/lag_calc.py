@@ -236,7 +236,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                 cc_max = np.amax(correlation)
                 shift = np.argmax(correlation) * delta
             if np.isnan(cc_max):  # pragma: no cover
-                Logger.error('Problematic trace, no cross correlation possible')
+                Logger.error(
+                    'Problematic trace, no cross correlation possible')
                 continue
             picktime = tr.stats.starttime + shift
             checksum += cc_max

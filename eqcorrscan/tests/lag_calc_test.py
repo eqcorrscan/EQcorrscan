@@ -22,7 +22,7 @@ np.random.seed(999)
 class SyntheticTests(unittest.TestCase):
     """ Test lag-calc with synthetic data. """
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         samp_rate = 50
         cls.t_length = .75
         # Make some synthetic templates
@@ -49,7 +49,8 @@ class SyntheticTests(unittest.TestCase):
                     detect_time=data_start + (sample / samp_rate),
                     detect_val=template_seeds["SNR"][i] / len(data),
                     no_chans=len(data),
-                    chans=[(tr.stats.station, tr.stats.channel) for tr in data],
+                    chans=[
+                        (tr.stats.station, tr.stats.channel) for tr in data],
                     threshold=0.0, threshold_input=0.0, threshold_type="abs",
                     typeofdet="ccc")
                 det._calculate_event(
@@ -152,7 +153,7 @@ class SyntheticTests(unittest.TestCase):
 
 class SimpleRealDataTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         st = read().detrend().filter("bandpass", freqmin=2, freqmax=20)
         cls.template = st.slice(starttime=st[0].stats.starttime + 4,
                                 endtime=st[0].stats.starttime + 10).copy()
@@ -171,8 +172,8 @@ class SimpleRealDataTests(unittest.TestCase):
         t_start, t_end = (
             self.template[0].stats.starttime, self.template[0].stats.endtime)
         for _ccc, detect_stream in zip(ccc, self.detect_streams):
-            d_start, d_end = (
-                detect_stream[0].stats.starttime, detect_stream[0].stats.endtime)
+            d_start, d_end = (detect_stream[0].stats.starttime,
+                              detect_stream[0].stats.endtime)
             if d_start <= t_start and d_end >= t_end:
                 for ccc_chan in _ccc:
                     self.assertEqual(ccc_chan.max(), 1.0)
