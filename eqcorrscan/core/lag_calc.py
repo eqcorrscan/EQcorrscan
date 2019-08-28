@@ -444,7 +444,7 @@ def _prepare_data(detect_data, detections, template, delays,
 def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False,dir_save=None, parallel=True, debug=0):
+             plot=False, dir_save=None, parallel=True, debug=0):
     import os
     import matplotlib.pyplot as plt
     """
@@ -498,7 +498,8 @@ def lag_calc(detections, detect_data, template_names, templates,
     :param parallel: Turn parallel processing on or off.
     :type debug: int
     :param debug: Debug output level, 0-5 with 5 being the most output.
-    :param dir_save: path2save like "./output/lag_plot" and end of it without "/"
+    :param dir_save:
+        path2save like "./output/lag_plot" and end of it without "/"
         folder of date add automatic
     :type dir_save: string of directory
 
@@ -647,7 +648,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                     plot_repicked(template=template_plot, picks=event.picks,
                                   det_stream=plot_stream)
                     # if set dir_save
-                    if dir_save != None:
+                    if dir_save is not None:
                         path2save = dir_save+'/'+event.resource_id.id[0:10]+'/'
                         if not os.path.isdir(path2save):
                             os.makedirs(path2save)
