@@ -14,7 +14,6 @@ from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
-from copy import deepcopy
 from obspy import Stream, Catalog, UTCDateTime, Trace
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from scipy.spatial.distance import squareform
@@ -803,7 +802,7 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
 
 def dist_mat_km(catalog, num_threads=None):
     """
-    Compute the distance matrix for all a catalog using epicentral separation.
+    Compute the distance matrix for a catalog using hypocentral separation.
 
     Will give physical distance in kilometers.
 

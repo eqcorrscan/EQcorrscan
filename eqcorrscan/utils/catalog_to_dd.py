@@ -1,28 +1,5 @@
 """
-This module contains functions to convert seisan catalogue to files to hypoDD
-input files.
-
-These functions will generate both a catalogue (dt.ct) file, event
-file (event.dat), station information file (station.dat), and a correlation
-oiutput file correlated every event in the catalogue with every other event to
-optimize the picks (dt.cc).
-
-The correlation routine relies on obspy's xcorr_pick_correction function from
-the obspy.signal.cross_correlation module.  This function optimizes picks to
-better than sample accuracy by interpolating the correlation function and
-finding the maximum of this rather than the true maximum correlation value.
-The output from this function is stored in the dt.cc file.
-
-Information for the station.dat file is read from SEISAN's STATION0.HYP file
-
-Earthquake picks and locations are taken from the catalogued s-files - these
-must be pre-located before entering this routine as origin times and hypocentre
-locations are needed for event.dat files.
-
-.. todo:
-    Change from forced seisan usage, to using obspy events.  This happens
-    internally already, but the insides should be extracted and thin wrappers
-    written for seisan.
+Functions to generate hypoDD input files from catalogs.
 
 :copyright:
     EQcorrscan developers.
@@ -35,21 +12,49 @@ import os
 import glob
 import logging
 import matplotlib.pyplot as plt
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import cpu_count
 
 from obspy import read, UTCDateTime
 from obspy.core.event import (
     Catalog, Event, Origin, Magnitude, Pick, WaveformStreamID, Arrival,
     OriginQuality)
 from obspy.signal.cross_correlation import xcorr_pick_correction
-try:
-    from obspy.io.nordic.core import read_nordic, readheader, readwavename
-except ImportError:
-    raise ImportError("Needs obspy >= 1.1.0")
-
 from eqcorrscan.utils.mag_calc import dist_calc
+from eqcorrscan.utils.clustering import dist_mat_km
 
 
 Logger = logging.getLogger(__name__)
+
+
+class _DTObs(object):
+    """ Holder for phase observations """
+    def __init__(self, station, tt1, tt2, weight, phase):
+        self.station = station
+        self.tt1 = tt1
+        self.tt2 = tt2
+        self.weight = weight
+        self.phase = phase
+
+    def __repr__(self):
+        return "{sta:<5s} {tt1:7.3f} {tt2:7.3f} {weight:6.4f} {phase}".format(
+            sta=self.station, tt1=self.tt1, tt2=self.tt2, weight=self.weight,
+            phase=self.phase)
+
+
+class _EventPair(object):
+    """ Holder for event paid observations. """
+    def __init__(self, event_id_1, event_id_2, obs=None):
+        self.event_id_1 = event_id_1
+        self.event_id_2 = event_id_2
+        self.obs = obs or list()
+
+    def __repr__(self):
+        header = "# {event_id_1:>9d} {event_id_2:>9d}".format(
+            event_id_1=self.event_id_1, event_id_2=self.event_id_2)
+        parts = [header]
+        parts.extend([str(obs) for obs in self.obs])
+        return '\n'.join(parts)
 
 
 def _cc_round(num, dp):
@@ -72,196 +77,304 @@ def _cc_round(num, dp):
     return num
 
 
-def _av_weight(W1, W2):
+def _hypodd_event_str(event, event_id):
     """
-    Function to convert from two seisan weights (0-4) to one hypoDD \
-    weight(0-1).
+    Make an event.dat style string for an event.
 
-    :type W1: str
-    :param W1: Seisan input weight (0-4)
-    :type W2: str
-    :param W2: Seisan input weight (0-4)
-
-    :returns: str
-
-    .. rubric:: Example
-    >>> print(_av_weight(1, 4))
-    0.3750
-    >>> print(_av_weight(0, 0))
-    1.0000
-    >>> print(_av_weight(' ', ' '))
-    1.0000
-    >>> print(_av_weight(-9, 0))
-    0.5000
-    >>> print(_av_weight(1, -9))
-    0.3750
+    :type event_id: int
+    :param event_id: Must be an integer.
     """
-    if str(W1) in [' ', '']:
-        W1 = 1
-    elif str(W1) in ['-9', '9', '9.0', '-9.0']:
-        W1 = 0
-    elif float(W1) < 0:
-        Logger.warning('Negative weight found, setting to zero')
-        W1 = 0
-    else:
-        W1 = 1 - (int(W1) / 4.0)
+    assert isinstance(event_id, int)
+    try:
+        origin = event.preferred_origin() or event.origins[0]
+    except (IndexError, AttributeError):
+        Logger.error("No origin for event {0}".format(event.resource_id.id))
+        return
+    try:
+        magnitude = (event.preferred_magnitude() or event.magnitudes[0]).mag
+    except (IndexError, AttributeError):
+        Logger.warning("No magnitude")
+        magnitude = 0.0
+    try:
+        time_error = origin.quality['standard_error']
+    except AttributeError:
+        Logger.warning('No time residual in header')
+        time_error = 0.0
 
-    if str(W2) in [' ', '']:
-        W2 = 1
-    elif str(W2) in ['-9', '9', '9.0', '-9.0']:
-        W2 = 0
-    elif float(W2) < 0:
-        Logger.warning('Negative weight found, setting to zero')
-        W2 = 0
-    else:
-        W2 = 1 - (int(W2) / 4.0)
+    z_err = (origin.depth_errors.uncertainty or 0.0) / 1000.
+    # Note that these should be in degrees, but GeoNet uses meters.
+    x_err = (origin.longitude_errors.uncertainty or 0.0) / 1000.
+    y_err = (origin.latitude_errors.uncertainty or 0.0) / 1000.
+    x_err = max(x_err, y_err)
 
-    W = (W1 + W2) / 2
-    if W < 0:
-        Logger.info('Weight 1: ' + str(W1))
-        Logger.info('Weight 2: ' + str(W2))
-        Logger.info('Final weight: ' + str(W))
-        raise IOError('Negative average weight calculated, setting to zero')
-    return _cc_round(W, 4)
+    event_str = (
+        "{year:4d}{month:02d}{day:02d}  {hour:2d}{minute:02d}"
+        "{seconds:02d}{microseconds:02d}  {latitude:8.4f}  {longitude:9.4f}"
+        "   {depth:8.4f}  {magnitude:5.2f}  {x_err:5.2f}  {z_err:5.2f}  "
+        "{time_err:5.2f}  {event_id:9d}".format(
+            year=origin.time.year, month=origin.time.month,
+            day=origin.time.day, hour=origin.time.hour,
+            minute=origin.time.minute, seconds=origin.time.second,
+            microseconds=round(origin.time.microsecond / 1e4),
+            latitude=origin.latitude, longitude=origin.longitude,
+            depth=origin.depth / 1000., magnitude=magnitude,
+            x_err=x_err, z_err=z_err, time_err=time_error, event_id=event_id))
+    return event_str
 
 
-def readSTATION0(path, stations):
+def _generate_event_id_mapper(catalog, event_id_mapper=None):
     """
-    Read a Seisan STATION0.HYP file on the path given.
-
-    Outputs the information, and writes to station.dat file.
-
-    :type path: str
-    :param path: Path to the STATION0.HYP file
-    :type stations: list
-    :param stations: Stations to look for
-
-    :returns: List of tuples of station, lat, long, elevation
-    :rtype: list
-
-    >>> # Get the path to the test data
-    >>> import eqcorrscan
-    >>> import os
-    >>> TEST_PATH = os.path.dirname(eqcorrscan.__file__) + '/tests/test_data'
-    >>> readSTATION0(TEST_PATH, ['WHFS', 'WHAT2', 'BOB'])
-    [('WHFS', -43.261, 170.359, 60.0), ('WHAT2', -43.2793, \
-170.36038333333335, 95.0), ('BOB', 41.408166666666666, \
--174.87116666666665, 101.0)]
+    Generate or fill an event_id_mapper mapping event resource id to integer id
     """
-    stalist = []
-    f = open(path + '/STATION0.HYP', 'r')
-    for line in f:
-        if line[1:6].strip() in stations:
-            station = line[1:6].strip()
-            lat = line[6:14]  # Format is either ddmm.mmS/N or ddmm(.)mmmS/N
-            if lat[-1] == 'S':
-                NS = -1
-            else:
-                NS = 1
-            if lat[4] == '.':
-                lat = (int(lat[0:2]) + float(lat[2:-1]) / 60) * NS
-            else:
-                lat = (int(lat[0:2]) + float(lat[2:4] + '.' + lat[4:-1]) /
-                       60) * NS
-            lon = line[14:23]
-            if lon[-1] == 'W':
-                EW = -1
-            else:
-                EW = 1
-            if lon[5] == '.':
-                lon = (int(lon[0:3]) + float(lon[3:-1]) / 60) * EW
-            else:
-                lon = (int(lon[0:3]) + float(lon[3:5] + '.' + lon[5:-1]) /
-                       60) * EW
-            elev = float(line[23:-1].strip())
-            # Note, negative altitude can be indicated in 1st column
-            if line[0] == '-':
-                elev *= -1
-            stalist.append((station, lat, lon, elev))
-    f.close()
-    f = open('station.dat', 'w')
-    for sta in stalist:
-        line = ''.join([sta[0].ljust(5), _cc_round(sta[1], 4).ljust(10),
-                        _cc_round(sta[2], 4).ljust(10),
-                        _cc_round(sta[3] / 1000, 4).rjust(7), '\n'])
-        f.write(line)
-    f.close()
-    return stalist
+    event_id_mapper = event_id_mapper or dict()
+    try:
+        largest_event_id = max(event_id_mapper.values())
+    except ValueError:
+        largest_event_id = 0
+    for event in catalog:
+        if event.resource_id.id not in event_id_mapper.keys():
+            event_id = largest_event_id + 1
+            largest_event_id = event_id
+            event_id_mapper.update({event.resource_id.id: event_id})
+    return event_id_mapper
 
 
-def sfiles_to_event(sfile_list):
-    """
-    Write an event.dat file from a list of Seisan events
-
-    :type sfile_list: list
-    :param sfile_list: List of s-files to sort and put into the database
-
-    :returns: List of tuples of event ID (int) and Sfile name
-    """
-    event_list = []
-    sort_list = [(readheader(sfile).origins[0].time, sfile)
-                 for sfile in sfile_list]
-    sort_list.sort(key=lambda tup: tup[0])
-    sfile_list = [sfile[1] for sfile in sort_list]
-    catalog = Catalog()
-    for i, sfile in enumerate(sfile_list):
-        event_list.append((i, sfile))
-        catalog.append(readheader(sfile))
-    # Hand off to sister function
-    write_event(catalog)
-    return event_list
-
-
-def write_event(catalog):
+def write_event(catalog, event_id_mapper=None):
     """
     Write obspy.core.event.Catalog to a hypoDD format event.dat file.
 
     :type catalog: obspy.core.event.Catalog
     :param catalog: A catalog of obspy events.
+    :type event_id_mapper: dict
+    :param event_id_mapper:
+        Dictionary mapping event resource id to an integer event id for hypoDD.
+        If this is None, or missing events then the dictionary will be updated
+        to include appropriate event-ids. This should be of the form
+        {event.resource_id.id: integer_id}
+
+    :returns: dictionary of event-id mappings.
     """
-    f = open('event.dat', 'w')
-    for i, event in enumerate(catalog):
-        try:
-            evinfo = event.origins[0]
-        except IndexError:
-            raise IOError('No origin')
-        try:
-            Mag_1 = event.magnitudes[0].mag
-        except IndexError:
-            Mag_1 = 0.0
-        try:
-            t_RMS = event.origins[0].quality['standard_error']
-
-        except AttributeError:
-            Logger.error('No time residual in header')
-            t_RMS = 0.0
-        f.write(str(evinfo.time.year) + str(evinfo.time.month).zfill(2) +
-                str(evinfo.time.day).zfill(2) + '  ' +
-                str(evinfo.time.hour).rjust(2) +
-                str(evinfo.time.minute).zfill(2) +
-                str(evinfo.time.second).zfill(2) +
-                str(evinfo.time.microsecond)[0:2].zfill(2) + '  ' +
-                str(evinfo.latitude).ljust(8, str('0')) + '   ' +
-                str(evinfo.longitude).ljust(8, str('0')) + '  ' +
-                str(evinfo.depth / 1000).rjust(7).ljust(9, str('0')) + '   ' +
-                str(Mag_1) + '    0.00    0.00   ' +
-                str(t_RMS).ljust(4, str('0')) +
-                str(i).rjust(11) + '\n')
-    f.close()
-    return
+    event_id_mapper = _generate_event_id_mapper(
+        catalog=catalog, event_id_mapper=event_id_mapper)
+    event_strings = [
+        _hypodd_event_str(event, event_id_mapper[event.resource_id.id])
+        for event in catalog]
+    event_strings = "\n".join(event_strings)
+    with open("event.dat", "w") as f:
+        f.write(event_strings)
+    return event_id_mapper
 
 
-def write_catalog(event_list, max_sep=8, min_link=8):
+def _get_arrival_for_pick(event, pick):
     """
-    Generate a dt.ct for hypoDD for a series of events.
+    Get a matching arrival for a given pick.
+    """
+    matched_arrivals = [
+        arr for origin in event.origins for arr in origin.arrivals
+        if arr.pick_id.get_referred_object() == pick]
+    if len(matched_arrivals) == 0:
+        return None
+    if len(matched_arrivals) > 1:  # pragma: no cover
+        Logger.warning("Multiple arrivals found for pick: {0} on {1}".format(
+            pick.phase_hint, pick.waveform_id.get_seed_string()))
+    return matched_arrivals[0]
 
-    Takes input event list from
-    :func:`eqcorrscan.utils.catalog_to_dd.write_event` as a list of tuples of
-    event id and sfile.  It will read the pick information from the seisan
-    formated s-file using the sfile_util utilities.
 
-    :type event_list: list
-    :param event_list: List of tuples of event_id (int) and sfile (String)
+def _combined_weight(arr1, arr2):
+    """
+    Combine the weights between two arrivals to give a weight between 0-1.
+
+    Uses the mean of the time_weight attributes of the arrivals
+    """
+    if arr1:
+        w1 = arr1.time_weight or 1.0
+    else:
+        w1 = 1.0
+    if arr2:
+        w2 = arr2.time_weight or 1.0
+    else:
+        w2 = 1.0
+    return (w1 + w2) / 2.0
+
+
+def _compute_dt(catalog, master, min_link, event_id_mapper):
+    """
+    Inner function to compute differential times between a catalog and a
+    master event.
+    """
+    if len(catalog) == 0:
+        return []
+    differential_times = [
+        _make_event_pair(event=event, master=master,
+                         event_id_mapper=event_id_mapper) for event in catalog
+        if event.resource_id != master.resource_id]
+    return [d for d in differential_times if len(d.obs) >= min_link]
+
+
+def _make_event_pair(event, master, event_id_mapper):
+    """
+    Make an event pair for a given event and master event.
+    """
+    differential_times = _EventPair(
+        event_id_1=event_id_mapper[master.resource_id.id],
+        event_id_2=event_id_mapper[event.resource_id.id])
+    for master_pick in master.picks:
+        master_arr = _get_arrival_for_pick(master, master_pick)
+        matched_picks = [p for p in event.picks
+                         if p.waveform_id == master_pick.waveform_id
+                         and p.phase_hint == master_pick.phase_hint]
+        master_moveout = master_pick.time - (
+                master.preferred_origin() or master.origins[0]).time
+        for matched_pick in matched_picks:
+            matched_arr = _get_arrival_for_pick(event, matched_pick)
+            matched_moveout = matched_pick.time - (
+                event.preferred_origin() or event.origins[0]).time
+            differential_times.obs.append(
+                _DTObs(station=master_pick.waveform_id.station_code,
+                       tt1=master_moveout, tt2=matched_moveout,
+                       weight=_combined_weight(master_arr, matched_arr),
+                       phase=master_pick.phase_hint))
+    return differential_times
+
+
+def compute_differential_times(catalog, event_id_mapper=None, max_sep=8.,
+                               min_link=8, max_workers=None):
+    """
+    Generate groups of differential times for a catalog.
+
+    :type catalog: `obspy.core.event.Catalog`
+    :param catalog: Catalog of events to get differential times for
+    :type event_id_mapper: dict
+    :param event_id_mapper:
+        Dictionary mapping event resource id to an integer event id for hypoDD.
+        If this is None, or missing events then the dictionary will be updated
+        to include appropriate event-ids. This should be of the form
+        {event.resource_id.id: integer_id}
+    :type max_sep: float
+    :param max_sep: Maximum hypocentral separation in km to link events
+    :type min_link: int
+    :param min_link: Minimum shared phase observations to link events
+    :type max_workers: int
+    :param max_workers:
+        Maximum number of workers for parallel processing. If None then all
+        threads will be used.
+
+    :rtype: dict
+    :return: Dictionary of differential times keyed by event id.
+    :rtype: dict
+    :return: Dictionary of event_id_mapper
+    """
+    max_workers = max_workers or cpu_count()
+    # Ensure all events have locations and picks.
+    event_id_mapper = _generate_event_id_mapper(
+        catalog=catalog, event_id_mapper=event_id_mapper)
+    distances = dist_mat_km(catalog)
+    distance_filter = distances <= max_sep
+
+    differential_times = {}
+    sub_catalogs = [[ev for i, ev in enumerate(catalog)
+                     if master_filter[i]] for master_filter in distance_filter]
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        results = [executor.submit(
+            _compute_dt, sub_catalog, master, min_link, event_id_mapper)
+                   for sub_catalog, master in zip(sub_catalogs, catalog)]
+    for master, result in zip(catalog, results):
+        differential_times.update(
+            {master.resource_id.id: result.result()})
+    return differential_times, event_id_mapper
+
+
+def _hypodd_phase_pick_str(pick, event):
+    """ Make a hypodd phase.dat style pick string. """
+    arr = _get_arrival_for_pick(event=event, pick=pick)
+    tt = pick.time - (event.preferred_origin() or event.origins[0]).time
+    if arr:
+        weight = arr.time_weight or 1.0
+    else:
+        weight = 1.0
+    pick_str = "{station:5s} {tt:7.2f} {weight:5.3f} {phase:1s}".format(
+        station=pick.waveform_id.station_code,
+        tt=tt, weight=weight, phase=pick.phase_hint[0].upper())
+    return pick_str
+
+
+def _hypodd_phase_str(event, event_id_mapper):
+    """ Form a phase-string for hypoDD from an obspy event. """
+    try:
+        origin = event.preferred_origin() or event.origins[0]
+    except (IndexError, AttributeError):
+        Logger.error("No origin for event {0}".format(event.resource_id.id))
+        return
+    try:
+        magnitude = (event.preferred_magnitude() or event.magnitudes[0]).mag
+    except (IndexError, AttributeError):
+        Logger.warning("No magnitude")
+        magnitude = 0.0
+    try:
+        time_error = origin.quality['standard_error']
+    except AttributeError:
+        Logger.warning('No time residual in header')
+        time_error = 0.0
+
+    z_err = (origin.depth_errors.uncertainty or 0.0) / 1000.
+    # Note that these should be in degrees, but GeoNet uses meters.
+    x_err = (origin.longitude_errors.uncertainty or 0.0) / 1000.
+    y_err = (origin.latitude_errors.uncertainty or 0.0) / 1000.
+    x_err = max(x_err, y_err)
+
+    event_str = [(
+        "# {year:4d} {month:02d} {day:02d} {hour:02d} {minute:02d} "
+        "{second:02d} {latitude:10.6f} {longitude: 10.6f} {depth:10.6f} "
+        "{magnitude:4.2f} {err_h:4.2f} {err_z:4.2f} {t_rms:4.2f} "
+        "{event_id:9d}".format(
+            year=origin.time.year, month=origin.time.month,
+            day=origin.time.day, hour=origin.time.hour,
+            minute=origin.time.minute, second=origin.time.second,
+            latitude=origin.latitude, longitude=origin.longitude,
+            depth=origin.depth / 1000., magnitude=magnitude,
+            err_h=x_err, err_z=z_err, t_rms=time_error,
+            event_id=event_id_mapper[event.resource_id.id]))]
+    event_str.extend([_hypodd_phase_pick_str(pick, event)
+                      for pick in event.picks])
+    return "\n".join(event_str)
+
+
+def write_phase(catalog, event_id_mapper=None):
+    """
+    Write a phase.dat formatted file from an obspy catalog.
+
+    :type catalog: `obspy.core.event.Catalog`
+    :param catalog: Catalog of events
+    :type event_id_mapper: dict
+    :param event_id_mapper:
+        Dictionary mapping event resource id to an integer event id for hypoDD.
+        If this is None, or missing events then the dictionary will be updated
+        to include appropriate event-ids. This should be of the form
+        {event.resource_id.id: integer_id}
+
+    :return: event_id_mapper
+    """
+    event_id_mapper = _generate_event_id_mapper(catalog, event_id_mapper)
+    phase_strings = "\n".join(
+        [_hypodd_phase_str(event, event_id_mapper) for event in catalog])
+    with open("phase.dat", "w") as f:
+        f.write(phase_strings)
+    return event_id_mapper
+
+
+def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
+                  max_workers=None):
+    """
+    Generate a dt.ct file for hypoDD for a series of events.
+
+    :type catalog: `obspy.core.event.Catalog`
+    :param catalog: Catalog of events
+    :type event_id_mapper: dict
+    :param event_id_mapper:
+        Dictionary mapping event resource id to an integer event id for hypoDD.
+        If this is None, or missing events then the dictionary will be updated
+        to include appropriate event-ids. This should be of the form
+        {event.resource_id.id: integer_id}
     :type max_sep: float
     :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
@@ -269,135 +382,27 @@ def write_catalog(event_list, max_sep=8, min_link=8):
         Minimum links for an event to be paired, e.g. minimum number of picks
         from the same station and channel (and phase) that are shared between
         two events for them to be paired.
+    :type max_workers: int
+    :param max_workers:
+        Maximum number of workers for parallel processing. If None, then all
+        threads will be used.
 
-    :returns: list of stations that have been used in this catalog
-
-    .. note::
-        We have not yet implemented a method for taking unassociated event
-        objects and wavefiles.  As such if you have events with associated
-        wavefiles you are advised to generate Sfiles for each event using
-        the :mod:`eqcorrscan.utils.sfile_util` module prior to this step.
+    :returns: event_id_mapper
     """
-    # Cope with possibly being passed a zip in python 3.x
-    event_list = list(event_list)
-    f = open('dt.ct', 'w')
-    f2 = open('dt.ct2', 'w')
-    fphase = open('phase.dat', 'w')
-    stations = []
-    evcount = 0
-    for i, master in enumerate(event_list):
-        master_sfile = master[1]
-        master_event_id = master[0]
-        master_event = read_nordic(master_sfile)[0]
-        master_ori_time = master_event.origins[0].time
-        master_location = (master_event.origins[0].latitude,
-                           master_event.origins[0].longitude,
-                           master_event.origins[0].depth / 1000)
-        if len(master_event.magnitudes) > 0:
-            master_magnitude = master_event.magnitudes[0].mag or ' '
-        else:
-            master_magnitude = ' '
-        header = '# ' + \
-            master_ori_time.strftime('%Y  %m  %d  %H  %M  %S.%f') +\
-            ' ' + str(master_location[0]).ljust(8) + ' ' +\
-            str(master_location[1]).ljust(8) + ' ' +\
-            str(master_location[2]).ljust(4) + ' ' +\
-            str(master_magnitude).ljust(4) + ' 0.0 0.0 0.0' +\
-            str(master_event_id).rjust(4)
-        fphase.write(header + '\n')
-        for pick in master_event.picks:
-            if not hasattr(pick, 'phase_hint') or len(pick.phase_hint) == 0:
-                Logger.warning('No phase-hint for pick: {0}'.format(pick))
-                continue
-            if pick.phase_hint[0].upper() in ['P', 'S']:
-                weight = [arrival.time_weight
-                          for arrival in master_event.origins[0].arrivals
-                          if arrival.pick_id == pick.resource_id][0]
-                # Convert seisan weight to hypoDD 0-1 weights
-                if weight == 0:
-                    weight = 1.0
-                elif weight == 9:
-                    weight = 0.0
-                else:
-                    weight = 1 - weight / 4.0
-                fphase.write(pick.waveform_id.station_code + '  ' +
-                             _cc_round(pick.time -
-                                       master_ori_time, 3).rjust(6) +
-                             '   ' + str(weight).ljust(5) +
-                             pick.phase_hint + '\n')
-        for j in range(i + 1, len(event_list)):
-            # Use this tactic to only output unique event pairings
-            slave_sfile = event_list[j][1]
-            slave_event_id = event_list[j][0]
-            # Write out the header line
-            event_text = '#' + str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10) + '\n'
-            event_text2 = '#' + str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10) + '\n'
-            slave_event = read_nordic(slave_sfile)[0]
-            slave_ori_time = slave_event.origins[0].time
-            slave_location = (slave_event.origins[0].latitude,
-                              slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth / 1000)
-            if dist_calc(master_location, slave_location) > max_sep:
-                continue
-            links = 0  # Count the number of linkages
-            for pick in master_event.picks:
-                if not hasattr(pick, 'phase_hint') or\
-                                len(pick.phase_hint) == 0:
-                    continue
-                if pick.phase_hint[0].upper() not in ['P', 'S']:
-                    continue
-                    # Only use P and S picks, not amplitude or 'other'
-                # Added by Carolin
-                slave_matches = [p for p in slave_event.picks
-                                 if hasattr(p, 'phase_hint') and
-                                 p.phase_hint == pick.phase_hint and
-                                 p.waveform_id.station_code.upper() ==
-                                 pick.waveform_id.station_code.upper()]
-                # Loop through the matches
-                for slave_pick in slave_matches:
-                    links += 1
-                    master_weight = [arrival.time_weight
-                                     for arrival in master_event.
-                                     origins[0].arrivals
-                                     if arrival.pick_id == pick.resource_id][0]
-                    slave_weight = [arrival.time_weight
-                                    for arrival in slave_event.
-                                    origins[0].arrivals
-                                    if arrival.pick_id ==
-                                    slave_pick.resource_id][0]
-                    master_weight = str(int(master_weight))
-                    slave_weight = str(int(slave_weight))
-                    event_text += pick.waveform_id.station_code.ljust(5) +\
-                        _cc_round(pick.time - master_ori_time, 3).rjust(11) +\
-                        _cc_round(slave_pick.time -
-                                  slave_ori_time, 3).rjust(8) +\
-                        _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' ' + pick.phase_hint + '\n'
-                    # Added by Carolin
-                    event_text2 += pick.waveform_id.station_code.ljust(5) +\
-                        _cc_round(pick.time - master_ori_time, 3).rjust(11) +\
-                        _cc_round(slave_pick.time -
-                                  slave_ori_time, 3).rjust(8) +\
-                        _av_weight(master_weight, slave_weight).rjust(7) +\
-                        ' ' + pick.phase_hint + '\n'
-                    stations.append(pick.waveform_id.station_code)
-            if links >= min_link:
-                f.write(event_text)
-                f2.write(event_text2)
-                evcount += 1
-    Logger.info('You have ' + str(evcount) + ' links')
-    # f.write('\n')
-    f.close()
-    f2.close()
-    fphase.close()
-    return list(set(stations))
+    differential_times, event_id_mapper = compute_differential_times(
+        catalog=catalog, event_id_mapper=event_id_mapper, max_sep=max_sep,
+        min_link=min_link, max_workers=max_workers)
+    with open("dt.ct", "w") as f:
+        for master_id, linked_events in differential_times.items():
+            for linked_event in linked_events:
+                f.write(str(linked_event))
+                f.write("\n")
+    return event_id_mapper
 
-
-def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
-                       lowcut=1.0, highcut=10.0, max_sep=8, min_link=8,
-                       cc_thresh=0.0, plotvar=False):
+# TODO: Use new correlation functions - wrap lag-calc
+def write_correlations(catalog, event_id_mapper, wavbase, extract_len,
+                       pre_pick, shift_len, lowcut=1.0, highcut=10.0,
+                       max_sep=8, min_link=8, cc_thresh=0.0, plotvar=False):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -406,8 +411,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
     dt.cc uses weights of the cross-correlation, and dt.cc2 provides weights
     as the square of the cross-correlation.
 
-    :type event_list: list
-    :param event_list: List of tuples of event_id (int) and sfile (String)
     :type wavbase: str
     :param wavbase: Path to the seisan wave directory that the wavefiles in the
                     S-files are stored
@@ -447,161 +450,6 @@ def write_correlations(event_list, wavbase, extract_len, pre_pick, shift_len,
         desire this functionality, you should apply the taper before calling
         this.  Note the :func:`obspy.Trace.taper` functions.
     """
-    import warnings
-    warnings.filterwarnings(action="ignore",
-                            message="Maximum of cross correlation " +
-                                    "lower than 0.8: *")
-    corr_list = []
-    f = open('dt.cc', 'w')
-    f2 = open('dt.cc2', 'w')
-    k_events = len(list(event_list))
-    for i, master in enumerate(event_list):
-        master_sfile = master[1]
-        Logger.info('Computing correlations for master: %s' % master_sfile)
-        master_event_id = master[0]
-        master_event = read_nordic(master_sfile)[0]
-        master_picks = master_event.picks
-        master_ori_time = master_event.origins[0].time
-        master_location = (master_event.origins[0].latitude,
-                           master_event.origins[0].longitude,
-                           master_event.origins[0].depth / 1000.0)
-        master_wavefiles = readwavename(master_sfile)
-        masterpath = glob.glob(wavbase + os.sep + master_wavefiles[0])
-        if masterpath:
-            masterstream = read(masterpath[0])
-        if len(master_wavefiles) > 1:
-            for wavefile in master_wavefiles:
-                masterstream += read(os.path.join(wavbase, wavefile))
-        for j in range(i + 1, k_events):
-            # Use this tactic to only output unique event pairings
-            slave_sfile = event_list[j][1]
-            Logger.info('Comparing to event: %s' % slave_sfile)
-            slave_event_id = event_list[j][0]
-            slave_wavefiles = readwavename(slave_sfile)
-            slavestream = read(os.path.join(wavbase, slave_wavefiles[0]))
-            if len(slave_wavefiles) > 1:
-                for wavefile in slave_wavefiles:
-                    try:
-                        slavestream += read(os.path.join(wavbase, wavefile))
-                    except IOError:
-                        Logger.error('No waveform found: %s' %
-                                     (wavbase + os.sep + wavefile))
-                        continue
-            # Write out the header line
-            event_text = '#' + str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10) + ' 0.0   \n'
-            event_text2 = '#' + str(master_event_id).rjust(10) +\
-                str(slave_event_id).rjust(10) + ' 0.0   \n'
-            slave_event = read_nordic(slave_sfile)[0]
-            slave_picks = slave_event.picks
-            slave_ori_time = slave_event.origins[0].time
-            slave_location = (slave_event.origins[0].latitude,
-                              slave_event.origins[0].longitude,
-                              slave_event.origins[0].depth / 1000.0)
-            if dist_calc(master_location, slave_location) > max_sep:
-                Logger.info('Seperation exceeds max_sep: %s' %
-                            (dist_calc(master_location, slave_location)))
-                continue
-            links = 0
-            phases = 0
-            for pick in master_picks:
-                if not hasattr(pick, 'phase_hint') or \
-                                len(pick.phase_hint) == 0:
-                    Logger.warning('No phase-hint for pick: {0}'.format(pick))
-                    continue
-                if pick.phase_hint[0].upper() not in ['P', 'S']:
-                    Logger.warning(
-                        'Will only use P or S phase picks: {0}'.format(pick))
-                    continue
-                    # Only use P and S picks, not amplitude or 'other'
-                # Find station, phase pairs
-                # Added by Carolin
-                slave_matches = [p for p in slave_picks
-                                 if hasattr(p, 'phase_hint') and
-                                 p.phase_hint == pick.phase_hint and
-                                 p.waveform_id.station_code ==
-                                 pick.waveform_id.station_code]
-
-                if masterstream.select(station=pick.waveform_id.station_code,
-                                       channel='*' +
-                                       pick.waveform_id.channel_code[-1]):
-                    mastertr = masterstream.\
-                        select(station=pick.waveform_id.station_code,
-                               channel='*' +
-                               pick.waveform_id.channel_code[-1])[0]
-                else:
-                    Logger.warning(
-                        'No waveform data for {0}'.format(pick.waveform_id))
-                    break
-                # Loop through the matches
-                for slave_pick in slave_matches:
-                    if slavestream.select(station=slave_pick.waveform_id.
-                                          station_code,
-                                          channel='*' + slave_pick.waveform_id.
-                                          channel_code[-1]):
-                        slavetr = slavestream.\
-                            select(station=slave_pick.waveform_id.station_code,
-                                   channel='*' + slave_pick.waveform_id.
-                                   channel_code[-1])[0]
-                    else:
-                        Logger.warning(
-                            'No slave data for {0}'.format(pick.waveform_id))
-                        break
-                    # Correct the picks
-                    try:
-                        correction, cc = xcorr_pick_correction(
-                            pick.time, mastertr, slave_pick.time,
-                            slavetr, pre_pick, extract_len - pre_pick,
-                            shift_len, filter="bandpass",
-                            filter_options={'freqmin': lowcut,
-                                            'freqmax': highcut},
-                            plot=plotvar)
-                        # Get the differential travel time using the
-                        # corrected time.
-                        # Check that the correction is within the allowed shift
-                        # This can occur in the obspy routine when the
-                        # correlation function is increasing at the end of the
-                        # window.
-                        if abs(correction) > shift_len:
-                            Logger.warning('Shift correction too large, ' +
-                                           'will not use')
-                            continue
-                        correction = (
-                            (pick.time - master_ori_time) -
-                            (slave_pick.time + correction - slave_ori_time))
-                        links += 1
-                        if cc >= cc_thresh:
-                            weight = cc
-                            phases += 1
-                            # added by Caro
-                            event_text += (
-                                pick.waveform_id.station_code.ljust(5) +
-                                _cc_round(correction, 3).rjust(11) +
-                                _cc_round(weight, 3).rjust(8) +
-                                ' ' + pick.phase_hint + '\n')
-                            event_text2 += pick.waveform_id.station_code\
-                                .ljust(5) + _cc_round(correction, 3).\
-                                rjust(11) +\
-                                _cc_round(weight * weight, 3).rjust(8) +\
-                                ' ' + pick.phase_hint + '\n'
-                            Logger.debug(event_text)
-                        else:
-                            Logger.info('cc too low: %s' % cc)
-                        corr_list.append(cc * cc)
-                    except Exception as e:
-                        Logger.warning(
-                            "Couldn't compute correlation correction")
-                        Logger.error(e)
-                        continue
-            if links >= min_link and phases > 0:
-                f.write(event_text)
-                f2.write(event_text2)
-    if plotvar:
-        plt.hist(corr_list, 150)
-        plt.show()
-    # f.write('\n')
-    f.close()
-    f2.close()
     return
 
 

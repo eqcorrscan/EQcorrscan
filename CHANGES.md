@@ -1,4 +1,7 @@
 ## Current
+* Refactor of catalog_to_dd functions:
+  - Speed-ups, using new correlation functions and better resource management
+  - Removed enforcement of seisan, arguments are now standard obspy objects.
 * Wholesale re-write of lag-calc function and methods. External interface is
   similar, but some arguments have been depreciated as they were unnecesary.
   - This was done to make use of the new internal correlation functions which
