@@ -5,4 +5,4 @@
 * Shanna Chu
 * Derrick Chambers
 * Chris Scott
-* Iman kahbasi
+* Iman Kahbasi
