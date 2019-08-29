@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import logging
 
-from obspy import read
+from obspy import read, UTCDateTime
 
 from eqcorrscan.utils.synth_seis import generate_synth_data
 from eqcorrscan.utils.correlate import get_stream_xcorr
@@ -122,6 +122,36 @@ class SyntheticTests(unittest.TestCase):
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False)
         for event in catalog_dict.values():
             self.assertEqual(len(event.picks), len(self.data))
+            for pick in event.picks:
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
+
+    def test_family_picking_missing_data(self):
+        """ Check that this all works okay when one channel has some gaps """
+        gappy_data = self.data.copy()
+        sr = gappy_data[0].stats.sampling_rate
+        mask = np.zeros(len(gappy_data[0].data), dtype=bool)
+        gap_start = self.party[0][5].detect_time - 5
+        gap_length = 3600
+        gap_end = gap_start + gap_length
+        gap_start = int(sr * (gap_start - UTCDateTime(0)))
+        gap_end = int(sr * (gap_end - UTCDateTime(0)))
+        mask[gap_start: gap_end] = np.ones(int(gap_length * sr), dtype=bool)
+        gappy_data[0].data = np.ma.masked_array(
+            data=gappy_data[0].data, mask=mask)
+        catalog_dict = xcorr_pick_family(
+            family=self.party[0], stream=gappy_data, shift_len=0.2, plot=False)
+        gap = gappy_data.split().get_gaps()
+        for event in catalog_dict.values():
+            if len(event.picks) != len(self.data):
+                self.assertEqual(len(event.picks), len(self.data) - 1)
+                # Check that the event happened to be in the gap
+                self.assertTrue(gap[0][4] <= event.picks[0].time <= gap[0][5])
+                # Check that there isn't a pick on the channel missing data
+                self.assertNotIn('.'.join(gap[0][0:4]),
+                                 [pick.waveform_id.get_seed_string()
+                                  for pick in event.picks])
             for pick in event.picks:
                 self.assertTrue("cc_max=" in pick.comments[0].text)
                 self.assertAlmostEqual(
