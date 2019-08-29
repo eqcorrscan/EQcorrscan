@@ -34,7 +34,7 @@ class _DTObs(object):
     """ Holder for phase observations """
     def __init__(self, station, tt1, tt2, weight, phase):
         self.station = station
-        assert len(self.station) <= 5, "Station must be five characters or less"
+        assert len(self.station) <= 7, "Station must be five characters or less"
         self.tt1 = tt1
         self.tt2 = tt2
         self.weight = weight
@@ -43,13 +43,13 @@ class _DTObs(object):
 
     @property
     def ct_string(self):
-        return "{sta:<5s} {tt1:7.3f} {tt2:7.3f} {weight:6.4f} {phase}".format(
+        return "{sta:<7s} {tt1:7.3f} {tt2:7.3f} {weight:6.4f} {phase}".format(
             sta=self.station, tt1=self.tt1, tt2=self.tt2, weight=self.weight,
             phase=self.phase)
 
     @property
     def cc_string(self):
-        return "{sta:<5s} {dt:7.3f} {weight:6.4f} {phase}".format(
+        return "{sta:<7s} {dt:7.3f} {weight:6.4f} {phase}".format(
             sta=self.station, dt=self.tt1 - self.tt2, weight=self.weight,
             phase=self.phase)
 
@@ -772,8 +772,16 @@ def write_event(catalog, event_id_mapper=None):
 # Station.dat functions
 
 def write_station(inventory):
-    # TODO: Write this!
-    # Format: {station} {lat} {lon}
+    station_strings = []
+    for network in inventory:
+        for station in network:
+            station_strings.append(
+                "{station:<7s} {latitude:6.3f} {longitude:6.3f}".format(
+                    station=station.code,
+                    latitude=station.latitude,
+                    longitude=station.longitude))
+    with open("station.dat", "w") as f:
+        f.write("\n".join(station_strings))
 
 
 if __name__ == '__main__':
