@@ -12,7 +12,7 @@ import numpy as np
 import scipy
 import logging
 
-from collections import Counter
+from collections import Counter, namedtuple
 
 from obspy import Stream, Trace
 from obspy.core.event import Catalog
@@ -104,6 +104,8 @@ def _concatenate_and_correlate(streams, template, cores):
 
     All traces in a stream must have the same length.
     """
+    UsedChannel = namedtuple("UsedChannel", "channel used")
+
     channel_length = {tr.stats.npts for st in streams for tr in st}
     assert len(channel_length) == 1, "Multiple lengths found."
     channel_length = channel_length.pop()
@@ -131,12 +133,16 @@ def _concatenate_and_correlate(streams, template, cores):
             tr = stream.select(id=chan)
             if len(tr) == 0:
                 # No data for this channel in this stream
+                used_chans[j].append(UsedChannel(
+                    channel=(chan.split('.')[1], chan.split('.')[-1]),
+                    used=False))
                 start_index += channel_length
                 continue
             assert len(tr) == 1, "Multiple channels found for {0}".format(chan)
             data[i][start_index:start_index + channel_length] = tr[0].data
             start_index += channel_length
-            used_chans[j].append((chan.split('.')[1], chan.split('.')[-1]))
+            used_chans[j].append(UsedChannel(
+                channel=(chan.split('.')[1], chan.split('.')[-1]), used=True))
         net, sta, loc, chan = chan.split('.')
         concatenated_stream += Trace(
             data=data[i], header=dict(network=net, station=sta, channel=chan,
@@ -154,15 +160,15 @@ def _concatenate_and_correlate(streams, template, cores):
     # Re-order used_chans
     chan_order = chan_order[0]
     for _used_chans in used_chans:
-        _used_chans.sort(key=lambda chan: chan_order.index(chan))
+        _used_chans.sort(key=lambda chan: chan_order.index(chan.channel))
 
     # Reshape ccc output
     ccc_out = np.zeros((len(streams), len(chans),
                         channel_length - template_length + 1),
                        dtype=np.float32)
     for i in range(len(streams)):
-        for j, chan in enumerate(chans):
-            if (chan.split('.')[1], chan.split('.')[-1]) not in used_chans[i]:
+        for j, chan in enumerate(used_chans[i]):
+            if not chan.used:
                 continue
             index_start = i * channel_length
             index_end = index_start + channel_length - template_length + 1
@@ -228,8 +234,10 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         checksum, cccsum, used_chans = 0.0, 0.0, 0
         event = Event()
         for correlation, stachan in zip(correlations, picked_chans):
+            if not stachan.used:
+                continue
             tr = detect_stream.select(
-                station=stachan[0], channel=stachan[1])[0]
+                station=stachan.channel[0], channel=stachan.channel[1])[0]
             if interpolate:
                 shift, cc_max = _xcorr_interp(correlation, dt=delta)
             else:
@@ -247,9 +255,9 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                 continue
             cccsum += cc_max
             phase = None
-            if stachan[1][-1] in vertical_chans:
+            if stachan.channel[1][-1] in vertical_chans:
                 phase = 'P'
-            elif stachan[1][-1] in horizontal_chans:
+            elif stachan.channel[1][-1] in horizontal_chans:
                 phase = 'S'
             _waveform_id = WaveformStreamID(seed_string=tr.id)
             event.picks.append(Pick(
