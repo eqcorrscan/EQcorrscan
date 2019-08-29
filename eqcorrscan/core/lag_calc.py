@@ -212,7 +212,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :param plotdir:
         Path to plotting folder, plots will be output here, in a folder with
         name of template's origin-time for each template.
-        
+
     :return: Catalog of events.
     """
     picked_dict = {}
@@ -299,11 +299,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                     template_plot.remove(tr)
             if plotdir is not None:
                 plotdir = "{plotdir}/{template_origin}/".format(plotdir=plotdir
-                           , template_origin=event.resource_id.id[0:19])
+                , template_origin=event.resource_id.id[0:19])
                 if not os.path.isdir(plotdir):
                     os.makedirs(plotdir)
                 savefile = "{plotdir}/{rid}.png".format(plotdir=plotdir, 
-                            rid=event.resource_id.id)
+                rid=event.resource_id.id)
                 plot_kwags = dict(show=False, save=True, savefile=savefile)
             else:
                 plot_kwargs = dict(show=True)
