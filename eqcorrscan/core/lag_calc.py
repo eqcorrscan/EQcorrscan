@@ -223,6 +223,12 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     detection_ids = list(detect_streams_dict.keys())
     detect_streams = [detect_streams_dict[detection_id]
                       for detection_id in detection_ids]
+    assert len(detect_streams) > 0, "No appropriate data found, check your " \
+                                    "family and detections - make sure seed " \
+                                    "ids match"
+    if len(detect_streams) != len(family):
+        Logger.warning("Not all detections have matching data. "
+                       "Proceeding anyway. HINT: Make sure SEED IDs match")
     # Correlation function needs a list of streams, we need to maintain order.
     ccc, chans = _concatenate_and_correlate(
         streams=detect_streams, template=family.template.st, cores=cores)
@@ -251,7 +257,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             checksum += cc_max
             used_chans += 1
             if cc_max < min_cc:
-                Logger.debug('Correlation below threshold, not used')
+                Logger.debug('Correlation of {0} is below threshold, not '
+                             'using'.format(cc_max))
                 continue
             cccsum += cc_max
             phase = None
