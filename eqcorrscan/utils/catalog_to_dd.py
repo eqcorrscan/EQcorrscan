@@ -25,9 +25,6 @@ from eqcorrscan.core.lag_calc import _concatenate_and_correlate, _xcorr_interp
 Logger = logging.getLogger(__name__)
 
 SeedPickID = namedtuple("SeedPickID", ["seed_id", "phase_hint"])
-# A fixed weight arrival
-FixedWeight = namedtuple("FixedWeight", "time_weight")
-_null_weight = FixedWeight(1.0)
 
 
 # Some hypoDD specific event holders - classes were faster than named-tuples
@@ -134,7 +131,7 @@ def _make_sparse_event(event):
             channel=pick.waveform_id.channel_code,
             seed_id=pick.waveform_id.get_seed_string(),
             phase=pick.phase_hint,
-            time_weight=time_weight_dict.get(pick.resource_id, _null_weight))
+            time_weight=time_weight_dict.get(pick.resource_id, 1.0))
             for pick in event.picks])
     return sparse_event
 
