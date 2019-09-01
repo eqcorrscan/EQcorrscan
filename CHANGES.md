@@ -1,4 +1,6 @@
 ## Current
+* Add plotdir to lag_calc.xcorr_pick_family
+  - Use for save plot. Figures will save with name of events' id
 * Wholesale re-write of lag-calc function and methods. External interface is
   similar, but some arguments have been depreciated as they were unnecesary.
   - This was done to make use of the new internal correlation functions which
