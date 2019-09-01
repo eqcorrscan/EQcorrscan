@@ -11,6 +11,7 @@ Functions to generate pick-corrections for events detected by correlation.
 import numpy as np
 import scipy
 import logging
+import os
 
 from collections import Counter, namedtuple
 
@@ -179,7 +180,7 @@ def _concatenate_and_correlate(streams, template, cores):
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False):
+                      plot=False, plotdir=None):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -213,6 +214,9 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type plot: bool
     :param plot:
         To generate a plot for every detection or not, defaults to False
+    :type plotdir: str
+    :param plotdir:
+        Path to plotting folder, plots will be output here.
 
     :return: Catalog of events.
     """
@@ -307,8 +311,17 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                 if (tr.stats.station, tr.stats.channel) \
                         not in pick_stachans:
                     template_plot.remove(tr)
-            plot_repicked(template=template_plot, picks=event.picks,
-                          det_stream=plot_stream, show=True)
+            if plotdir is not None:
+                if not os.path.isdir(plotdir):
+                    os.makedirs(plotdir)
+                savefile = "{plotdir}/{rid}.png".format(
+                    plotdir=plotdir, rid=event.resource_id.id)
+                plot_repicked(template=template_plot, picks=event.picks,
+                              det_stream=plot_stream, show=False, save=True,
+                              savefile=savefile)
+            else:
+                plot_repicked(template=template_plot, picks=event.picks,
+                              det_stream=plot_stream, show=True)
     return picked_dict
 
 
