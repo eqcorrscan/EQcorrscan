@@ -70,7 +70,7 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
-                 all_horiz=False, delayed=True, plot=False,
+                 all_horiz=False, delayed=True, plot=False, plotdir='.',
                  return_event=False, min_snr=None, parallel=False,
                  num_cores=False, save_progress=False, skip_short_chans=False,
                  **kwargs):
@@ -385,7 +385,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
+                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
+                plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
         if save_progress:
