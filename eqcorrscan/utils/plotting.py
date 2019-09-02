@@ -1244,6 +1244,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     axes[0].set_title("Spectra")
     axes[1].set_title("Signal - noise")
     plt.figlegend(lines, labels, 'upper left')
+    plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
