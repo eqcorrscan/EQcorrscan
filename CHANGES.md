@@ -1,4 +1,7 @@
 ## Current
+* Add proportional figsize to noise_plot function for make better figure.
+* Add plotdir to template_gen function and bbox_inches to make better figure
+* Remove unused function EQcorrscanDeprecationWarning in core/template_gen
 * Add plotdir to lag_calc.xcorr_pick_family
   - Use for save plot. Figures will save with name of events' id
 * Wholesale re-write of lag-calc function and methods. External interface is
