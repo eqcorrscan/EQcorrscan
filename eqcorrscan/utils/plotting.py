@@ -41,7 +41,6 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type return_figure: bool
     """
     import matplotlib.pyplot as plt
-    
     title = kwargs.get("title") or None
     show = kwargs.get("show")
     if show is None:
@@ -1196,7 +1195,8 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
             continue
         n_traces += 1
 
-    fig, axes = plt.subplots(n_traces, 2, sharex=True)
+    fig, axes = plt.subplots(n_traces, 2, sharex=True,
+                             figsize=(n_traces, n_traces))
     if len(signal) > 1:
         axes = axes.ravel()
     i = 0
@@ -1244,7 +1244,6 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     axes[0].set_title("Spectra")
     axes[1].set_title("Signal - noise")
     plt.figlegend(lines, labels, 'upper left')
-    plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
