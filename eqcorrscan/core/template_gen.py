@@ -47,8 +47,6 @@ from obspy.clients.seishub import Client as SeisHubClient
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
-from eqcorrscan.core import EQcorrscanDeprecationWarning
-
 
 Logger = logging.getLogger(__name__)
 
