@@ -814,7 +814,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         fig2 = noise_plot(
             signal=st1, noise=noise, show=False, return_figure=True)
         fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
-        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime))
+        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime),
+                     bbox_inches='tight')
         del(stplot, fig1, fig2)
     return st1
 
