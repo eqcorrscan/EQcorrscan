@@ -95,6 +95,9 @@ def _xcorr_interp(ccc, dt):
     # coefficient.
     shift = -coeffs[1] / 2.0 / coeffs[0]
     coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
+    if coeff < np.amax(ccc):
+        # Sometimes the interpolation returns a worse result.
+        return np.argmax(ccc) * dt, np.amax(ccc)
     return shift, coeff
 
 

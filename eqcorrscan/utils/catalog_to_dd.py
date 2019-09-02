@@ -136,18 +136,23 @@ def _make_sparse_event(event):
     return sparse_event
 
 
-def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
+def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None,
+                    master=None):
     """
-    Slice stream around picks
+    Slice stream around picks - if master is given, slices around expected
+    moveout for pick.
 
     returns a dictionary of traces keyed by phase_hint.
     """
+    master = master or event
     seed_pick_ids = seed_pick_ids or {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in event.picks}
     stream_sliced = defaultdict(lambda: Stream())
+    master_origin = (master.preferred_origin() or master.origins[0]).time
+    event_origin = (event.preferred_origin() or event.origins[0]).time
     for seed_pick_id in seed_pick_ids:
-        pick = [pick for pick in event.picks
+        pick = [pick for pick in master.picks
                 if pick.waveform_id.get_seed_string() == seed_pick_id.seed_id
                 and pick.phase_hint[0] == seed_pick_id.phase_hint]
         if len(pick) > 1:
@@ -160,9 +165,11 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
         elif len(pick) == 0:
             continue
         pick = pick[0]
+        moveout = pick.time - master_origin
+        pick_time = event_origin + moveout
         tr = stream.select(id=seed_pick_id.seed_id).slice(
-            starttime=pick.time - pre_pick,
-            endtime=(pick.time - pre_pick) + extract_len).merge()
+            starttime=pick_time - pre_pick,
+            endtime=(pick_time - pre_pick) + extract_len).merge()
         if len(tr) == 0:
             continue
         if len(tr) > 1:
@@ -171,7 +178,7 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
             continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
-                 stream_sliced[seed_pick_id.phase_hint] + tr[0]})
+             stream_sliced[seed_pick_id.phase_hint] + tr[0]})
     return stream_sliced
 
 
@@ -207,7 +214,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
         event_id: _prepare_stream(
             stream=stream_dict[event_id], event=event_dict[event_id],
             extract_len=matched_length, pre_pick=matched_pre_pick,
-            seed_pick_ids=master_seed_ids)
+            seed_pick_ids=master_seed_ids, master=master)
         for event_id in event_ids}
 
     sampling_rates = {tr.stats.sampling_rate for st in master_stream.values()
@@ -238,7 +245,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                 template=_master_stream, streams=used_matched_streams, cores=1)
             # Convert ccc_out to pick-time
             for i, used_event_id in enumerate(used_event_ids):
-                for j, chan in used_chans[i]:
+                for j, chan in enumerate(used_chans[i]):
                     if not chan.used:
                         continue
                     correlation = ccc_out[i][j]
@@ -249,15 +256,10 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         shift = np.argmax(correlation) * delta
                     if cc_max < min_cc:
                         continue
-                    pick = [p for p in event_dict[used_event_id].picks
-                            if p.phase_hint == phase_hint
-                            and p.waveform_id.station_code == chan.channel[0]
-                            and p.waveform_id.channel_code == chan.channel[1]]
-                    pick = sorted(pick, key=lambda p: p.time)[0]
-                    tt2 = pick.time - (
-                            event_dict[used_event_id].preferred_origin() or
-                            event_dict[used_event_id].origins[0]).time
-                    tt2 += shift
+                    shift -= pre_pick
+                    tt1 = master_tts["{0}_{1}".format(
+                        chan.channel[0], phase_hint)]
+                    tt2 = tt1 + shift
                     diff_time = differential_times_dict.get(
                         used_event_id, None)
                     if diff_time is None:
@@ -265,10 +267,10 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                             event_id_1=event_id_mapper[master.resource_id.id],
                             event_id_2=event_id_mapper[used_event_id])
                     diff_time.obs.append(
-                        _DTObs(station=used_chans[0],
-                               tt1=master_tts["{0}_{1}".format(
-                                   used_chans[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint))
+                        _DTObs(station=chan.channel[0],
+                               tt1=tt1, tt2=tt2, weight=cc_max ** 2,
+                               phase=phase_hint))
+                    differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
     differential_times = [dt for dt in differential_times_dict.values()
                           if len(dt.obs) >= min_link]
@@ -280,13 +282,11 @@ def _compute_dt(sparse_catalog, master, min_link, event_id_mapper):
     Inner function to compute differential times between a catalog and a
     master event.
     """
-    if len(sparse_catalog) == 0:
-        return []
-    differential_times = [
-        _make_event_pair(sparse_event=event, master=master,
-                         event_id_mapper=event_id_mapper, min_link=min_link)
-        for event in sparse_catalog if event.resource_id != master.resource_id]
-    return differential_times
+    return [_make_event_pair(sparse_event=event, master=master,
+                             event_id_mapper=event_id_mapper,
+                             min_link=min_link)
+            for event in sparse_catalog
+            if event.resource_id != master.resource_id]
 
 
 def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
@@ -297,7 +297,7 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         event_id_1=event_id_mapper[master.resource_id],
         event_id_2=event_id_mapper[sparse_event.resource_id])
     for master_pick in master.picks:
-        if master_pick.phase not in "PS":
+        if master_pick.phase not in "PS":  # pragma: no cover
             continue
         matched_picks = [p for p in sparse_event.picks
                          if p.station == master_pick.station
@@ -380,30 +380,38 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         catalog=catalog, event_id_mapper=event_id_mapper)
     distances = dist_mat_km(catalog)
     distance_filter = distances <= max_sep
-
-    # Reformat catalog to sparse catalog
-    sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
-
-    sub_catalogs = [[ev for i, ev in enumerate(sparse_catalog)
-                     if master_filter[i]] for master_filter in distance_filter]
+    np.fill_diagonal(distance_filter, 0)  # Do not match events to themselves
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
+        sub_catalogs = [[ev for i, ev in enumerate(catalog)
+                         if master_filter[i]]
+                        for master_filter in distance_filter]
         differential_times = {}
         additional_args.update(correlation_kwargs)
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             results = [executor.submit(
-                _compute_dt_correlations, sub_catalog, master, **additional_args)
-                for sub_catalog, master in zip(sub_catalogs, sparse_catalog)]
-        for master, result in zip(sparse_catalog, results):
+                _compute_dt_correlations, sub_catalog, master,
+                **additional_args)
+                for sub_catalog, master in zip(sub_catalogs, catalog)]
+        for master, result in zip(catalog, results):
             differential_times.update(
-                {master.resource_id: result.result()})
+                {master.resource_id.id: result.result()})
     else:
+        # Reformat catalog to sparse catalog
+        sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
+
+        sub_catalogs = [[ev for i, ev in enumerate(sparse_catalog)
+                         if master_filter[i]]
+                        for master_filter in distance_filter]
         differential_times = {
             master.resource_id: _compute_dt(
                 sub_catalog, master, **additional_args)
             for master, sub_catalog in zip(sparse_catalog, sub_catalogs)}
 
+    # Remove Nones
+    for key, value in differential_times.items():
+        differential_times.update({key: [v for v in value if v is not None]})
     return differential_times, event_id_mapper
 
 
@@ -546,17 +554,11 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
 
 # Phase-file functions
 
-def _hypodd_phase_pick_str(pick, event):
+def _hypodd_phase_pick_str(pick, sparse_event):
     """ Make a hypodd phase.dat style pick string. """
-    arr = _get_arrival_for_pick(event=event, pick=pick)
-    tt = pick.time - (event.preferred_origin() or event.origins[0]).time
-    if arr:
-        weight = arr.time_weight or 1.0
-    else:
-        weight = 1.0
     pick_str = "{station:5s} {tt:7.2f} {weight:5.3f} {phase:1s}".format(
         station=pick.waveform_id.station_code,
-        tt=tt, weight=weight, phase=pick.phase_hint[0].upper())
+        tt=pick.tt, weight=pick.weight, phase=pick.phase[0].upper())
     return pick_str
 
 
@@ -596,8 +598,14 @@ def _hypodd_phase_str(event, event_id_mapper):
             depth=origin.depth / 1000., magnitude=magnitude,
             err_h=x_err, err_z=z_err, t_rms=time_error,
             event_id=event_id_mapper[event.resource_id.id]))]
-    event_str.extend([_hypodd_phase_pick_str(pick, event)
-                      for pick in event.picks if pick.phase_hint[0] in "PS"])
+    sparse_event = _make_sparse_event(event)
+    for pick in sparse_event.picks:
+        if pick.phase[0] not in "PS":
+            continue
+        event_str.append(
+            "{station:5s} {tt:7.2f} {weight:5.3f} {phase:1s}".format(
+                station=pick.station, tt=pick.tt, weight=pick.time_weight,
+                phase=pick.phase[0].upper()))
     return "\n".join(event_str)
 
 
