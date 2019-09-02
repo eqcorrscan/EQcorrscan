@@ -579,7 +579,8 @@ def _rms(array):
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05,
-                  all_horiz=False, delayed=True, plot=False, min_snr=None):
+                  all_horiz=False, delayed=True, plot=False, plotdir='.',
+                  min_snr=None):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -615,6 +616,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         To plot the template or not, default is False. Plots are saved as
         `template-starttime_template.png` and `template-starttime_noise.png`,
         where `template-starttime` is the start-time of the template
+    :type plotdir: str
+    :param plotdir:
+        Path to plotting folder, plots will be output here.
     :type min_snr: float
     :param min_snr:
         Minimum signal-to-noise ratio for a channel to be included in the
@@ -808,14 +812,17 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
     if plot and len(st1) > 0:
+        if not os.path.isdir(plotdir):
+            os.makedirs(plotdir)
         fig1 = tplot(st1, background=stplot, picks=picks_copy,
                      title='Template for ' + str(st1[0].stats.starttime),
                      show=False, return_figure=True)
         fig2 = noise_plot(
             signal=st1, noise=noise, show=False, return_figure=True)
-        fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
-        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime),
-                     bbox_inches='tight')
+        fig1.savefig("{0}/{1}_template.png".format(plotdir,
+                     st1[0].stats.starttime))
+        fig2.savefig("{0}/{1}_noise.png".format(plotdir,
+                     st1[0].stats.starttime), bbox_inches='tight')
         del(stplot, fig1, fig2)
     return st1
 
