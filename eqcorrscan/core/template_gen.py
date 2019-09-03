@@ -161,7 +161,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 See `eqcorrscan.utils.sac_util.sactoevent` for details on
                 how pick information is collected.
         - `from_meta_file` requires:
-            :param str meta_file: Path to obspy-readable event file.
+            :param str meta_file:
+                Path to obspy-readable event file, or an obspy Catalog
             :param `obspy.core.stream.Stream` st:
                 Stream containing waveform data for template. Note that this
                 should be the same length of stream as you will use for the

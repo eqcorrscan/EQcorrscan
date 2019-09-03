@@ -911,10 +911,11 @@ class Tribe(object):
         """
         Generate a Tribe of Templates.
 
-        See :mod:`eqcorrscan.core.template_gen` for available methods.
-
-        :param method: Method of Tribe generation.
-        :param kwargs: Arguments for the given method.
+        :type method: str
+        :param method:
+            Method of Tribe generation. Possible options are: `from_client`,
+            `from_seishub`, `from_meta_file`.  See below on the additional
+            required arguments for each method.
         :type lowcut: float
         :param lowcut:
             Low cut (Hz), if set to None will not apply a lowcut
@@ -934,14 +935,35 @@ class Tribe(object):
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
 
-        .. Note::
-            Methods: `from_contbase`, `from_sfile` and `from_sac` are not
-            supported by Tribe.construct and must use Template.construct.
+        .. note::
+            *Method specific arguments:*
+
+            - `from_client` requires:
+                :param str client_id:
+                    string passable by obspy to generate Client, or a Client
+                    instance
+                :param `obspy.core.event.Catalog` catalog:
+                    Catalog of events to generate template for
+                :param float data_pad: Pad length for data-downloads in seconds
+            - `from_seishub` requires:
+                :param str url: url to seishub database
+                :param `obspy.core.event.Catalog` catalog:
+                    Catalog of events to generate template for
+                :param float data_pad: Pad length for data-downloads in seconds
+            - `from_meta_file` requires:
+                :param str meta_file:
+                    Path to obspy-readable event file, or an obspy Catalog
+                :param `obspy.core.stream.Stream` st:
+                    Stream containing waveform data for template. Note that this
+                    should be the same length of stream as you will use for the
+                    continuous detection, e.g. if you detect in day-long files,
+                    give this a day-long file!
+                :param bool process:
+                    Whether to process the data or not, defaults to True.
 
         .. Note::
-            The Method `multi_template_gen` is not supported because the
-            processing parameters for the stream are not known. Use
-            `from_meta_file` instead.
+            Method: `from_sac` is not supported by Tribe.construct and must
+            use Template.construct.
 
         .. Note:: Templates will be named according to their start-time.
         """

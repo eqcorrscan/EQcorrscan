@@ -526,8 +526,9 @@ class Template(object):
         Construct a template using a given method.
 
         :param method:
-            Method to make the template,
-            see :mod:`eqcorrscan.core.template_gen` for possible methods.
+            Method to make the template, the only available method is:
+            `from_sac`. For all other methods (`from_seishub`, `from_client`
+            and `from_meta_file`) use `Tribe.construct()`.
         :type method: str
         :type name: str
         :param name: Name for the template
@@ -546,15 +547,15 @@ class Template(object):
         :type prepick: float
         :param prepick: Pre-pick time in seconds
 
-        .. Note::
-            methods `from_meta_file`, `from_seishub`, `from_client` and
-            `multi_template_gen` are not accommodated in this function and must
-            be called from Tribe.construct as these generate multiple
-            templates.
+        .. note::
 
-        .. Note::
-            Calls functions from `eqcorrscan.core.template_gen`, see these
-            functions for details on what further arguments are required.
+            `method=from_sac` requires the following kwarg(s):
+            :param list sac_files:
+                osbpy.core.stream.Stream of sac waveforms, or list of paths to
+                sac waveforms.
+            .. note::
+                See `eqcorrscan.utils.sac_util.sactoevent` for details on
+                how pick information is collected.
 
         .. rubric:: Example
 
