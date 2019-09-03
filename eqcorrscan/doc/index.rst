@@ -31,6 +31,10 @@ EQcorrscan uses |Obspy_link| bindings when reading and writing seismic data, and
 of the event metadata, which ensures that detections can be easily migrated between
 software.
 
+.. |Obspy_link| raw:: html
+
+  <a href="https://docs.obspy.org/" target="_blank">Obspy</a>
+
 Also within this package are:
 
 * :doc:`Correlation re-picking </submodules/core.lag_calc>`;

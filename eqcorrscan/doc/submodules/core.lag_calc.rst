@@ -13,6 +13,7 @@ lag_calc
        :nosignatures:
 
        lag_calc
+       xcorr_pick_family
 
     .. comment to end block
 
@@ -25,7 +26,6 @@ lag_calc
       :toctree: autogen
       :nosignatures:
 
-      _channel_loop
-      _day_loop
+      _concatenate_and_correlate
       _prepare_data
       _xcorr_interp
