@@ -203,7 +203,7 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_write_catalog(self):
         # Contents checked elsewhere
-        _ = write_catalog(catalog=self.catalog, event_id_mapper=None,
+        write_catalog(catalog=self.catalog, event_id_mapper=None,
                           max_sep=8., min_link=8)
         self.assertTrue(os.path.isfile("dt.ct"))
         os.remove("dt.ct")
@@ -214,7 +214,7 @@ class TestCatalogMethods(unittest.TestCase):
         short_cat = self.catalog[0:10]
         stream_dict = {event.resource_id.id: stream
                        for event, stream in zip(short_cat, self.streams)}
-        _ = write_correlations(
+        write_correlations(
             catalog=short_cat, event_id_mapper=None,
             max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
             extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
@@ -239,7 +239,7 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_write_phase(self):
         """ This file has been tested with ph2dt """
-        _ = write_phase(self.catalog)
+        write_phase(self.catalog)
         test_data_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         with open(os.path.join(test_data_path, "phase.dat"), "r") as f:
@@ -261,7 +261,7 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_write_event(self):
         # Contents checked below
-        _ = write_event(self.catalog)
+        write_event(self.catalog)
         self.assertTrue(os.path.isfile("event.dat"))
         os.remove("event.dat")
 
