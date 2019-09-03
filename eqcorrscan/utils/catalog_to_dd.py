@@ -69,7 +69,7 @@ class _DTObs(object):
 
     def __init__(self, station, tt1, tt2, weight, phase):
         self.station = station
-        assert len(self.station) <= 7, "Station must be five characters or less"
+        assert len(self.station) <= 7, "Station must be <= five characters"
         self.tt1 = tt1
         self.tt2 = tt2
         self.weight = weight
