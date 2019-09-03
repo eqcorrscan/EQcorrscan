@@ -36,7 +36,12 @@ Logger = logging.getLogger(__name__)
 
 
 class Tribe(object):
-    """Holder for multiple templates."""
+    """
+    Holder for multiple templates.
+
+    :type templates: List of Template
+    :param templates: The templates within the Tribe.
+    """
 
     def __init__(self, templates=None):
         self.templates = []
