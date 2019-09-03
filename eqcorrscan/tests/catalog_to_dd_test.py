@@ -4,6 +4,7 @@ submodule.  Uses test data distributed with the EQcorrscan package.
 """
 import unittest
 import os
+import numpy as np
 
 from collections import Counter, namedtuple
 
@@ -14,9 +15,8 @@ from obspy.geodetics import gps2dist_azimuth
 from eqcorrscan.utils.catalog_to_dd import (
     write_catalog, write_correlations, read_phase, write_event, _DTObs,
     _EventPair, _generate_event_id_mapper, _make_sparse_event,
-    _prepare_stream, _compute_dt, _compute_dt_correlations, _make_event_pair,
-    compute_differential_times, _filter_stream, _hypodd_phase_pick_str,
-    _hypodd_event_str, _hypodd_phase_str)
+    _prepare_stream, compute_differential_times, _filter_stream,
+    _hypodd_event_str, write_phase, write_station)
 
 
 class TestHelperObjects(unittest.TestCase):
@@ -43,24 +43,23 @@ class TestHelperObjects(unittest.TestCase):
             'GCSZ     -1.237 1.0000 S')
 
 
-# TODO: Heaps of tests!
 class TestCatalogMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        starttime = UTCDateTime(2019, 8, 12, 10)
+        endtime = UTCDateTime(2019, 8, 13)
         client = Client("GEONET")
         catalog = client.get_events(
-            starttime=UTCDateTime(2019, 8, 12, 10),
-            endtime=UTCDateTime(2019, 8, 13),
-            latitude=-44.5,
-            longitude=167.9,
-            maxradius=0.2)
+            starttime=starttime, endtime=endtime, latitude=-44.5,
+            longitude=167.9, maxradius=0.2)
         StationInfo = namedtuple(
             "StationInfo", ["network", "station", "location"])
-        stations_to_download = [sta for sta, _ in Counter(
-            [StationInfo(p.waveform_id.network_code,
-                         p.waveform_id.station_code,
-                         p.waveform_id.location_code)
-             for ev in catalog for p in ev.picks]).most_common(5)]
+        picked_stations = [StationInfo(p.waveform_id.network_code,
+                                       p.waveform_id.station_code,
+                                       p.waveform_id.location_code)
+                           for ev in catalog for p in ev.picks]
+        stations_to_download = [
+            sta for sta, _ in Counter(picked_stations).most_common(5)]
         streams = []
         for event in catalog[0:10]:  # Just get the first 10 events
             bulk = [(sta.network, sta.station, sta.location, "HH?",
@@ -69,8 +68,14 @@ class TestCatalogMethods(unittest.TestCase):
                     for sta in stations_to_download]
             streams.append(client.get_waveforms_bulk(bulk))
 
+        picked_stations = set(picked_stations)
+        inv_bulk = [(sta.network, sta.station, sta.location, "HH?",
+                     starttime, endtime) for sta in picked_stations]
+        inventory = client.get_stations_bulk(inv_bulk, level="station")
+
         cls.streams = streams
         cls.catalog = catalog
+        cls.inventory = inventory
 
     def test_id_mapper(self):
         map_one = _generate_event_id_mapper(self.catalog)
@@ -122,17 +127,6 @@ class TestCatalogMethods(unittest.TestCase):
                 self.assertEqual(
                     tr.stats.endtime - tr.stats.starttime, extract_len)
 
-    def test_process_stream_to_match_master(self):
-        stream = self.streams[0]
-        seed_ids = {tr.id for tr in stream}
-        event = self.catalog[0]
-        master = self.catalog[1]
-        extract_len = 10.
-        sliced_stream = _prepare_stream(
-            stream, event, extract_len=extract_len, pre_pick=1.2,
-            seed_pick_ids=None, master=master)
-        self.assertEqual("Walrous", "Albatross")
-
     def test_read_phase(self):
         """Function to test the phase reading function"""
         test_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -173,30 +167,109 @@ class TestCatalogMethods(unittest.TestCase):
                     lon2=linked_event.preferred_origin().longitude)
                 self.assertLess(dist / 1000, max_sep)
 
-    def test_compute_correlation_times_interpolated(self):
-        shift_len = 5
+    def test_compute_correlation_times(self):
+        shift_len = 2
         short_cat = self.catalog[0:10]
         stream_dict = {event.resource_id.id: stream
                        for event, stream in zip(short_cat, self.streams)}
-        diff_times, mapper = compute_differential_times(
-            catalog=short_cat, correlation=True, event_id_mapper=None,
+        for interpolate in [True, False]:
+            diff_times, mapper = compute_differential_times(
+                catalog=short_cat, correlation=True, event_id_mapper=None,
+                max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+                extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+                interpolate=interpolate, include_master=True)
+            diff_times_cat, _ = compute_differential_times(
+                catalog=short_cat, correlation=False, event_id_mapper=mapper,
+                include_master=True)
+            self.assertEqual(len(diff_times), len(short_cat))
+            for master_id, linked in diff_times.items():
+                for link in linked:
+                    cat_link = [pair for pair in diff_times_cat[master_id]
+                                if pair.event_id_2 == link.event_id_2][0]
+                    if link.event_id_2 == link.event_id_1:
+                        # This is the event matched with itself, check that tt1
+                        # and tt2 are the same.
+                        for obs in link.obs:
+                            self.assertTrue(
+                                np.allclose(obs.tt1, obs.tt2, atol=0.000001))
+                    for obs in link.obs:
+                        cat_obs = [o for o in cat_link.obs
+                                   if o.station == obs.station and
+                                   o.phase == obs.phase][0]
+                        self.assertEqual(obs.tt1, cat_obs.tt1)
+                        self.assertLessEqual(
+                            abs(obs.tt2 - cat_obs.tt2), shift_len)
+                        self.assertLessEqual(obs.weight, 1.0)
+
+    def test_write_catalog(self):
+        # Contents checked elsewhere
+        _ = write_catalog(catalog=self.catalog, event_id_mapper=None,
+                          max_sep=8., min_link=8)
+        self.assertTrue(os.path.isfile("dt.ct"))
+        os.remove("dt.ct")
+
+    def test_write_correlations(self):
+        # Contents checked elsewhere
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        stream_dict = {event.resource_id.id: stream
+                       for event, stream in zip(short_cat, self.streams)}
+        _ = write_correlations(
+            catalog=short_cat, event_id_mapper=None,
             max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
             extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
-            interpolate=True)
-        diff_times_cat, _ = compute_differential_times(
-            catalog=short_cat, correlation=False, event_id_mapper=mapper)
-        self.assertEqual(len(diff_times), len(short_cat))
-        for master_id, linked in diff_times.items():
-            for link in linked:
-                cat_link = [pair for pair in diff_times_cat[master_id]
-                            if pair.event_id_2 == link.event_id_2][0]
-                for obs in link.obs:
-                    # TODO: Something is wrong here - not getting matched
-                    cat_obs = [o for o in cat_link.obs
-                               if o.station == obs.station and
-                               o.phase == obs.phase][0]
-                    self.assertEqual(obs.tt1, cat_obs.tt1)
-                    self.assertLess(abs(obs.tt2 - obs.tt2), shift_len)
+            interpolate=False)
+        self.assertTrue(os.path.isfile("dt.cc"))
+        os.remove('dt.cc')
+
+    def test_filter_stream(self):
+        """ Check that original data are unchanged. """
+        st = self.streams[0].copy()
+        event_id = self.catalog[0].resource_id.id
+        freqmin = (2.0, None)
+        freqmax = (10.0, None)
+        for _freqmin in freqmin:
+            for _freqmax in freqmax:
+                st_out = _filter_stream(st=st, event_id=event_id,
+                                        highcut=_freqmax, lowcut=_freqmin)
+                if _freqmax or _freqmin:
+                    self.assertNotEqual(st_out[event_id], st)
+                else:
+                    self.assertEqual(st_out[event_id], st)
+
+    def test_write_phase(self):
+        """ This file has been tested with ph2dt """
+        _ = write_phase(self.catalog)
+        test_data_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        with open(os.path.join(test_data_path, "phase.dat"), "r") as f:
+            original_phase = f.read()
+        with open("phase.dat") as f:
+            phase = f.read()
+        self.assertEqual(phase, original_phase)
+
+    def test_write_station(self):
+        """ This file has been tested with ph2dt """
+        write_station(self.inventory)
+        test_data_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        with open(os.path.join(test_data_path, "station.dat"), "r") as f:
+            original_station = f.read()
+        with open("station.dat") as f:
+            station = f.read()
+        self.assertEqual(station, original_station)
+
+    def test_write_event(self):
+        # Contents checked below
+        _ = write_event(self.catalog)
+        self.assertTrue(os.path.isfile("event.dat"))
+        os.remove("event.dat")
+
+    def test_event_string(self):
+        event_str = _hypodd_event_str(event=self.catalog[0], event_id=1)
+        self.assertEqual(event_str, '20190812  10352718  -44.4843   '
+                                    '167.8174     8.4565   5.70   0.01   '
+                                    '4.29   0.58          1')
 
 
 if __name__ == '__main__':

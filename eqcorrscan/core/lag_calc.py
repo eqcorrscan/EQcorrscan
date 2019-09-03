@@ -72,12 +72,12 @@ def _xcorr_interp(ccc, dt):
         last_sample += 1
     num_samples = last_sample - first_sample + 1
     if num_samples < 3:
-        Logger.error(
+        Logger.warning(
             "Fewer than 3 samples selected for fit to cross correlation: "
-            "{0}".format(num_samples))
+            "{0}, returning maximum in data".format(num_samples))
         return np.argmax(cc) * dt, np.amax(cc)
     if num_samples < 5:
-        Logger.warning(
+        Logger.debug(
             "Fewer than 5 samples selected for fit to cross correlation: "
             "{0}".format(num_samples))
     coeffs, residual = scipy.polyfit(
@@ -85,9 +85,9 @@ def _xcorr_interp(ccc, dt):
         cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
     # check results of fit
     if coeffs[0] >= 0:
-        Logger.warning("Fitted parabola opens upwards!")
+        Logger.info("Fitted parabola opens upwards!")
     if residual > 0.1:
-        Logger.warning(
+        Logger.info(
             "Residual in quadratic fit to cross correlation maximum larger "
             "than 0.1: {0}".format(residual))
     # X coordinate of vertex of parabola gives time shift to correct
@@ -95,8 +95,10 @@ def _xcorr_interp(ccc, dt):
     # coefficient.
     shift = -coeffs[1] / 2.0 / coeffs[0]
     coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
-    if coeff < np.amax(ccc):
+    if coeff < np.amax(ccc) or coeff > 1.0 or not 0 < shift < len(ccc) * dt:
         # Sometimes the interpolation returns a worse result.
+        Logger.warning("Interpolation did not give an accurate result, "
+                       "returning maximum in data")
         return np.argmax(ccc) * dt, np.amax(ccc)
     return shift, coeff
 

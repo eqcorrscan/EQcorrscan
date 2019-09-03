@@ -35,15 +35,31 @@ class SparseEvent(object):
         self.picks = picks
         self.origin_time = origin_time
 
+    def __repr__(self):
+        return ("SparseEvent(resource_id={0}, origin_time={1}, picks=[{2} "
+                "picks])".format(
+                    self.resource_id, self.origin_time, len(self.picks)))
+
 
 class SparsePick(object):
-    def __init__(self, tt, time_weight, station, channel, seed_id, phase):
+    def __init__(self, tt, time_weight, seed_id, phase):
         self.tt = tt
         self.time_weight = time_weight
-        self.station = station
-        self.channel = channel
         self.seed_id = seed_id
         self.phase = phase
+
+    def __repr__(self):
+        return ("SparsePick(seed_id={0}, phase={1}, tt={2:.2f}, "
+                "time_weight{3})".format(
+                    self.seed_id, self.phase, self.tt, self.time_weight))
+
+    @property
+    def station(self):
+        return self.seed_id.split('.')[1]
+
+    @property
+    def channel(self):
+        return self.seed_id.split('.')[-1]
 
 
 # Generic helpers
@@ -59,6 +75,11 @@ class _DTObs(object):
         self.weight = weight
         self.phase = phase
         assert self.phase in "PS", "Only P or S phases accepted"
+
+    def __repr__(self):
+        return ("_DTObs(station={0}, tt1={1:.2f}, tt2={2:.2f}, weight={3:.2f},"
+                " phase={4})".format(self.station, self.tt1, self.tt2,
+                                     self.weight, self.phase))
 
     @property
     def ct_string(self):
@@ -80,6 +101,11 @@ class _EventPair(object):
         self.event_id_1 = event_id_1
         self.event_id_2 = event_id_2
         self.obs = obs or list()
+
+    def __repr__(self):
+        return ("_EventPair(event_id_1={0}, event_id_2={1}, obs=[{2} "
+                "observations])".format(self.event_id_1, self.event_id_2,
+                                        len(self.obs)))
 
     @property
     def _header(self):
@@ -127,8 +153,6 @@ def _make_sparse_event(event):
         origin_time=origin_time,
         picks=[SparsePick(
             tt=pick.time - origin_time,
-            station=pick.waveform_id.station_code,
-            channel=pick.waveform_id.channel_code,
             seed_id=pick.waveform_id.get_seed_string(),
             phase=pick.phase_hint,
             time_weight=time_weight_dict.get(pick.resource_id, 1.0))
@@ -136,23 +160,18 @@ def _make_sparse_event(event):
     return sparse_event
 
 
-def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None,
-                    master=None):
+def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
     """
-    Slice stream around picks - if master is given, slices around expected
-    moveout for pick.
+    Slice stream around picks
 
     returns a dictionary of traces keyed by phase_hint.
     """
-    master = master or event
     seed_pick_ids = seed_pick_ids or {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in event.picks}
     stream_sliced = defaultdict(lambda: Stream())
-    master_origin = (master.preferred_origin() or master.origins[0]).time
-    event_origin = (event.preferred_origin() or event.origins[0]).time
     for seed_pick_id in seed_pick_ids:
-        pick = [pick for pick in master.picks
+        pick = [pick for pick in event.picks
                 if pick.waveform_id.get_seed_string() == seed_pick_id.seed_id
                 and pick.phase_hint[0] == seed_pick_id.phase_hint]
         if len(pick) > 1:
@@ -165,11 +184,9 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None,
         elif len(pick) == 0:
             continue
         pick = pick[0]
-        moveout = pick.time - master_origin
-        pick_time = event_origin + moveout
         tr = stream.select(id=seed_pick_id.seed_id).slice(
-            starttime=pick_time - pre_pick,
-            endtime=(pick_time - pre_pick) + extract_len).merge()
+            starttime=pick.time - pre_pick,
+            endtime=(pick.time - pre_pick) + extract_len).merge()
         if len(tr) == 0:
             continue
         if len(tr) > 1:
@@ -214,7 +231,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
         event_id: _prepare_stream(
             stream=stream_dict[event_id], event=event_dict[event_id],
             extract_len=matched_length, pre_pick=matched_pre_pick,
-            seed_pick_ids=master_seed_ids, master=master)
+            seed_pick_ids=master_seed_ids)
         for event_id in event_ids}
 
     sampling_rates = {tr.stats.sampling_rate for st in master_stream.values()
@@ -224,19 +241,19 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             delta = 1.0 / sampling_rate
             _master_stream = master_stream[phase_hint].select(
                 sampling_rate=sampling_rate)
-            _matched_streams = [
-                matched_streams[event.resource_id.id][phase_hint].select(
-                    sampling_rate=sampling_rate) for event in catalog]
+            _matched_streams = {
+                key: value[phase_hint].select(sampling_rate=sampling_rate)
+                for key, value in matched_streams.items()}
             # Check lengths
             master_length = Counter(
                 (tr.stats.npts for tr in _master_stream)).most_common(1)[0][0]
             _master_stream = _master_stream.select(npts=master_length)
             matched_length = Counter(
-                (tr.stats.npts for st in _matched_streams
+                (tr.stats.npts for st in _matched_streams.values()
                  for tr in st)).most_common(1)[0][0]
             # Remove empty streams and generate an ordered list of event_ids
             used_event_ids, used_matched_streams = [], []
-            for event_id, _matched_stream in zip(event_ids, _matched_streams):
+            for event_id, _matched_stream in _matched_streams.items():
                 _matched_stream = _matched_stream.select(npts=matched_length)
                 if len(_matched_stream) > 0:
                     used_event_ids.append(event_id)
@@ -256,10 +273,16 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         shift = np.argmax(correlation) * delta
                     if cc_max < min_cc:
                         continue
-                    shift -= pre_pick
-                    tt1 = master_tts["{0}_{1}".format(
-                        chan.channel[0], phase_hint)]
-                    tt2 = tt1 + shift
+                    shift -= shift_len
+                    pick = [p for p in event_dict[used_event_id].picks
+                            if p.phase_hint == phase_hint
+                            and p.waveform_id.station_code == chan.channel[0]
+                            and p.waveform_id.channel_code == chan.channel[1]]
+                    pick = sorted(pick, key=lambda p: p.time)[0]
+                    tt2 = pick.time - (
+                            event_dict[used_event_id].preferred_origin() or
+                            event_dict[used_event_id].origins[0]).time
+                    tt2 += shift
                     diff_time = differential_times_dict.get(
                         used_event_id, None)
                     if diff_time is None:
@@ -268,8 +291,9 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                             event_id_2=event_id_mapper[used_event_id])
                     diff_time.obs.append(
                         _DTObs(station=chan.channel[0],
-                               tt1=tt1, tt2=tt2, weight=cc_max ** 2,
-                               phase=phase_hint))
+                               tt1=master_tts["{0}_{1}".format(
+                                   chan.channel[0], phase_hint)],
+                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
     differential_times = [dt for dt in differential_times_dict.values()
@@ -282,11 +306,9 @@ def _compute_dt(sparse_catalog, master, min_link, event_id_mapper):
     Inner function to compute differential times between a catalog and a
     master event.
     """
-    return [_make_event_pair(sparse_event=event, master=master,
-                             event_id_mapper=event_id_mapper,
-                             min_link=min_link)
-            for event in sparse_catalog
-            if event.resource_id != master.resource_id]
+    return [_make_event_pair(
+        sparse_event=event, master=master, event_id_mapper=event_id_mapper,
+        min_link=min_link) for event in sparse_catalog]
 
 
 def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
@@ -318,7 +340,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                event_id_mapper=None, max_sep=8., min_link=8,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
-                               max_workers=None):
+                               max_workers=None, *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -367,6 +389,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         The arguments min_cc, stream_dict, extract_len, pre_pick, shift_len
         and interpolate are only required if correlation=True.
     """
+    include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
         pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate)
@@ -380,7 +403,10 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         catalog=catalog, event_id_mapper=event_id_mapper)
     distances = dist_mat_km(catalog)
     distance_filter = distances <= max_sep
-    np.fill_diagonal(distance_filter, 0)  # Do not match events to themselves
+    if not include_master:
+        np.fill_diagonal(distance_filter, 0)
+        # Do not match events to themselves - this is the default,
+        # only included for testing
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
@@ -417,8 +443,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
 # dt.ct functions
 
-def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
-                  max_workers=None):
+def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8):
     """
     Generate a dt.ct file for hypoDD for a series of events.
 
@@ -437,16 +462,12 @@ def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
         Minimum links for an event to be paired, e.g. minimum number of picks
         from the same station and channel (and phase) that are shared between
         two events for them to be paired.
-    :type max_workers: int
-    :param max_workers:
-        Maximum number of workers for parallel processing. If None, then all
-        threads will be used.
 
     :returns: event_id_mapper
     """
     differential_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=False, event_id_mapper=event_id_mapper,
-        max_sep=max_sep, min_link=min_link, max_workers=max_workers)
+        max_sep=max_sep, min_link=min_link)
     with open("dt.ct", "w") as f:
         for master_id, linked_events in differential_times.items():
             for linked_event in linked_events:
@@ -475,8 +496,8 @@ def _filter_stream(event_id, st, lowcut, highcut):
 
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
-                       highcut=10.0, max_sep=8, min_link=8, cc_thresh=0.0,
-                       interpolate=False, max_workers=None):
+                       highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
+                       interpolate=False, max_workers=None, *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -510,8 +531,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     :param max_sep: Maximum separation between event pairs in km
     :type min_link: int
     :param min_link: Minimum links for an event to be paired
-    :type cc_thresh: float
-    :param cc_thresh: Threshold to include cross-correlation results.
+    :type min_cc: float
+    :param min_cc: Threshold to include cross-correlation results.
     :type interpolate: bool
     :param interpolate:
         Whether to interpolate correlations or not. Allows subsample accuracy
@@ -528,6 +549,11 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         data for you.  Filtering is undertaken by detrending and bandpassing
         with a 8th order zerophase butterworth filter.
     """
+    # Depreciated argument
+    cc_thresh = kwargs.get("cc_thresh", None)
+    if cc_thresh:
+        min_cc = cc_thresh
+        Logger.warning("cc_thresh is depreciated, use min_cc instead")
     max_workers = max_workers or cpu_count()
     # Process the streams
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -541,7 +567,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     correlation_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=True, event_id_mapper=event_id_mapper,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,
-        stream_dict=processed_stream_dict, min_cc=cc_thresh,
+        stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
         interpolate=interpolate)
     with open("dt.cc", "w") as f:
