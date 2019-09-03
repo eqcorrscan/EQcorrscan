@@ -1,4 +1,19 @@
 ## Current
+* Refactor of catalog_to_dd functions:
+  - Speed-ups, using new correlation functions and better resource management
+  - Removed enforcement of seisan, arguments are now standard obspy objects.
+* Add plotdir to lag_calc.xcorr_pick_family
+  - Use for save plot. Figures will save with name of events' id
+* Wholesale re-write of lag-calc function and methods. External interface is
+  similar, but some arguments have been depreciated as they were unnecesary.
+  - This was done to make use of the new internal correlation functions which
+    are faster and more memory efficient.
+  - Party.lag_calc and Family.lag_calc now work in-place on the events in 
+    the grouping.
+  - Added relative_mags method to Party and Family; this can be called from
+    lag-calc to avoid reprocessing data.
+  - Added lag_calc.xcorr_pick_family as a public facing API to implement
+    correlation re-picking of a group of events.
 * Renamed utils.clustering.cross_chan_coherence to 
   utils.clustering.cross_chan_correlation to better reflect what it actually 
   does.

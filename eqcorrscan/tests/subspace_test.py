@@ -12,12 +12,6 @@ from obspy import Stream, read
 from eqcorrscan.core import subspace
 
 
-superslow = pytest.mark.skipif(
-    not pytest.config.getoption("--runsuperslow"),
-    reason="need --runsuperslow option to run"
-)
-
-
 class SimpleSubspaceMethods(unittest.TestCase):
     """
     Tests that do not require data to be downloaded.
@@ -97,7 +91,7 @@ class SimpleSubspaceMethods(unittest.TestCase):
         self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
-@superslow
+@pytest.mark.superslow
 @pytest.mark.network
 class SubspaceTestingMethods(unittest.TestCase):
     """

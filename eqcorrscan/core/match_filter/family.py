@@ -17,11 +17,15 @@ import os
 import shutil
 import logging
 
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Stream
+from obspy.core.event import (
+    StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
+    CreationInfo, StationMagnitudeContribution)
 
+from eqcorrscan.core.match_filter.matched_filter import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
 from eqcorrscan.utils.plotting import cumulative_detections
-
+from eqcorrscan.utils.mag_calc import relative_magnitude
 
 Logger = logging.getLogger(__name__)
 
@@ -499,9 +503,12 @@ class Family(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 process_cores=None, relative_magnitudes=False, **kwargs):
+                 process_cores=None, ignore_bad_data=False,
+                 relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
+
+        Works in place on events in the Family
 
         :type stream: obspy.core.stream.Stream
         :param stream:
@@ -542,6 +549,11 @@ class Family(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
         :type relative_magnitudes: bool
         :param relative_magnitudes:
             Whether to calculate relative magnitudes or not. See
@@ -563,27 +575,180 @@ class Family(object):
             which may be beneficial for detections over large time periods
             (the stream can have gaps, which reduces memory usage).  However,
             in this case the processing steps are not checked, so you must
-            ensure that all the template in the Party have the same sampling
+            ensure that the template in the Family has the same sampling
             rate and filtering as the stream.
             If pre-processing has not be done then the data will be processed
-            according to the parameters in the templates, in this case
-            templates will be grouped by processing parameters and run with
-            similarly processed data.  In this case, all templates do not have
-            to have the same processing parameters.
+            according to the parameters in the template.
 
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
-        from eqcorrscan.core.match_filter.party import Party
+        from eqcorrscan.core.lag_calc import xcorr_pick_family
 
-        cat = Party(families=[self]).lag_calc(
-            stream=stream, pre_processed=pre_processed, shift_len=shift_len,
+        processed_stream = self._process_streams(
+            stream=stream, pre_processed=pre_processed,
+            process_cores=process_cores, parallel=parallel,
+            ignore_bad_data=ignore_bad_data)
+        picked_dict = xcorr_pick_family(
+            family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
-            interpolate=interpolate, plot=plot, parallel=parallel,
-            process_cores=process_cores,
-            relative_magnitudes=relative_magnitudes, **kwargs)
-        return cat
+            interpolate=interpolate, plot=plot)
+        for detection_id, event in picked_dict.items():
+            for pick in event.picks:
+                pick.time += self.template.prepick
+            d = [d for d in self.detections if d.id == detection_id][0]
+            d.event = event
+        if relative_magnitudes:
+            self.relative_magnitudes(
+                stream=processed_stream, pre_processed=True, min_cc=min_cc,
+                **kwargs)
+        return self.catalog
+
+    def relative_magnitudes(self, stream, pre_processed, process_cores=1,
+                            ignore_bad_data=False, parallel=False, min_cc=0.4,
+                            **kwargs):
+        """
+        Compute relative magnitudes for the detections.
+
+        Works in place on events in the Family
+
+        :type stream: obspy.core.stream.Stream
+        :param stream:
+            All the data needed to cut from - can be a gappy Stream.
+        :type pre_processed: bool
+        :param pre_processed:
+            Whether the stream has been pre-processed or not to match the
+            templates. See note below.
+        :param parallel: Turn parallel processing on or off.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
+        :type min_cc: float
+        :param min_cc: Minimum correlation for magnitude to be computed.
+        :param kwargs:
+            Keyword arguments passed to `utils.mag_calc.relative_mags`
+
+        .. Note::
+            Note on pre-processing: You can provide a pre-processed stream,
+            which may be beneficial for detections over large time periods
+            (the stream can have gaps, which reduces memory usage).  However,
+            in this case the processing steps are not checked, so you must
+            ensure that the template in the Family has the same sampling
+            rate and filtering as the stream.
+            If pre-processing has not be done then the data will be processed
+            according to the parameters in the template.
+        """
+        processed_stream = self._process_streams(
+            stream=stream, pre_processed=pre_processed,
+            process_cores=process_cores, parallel=parallel,
+            ignore_bad_data=ignore_bad_data)
+
+        for detection in self.detections:
+            event = detection.event
+            if event is None:
+                continue
+            corr_dict = {
+                p.waveform_id.get_seed_string():
+                    float(p.comments[0].text.split("=")[-1])
+                for p in event.picks}
+            template = self.template
+            try:
+                t_mag = (
+                        template.event.preferred_magnitude() or
+                        template.event.magnitudes[0])
+            except IndexError:
+                Logger.info(
+                    "No template magnitude, relative magnitudes cannot"
+                    " be computed for {0}".format(event.resource_id))
+                continue
+            # Set the signal-window to be the template length
+            signal_window = (
+                -template.prepick,
+                min([tr.stats.npts * tr.stats.delta
+                     for tr in template.st]) - template.prepick)
+            delta_mag = relative_magnitude(
+                st1=template.st, st2=processed_stream,
+                event1=template.event, event2=event,
+                correlations=corr_dict, min_cc=min_cc,
+                signal_window=signal_window, **kwargs)
+            # Add station magnitudes
+            sta_contrib = []
+            av_mag = 0.0
+            for seed_id, _delta_mag in delta_mag.items():
+                sta_mag = StationMagnitude(
+                    mag=t_mag.mag + _delta_mag,
+                    magnitude_type=t_mag.magnitude_type,
+                    method_id=ResourceIdentifier("relative"),
+                    waveform_id=WaveformStreamID(seed_string=seed_id),
+                    creation_info=CreationInfo(
+                        author="EQcorrscan",
+                        creation_time=UTCDateTime()))
+                event.station_magnitudes.append(sta_mag)
+                sta_contrib.append(StationMagnitudeContribution(
+                    station_magnitude_id=sta_mag.resource_id,
+                    weight=1.))
+                av_mag += sta_mag.mag
+            if len(delta_mag) > 0:
+                av_mag /= len(delta_mag)
+                # Compute average magnitude
+                event.magnitudes.append(Magnitude(
+                    mag=av_mag, magnitude_type=t_mag.magnitude_type,
+                    method_id=ResourceIdentifier("relative"),
+                    station_count=len(delta_mag),
+                    evaluation_mode="manual",
+                    station_magnitude_contributions=sta_contrib,
+                    creation_info=CreationInfo(
+                        author="EQcorrscan",
+                        creation_time=UTCDateTime())))
+        return self.catalog
+
+    def _process_streams(self, stream, pre_processed, process_cores=1,
+                         parallel=False, ignore_bad_data=False):
+        """
+        Process a stream based on the template parameters.
+        """
+        # TODO: This doesn't need to use _group_process.
+        if not pre_processed:
+            processed_streams = _group_process(
+                template_group=[self.template], cores=process_cores,
+                parallel=parallel, stream=stream.copy(), daylong=False,
+                ignore_length=False, overlap=0.0,
+                ignore_bad_data=ignore_bad_data)
+            processed_stream = Stream()
+            for p in processed_streams:
+                processed_stream += p
+            processed_stream.merge(method=1)
+            Logger.debug(processed_stream)
+        else:
+            processed_stream = stream
+        return processed_stream
+
+    def extract_streams(self, stream, length, prepick):
+        """
+        Generate a dictionary of cut streams around detections.
+
+        :type stream: `obspy.core.stream.Stream`
+        :param stream: Stream of data to cut from
+        :type length: float
+        :param length: Length of data to extract in seconds.
+        :type prepick: float
+        :param prepick:
+            Length before the expected pick on each channel to start the cut
+            stream in seconds.
+
+        :rtype: dict
+        :returns: Dictionary of cut streams keyed by detection id.
+        """
+        return {d.id: d.extract_stream(
+            stream=stream, length=length, prepick=prepick)
+            for d in self.detections}
 
 
 def _write_family(family, filename):

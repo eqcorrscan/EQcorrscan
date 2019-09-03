@@ -21,25 +21,19 @@ import logging
 from os.path import join
 
 import numpy as np
-from obspy import Catalog, Stream, read_events, UTCDateTime
-from obspy.core.event import (
-    StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
+from obspy import Catalog, read_events
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
-from eqcorrscan.core.match_filter.matched_filter import (
-    MatchFilterError, _group_process)
-from eqcorrscan.core.match_filter.template import Template
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
+from eqcorrscan.core.match_filter.template import Template, group_templates
 from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.detection import write_detections
 from eqcorrscan.core.match_filter.helpers import (
     _total_microsec, temporary_directory, _safemembers, _templates_match)
 
-from eqcorrscan.core.lag_calc import lag_calc
 from eqcorrscan.utils.catalog_utils import _get_origin
 from eqcorrscan.utils.findpeaks import decluster
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.mag_calc import relative_magnitude
 
 Logger = logging.getLogger(__name__)
 
@@ -752,10 +746,12 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, parallel=True,
-                 overlap='calculate', process_cores=None,
-                 ignore_bad_data=False, relative_magnitudes=False, **kwargs):
+                 process_cores=None, ignore_bad_data=False,
+                 relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
+
+        Works in-place on events in Party.
 
         :type stream: obspy.core.stream.Stream
         :param stream:
@@ -792,13 +788,6 @@ class Party(object):
             To generate a plot for every detection or not, defaults to False
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
-        :type overlap: float
-        :param overlap:
-            Either None, "calculate" or a float of number of seconds to
-            overlap detection streams by.  This is to counter the effects of
-            the delay-and-stack in calculating cross-correlation sums. Setting
-            overlap = "calculate" will work out the appropriate overlap based
-            on the maximum lags within templates.
         :type process_cores: int
         :param process_cores:
             Number of processes to use for pre-processing (if different to
@@ -840,143 +829,89 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
-        catalog = Catalog()
-        template_groups = [[]]
-        detection_groups = [[]]
-        for master in self.families:
-            master_chans = [(tr.stats.station,
-                             tr.stats.channel) for tr in master.template.st]
-            if len(master_chans) > len(set(master_chans)):
-                Logger.warning(
-                    '{0} has duplicate channels, will not use this template '
-                    'for lag-calc as this is not coded'.format(
-                        master.template.name))
-                continue
-            for group in template_groups:
-                if master.template in group:
-                    break
-            else:
-                new_group = [master.template.copy()]
-                new_det_group = copy.deepcopy(master.detections)
-                for slave in self.families:
-                    if master.template.same_processing(slave.template) and \
-                                    master.template != slave.template:
-                        slave_chans = [
-                            (tr.stats.station,
-                             tr.stats.channel) for tr in slave.template.st]
-                        if len(slave_chans) > len(set(slave_chans)):
-                            continue
-                        else:
-                            new_group.append(slave.template.copy())
-                            new_det_group.extend(
-                                copy.deepcopy(slave.detections))
-                template_groups.append(new_group)
-                detection_groups.append(new_det_group)
-        # template_groups will contain an empty first list
-        for group, det_group in zip(template_groups, detection_groups):
-            if len(group) == 0:
-                template_groups.remove(group)
-                detection_groups.remove(det_group)
-        # Process the data for each group and time-chunk
-        for group, det_group in zip(template_groups, detection_groups):
-            lap = 0.0
-            for template in group:
-                starts = [t.stats.starttime for t in
-                          template.st.sort(['starttime'])]
-                if starts[-1] - starts[0] > lap:
-                    lap = starts[-1] - starts[0]
-            if overlap is None:
-                lap = 0.0
-            elif isinstance(overlap, float):
-                lap = overlap
-            if not pre_processed:
-                if process_cores is None:
-                    process_cores = cores
-                processed_streams = _group_process(
-                    template_group=group, cores=process_cores,
-                    parallel=parallel, stream=stream.copy(), daylong=False,
-                    ignore_length=False, overlap=lap,
-                    ignore_bad_data=ignore_bad_data)
-                processed_stream = Stream()
-                for p in processed_streams:
-                    processed_stream += p
-                processed_stream.merge(method=1)
-                Logger.debug(processed_stream)
-            else:
-                processed_stream = stream
-            temp_cat = lag_calc(
-                detections=det_group, detect_data=processed_stream,
-                template_names=[t.name for t in group],
-                templates=[t.st for t in group], shift_len=shift_len,
-                min_cc=min_cc, horizontal_chans=horizontal_chans,
-                vertical_chans=vertical_chans, cores=cores,
-                interpolate=interpolate, plot=plot, parallel=parallel)
-            for event in temp_cat:
-                det = [d for d in det_group
-                       if str(d.id) == str(event.resource_id)][0]
-                pre_pick = [t for t in group
-                            if t.name == det.template_name][0].prepick
-                for pick in event.picks:
-                    pick.time += pre_pick
-            catalog += temp_cat
-            if relative_magnitudes:
-                for event in temp_cat:
-                    det = [d for d in det_group
-                           if str(d.id) == str(event.resource_id)][0]
-                    corr_dict = {
-                        p.waveform_id.get_seed_string():
-                            float(p.comments[0].text.split("=")[-1])
-                        for p in event.picks}
-                    template = self.select(det.template_name).template
-                    try:
-                        t_mag = (
-                            template.event.preferred_magnitude() or
-                            template.event.magnitudes[0])
-                    except IndexError:
-                        Logger.info(
-                            "No template magnitude, relative magnitudes cannot"
-                            " be computed for {0}".format(event.resource_id))
-                        continue
-                    # Set the signal-window to be the template length
-                    signal_window = (
-                        -template.prepick,
-                        min([tr.stats.npts * tr.stats.delta
-                             for tr in template.st]) - template.prepick)
-                    delta_mag = relative_magnitude(
-                        st1=template.st, st2=processed_stream,
-                        event1=template.event, event2=event,
-                        correlations=corr_dict, min_cc=min_cc,
-                        signal_window=signal_window, **kwargs)
-                    # Add station magnitudes
-                    sta_contrib = []
-                    av_mag = 0.0
-                    for seed_id, _delta_mag in delta_mag.items():
-                        sta_mag = StationMagnitude(
-                            mag=t_mag.mag + _delta_mag,
-                            magnitude_type=t_mag.magnitude_type,
-                            method_id=ResourceIdentifier("relative"),
-                            waveform_id=WaveformStreamID(seed_string=seed_id),
-                            creation_info=CreationInfo(
-                                author="EQcorrscan",
-                                creation_time=UTCDateTime()))
-                        event.station_magnitudes.append(sta_mag)
-                        sta_contrib.append(StationMagnitudeContribution(
-                            station_magnitude_id=sta_mag.resource_id,
-                            weight=1.))
-                        av_mag += sta_mag.mag
-                    if len(delta_mag) > 0:
-                        av_mag /= len(delta_mag)
-                        # Compute average magnitude
-                        event.magnitudes.append(Magnitude(
-                            mag=av_mag, magnitude_type=t_mag.magnitude_type,
-                            method_id=ResourceIdentifier("relative"),
-                            station_count=len(delta_mag),
-                            evaluation_mode="manual",
-                            station_magnitude_contributions=sta_contrib,
-                            creation_info=CreationInfo(
-                                    author="EQcorrscan",
-                                    creation_time=UTCDateTime())))
-        return catalog
+        process_cores = process_cores or cores
+        template_groups = group_templates(
+            [_f.template for _f in self.families])
+        for template_group in template_groups:
+            family = [_f for _f in self.families
+                      if _f.template == template_group[0]][0]
+            processed_stream = family._process_streams(
+                stream=stream, pre_processed=pre_processed,
+                process_cores=process_cores, parallel=parallel,
+                ignore_bad_data=ignore_bad_data)
+            for template in template_group:
+                family = [_f for _f in self.families
+                          if _f.template == template][0]
+                family.lag_calc(
+                    stream=processed_stream, pre_processed=True,
+                    shift_len=shift_len, min_cc=min_cc,
+                    horizontal_chans=horizontal_chans,
+                    vertical_chans=vertical_chans, cores=cores,
+                    interpolate=interpolate, plot=plot, parallel=parallel,
+                    process_cores=process_cores,
+                    ignore_bad_data=ignore_bad_data,
+                    relative_magnitudes=relative_magnitudes, **kwargs)
+        return self.get_catalog()
+
+    def relative_magnitudes(self, stream, pre_processed, process_cores=1,
+                            ignore_bad_data=False, parallel=False, min_cc=0.4,
+                            **kwargs):
+        """
+        Compute relative magnitudes for the detections.
+
+        Works in place on events in the Family
+
+        :type stream: obspy.core.stream.Stream
+        :param stream:
+            All the data needed to cut from - can be a gappy Stream.
+        :type pre_processed: bool
+        :param pre_processed:
+            Whether the stream has been pre-processed or not to match the
+            templates. See note below.
+        :param parallel: Turn parallel processing on or off.
+        :type process_cores: int
+        :param process_cores:
+            Number of processes to use for pre-processing (if different to
+            `cores`).
+        :type ignore_bad_data: bool
+        :param ignore_bad_data:
+            If False (default), errors will be raised if data are excessively
+            gappy or are mostly zeros. If True then no error will be raised,
+            but an empty trace will be returned (and not used in detection).
+        :type min_cc: float
+        :param min_cc: Minimum correlation for magnitude to be computed.
+        :param kwargs:
+            Keyword arguments passed to `utils.mag_calc.relative_mags`
+
+        .. Note::
+            Note on pre-processing: You can provide a pre-processed stream,
+            which may be beneficial for detections over large time periods
+            (the stream can have gaps, which reduces memory usage).  However,
+            in this case the processing steps are not checked, so you must
+            ensure that the template in the Family has the same sampling
+            rate and filtering as the stream.
+            If pre-processing has not be done then the data will be processed
+            according to the parameters in the template.
+        """
+        template_groups = group_templates(
+            [_f.template for _f in self.families])
+        for template_group in template_groups:
+            family = [_f for _f in self.families
+                      if _f.template == template_group[0]][0]
+            processed_stream = family._process_streams(
+                stream=stream, pre_processed=pre_processed,
+                process_cores=process_cores, parallel=parallel,
+                ignore_bad_data=ignore_bad_data)
+            for template in template_group:
+                family = [_f for _f in self.families
+                          if _f.template == template][0]
+                family.relative_magnitudes(
+                    stream=processed_stream, pre_processed=True,
+                    min_cc=min_cc, parallel=parallel,
+                    process_cores=process_cores,
+                    ignore_bad_data=ignore_bad_data,
+                    **kwargs)
+        return self.get_catalog()
 
     def get_catalog(self):
         """
