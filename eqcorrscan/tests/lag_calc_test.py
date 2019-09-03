@@ -251,11 +251,9 @@ class ShortTests(unittest.TestCase):
                         1.58283915, -0.3053663])
 
         _xcorr_interp(ccc, 0.1)
-        self.assertEqual(len(self.log_messages['warning']), 2)
+        self.assertEqual(len(self.log_messages['warning']), 1)
         self.assertTrue(
-            'Fewer than 5 samples' in self.log_messages['warning'][0])
-        self.assertTrue(
-            'Residual in quadratic fit' in self.log_messages['warning'][1])
+            'not give an accurate result' in self.log_messages['warning'][0])
 
 
 if __name__ == '__main__':

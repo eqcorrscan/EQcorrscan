@@ -14,7 +14,6 @@ from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
 import numpy as np
-from copy import deepcopy
 from obspy import Stream, Catalog, UTCDateTime, Trace
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from scipy.spatial.distance import squareform
@@ -803,7 +802,7 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
 
 def dist_mat_km(catalog, num_threads=None):
     """
-    Compute the distance matrix for all a catalog using epicentral separation.
+    Compute the distance matrix for a catalog using hypocentral separation.
 
     Will give physical distance in kilometers.
 
@@ -816,7 +815,6 @@ def dist_mat_km(catalog, num_threads=None):
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
     from future.utils import native_str
-    from math import radians
 
     utilslib = _load_cdll('libutils')
 
@@ -839,12 +837,12 @@ def dist_mat_km(catalog, num_threads=None):
         np.empty(len(catalog)), np.empty(len(catalog)), np.empty(len(catalog)))
     for i, event in enumerate(catalog):
         origin = event.preferred_origin() or event.origins[0]
-        latitudes[i] = radians(origin.latitude)
-        longitudes[i] = radians(origin.longitude)
+        latitudes[i] = origin.latitude
+        longitudes[i] = origin.longitude
         depths[i] = origin.depth / 1000
     depths = np.ascontiguousarray(depths, dtype=np.float32)
-    latitudes = np.ascontiguousarray(latitudes, dtype=np.float32)
-    longitudes = np.ascontiguousarray(longitudes, dtype=np.float32)
+    latitudes = np.ascontiguousarray(np.radians(latitudes), dtype=np.float32)
+    longitudes = np.ascontiguousarray(np.radians(longitudes), dtype=np.float32)
 
     if num_threads is None:
         # Testing showed that 400 events per thread was best on the i7.
@@ -858,10 +856,8 @@ def dist_mat_km(catalog, num_threads=None):
     if ret != 0:  # pragma: no cover
         raise Exception("Internal error while computing distance matrix")
     # Fill distance matrix
-    for i in range(1, len(catalog)):
-        for j in range(i):
-            dist_mat[i, j] = dist_mat.T[i, j]
-    return dist_mat
+    out = dist_mat.T + dist_mat
+    return out
 
 
 def dist_mat_time(catalog):

@@ -1,4 +1,7 @@
 ## Current
+* Refactor of catalog_to_dd functions:
+  - Speed-ups, using new correlation functions and better resource management
+  - Removed enforcement of seisan, arguments are now standard obspy objects.
 * Add plotdir to lag_calc.xcorr_pick_family
   - Use for save plot. Figures will save with name of events' id
 * Wholesale re-write of lag-calc function and methods. External interface is
