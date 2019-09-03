@@ -1,4 +1,11 @@
 ## Current
+* Add plotdir feature to template_gen, _template_gen, noise_plot, 
+  pretty_template_plot. and move title and directory save inside of both plot
+  function
+* Add some feature like:
+  - figsize
+  - make same y-ticks for all subplot in noise_plot for better veiw. 
+* Add bbox_inches='tight' inside of _finalise_figure().
 * Refactor of catalog_to_dd functions:
   - Speed-ups, using new correlation functions and better resource management
   - Removed enforcement of seisan, arguments are now standard obspy objects.
