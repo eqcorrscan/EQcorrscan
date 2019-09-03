@@ -1415,8 +1415,6 @@ def pretty_template_plot(template, plotdir=None, size=(10.5, 7.5),
         axis = axes
     axis.set_xlabel('Time (s) from start of template')
     plt.figlegend(lines, labels, 'upper right')
-    else:
-        plt.subplots_adjust(top=0.98)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     plt.subplots_adjust(top=0.93)
