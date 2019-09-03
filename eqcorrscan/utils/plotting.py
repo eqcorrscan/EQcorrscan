@@ -41,7 +41,6 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     :type return_figure: bool
     """
     import matplotlib.pyplot as plt
-    
     title = kwargs.get("title") or None
     show = kwargs.get("show")
     if show is None:
@@ -52,7 +51,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     if title:
         fig.suptitle(title)
     if save:
-        fig.savefig(savefile)
+        fig.savefig(savefile, bbox_inches='tight')
         Logger.info("Saved figure to {0}".format(savefile))
     if show:
         plt.show(block=True)
@@ -1172,7 +1171,7 @@ def threeD_seismplot(stations, nodes, size=(10.5, 7.5), **kwargs):
     return fig
 
 
-def noise_plot(signal, noise, normalise=False, **kwargs):
+def noise_plot(signal, noise, normalise=False, plotdir=None, **kwargs):
     """
     Plot signal and noise fourier transforms and the difference.
 
@@ -1182,7 +1181,9 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     :param noise: Stream of the "noise" window.
     :type normalise: bool
     :param normalise: Whether to normalise the data before plotting or not.
-
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be save here.
+        Defualt to None and show plot whitout saving.
     :return: `matplotlib.pyplot.Figure`
     """
     import matplotlib.pyplot as plt
@@ -1195,8 +1196,9 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
         except IndexError:  # pragma: no cover
             continue
         n_traces += 1
-
-    fig, axes = plt.subplots(n_traces, 2, sharex=True)
+    fig_dim = min(n_traces, 10)
+    fig, axes = plt.subplots(n_traces, 2, sharex=True, sharey='col',
+                             figsize=(fig_dim, fig_dim))
     if len(signal) > 1:
         axes = axes.ravel()
     i = 0
@@ -1246,17 +1248,32 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     plt.figlegend(lines, labels, 'upper left')
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
-    fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
-    return fig
+    plt.subplots_adjust(top=0.91)
+    if plotdir:
+        plotname = '{}_SNR.png'.format(signal[0].stats.starttime)
+        if not os.path.isdir(plotdir):
+            os.makedirs(plotdir)
+        plotdir = "{}/{}".format(plotdir, plotname)
+        _finalise_figure(
+            fig=fig, save=True, show=False, savefile=plotdir,
+            title='SNR for ' + str(signal[0].stats.starttime), **kwargs)
+    else:
+        _finalise_figure(
+            fig=fig, show=True,
+            title='SNR for ' + str(signal[0].stats.starttime))
+        # pragma: no cover
 
 
-def pretty_template_plot(template, size=(10.5, 7.5), background=False,
-                         picks=False, **kwargs):
+def pretty_template_plot(template, plotdir=None, size=(10.5, 7.5),
+                         background=False, picks=False, **kwargs):
     """
     Plot of a single template, possibly within background data.
 
     :type template: obspy.core.stream.Stream
     :param template: Template stream to plot
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be save here.
+        Defualt to None and show plot whitout saving.
     :type size: tuple
     :param size: tuple of plot size
     :type background: obspy.core.stream.stream
@@ -1398,19 +1415,24 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
         axis = axes
     axis.set_xlabel('Time (s) from start of template')
     plt.figlegend(lines, labels, 'upper right')
-    title = kwargs.get("title") or None
-    if title:
-        if len(template) > 1:
-            axes[0].set_title(title)
-        else:
-            axes.set_title(title)
-        kwargs.pop("title")  # Do not give title to _finalise_figure
     else:
         plt.subplots_adjust(top=0.98)
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
-    fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
-    return fig
+    plt.subplots_adjust(top=0.93)
+    if plotdir:
+        plotname = '{}_template.png'.format(template[0].stats.starttime)
+        if not os.path.isdir(plotdir):
+            os.makedirs(plotdir)
+        plotdir = '{}/{}'.format(plotdir, plotname)
+        _finalise_figure(
+            fig=fig, save=True, show=False, savefile=plotdir,
+            title='Template for '+str(template[0].stats.starttime), **kwargs)
+        # pragma: no cover
+    else:
+        _finalise_figure(
+            fig=fig, show=True,
+            title='Template for '+str(template[0].stats.starttime))
 
 
 def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
