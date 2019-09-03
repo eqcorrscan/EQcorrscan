@@ -36,6 +36,39 @@ class Template(object):
 
     Contains waveform data and metadata parameters used to generate the
     template.
+
+    :type name: str
+    :param name:
+        A name associated with the template as a parsable string (no spaces
+        allowed)
+    :type st: `obspy.core.stream.Stream`
+    :param st:
+        The Stream object containing the Template waveform data
+    :type lowcut: float
+    :param lowcut:
+        The low-cut filter used to achieve st (float, Hz)
+    :type highcut: float
+    :param highcut:
+        The high-cut filter used to achieve st (float, Hz)
+    :type samp_rate: float
+    :param samp_rate:
+        The Sampling-rate of the template (float, Hz) - note that this should be the
+        same as the sampling-rate of all traces in st.
+    :type filt_order: int
+    :param filt_order:
+        The order of the filter applied to achieve st (int), see pre-processing
+        functions for a more complete description
+    :type process_length: float
+    :param process_length:
+        The length of data (in seconds) processed to achieve st. e.g. if you
+        processed a day of data then cut the template st from this, then
+        process_length would be 86400.0 (float)
+    :type prepick: float
+    :param prepick:
+        The time before picks that waveforms were cut to make st (seconds, float)
+    :type event: `obspy.core.event.Event`
+    :param event:
+        The Event associated with the template (obspy.core.event.Event)
     """
 
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,

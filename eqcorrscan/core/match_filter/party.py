@@ -41,6 +41,9 @@ Logger = logging.getLogger(__name__)
 class Party(object):
     """
     Container for multiple Family objects.
+
+    :type families: list of Family
+    :type families: The family objects that make up the Party.
     """
 
     def __init__(self, families=None):
