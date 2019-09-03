@@ -46,15 +46,15 @@ plotting_kwargs = """
     :type save: bool
     :param save: Whether to save the figure or not (defaults to False)
     :type savefile: str
-    :param savefile: 
-        Filename to save figure to, if `save==True` (defaults to 
+    :param savefile:
+        Filename to save figure to, if `save==True` (defaults to
         "EQcorrscan_figure.png")
     :type return_figure: bool
-    :param return_figure: 
-        Whether to return the figure or not (defaults to True), if False 
+    :param return_figure:
+        Whether to return the figure or not (defaults to True), if False
         then the figure will be cleared and closed.
     :type size: tuple of float
-    :param size: Figure size as (width, height) in inches. Defaults to 
+    :param size: Figure size as (width, height) in inches. Defaults to
         (10.5, 7.5)"""
 
 
