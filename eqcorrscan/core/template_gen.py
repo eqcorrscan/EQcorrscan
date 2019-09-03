@@ -72,7 +72,7 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin, process_len=86400,
-                 all_horiz=False, delayed=True, plot=False,
+                 all_horiz=False, delayed=True, plot=False, plotdir=None,
                  return_event=False, min_snr=None, parallel=False,
                  num_cores=False, save_progress=False, skip_short_chans=False,
                  **kwargs):
@@ -110,6 +110,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: Plot templates or not.
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be save here.
+        Defualt to None and show plot whitout saving.
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
     :type min_snr: float
@@ -387,7 +390,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
+                plotdir=plotdir, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
         if save_progress:
@@ -579,7 +583,8 @@ def _rms(array):
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05,
-                  all_horiz=False, delayed=True, plot=False, min_snr=None):
+                  all_horiz=False, delayed=True, plot=False,
+                  plotdir=None, min_snr=None):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -615,6 +620,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         To plot the template or not, default is False. Plots are saved as
         `template-starttime_template.png` and `template-starttime_noise.png`,
         where `template-starttime` is the start-time of the template
+    :type plotdir: str
+    :param plotdir: Path to plotting folder, plots will be save here.
+        Defualt to None and show plot whitout saving.
     :type min_snr: float
     :param min_snr:
         Minimum signal-to-noise ratio for a channel to be included in the
@@ -807,15 +815,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             used_tr = True
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
-    if plot and len(st1) > 0:
-        fig1 = tplot(st1, background=stplot, picks=picks_copy,
-                     title='Template for ' + str(st1[0].stats.starttime),
-                     show=False, return_figure=True)
-        fig2 = noise_plot(
-            signal=st1, noise=noise, show=False, return_figure=True)
-        fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
-        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime))
-        del(stplot, fig1, fig2)
+    if plot and plotdir and len(st1) > 0:
+        tplot(st1, background=stplot, picks=picks_copy, plotdir=plotdir)
+        noise_plot(signal=st1, noise=noise, plotdir=plotdir)
+    elif plot and len(st1) > 0:
+        tplot(st1, background=stplot, picks=picks_copy, show=True)
+        noise_plot(signal=st1, noise=noise, show=True)
+    del(stplot)
     return st1
 
 
