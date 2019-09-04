@@ -521,9 +521,10 @@ class Template(object):
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
-                  prepick, swin="all", process_len=86400, all_horiz=False,
-                  delayed=True, plot=False, min_snr=None, parallel=False,
-                  num_cores=False, skip_short_chans=False, **kwargs):
+                  length, prepick, swin="all", process_len=86400,
+                  all_horiz=False, delayed=True, plot=False, min_snr=None,
+                  parallel=False, num_cores=False, skip_short_chans=False,
+                  **kwargs):
         """
         Construct a template using a given method.
 
@@ -546,6 +547,8 @@ class Template(object):
         :type filt_order: int
         :param filt_order:
             Filter level (number of corners).
+        :type length: float
+        :param length: Length of template waveform in seconds.
         :type prepick: float
         :param prepick: Pre-pick time in seconds
         :type swin: str

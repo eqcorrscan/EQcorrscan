@@ -907,9 +907,9 @@ class Tribe(object):
             return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  prepick, swin="all", process_len=86400, all_horiz=False,
-                  delayed=True, plot=False, min_snr=None, parallel=False,
-                  num_cores=False, skip_short_chans=False,
+                  length, prepick, swin="all", process_len=86400,
+                  all_horiz=False, delayed=True, plot=False, min_snr=None,
+                  parallel=False, num_cores=False, skip_short_chans=False,
                   save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
@@ -931,6 +931,8 @@ class Tribe(object):
         :type filt_order: int
         :param filt_order:
             Filter level (number of corners).
+        :type length: float
+        :param length: Length of template waveform in seconds.
         :type prepick: float
         :param prepick: Pre-pick time in seconds
         :type swin: str

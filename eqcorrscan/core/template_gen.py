@@ -93,7 +93,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type filt_order: int
     :param filt_order: Filter level (number of corners).
     :type length: float
-    :param length: Extract length in seconds.
+    :param length: Length of template waveform in seconds.
     :type prepick: float
     :param prepick: Pre-pick time in seconds
     :type swin: str
