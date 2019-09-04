@@ -65,6 +65,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     {plotting_kwargs}
     """
     import matplotlib.pyplot as plt
+<<<<<<< HEAD
   
     title = kwargs.get("title")
     show = kwargs.get("show", True)
@@ -73,6 +74,19 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     return_fig = kwargs.get("return_figure", False)
     size = kwargs.get("size", (10.5, 7.5))
     fig.set_size_inches(size)
+=======
+    title = kwargs.get("title") or None
+    show = kwargs.get("show")
+    if show is None:
+        show = True
+    save = kwargs.get("save") or False
+    savefile = kwargs.get("savefile") or "EQcorrscan_figure.png"
+    if save and '/' in savefile:
+        plotdir = '/'.join(savefile.split('/')[:-1])
+        if not os.path.isdir(plotdir):
+            os.makedirs(plotdir)
+    return_fig = kwargs.get("return_figure") or False
+>>>>>>> fixplots
     if title:
         fig.suptitle(title)
     if save:
