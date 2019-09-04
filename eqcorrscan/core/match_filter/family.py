@@ -713,16 +713,24 @@ class Family(object):
         return catalog
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
-                         parallel=False, ignore_bad_data=False):
+                         parallel=False, ignore_bad_data=False,
+                         select_used_chans=True):
         """
         Process a stream based on the template parameters.
         """
-        # TODO: This doesn't need to use _group_process.
+        if select_used_chans:
+            template_stream = Stream()
+            for tr in self.template.st:
+                template_stream += stream.select(
+                    network=tr.stats.network, station=tr.stats.station,
+                    location=tr.stats.location, channel=tr.stats.channel)
+        else:
+            template_stream = stream
         if not pre_processed:
             processed_streams = _group_process(
                 template_group=[self.template], cores=process_cores,
-                parallel=parallel, stream=stream.copy(), daylong=False,
-                ignore_length=False, overlap=0.0,
+                parallel=parallel, stream=template_stream.copy(),
+                daylong=False, ignore_length=False, overlap=0.0,
                 ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
             for p in processed_streams:
