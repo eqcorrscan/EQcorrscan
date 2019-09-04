@@ -1249,17 +1249,16 @@ def noise_plot(signal, noise, normalise=False, plotdir=None, **kwargs):
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     plt.subplots_adjust(top=0.91)
+    title = 'SNR for ' + str(signal[0].stats.starttime)
     if plotdir:
         plotname = '{}_SNR.png'.format(signal[0].stats.starttime)
         if not os.path.isdir(plotdir):
             os.makedirs(plotdir)
         plotdir = "{}/{}".format(plotdir, plotname)
-        title = 'SNR for ' + str(signal[0].stats.starttime)
         kwargs.update({"savefile": plotdir, "save": True, "show": False,
                       "title": title})
         fig = _finalise_figure(fig=fig, **kwargs)
     else:
-        title = 'SNR for ' + str(signal[0].stats.starttime)
         kwargs.update({"show": True, "title": title})
         fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
@@ -1431,7 +1430,7 @@ def pretty_template_plot(template, plotdir=None, size=(10.5, 7.5),
         fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
     else:
-        kwargs.update({"show": True})
+        kwargs.update({"show": True, "title": title})
         fig = _finalise_figure(fig=fig, **kwargs)
     return fig
 
