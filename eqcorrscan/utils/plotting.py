@@ -1230,8 +1230,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
             continue
         n_traces += 1
     fig_dim = min(n_traces, 10)
-    fig, axes = plt.subplots(n_traces, 2, sharex=True, sharey='col',
-                             figsize=(fig_dim, fig_dim))
+    fig, axes = plt.subplots(n_traces, 2, sharex=True, sharey='col')
     if len(signal) > 1:
         axes = axes.ravel()
     i = 0
@@ -1287,10 +1286,11 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     if "savefile" in kwargs.keys():
         savefile = "{}/{}".format(kwargs.get("savefile"), plotname)
         kwargs.update({"savefile": savefile, "save": True, "show": False,
-                      "title": title})
+                      "title": title, 'size': (fig_dim, fig_dim)})
         fig = _finalise_figure(fig=fig, **kwargs)
     else:
-        kwargs.update({"show": True, "title": title})
+        kwargs.update({"show": True, "title": title,
+                       "size": (fig_dim, fig_dim)})
         fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
     return fig
