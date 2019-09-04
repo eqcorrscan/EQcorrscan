@@ -907,7 +907,10 @@ class Tribe(object):
             return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  prepick, save_progress=False, **kwargs):
+                  prepick, swin="all", process_len=86400, all_horiz=False,
+                  delayed=True, plot=False, min_snr=None, parallel=False,
+                  num_cores=False, skip_short_chans=False,
+                  save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
@@ -930,6 +933,44 @@ class Tribe(object):
             Filter level (number of corners).
         :type prepick: float
         :param prepick: Pre-pick time in seconds
+        :type swin: str
+        :param swin:
+            P, S, P_all, S_all or all, defaults to all: see note in
+            :func:`eqcorrscan.core.template_gen.template_gen`
+        :type process_len: int
+        :param process_len: Length of data in seconds to download and process.
+        :type all_horiz: bool
+        :param all_horiz:
+            To use both horizontal channels even if there is only a pick on
+            one of them.  Defaults to False.
+        :type delayed: bool
+        :param delayed: If True, each channel will begin relative to it's own
+            pick-time, if set to False, each channel will begin at the same
+            time.
+        :type plot: bool
+        :param plot: Plot templates or not.
+        :type min_snr: float
+        :param min_snr:
+            Minimum signal-to-noise ratio for a channel to be included in the
+            template, where signal-to-noise ratio is calculated as the ratio
+            of the maximum amplitude in the template window to the rms
+            amplitude in the whole window given.
+        :type parallel: bool
+        :param parallel: Whether to process data in parallel or not.
+        :type num_cores: int
+        :param num_cores:
+            Number of cores to try and use, if False and parallel=True,
+            will use either all your cores, or as many traces as in the data
+            (whichever is smaller).
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting template set at every data step or
+            not. Useful for long-running processes.
+        :type skip_short_chans: bool
+        :param skip_short_chans:
+            Whether to ignore channels that have insufficient length data or
+            not. Useful when the quality of data is not known, e.g. when
+            downloading old, possibly triggered data from a datacentre
         :type save_progress: bool
         :param save_progress:
             Whether to save the resulting party at every data step or not.
@@ -970,7 +1011,11 @@ class Tribe(object):
         templates, catalog, process_lengths = template_gen.template_gen(
             method=method, lowcut=lowcut, highcut=highcut,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
-            return_event=True, save_progress=save_progress, **kwargs)
+            return_event=True, save_progress=save_progress, swin=swin,
+            process_len=process_len, all_horiz=all_horiz,
+            delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
+            num_cores=num_cores, skip_short_chans=skip_short_chans,
+            **kwargs)
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()

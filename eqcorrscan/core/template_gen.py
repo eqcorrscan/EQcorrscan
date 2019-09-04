@@ -71,7 +71,7 @@ class TemplateGenError(Exception):
 
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, process_len=86400,
+                 length, prepick, swin="all", process_len=86400,
                  all_horiz=False, delayed=True, plot=False,
                  return_event=False, min_snr=None, parallel=False,
                  num_cores=False, save_progress=False, skip_short_chans=False,
@@ -103,8 +103,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
     :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
+    :param all_horiz:
+        To use both horizontal channels even if there is only a pick on one of
+        them.  Defaults to False.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
@@ -127,7 +128,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         smaller).
     :type save_progress: bool
     :param save_progress:
-        Whether to save the resulting party at every data step or not.
+        Whether to save the resulting templates at every data step or not.
         Useful for long-running processes.
     :type skip_short_chans: bool
     :param skip_short_chans:
