@@ -997,10 +997,10 @@ class Tribe(object):
                 :param str meta_file:
                     Path to obspy-readable event file, or an obspy Catalog
                 :param `obspy.core.stream.Stream` st:
-                    Stream containing waveform data for template. Note that this
-                    should be the same length of stream as you will use for the
-                    continuous detection, e.g. if you detect in day-long files,
-                    give this a day-long file!
+                    Stream containing waveform data for template. Note that
+                    this should be the same length of stream as you will use
+                    for the continuous detection, e.g. if you detect in
+                    day-long files, give this a day-long file!
                 :param bool process:
                     Whether to process the data or not, defaults to True.
 
