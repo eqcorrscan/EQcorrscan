@@ -865,7 +865,7 @@ class Tribe(object):
                             _st += tr
                     st = _st
                     st.split()
-            st.merge()
+            st.detrend("simple").merge()
             st.trim(starttime=starttime + (i * data_length) - pad,
                     endtime=starttime + ((i + 1) * data_length) + pad)
             for tr in st:

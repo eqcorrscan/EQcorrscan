@@ -831,10 +831,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                   plotdir, st1[0].stats.starttime),
               **plot_kwargs)
         noise_plot(signal=st1, noise=noise,
-                   size=(min(len(st1), 10), min(len(st1), 10)),
-                   savefile="{0}/{1}_noise.png".format(st1[0].stats.starttime),
+                   savefile="{0}/{1}_noise.png".format(
+                       plotdir, st1[0].stats.starttime),
                    **plot_kwargs)
-        del(stplot)
+        del stplot
     return st1
 
 

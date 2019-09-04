@@ -256,7 +256,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
     # ax2.legend()
     # Generate a small subplot for the histogram of the cccsum data
     ax3 = plt.subplot2grid((2, 5), (1, 4), sharey=ax2)
-    ax3.hist(cccsum_hist, 200, normed=1, histtype='stepfilled',
+    ax3.hist(cccsum_hist, 200, density=True, histtype='stepfilled',
              orientation='horizontal', color='black')
     ax3.set_ylim([-5, 5])
     fig = plt.gcf()
@@ -1268,15 +1268,14 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
             (2.0 / fft_len * np.abs(signal_fft[0: fft_len // 2])) -
             (2.0 / fft_len * np.abs(noise_fft[0: fft_len // 2])), 'k')
         ax2.yaxis.tick_right()
-        ax2.set_ylim(bottom=0)
+        ax2.set_ylim(bottom=1e-6)
         i += 2
     axes[-1].set_xlabel("Frequency (Hz)")
     axes[-2].set_xlabel("Frequency (Hz)")
     axes[0].set_title("Spectra")
     axes[1].set_title("Signal - noise")
-    plt.figlegend(lines, labels, 'upper left')
-    plt.tight_layout()
-    plt.subplots_adjust(hspace=0, top=0.91)
+    fig.legend(lines, labels, 'upper left')
+    fig.subplots_adjust(hspace=0, top=0.91)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 
@@ -2214,11 +2213,12 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
     cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
     cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
-    plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
-                 stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
-                 '.' + plot_format)
+    plot_name = "{0}/cccsum_plot_{1}_{2}.{3}".format(
+        plotdir, template_names[i], stream[0].stats.starttime, plot_format)
     plot_kwargs = dict(show=True)
     if plotdir is not None:
+        if not os.path.isdir(plotdir):
+            os.makedirs(plotdir)
         plot_kwargs.update(dict(show=False, save=True, savefile=plot_name))
     triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
                 trace=stream_plot, threshold=rawthresh, **plot_kwargs)
