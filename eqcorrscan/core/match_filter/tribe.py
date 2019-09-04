@@ -914,8 +914,8 @@ class Tribe(object):
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin="all", process_len=86400,
-                  all_horiz=False, delayed=True, plot=False, plotdir=None, 
-                  min_snr=None, parallel=False, num_cores=False, 
+                  all_horiz=False, delayed=True, plot=False, plotdir=None,
+                  min_snr=None, parallel=False, num_cores=False,
                   skip_short_chans=False, save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
@@ -959,7 +959,7 @@ class Tribe(object):
         :param plot: Plot templates or not.
         :type plotdir: str
     ￼	:param plotdir:
-            The path to save plots to. If `plotdir=None` (default) then the 
+            The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type min_snr: float
         :param min_snr:
