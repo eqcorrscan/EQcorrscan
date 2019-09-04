@@ -1283,12 +1283,10 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     plt.subplots_adjust(hspace=0)
     plt.subplots_adjust(top=0.91)
     title = 'SNR for ' + str(signal[0].stats.starttime)
-    if plotdir:
-        plotname = '{}_SNR.png'.format(signal[0].stats.starttime)
-        if not os.path.isdir(plotdir):
-            os.makedirs(plotdir)
-        plotdir = "{}/{}".format(plotdir, plotname)
-        kwargs.update({"savefile": plotdir, "save": True, "show": False,
+    plotname = '{}_SNR.png'.format(signal[0].stats.starttime)
+    if "savefile" in kwargs.keys():
+        savefile = "{}/{}".format(kwargs.get("savefile"), plotname)
+        kwargs.update({"savefile": savefile, "save": True, "show": False,
                       "title": title})
         fig = _finalise_figure(fig=fig, **kwargs)
     else:
@@ -1449,12 +1447,10 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     plt.subplots_adjust(hspace=0)
     plt.subplots_adjust(top=0.93)
     title = 'Template for '+str(template[0].stats.starttime)
-    if plotdir:
+    if "savefile" in kwargs.keys():
         plotname = '{}_template.png'.format(template[0].stats.starttime)
-        if not os.path.isdir(plotdir):
-            os.makedirs(plotdir)
-        plotdir = '{}/{}'.format(plotdir, plotname)
-        kwargs.update({"save": True, "show": False, "savefile": plotdir,
+        savefile = '{}/{}'.format(kwargs.get("savefile"), plotname)
+        kwargs.update({"save": True, "show": False, "savefile": savefile,
                        "title": title})
         fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
