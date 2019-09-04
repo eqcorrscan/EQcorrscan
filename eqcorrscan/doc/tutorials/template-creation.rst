@@ -1,5 +1,5 @@
-Template creation
-=================
+Template creation (old API)
+===========================
 
 Note: These tutorials are for the functional workflow - for details on creating
 Template and Tribe objects see the :doc:`matched filter <matched-filter>` docs

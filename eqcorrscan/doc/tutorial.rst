@@ -4,16 +4,10 @@ Welcome to EQcorrscan - this package is designed to compute earthquake detection
 using a paralleled matched-filter network cross-correlation routine, and analyse the
 results.
 
-Before continuing with this tutorial please check that you have installed all
-the pre-requisite modules, as not all will be installed by the setup.py file.
-The list of these is in the :doc:`Introduction <intro>` section of this documentation.
-
 As you will see, this package is divided into two main sub-modules, the
 :doc:`core </core>` and :doc:`utils </utils>` sub-modules.
 The core sub-module contains the main, high-level functions:
 
-:bright_lights:
-        A brightness based template detection routine;
 :template_gen:
         A series of routines to generate templates for match-filter detection
         from continuous or cut data, with pick-times either defined manually,
@@ -47,7 +41,7 @@ detections for |hypoDD| (a double difference relocation software)
 magnitudes (:doc:`mag_calc </submodules/utils.mag_calc>`),
 clustering detections (:doc:`clustering </submodules/utils.clustering>`),
 stacking detections (:doc:`stacking </submodules/utils.stacking>`),
-making pretty plots (:doc:`plotting </submodules/utils.plotting>`),
+making plots (:doc:`plotting </submodules/utils.plotting>`),
 and processing seismic data in the same way repeatedly using |Obspy|'s
 functionality (:doc:`pre_processing </submodules/utils.pre_processing>`).
 
@@ -62,7 +56,7 @@ prettier you can begin your work using something like:
 
   import logging
 
-  logging.basciConfig(
+  logging.basicConfig(
       level=logging.INFO,
       format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
@@ -76,14 +70,17 @@ like:
 For more options, see the |logginghowto| guide.
 
 The following is an expanding set of tutorials that should take you
-through some of the key functionality of the EQcorrscan package.
+through some of the key functionality of the EQcorrscan package.  The tutorials
+are a (slow) work in progress to convert to jupyter notebook.  If you have anything
+you want to see in the tutorials please let us know on github.
 
 .. toctree::
   :numbered:
   :titlesonly:
 
-  tutorials/template-creation.rst
+  tutorials/quick_start.ipynb
   tutorials/matched-filter.rst
+  tutorials/template-creation.rst
   tutorials/subspace.rst
   tutorials/lag-calc.rst
   tutorials/mag-calc.rst
