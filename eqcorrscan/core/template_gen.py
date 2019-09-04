@@ -71,8 +71,8 @@ class TemplateGenError(Exception):
 
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
-                 length, prepick, swin, process_len=86400,
-                 all_horiz=False, delayed=True, plot=False,
+                 length, prepick, swin="all", process_len=86400,
+                 all_horiz=False, delayed=True, plot=False, plotdir=None,
                  return_event=False, min_snr=None, parallel=False,
                  num_cores=False, save_progress=False, skip_short_chans=False,
                  **kwargs):
@@ -93,7 +93,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type filt_order: int
     :param filt_order: Filter level (number of corners).
     :type length: float
-    :param length: Extract length in seconds.
+    :param length: Length of template waveform in seconds.
     :type prepick: float
     :param prepick: Pre-pick time in seconds
     :type swin: str
@@ -103,13 +103,18 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
     :type all_horiz: bool
-    :param all_horiz: To use both horizontal channels even if there is only \
-        a pick on one of them.  Defaults to False.
+    :param all_horiz:
+        To use both horizontal channels even if there is only a pick on one of
+        them.  Defaults to False.
     :type delayed: bool
     :param delayed: If True, each channel will begin relative to it's own \
         pick-time, if set to False, each channel will begin at the same time.
     :type plot: bool
     :param plot: Plot templates or not.
+    :type plotdir: str
+￼	:param plotdir:
+        The path to save plots to. If `plotdir=None` (default) then the figure
+        will be shown on screen.
     :type return_event: bool
     :param return_event: Whether to return the event and process length or not.
     :type min_snr: float
@@ -127,7 +132,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         smaller).
     :type save_progress: bool
     :param save_progress:
-        Whether to save the resulting party at every data step or not.
+        Whether to save the resulting templates at every data step or not.
         Useful for long-running processes.
     :type skip_short_chans: bool
     :param skip_short_chans:
@@ -161,7 +166,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 See `eqcorrscan.utils.sac_util.sactoevent` for details on
                 how pick information is collected.
         - `from_meta_file` requires:
-            :param str meta_file: Path to obspy-readable event file.
+            :param str meta_file:
+                Path to obspy-readable event file, or an obspy Catalog
             :param `obspy.core.stream.Stream` st:
                 Stream containing waveform data for template. Note that this
                 should be the same length of stream as you will use for the
@@ -387,7 +393,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr)
+                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
+                plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
         if save_progress:
@@ -579,7 +586,8 @@ def _rms(array):
 
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05,
-                  all_horiz=False, delayed=True, plot=False, min_snr=None):
+                  all_horiz=False, delayed=True, plot=False, min_snr=None,
+                  plotdir=None):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -621,6 +629,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         template, where signal-to-noise ratio is calculated as the ratio of
         the maximum amplitude in the template window to the rms amplitude in
         the whole window given.
+    :type plotdir: str
+￼	:param plotdir:
+        The path to save plots to. If `plotdir=None` (default) then the figure
+        will be shown on screen.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -808,14 +820,21 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
     if plot and len(st1) > 0:
-        fig1 = tplot(st1, background=stplot, picks=picks_copy,
-                     title='Template for ' + str(st1[0].stats.starttime),
-                     show=False, return_figure=True)
-        fig2 = noise_plot(
-            signal=st1, noise=noise, show=False, return_figure=True)
-        fig1.savefig("{0}_template.png".format(st1[0].stats.starttime))
-        fig2.savefig("{0}_noise.png".format(st1[0].stats.starttime))
-        del(stplot, fig1, fig2)
+        plot_kwargs = dict(show=True)
+        if plotdir is not None:
+            if not os.path.isdir(plotdir):
+                os.makedirs(plotdir)
+            plot_kwargs.update(dict(show=False, save=True))
+        tplot(st1, background=stplot, picks=picks_copy,
+              title='Template for ' + str(st1[0].stats.starttime),
+              savefile="{0}/{1}_template.png".format(
+                  plotdir, st1[0].stats.starttime),
+              **plot_kwargs)
+        noise_plot(signal=st1, noise=noise,
+                   savefile="{0}/{1}_noise.png".format(
+                       plotdir, st1[0].stats.starttime),
+                   **plot_kwargs)
+        del stplot
     return st1
 
 

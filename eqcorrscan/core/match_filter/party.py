@@ -21,7 +21,7 @@ import logging
 from os.path import join
 
 import numpy as np
-from obspy import Catalog, read_events
+from obspy import Catalog, read_events, Stream
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -748,8 +748,8 @@ class Party(object):
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
-                 cores=1, interpolate=False, plot=False, parallel=True,
-                 process_cores=None, ignore_bad_data=False,
+                 cores=1, interpolate=False, plot=False, plotdir=None,
+                 parallel=True, process_cores=None, ignore_bad_data=False,
                  relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
@@ -789,6 +789,10 @@ class Party(object):
         :type plot: bool
         :param plot:
             To generate a plot for every detection or not, defaults to False
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -835,26 +839,34 @@ class Party(object):
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families])
+        catalog = Catalog()
         for template_group in template_groups:
             family = [_f for _f in self.families
                       if _f.template == template_group[0]][0]
+            group_seed_ids = {tr.id for template in template_group
+                              for tr in template.st}
+            template_stream = Stream()
+            for seed_id in group_seed_ids:
+                net, sta, loc, chan = seed_id.split('.')
+                template_stream += stream.select(
+                    network=net, station=sta, location=loc, channel=chan)
             processed_stream = family._process_streams(
-                stream=stream, pre_processed=pre_processed,
+                stream=template_stream, pre_processed=pre_processed,
                 process_cores=process_cores, parallel=parallel,
-                ignore_bad_data=ignore_bad_data)
+                ignore_bad_data=ignore_bad_data, select_used_chans=False)
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
-                family.lag_calc(
+                catalog += family.lag_calc(
                     stream=processed_stream, pre_processed=True,
                     shift_len=shift_len, min_cc=min_cc,
                     horizontal_chans=horizontal_chans,
                     vertical_chans=vertical_chans, cores=cores,
-                    interpolate=interpolate, plot=plot, parallel=parallel,
-                    process_cores=process_cores,
+                    interpolate=interpolate, plot=plot, plotdir=plotdir,
+                    parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
                     relative_magnitudes=relative_magnitudes, **kwargs)
-        return self.get_catalog()
+        return catalog
 
     def relative_magnitudes(self, stream, pre_processed, process_cores=1,
                             ignore_bad_data=False, parallel=False, min_cc=0.4,

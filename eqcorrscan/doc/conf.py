@@ -60,6 +60,7 @@ extensions = [
     # local extensions
     'sphinx.ext.autosummary',
     'obspydoc',
+    'nbsphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

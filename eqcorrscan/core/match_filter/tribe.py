@@ -421,12 +421,12 @@ class Tribe(object):
                 tribes.append(new_tribe)
         return tribes
 
-    def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
-               daylong=False, parallel_process=True, xcorr_func=None,
-               concurrency=None, cores=None, ignore_length=False,
-               ignore_bad_data=False, group_size=None, overlap="calculate",
-               full_peaks=False, save_progress=False, process_cores=None,
-               **kwargs):
+    def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
+               plotdir=None, daylong=False, parallel_process=True,
+               xcorr_func=None, concurrency=None, cores=None,
+               ignore_length=False, ignore_bad_data=False, group_size=None,
+               overlap="calculate", full_peaks=False, save_progress=False,
+               process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -445,9 +445,12 @@ class Tribe(object):
             Minimum gap between detections in seconds. If multiple detections
             occur within trig_int of one-another, the one with the highest
             cross-correlation sum will be selected.
-        :type plotvar: bool
-        :param plotvar:
-            Turn plotting on or off, see warning about plotting below
+        :type plot: bool
+        :param plot: Turn plotting on or off.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type daylong: bool
         :param daylong:
             Set to True to use the
@@ -590,10 +593,10 @@ class Tribe(object):
             group_party = _group_detect(
                 templates=group, stream=stream.copy(), threshold=threshold,
                 threshold_type=threshold_type, trig_int=trig_int,
-                plotvar=plotvar, group_size=group_size, pre_processed=False,
+                plot=plot, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
-                ignore_length=ignore_length, overlap=overlap,
+                ignore_length=ignore_length, overlap=overlap, plotdir=plotdir,
                 full_peaks=full_peaks, process_cores=process_cores,
                 ignore_bad_data=ignore_bad_data, arg_check=False, **kwargs)
             party += group_party
@@ -606,11 +609,11 @@ class Tribe(object):
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
-                      threshold_type, trig_int, plotvar, min_gap=None,
-                      daylong=False, parallel_process=True, xcorr_func=None,
-                      concurrency=None, cores=None, ignore_length=False,
-                      ignore_bad_data=False, group_size=None,
-                      return_stream=False, full_peaks=False,
+                      threshold_type, trig_int, plot=False, plotdir=None,
+                      min_gap=None, daylong=False, parallel_process=True,
+                      xcorr_func=None, concurrency=None, cores=None,
+                      ignore_length=False, ignore_bad_data=False,
+                      group_size=None, return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
                       **kwargs):
         """
@@ -635,9 +638,12 @@ class Tribe(object):
             Minimum gap between detections in seconds. If multiple detections
             occur within trig_int of one-another, the one with the highest
             cross-correlation sum will be selected.
-        :type plotvar: bool
-        :param plotvar:
-            Turn plotting on or off, see warning about plotting below
+        :type plot: bool
+        :param plot: Turn plotting on or off.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type min_gap: float
         :param min_gap:
             Minimum gap allowed in data - use to remove traces with known
@@ -859,7 +865,7 @@ class Tribe(object):
                             _st += tr
                     st = _st
                     st.split()
-            st.merge()
+            st.detrend("simple").merge()
             st.trim(starttime=starttime + (i * data_length) - pad,
                     endtime=starttime + ((i + 1) * data_length) + pad)
             for tr in st:
@@ -881,7 +887,7 @@ class Tribe(object):
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
-                    plotvar=plotvar, daylong=daylong,
+                    plot=plot, plotdir=plotdir, daylong=daylong,
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length,
@@ -907,14 +913,18 @@ class Tribe(object):
             return party
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  prepick, save_progress=False, **kwargs):
+                  length, prepick, swin="all", process_len=86400,
+                  all_horiz=False, delayed=True, plot=False, plotdir=None,
+                  min_snr=None, parallel=False, num_cores=False,
+                  skip_short_chans=False, save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
-        See :mod:`eqcorrscan.core.template_gen` for available methods.
-
-        :param method: Method of Tribe generation.
-        :param kwargs: Arguments for the given method.
+        :type method: str
+        :param method:
+            Method of Tribe generation. Possible options are: `from_client`,
+            `from_seishub`, `from_meta_file`.  See below on the additional
+            required arguments for each method.
         :type lowcut: float
         :param lowcut:
             Low cut (Hz), if set to None will not apply a lowcut
@@ -927,28 +937,97 @@ class Tribe(object):
         :type filt_order: int
         :param filt_order:
             Filter level (number of corners).
+        :type length: float
+        :param length: Length of template waveform in seconds.
         :type prepick: float
         :param prepick: Pre-pick time in seconds
+        :type swin: str
+        :param swin:
+            P, S, P_all, S_all or all, defaults to all: see note in
+            :func:`eqcorrscan.core.template_gen.template_gen`
+        :type process_len: int
+        :param process_len: Length of data in seconds to download and process.
+        :type all_horiz: bool
+        :param all_horiz:
+            To use both horizontal channels even if there is only a pick on
+            one of them.  Defaults to False.
+        :type delayed: bool
+        :param delayed: If True, each channel will begin relative to it's own
+            pick-time, if set to False, each channel will begin at the same
+            time.
+        :type plot: bool
+        :param plot: Plot templates or not.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
+        :type min_snr: float
+        :param min_snr:
+            Minimum signal-to-noise ratio for a channel to be included in the
+            template, where signal-to-noise ratio is calculated as the ratio
+            of the maximum amplitude in the template window to the rms
+            amplitude in the whole window given.
+        :type parallel: bool
+        :param parallel: Whether to process data in parallel or not.
+        :type num_cores: int
+        :param num_cores:
+            Number of cores to try and use, if False and parallel=True,
+            will use either all your cores, or as many traces as in the data
+            (whichever is smaller).
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting template set at every data step or
+            not. Useful for long-running processes.
+        :type skip_short_chans: bool
+        :param skip_short_chans:
+            Whether to ignore channels that have insufficient length data or
+            not. Useful when the quality of data is not known, e.g. when
+            downloading old, possibly triggered data from a datacentre
         :type save_progress: bool
         :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
 
-        .. Note::
-            Methods: `from_contbase`, `from_sfile` and `from_sac` are not
-            supported by Tribe.construct and must use Template.construct.
+        .. note::
+            *Method specific arguments:*
+
+            - `from_client` requires:
+                :param str client_id:
+                    string passable by obspy to generate Client, or a Client
+                    instance
+                :param `obspy.core.event.Catalog` catalog:
+                    Catalog of events to generate template for
+                :param float data_pad: Pad length for data-downloads in seconds
+            - `from_seishub` requires:
+                :param str url: url to seishub database
+                :param `obspy.core.event.Catalog` catalog:
+                    Catalog of events to generate template for
+                :param float data_pad: Pad length for data-downloads in seconds
+            - `from_meta_file` requires:
+                :param str meta_file:
+                    Path to obspy-readable event file, or an obspy Catalog
+                :param `obspy.core.stream.Stream` st:
+                    Stream containing waveform data for template. Note that
+                    this should be the same length of stream as you will use
+                    for the continuous detection, e.g. if you detect in
+                    day-long files, give this a day-long file!
+                :param bool process:
+                    Whether to process the data or not, defaults to True.
 
         .. Note::
-            The Method `multi_template_gen` is not supported because the
-            processing parameters for the stream are not known. Use
-            `from_meta_file` instead.
+            Method: `from_sac` is not supported by Tribe.construct and must
+            use Template.construct.
 
         .. Note:: Templates will be named according to their start-time.
         """
         templates, catalog, process_lengths = template_gen.template_gen(
-            method=method, lowcut=lowcut, highcut=highcut,
+            method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
-            return_event=True, save_progress=save_progress, **kwargs)
+            return_event=True, save_progress=save_progress, swin=swin,
+            process_len=process_len, all_horiz=all_horiz, plotdir=plotdir,
+            delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
+            num_cores=num_cores, skip_short_chans=skip_short_chans,
+            **kwargs)
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()

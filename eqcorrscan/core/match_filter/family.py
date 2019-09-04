@@ -20,7 +20,7 @@ import logging
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
     StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
+    CreationInfo, StationMagnitudeContribution, Catalog)
 
 from eqcorrscan.core.match_filter.matched_filter import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
@@ -502,8 +502,8 @@ class Family(object):
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
-                 cores=1, interpolate=False, plot=False, parallel=True,
-                 process_cores=None, ignore_bad_data=False,
+                 cores=1, interpolate=False, plot=False, plotdir=None,
+                 parallel=True, process_cores=None, ignore_bad_data=False,
                  relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
@@ -542,7 +542,11 @@ class Family(object):
             precision.
         :type plot: bool
         :param plot:
-            To generate a plot for every detection or not, defaults to False
+            To generate a plot for every detection or not, defaults to False.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -593,17 +597,19 @@ class Family(object):
             family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
-            interpolate=interpolate, plot=plot)
+            interpolate=interpolate, plot=plot, plotdir=plotdir)
+        catalog = Catalog()
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
                 pick.time += self.template.prepick
             d = [d for d in self.detections if d.id == detection_id][0]
             d.event = event
+            catalog += event
         if relative_magnitudes:
-            self.relative_magnitudes(
+            catalog = self.relative_magnitudes(
                 stream=processed_stream, pre_processed=True, min_cc=min_cc,
                 **kwargs)
-        return self.catalog
+        return catalog
 
     def relative_magnitudes(self, stream, pre_processed, process_cores=1,
                             ignore_bad_data=False, parallel=False, min_cc=0.4,
@@ -649,7 +655,7 @@ class Family(object):
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,
             ignore_bad_data=ignore_bad_data)
-
+        catalog = Catalog()
         for detection in self.detections:
             event = detection.event
             if event is None:
@@ -707,19 +713,28 @@ class Family(object):
                     creation_info=CreationInfo(
                         author="EQcorrscan",
                         creation_time=UTCDateTime())))
-        return self.catalog
+            catalog += event
+        return catalog
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
-                         parallel=False, ignore_bad_data=False):
+                         parallel=False, ignore_bad_data=False,
+                         select_used_chans=True):
         """
         Process a stream based on the template parameters.
         """
-        # TODO: This doesn't need to use _group_process.
+        if select_used_chans:
+            template_stream = Stream()
+            for tr in self.template.st:
+                template_stream += stream.select(
+                    network=tr.stats.network, station=tr.stats.station,
+                    location=tr.stats.location, channel=tr.stats.channel)
+        else:
+            template_stream = stream
         if not pre_processed:
             processed_streams = _group_process(
                 template_group=[self.template], cores=process_cores,
-                parallel=parallel, stream=stream.copy(), daylong=False,
-                ignore_length=False, overlap=0.0,
+                parallel=parallel, stream=template_stream.copy(),
+                daylong=False, ignore_length=False, overlap=0.0,
                 ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
             for p in processed_streams:

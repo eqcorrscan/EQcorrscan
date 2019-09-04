@@ -67,9 +67,10 @@ class MatchFilterError(Exception):
 
 
 def _group_detect(templates, stream, threshold, threshold_type, trig_int,
-                  plotvar, group_size=None, pre_processed=False, daylong=False,
-                  parallel_process=True, xcorr_func=None, concurrency=None,
-                  cores=None, ignore_length=False, ignore_bad_data=False,
+                  plot=False, plotdir=None, group_size=None,
+                  pre_processed=False, daylong=False, parallel_process=True,
+                  xcorr_func=None, concurrency=None, cores=None,
+                  ignore_length=False, ignore_bad_data=False,
                   overlap="calculate", full_peaks=False, process_cores=None,
                   **kwargs):
     """
@@ -95,9 +96,13 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         Minimum gap between detections in seconds. If multiple detections
         occur within trig_int of one-another, the one with the highest
         cross-correlation sum will be selected.
-    :type plotvar: bool
-    :param plotvar:
-        Turn plotting on or off, see warning about plotting below.
+    :type plot: bool
+    :param plot:
+        Turn plotting on or off.
+    :type plotdir: str
+￼	:param plotdir:
+        The path to save plots to. If `plotdir=None` (default) then the
+        figure will be shown on screen.
     :type group_size: int
     :param group_size:
         Maximum number of templates to run at once, use to reduce memory
@@ -214,7 +219,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 template_list=[t.st for t in template_group], st=st_chunk,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plotvar=plotvar, cores=cores,
+                trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
                 full_peaks=full_peaks, peak_cores=process_cores, **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
@@ -329,7 +334,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
 
 
 def match_filter(template_names, template_list, st, threshold,
-                 threshold_type, trig_int, plotvar, plotdir='.',
+                 threshold_type, trig_int, plot=False, plotdir=None,
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
                  extract_detections=False, arg_check=True, full_peaks=False,
@@ -365,12 +370,12 @@ def match_filter(template_names, template_list, st, threshold,
         See Note on thresholding below.
     :type trig_int: float
     :param trig_int: Minimum gap between detections in seconds.
-    :type plotvar: bool
-    :param plotvar: Turn plotting on or off
+    :type plot: bool
+    :param plot: Turn plotting on or off
     :type plotdir: str
     :param plotdir:
-        Path to plotting folder, plots will be output here, defaults to run
-        location.
+        Path to plotting folder, plots will be output here, defaults to None,
+        and plots are shown on screen.
     :type xcorr_func: str or callable
     :param xcorr_func:
         A str of a registered xcorr function or a callable for implementing
@@ -544,6 +549,10 @@ def match_filter(template_names, template_list, st, threshold,
     from eqcorrscan.core.match_filter.detection import Detection
     from eqcorrscan.utils.plotting import _match_filter_plot
 
+    if "plotvar" in kwargs.keys():
+        Logger.warning("plotvar is depreciated, use plot instead")
+        plot = kwargs.get("plotvar")
+
     if arg_check:
         # Check the arguments to be nice - if arguments wrong type the parallel
         # output for the error won't be useful
@@ -640,7 +649,7 @@ def match_filter(template_names, template_list, st, threshold,
             Logger.warning('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
         # maintains timing
-        if plotvar:
+        if plot:
             _match_filter_plot(
                 stream=stream, cccsum=cccsum, template_names=_template_names,
                 rawthresh=thresholds[i], plotdir=plotdir,

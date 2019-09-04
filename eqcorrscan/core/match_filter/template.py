@@ -371,11 +371,11 @@ class Template(object):
             self.__dict__[key] = tribe[0].__dict__[key]
         return self
 
-    def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
-               pre_processed=False, daylong=False, parallel_process=True,
-               xcorr_func=None, concurrency=None, cores=None,
-               ignore_length=False, overlap="calculate", full_peaks=False,
-               **kwargs):
+    def detect(self, stream, threshold, threshold_type, trig_int,
+               plot=False, plotdir=None, pre_processed=False, daylong=False,
+               parallel_process=True, xcorr_func=None, concurrency=None,
+               cores=None, ignore_length=False, overlap="calculate",
+               full_peaks=False, **kwargs):
         """
         Detect using a single template within a continuous stream.
 
@@ -394,9 +394,12 @@ class Template(object):
             Minimum gap between detections in seconds. If multiple detections
             occur within trig_int of one-another, the one with the highest
             cross-correlation sum will be selected.
-        :type plotvar: bool
-        :param plotvar:
-            Turn plotting on or off, see warning about plotting below
+        :type plot: bool
+        :param plot: Turn plotting on or off.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type pre_processed: bool
         :param pre_processed:
             Set to True if `stream` has already undergone processing, in this
@@ -511,23 +514,30 @@ class Template(object):
         .. Note::
             See tutorials for example.
         """
+        if kwargs.get("plotvar") is not None:
+            Logger.warning("plotvar is depreciated, use plot instead")
+            plot = kwargs.get("plotvar")
         party = _group_detect(
             templates=[self], stream=stream.copy(), threshold=threshold,
-            threshold_type=threshold_type, trig_int=trig_int,
-            plotvar=plotvar, pre_processed=pre_processed, daylong=daylong,
+            threshold_type=threshold_type, trig_int=trig_int, plotdir=plotdir,
+            plot=plot, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
             overlap=overlap, full_peaks=full_peaks, **kwargs)
         return party[0]
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
-                  prepick, **kwargs):
+                  length, prepick, swin="all", process_len=86400,
+                  all_horiz=False, delayed=True, plot=False, plotdir=None,
+                  min_snr=None, parallel=False, num_cores=False,
+                  skip_short_chans=False, **kwargs):
         """
         Construct a template using a given method.
 
         :param method:
-            Method to make the template,
-            see :mod:`eqcorrscan.core.template_gen` for possible methods.
+            Method to make the template, the only available method is:
+            `from_sac`. For all other methods (`from_seishub`, `from_client`
+            and `from_meta_file`) use `Tribe.construct()`.
         :type method: str
         :type name: str
         :param name: Name for the template
@@ -543,18 +553,58 @@ class Template(object):
         :type filt_order: int
         :param filt_order:
             Filter level (number of corners).
+        :type length: float
+        :param length: Length of template waveform in seconds.
         :type prepick: float
         :param prepick: Pre-pick time in seconds
+        :type swin: str
+        :param swin:
+            P, S, P_all, S_all or all, defaults to all: see note in
+            :func:`eqcorrscan.core.template_gen.template_gen`
+        :type process_len: int
+        :param process_len: Length of data in seconds to download and process.
+        :type all_horiz: bool
+        :param all_horiz:
+            To use both horizontal channels even if there is only a pick on
+            one of them.  Defaults to False.
+        :type delayed: bool
+        :param delayed: If True, each channel will begin relative to it's own
+            pick-time, if set to False, each channel will begin at the same
+            time.
+        :type plot: bool
+        :param plot: Plot templates or not.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
+        :type min_snr: float
+        :param min_snr:
+            Minimum signal-to-noise ratio for a channel to be included in the
+            template, where signal-to-noise ratio is calculated as the ratio
+            of the maximum amplitude in the template window to the rms
+            amplitude in the whole window given.
+        :type parallel: bool
+        :param parallel: Whether to process data in parallel or not.
+        :type num_cores: int
+        :param num_cores:
+            Number of cores to try and use, if False and parallel=True,
+            will use either all your cores, or as many traces as in the data
+            (whichever is smaller).
+        :type skip_short_chans: bool
+        :param skip_short_chans:
+            Whether to ignore channels that have insufficient length data or
+            not. Useful when the quality of data is not known, e.g. when
+            downloading old, possibly triggered data from a datacentre
 
-        .. Note::
-            methods `from_meta_file`, `from_seishub`, `from_client` and
-            `multi_template_gen` are not accommodated in this function and must
-            be called from Tribe.construct as these generate multiple
-            templates.
+        .. note::
 
-        .. Note::
-            Calls functions from `eqcorrscan.core.template_gen`, see these
-            functions for details on what further arguments are required.
+            `method=from_sac` requires the following kwarg(s):
+            :param list sac_files:
+                osbpy.core.stream.Stream of sac waveforms, or list of paths to
+                sac waveforms.
+            .. note::
+                See `eqcorrscan.utils.sac_util.sactoevent` for details on
+                how pick information is collected.
 
         .. rubric:: Example
 
@@ -594,9 +644,12 @@ class Template(object):
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
         streams, events, process_lengths = template_gen.template_gen(
-            method=method, lowcut=lowcut, highcut=highcut,
+            method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
-            return_event=True, **kwargs)
+            return_event=True, swin=swin, process_len=process_len,
+            all_horiz=all_horiz, delayed=delayed, plot=plot, plotdir=plotdir,
+            min_snr=min_snr, parallel=parallel, num_cores=num_cores,
+            skip_short_chans=skip_short_chans, **kwargs)
         self.name = name
         st = streams[0]
         event = events[0]
