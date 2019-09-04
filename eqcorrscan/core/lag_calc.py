@@ -292,7 +292,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                checksum - detection.detect_val < -(0.3 * detection.detect_val):
                 msg = ('lag-calc has decreased cccsum from %f to %f - '
                        % (detection.detect_val, checksum))
-                raise LagCalcError(msg)
+                Logger.error(msg)
+                continue
         else:
             Logger.warning(
                 'Cannot check if cccsum is better, used {0} channels for '
