@@ -3,6 +3,10 @@ match_filter
 
 Classes and functions for matched-filtering.
 
+This is designed for large-scale, multi-paralleled
+detection, with moderate to large numbers (hundreds to a few thousands)
+of templates.
+
 .. toctree::
    :maxdepth: 1
 

@@ -835,6 +835,7 @@ class Party(object):
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families])
+        catalog = Catalog()
         for template_group in template_groups:
             family = [_f for _f in self.families
                       if _f.template == template_group[0]][0]
@@ -845,7 +846,7 @@ class Party(object):
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
-                family.lag_calc(
+                catalog += family.lag_calc(
                     stream=processed_stream, pre_processed=True,
                     shift_len=shift_len, min_cc=min_cc,
                     horizontal_chans=horizontal_chans,
@@ -854,7 +855,7 @@ class Party(object):
                     process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
                     relative_magnitudes=relative_magnitudes, **kwargs)
-        return self.get_catalog()
+        return catalog
 
     def relative_magnitudes(self, stream, pre_processed, process_cores=1,
                             ignore_bad_data=False, parallel=False, min_cc=0.4,

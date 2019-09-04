@@ -20,7 +20,7 @@ import logging
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
     StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
+    CreationInfo, StationMagnitudeContribution, Catalog)
 
 from eqcorrscan.core.match_filter.matched_filter import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
@@ -594,16 +594,18 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot)
+        catalog = Catalog()
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
                 pick.time += self.template.prepick
             d = [d for d in self.detections if d.id == detection_id][0]
             d.event = event
+            catalog += event
         if relative_magnitudes:
-            self.relative_magnitudes(
+            catalog = self.relative_magnitudes(
                 stream=processed_stream, pre_processed=True, min_cc=min_cc,
                 **kwargs)
-        return self.catalog
+        return catalog
 
     def relative_magnitudes(self, stream, pre_processed, process_cores=1,
                             ignore_bad_data=False, parallel=False, min_cc=0.4,
@@ -649,7 +651,7 @@ class Family(object):
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,
             ignore_bad_data=ignore_bad_data)
-
+        catalog = Catalog()
         for detection in self.detections:
             event = detection.event
             if event is None:
@@ -707,7 +709,8 @@ class Family(object):
                     creation_info=CreationInfo(
                         author="EQcorrscan",
                         creation_time=UTCDateTime())))
-        return self.catalog
+            catalog += event
+        return catalog
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
                          parallel=False, ignore_bad_data=False):
