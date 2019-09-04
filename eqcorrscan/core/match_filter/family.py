@@ -502,8 +502,8 @@ class Family(object):
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
-                 cores=1, interpolate=False, plot=False, parallel=True,
-                 process_cores=None, ignore_bad_data=False,
+                 cores=1, interpolate=False, plot=False, plotdir=None,
+                 parallel=True, process_cores=None, ignore_bad_data=False,
                  relative_magnitudes=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
@@ -542,7 +542,11 @@ class Family(object):
             precision.
         :type plot: bool
         :param plot:
-            To generate a plot for every detection or not, defaults to False
+            To generate a plot for every detection or not, defaults to False.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -593,7 +597,7 @@ class Family(object):
             family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
-            interpolate=interpolate, plot=plot)
+            interpolate=interpolate, plot=plot, plotdir=plotdir)
         catalog = Catalog()
         for detection_id, event in picked_dict.items():
             for pick in event.picks:

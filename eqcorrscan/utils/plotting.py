@@ -76,7 +76,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     if title:
         fig.suptitle(title)
     if save:
-        fig.savefig(savefile)
+        fig.savefig(savefile, bbox_inches="tight")
         Logger.info("Saved figure to {0}".format(savefile))
     if show:
         plt.show(block=True)
@@ -1227,7 +1227,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
             continue
         n_traces += 1
 
-    fig, axes = plt.subplots(n_traces, 2, sharex=True)
+    fig, axes = plt.subplots(n_traces, 2, sharex=True, sharey="col")
     if len(signal) > 1:
         axes = axes.ravel()
     i = 0
@@ -1276,7 +1276,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     axes[1].set_title("Signal - noise")
     plt.figlegend(lines, labels, 'upper left')
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0)
+    plt.subplots_adjust(hspace=0, top=0.91)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 
@@ -2199,7 +2199,8 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     :param i: Template index name to plot.
     """
     import matplotlib.pyplot as plt
-    plt.ioff()
+    if plotdir is not None:
+        plt.ioff()
     stream_plot = copy.deepcopy(stream[0])
     # Downsample for plotting
     stream_plot = _plotting_decimation(stream_plot, 10e5, 4)
@@ -2216,9 +2217,11 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     plot_name = (plotdir + os.sep + 'cccsum_plot_' + template_names[i] + '_' +
                  stream[0].stats.starttime.datetime.strftime('%Y-%m-%d') +
                  '.' + plot_format)
+    plot_kwargs = dict(show=True)
+    if plotdir is not None:
+        plot_kwargs.update(dict(show=False, save=True, savefile=plot_name))
     triple_plot(cccsum=cccsum_plot, cccsum_hist=cccsum_hist,
-                trace=stream_plot, threshold=rawthresh, save=True,
-                savefile=plot_name)
+                trace=stream_plot, threshold=rawthresh, **plot_kwargs)
 
 
 def _plotting_decimation(trace, max_len=10e5, decimation_step=4):

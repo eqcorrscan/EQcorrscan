@@ -421,12 +421,12 @@ class Tribe(object):
                 tribes.append(new_tribe)
         return tribes
 
-    def detect(self, stream, threshold, threshold_type, trig_int, plotvar,
-               daylong=False, parallel_process=True, xcorr_func=None,
-               concurrency=None, cores=None, ignore_length=False,
-               ignore_bad_data=False, group_size=None, overlap="calculate",
-               full_peaks=False, save_progress=False, process_cores=None,
-               **kwargs):
+    def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
+               plotdir=None, daylong=False, parallel_process=True,
+               xcorr_func=None, concurrency=None, cores=None,
+               ignore_length=False, ignore_bad_data=False, group_size=None,
+               overlap="calculate", full_peaks=False, save_progress=False,
+               process_cores=None, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -445,9 +445,12 @@ class Tribe(object):
             Minimum gap between detections in seconds. If multiple detections
             occur within trig_int of one-another, the one with the highest
             cross-correlation sum will be selected.
-        :type plotvar: bool
-        :param plotvar:
-            Turn plotting on or off, see warning about plotting below
+        :type plot: bool
+        :param plot: Turn plotting on or off.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type daylong: bool
         :param daylong:
             Set to True to use the
@@ -590,10 +593,10 @@ class Tribe(object):
             group_party = _group_detect(
                 templates=group, stream=stream.copy(), threshold=threshold,
                 threshold_type=threshold_type, trig_int=trig_int,
-                plotvar=plotvar, group_size=group_size, pre_processed=False,
+                plot=plot, group_size=group_size, pre_processed=False,
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
-                ignore_length=ignore_length, overlap=overlap,
+                ignore_length=ignore_length, overlap=overlap, plotdir=plotdir,
                 full_peaks=full_peaks, process_cores=process_cores,
                 ignore_bad_data=ignore_bad_data, arg_check=False, **kwargs)
             party += group_party
@@ -606,11 +609,11 @@ class Tribe(object):
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
-                      threshold_type, trig_int, plotvar, min_gap=None,
-                      daylong=False, parallel_process=True, xcorr_func=None,
-                      concurrency=None, cores=None, ignore_length=False,
-                      ignore_bad_data=False, group_size=None,
-                      return_stream=False, full_peaks=False,
+                      threshold_type, trig_int, plot=False, plotdir=None,
+                      min_gap=None, daylong=False, parallel_process=True,
+                      xcorr_func=None, concurrency=None, cores=None,
+                      ignore_length=False, ignore_bad_data=False,
+                      group_size=None, return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
                       **kwargs):
         """
@@ -635,9 +638,12 @@ class Tribe(object):
             Minimum gap between detections in seconds. If multiple detections
             occur within trig_int of one-another, the one with the highest
             cross-correlation sum will be selected.
-        :type plotvar: bool
-        :param plotvar:
-            Turn plotting on or off, see warning about plotting below
+        :type plot: bool
+        :param plot: Turn plotting on or off.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
         :type min_gap: float
         :param min_gap:
             Minimum gap allowed in data - use to remove traces with known
@@ -881,7 +887,7 @@ class Tribe(object):
                 party += self.detect(
                     stream=st, threshold=threshold,
                     threshold_type=threshold_type, trig_int=trig_int,
-                    plotvar=plotvar, daylong=daylong,
+                    plot=plot, plotdir=plotdir, daylong=daylong,
                     parallel_process=parallel_process, xcorr_func=xcorr_func,
                     concurrency=concurrency, cores=cores,
                     ignore_length=ignore_length,
@@ -908,9 +914,9 @@ class Tribe(object):
 
     def construct(self, method, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin="all", process_len=86400,
-                  all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  parallel=False, num_cores=False, skip_short_chans=False,
-                  save_progress=False, **kwargs):
+                  all_horiz=False, delayed=True, plot=False, plotdir=None, 
+                  min_snr=None, parallel=False, num_cores=False, 
+                  skip_short_chans=False, save_progress=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
@@ -951,6 +957,10 @@ class Tribe(object):
             time.
         :type plot: bool
         :param plot: Plot templates or not.
+        :type plotdir: str
+    ￼	:param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the 
+            figure will be shown on screen.
         :type min_snr: float
         :param min_snr:
             Minimum signal-to-noise ratio for a channel to be included in the
@@ -1014,7 +1024,7 @@ class Tribe(object):
             method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
             return_event=True, save_progress=save_progress, swin=swin,
-            process_len=process_len, all_horiz=all_horiz,
+            process_len=process_len, all_horiz=all_horiz, plotdir=plotdir,
             delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
             num_cores=num_cores, skip_short_chans=skip_short_chans,
             **kwargs)
