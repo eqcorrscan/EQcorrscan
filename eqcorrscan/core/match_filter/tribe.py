@@ -1011,7 +1011,7 @@ class Tribe(object):
         .. Note:: Templates will be named according to their start-time.
         """
         templates, catalog, process_lengths = template_gen.template_gen(
-            method=method, lowcut=lowcut, highcut=highcut,
+            method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
             return_event=True, save_progress=save_progress, swin=swin,
             process_len=process_len, all_horiz=all_horiz,

@@ -634,7 +634,7 @@ class Template(object):
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
         streams, events, process_lengths = template_gen.template_gen(
-            method=method, lowcut=lowcut, highcut=highcut,
+            method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
             return_event=True, swin=swin, process_len=process_len,
             all_horiz=all_horiz, delayed=delayed, plot=plot,
