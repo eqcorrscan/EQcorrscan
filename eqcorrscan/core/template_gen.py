@@ -815,13 +815,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             used_tr = True
         if not used_tr:
             Logger.warning('No pick for {0}'.format(tr.id))
-    if plot and plotdir and len(st1) > 0:
+    if plot:
         tplot(st1, background=stplot, picks=picks_copy, plotdir=plotdir)
         noise_plot(signal=st1, noise=noise, plotdir=plotdir)
-    elif plot and len(st1) > 0:
-        tplot(st1, background=stplot, picks=picks_copy, show=True)
-        noise_plot(signal=st1, noise=noise, show=True)
-    del(stplot)
+        del(stplot)
     return st1
 
 
