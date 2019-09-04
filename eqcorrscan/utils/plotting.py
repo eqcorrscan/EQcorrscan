@@ -1254,14 +1254,16 @@ def noise_plot(signal, noise, normalise=False, plotdir=None, **kwargs):
         if not os.path.isdir(plotdir):
             os.makedirs(plotdir)
         plotdir = "{}/{}".format(plotdir, plotname)
-        _finalise_figure(
-            fig=fig, save=True, show=False, savefile=plotdir,
-            title='SNR for ' + str(signal[0].stats.starttime), **kwargs)
+        title = 'SNR for ' + str(signal[0].stats.starttime)
+        kwargs.update({"savefile": plotdir, "save": True, "show": False,
+                      "title": title})
+        fig = _finalise_figure(fig=fig, **kwargs)
     else:
-        _finalise_figure(
-            fig=fig, show=True,
-            title='SNR for ' + str(signal[0].stats.starttime))
+        title = 'SNR for ' + str(signal[0].stats.starttime)
+        kwargs.update({"show": True, "title": title})
+        fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
+    return fig
 
 
 def pretty_template_plot(template, plotdir=None, size=(10.5, 7.5),
@@ -1418,19 +1420,20 @@ def pretty_template_plot(template, plotdir=None, size=(10.5, 7.5),
     plt.tight_layout()
     plt.subplots_adjust(hspace=0)
     plt.subplots_adjust(top=0.93)
+    title = 'Template for '+str(template[0].stats.starttime)
     if plotdir:
         plotname = '{}_template.png'.format(template[0].stats.starttime)
         if not os.path.isdir(plotdir):
             os.makedirs(plotdir)
         plotdir = '{}/{}'.format(plotdir, plotname)
-        _finalise_figure(
-            fig=fig, save=True, show=False, savefile=plotdir,
-            title='Template for '+str(template[0].stats.starttime), **kwargs)
+        kwargs.update({"save": True, "show": False, "savefile": plotdir,
+                       "title": title})
+        fig = _finalise_figure(fig=fig, **kwargs)
         # pragma: no cover
     else:
-        _finalise_figure(
-            fig=fig, show=True,
-            title='Template for '+str(template[0].stats.starttime))
+        kwargs.update({"show": True})
+        fig = _finalise_figure(fig=fig, **kwargs)
+    return fig
 
 
 def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
