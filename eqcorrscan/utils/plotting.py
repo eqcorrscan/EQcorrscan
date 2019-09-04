@@ -29,26 +29,50 @@ from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
 Logger = logging.getLogger(__name__)
 
 
+# A wrapper to add the same docs everywhere
+
+def additional_docstring(**kwargs):
+    def _wrapper(target):
+        target.__doc__ = target.__doc__.format(**kwargs)
+        return target
+    return _wrapper
+
+
+plotting_kwargs = """
+    :type title: str
+    :param title: Title of figure
+    :type show: bool
+    :param show: Whether to show the figure or not (defaults to True)
+    :type save: bool
+    :param save: Whether to save the figure or not (defaults to False)
+    :type savefile: str
+    :param savefile:
+        Filename to save figure to, if `save==True` (defaults to
+        "EQcorrscan_figure.png")
+    :type return_figure: bool
+    :param return_figure:
+        Whether to return the figure or not (defaults to True), if False
+        then the figure will be cleared and closed.
+    :type size: tuple of float
+    :param size: Figure size as (width, height) in inches. Defaults to
+        (10.5, 7.5)"""
+
+
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def _finalise_figure(fig, **kwargs):  # pragma: no cover
     """
     Internal function to wrap up a figure.
-
-    Possible arguments:
-    :type title: str
-    :type show: bool
-    :type save: bool
-    :type savefile: str
-    :type return_figure: bool
+    {plotting_kwargs}
     """
     import matplotlib.pyplot as plt
     
-    title = kwargs.get("title") or None
-    show = kwargs.get("show")
-    if show is None:
-        show = True
-    save = kwargs.get("save") or False
-    savefile = kwargs.get("savefile") or "EQcorrscan_figure.png"
-    return_fig = kwargs.get("return_figure") or False
+    title = kwargs.get("title")
+    show = kwargs.get("show", True)
+    save = kwargs.get("save", False)
+    savefile = kwargs.get("savefile", "EQcorrscan_figure.png")
+    return_fig = kwargs.get("return_figure", False)
+    size = kwargs.get("size", (10.5, 7.5))
+    fig.set_size_inches(size)
     if title:
         fig.suptitle(title)
     if save:
@@ -117,6 +141,7 @@ def chunk_data(tr, samp_rate, state='mean'):
     return trout
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, **kwargs):
     """
     Plot a template overlying an image aligned by correlation.
@@ -131,10 +156,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, **kwargs):
     :param cc: Cross-correlation at shift
     :type cc_vec: numpy.ndarray
     :param cc_vec: Cross-correlation vector.
-    :type save: bool
-    :param save: Whether to save the plot or not.
-    :type savefile: str
-    :param savefile: File name to save to
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -169,6 +191,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
     """
     Plot a seismogram, correlogram and histogram.
@@ -182,10 +205,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
     :param trace: A sample trace from the same time as cccsum
     :type threshold: float
     :param threshold: Detection threshold within cccsum
-    :type save: bool
-    :param save: If True will save and not plot to screen, vice-versa if False
-    :type savefile: str
-    :param savefile: Path to save figure to, only required if save=True
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -246,7 +266,8 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
     return fig
 
 
-def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def peaks_plot(data, starttime, samp_rate, peaks=None, **kwargs):
     """
     Plot peaks to check that the peak finding routine is running correctly.
 
@@ -260,6 +281,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
     :param samp_rate: Sampling rate of data in Hz
     :type peaks: list
     :param peaks: List of tuples of peak locations and amplitudes (loc, amp)
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -293,6 +315,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
                    samp_rate=10, peaks=peaks)
     """
     import matplotlib.pyplot as plt
+    peaks = peaks or [(0, 0)]
     npts = len(data)
     t = np.arange(npts, dtype=np.float32) / (samp_rate * 3600)
     fig = plt.figure()
@@ -310,6 +333,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=[(0, 0)], **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def cumulative_detections(dates=None, template_names=None, detections=None,
                           plot_grouped=False, group_name=None, rate=False,
                           binsize=None, plot_legend=True, ax=None, **kwargs):
@@ -333,6 +357,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
         Plot detections for each template individually, or group them all
         together - set to False (plot template detections individually) by
         default.
+    :type group_name: str
+    :param group_name:
+        Name to put in legend for the group, only used if `plot_grouped=True`
     :type rate: bool
     :param rate:
         Whether or not to plot the rate of detection per day. Only works for
@@ -342,6 +369,9 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     :type plot_legend: bool
     :param plot_legend:
         Specify whether to plot legend of template names. Defaults to True.
+    :type ax: `matplotlib.pyplot.Axis`
+    :param ax: Axis to plot into, if you want to re-use a figure.
+    {plotting_kwargs}
 
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -541,11 +571,13 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def threeD_gridplot(nodes, **kwargs):
     """Plot in a series of grid points in 3D.
 
     :type nodes: list
     :param nodes: List of tuples of the form (lat, long, depth)
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -582,6 +614,7 @@ def threeD_gridplot(nodes, **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def multi_event_singlechan(streams, catalog, station, channel,
                            clip=10.0, pre_pick=2.0,
                            freqmin=False, freqmax=False, realign=False,
@@ -626,6 +659,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
     :type PWS: bool
     :param PWS: compute Phase Weighted Stack, if False, will compute linear \
         stack for alignment.
+    {plotting_kwargs}
 
     :returns: Aligned and cut :class:`obspy.core.trace.Trace`
     :rtype: list
@@ -749,8 +783,8 @@ def multi_event_singlechan(streams, catalog, station, channel,
     return traces, short_cat, fig
 
 
-def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
-                     **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def multi_trace_plot(traces, corr=True, stack='linstack', **kwargs):
     """
     Plot multiple traces (usually from the same station) on the same plot.
 
@@ -767,15 +801,14 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     :param stack:
         To plot the stack as the first trace or not, select type of
          stack: 'linstack' or 'PWS', or None.
-    :type size: tuple
-    :param size: Size of figure.
+    {plotting_kwargs}
     """
     import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import normxcorr2
     n_axes = len(traces)
     if stack in ['linstack', 'PWS']:
         n_axes += 1
-    fig, axes = plt.subplots(n_axes, 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(n_axes, 1, sharex=True)
     if len(traces) > 1:
         axes = axes.ravel()
     traces = [(trace, trace.stats.starttime.datetime) for trace in traces]
@@ -793,18 +826,19 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
         axes[ind].plot(x, y, 'k', linewidth=1.1)
         axes[ind].yaxis.set_ticks([])
     traces = [Stream(trace) for trace in traces]
-    if stack == 'PWS':
-        stacked = PWS_stack(traces)
-    elif stack == 'linstack':
-        stacked = linstack(traces)
     if stack in ['linstack', 'PWS']:
-        tr = stacked[0]
+        if stack == "PWS":
+            tr = PWS_stack(traces)[0]
+        else:
+            tr = linstack(traces)[0]
         y = tr.data
         x = np.arange(len(y))
         x = x / tr.stats.sampling_rate
         axes[0].plot(x, y, 'r', linewidth=2.0)
         axes[0].set_ylabel('Stack', rotation=0)
         axes[0].yaxis.set_ticks([])
+    else:
+        tr = traces[0]
     for i, slave in enumerate(traces):
         if corr:
             cc = normxcorr2(tr.data, slave[0].data)
@@ -826,8 +860,9 @@ def multi_trace_plot(traces, corr=True, stack='linstack', size=(7, 12),
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def detection_multiplot(stream, template, times, streamcolour='k',
-                        templatecolour='r', size=(10.5, 7.5), **kwargs):
+                        templatecolour='r', **kwargs):
     """
     Plot a stream of data with a template on top of it at detection times.
 
@@ -841,8 +876,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     :param streamcolour: String of matplotlib colour types for the stream
     :type templatecolour: str
     :param templatecolour: Colour to plot the template in.
-    :type size: tuple
-    :param size: Figure size.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -910,7 +944,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                  if (tr.stats.station,
                      tr.stats.channel) in template_stachans])
     ntraces = len(temp)
-    fig, axes = plt.subplots(ntraces, 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(ntraces, 1, sharex=True)
     if len(temp) > 1:
         axes = axes.ravel()
     mintime = min([tr.stats.starttime for tr in temp])
@@ -948,15 +982,14 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                               for j in range(len(template_tr.data))]
             # Normalize the template according to the data detected in
             try:
-                normalizer = max(image.data[int((template_times[0] -
-                                                image_times[0]).
-                                                total_seconds() /
-                                                image.stats.delta):
-                                            int((template_times[-1] -
-                                                 image_times[0]).
-                                                total_seconds() /
-                                                image.stats.delta)] /
-                                 max(image.data))
+                normalizer = max(
+                    image.data[int(
+                        (template_times[0] - image_times[0]
+                         ).total_seconds() / image.stats.delta):
+                               int(
+                        (template_times[-1] - image_times[0]
+                         ).total_seconds() / image.stats.delta)
+                    ] / max(image.data))
             except ValueError:
                 # Occurs when there is no data in the image at this time...
                 normalizer = max(image.data)
@@ -978,7 +1011,8 @@ def detection_multiplot(stream, template, times, streamcolour='k',
     return fig
 
 
-def interev_mag(times, mags, size=(10.5, 7.5), **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def interev_mag(times, mags, **kwargs):
     """
     Plot inter-event times against magnitude.
 
@@ -986,8 +1020,7 @@ def interev_mag(times, mags, size=(10.5, 7.5), **kwargs):
     :param times: list of the detection times, must be sorted the same as mags
     :type mags: list
     :param mags: list of magnitudes
-    :type size: tuple
-    :param size: Size of figure in inches.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1023,7 +1056,7 @@ def interev_mag(times, mags, size=(10.5, 7.5), **kwargs):
     times = [x[0] for x in info]
     mags = [x[1] for x in info]
     # Make two subplots next to each other of time before and time after
-    fig, axes = plt.subplots(1, 2, sharey=True, figsize=size)
+    fig, axes = plt.subplots(1, 2, sharey=True)
     axes = axes.ravel()
     pre_times = []
     post_times = []
@@ -1047,7 +1080,8 @@ def interev_mag(times, mags, size=(10.5, 7.5), **kwargs):
     return fig
 
 
-def obspy_3d_plot(inventory, catalog, size=(10.5, 7.5), **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def obspy_3d_plot(inventory, catalog, **kwargs):
     """
     Plot obspy Inventory and obspy Catalog classes in three dimensions.
 
@@ -1055,13 +1089,7 @@ def obspy_3d_plot(inventory, catalog, size=(10.5, 7.5), **kwargs):
     :param inventory: Obspy inventory class containing station metadata
     :type catalog: obspy.core.event.catalog.Catalog
     :param catalog: Obspy catalog class containing event metadata
-    :type save: bool
-    :param save: False will plot to screen, true will save plot and not show \
-        to screen.
-    :type savefile: str
-    :param savefile: Filename to save to, required for save=True
-    :type size: tuple
-    :param size: Size of figure in inches.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1112,24 +1140,25 @@ def obspy_3d_plot(inventory, catalog, size=(10.5, 7.5), **kwargs):
                 all_stas.append((sta.latitude, sta.longitude,
                                  sta.elevation / 1000))
     fig = threeD_seismplot(
-        stations=all_stas, nodes=nodes, size=size, **kwargs)
+        stations=all_stas, nodes=nodes, **kwargs)
     return fig
 
 
-def threeD_seismplot(stations, nodes, size=(10.5, 7.5), **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def threeD_seismplot(stations, nodes, **kwargs):
     """
     Plot seismicity and stations in a 3D, movable, zoomable space.
 
     Uses matplotlibs Axes3D package.
 
     :type stations: list
-    :param stations: list of one tuple per station of (lat, long, elevation), \
-        with up positive.
-    :type nodes: list
-    :param nodes: list of one tuple per event of (lat, long, depth) with down \
+    :param stations:
+        list of one tuple per station of (lat, long, elevation), with up
         positive.
-    :type size: tuple
-    :param size: Size of figure in inches.
+    :type nodes: list
+    :param nodes:
+        list of one tuple per event of (lat, long, depth) with down positive.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1156,7 +1185,7 @@ def threeD_seismplot(stations, nodes, size=(10.5, 7.5), **kwargs):
         _stalongs.append(stalong)
     stalongs = _stalongs
     evdepths = [-1 * depth for depth in evdepths]
-    fig = plt.figure(figsize=size)
+    fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(evlats, evlongs, evdepths, marker="x", c="k",
                label='Hypocenters')
@@ -1172,6 +1201,7 @@ def threeD_seismplot(stations, nodes, size=(10.5, 7.5), **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def noise_plot(signal, noise, normalise=False, **kwargs):
     """
     Plot signal and noise fourier transforms and the difference.
@@ -1182,6 +1212,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     :param noise: Stream of the "noise" window.
     :type normalise: bool
     :param normalise: Whether to normalise the data before plotting or not.
+    {plotting_kwargs}
 
     :return: `matplotlib.pyplot.Figure`
     """
@@ -1250,19 +1281,18 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     return fig
 
 
-def pretty_template_plot(template, size=(10.5, 7.5), background=False,
-                         picks=False, **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def pretty_template_plot(template, background=False, picks=False, **kwargs):
     """
     Plot of a single template, possibly within background data.
 
     :type template: obspy.core.stream.Stream
     :param template: Template stream to plot
-    :type size: tuple
-    :param size: tuple of plot size
     :type background: obspy.core.stream.stream
     :param background: Stream to plot the template within.
     :type picks: list
     :param picks: List of :class:`obspy.core.event.origin.Pick` picks.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1317,7 +1347,7 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
                              picks=event.picks)
     """
     import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
     if not background:
@@ -1413,7 +1443,8 @@ def pretty_template_plot(template, size=(10.5, 7.5), background=False,
     return fig
 
 
-def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def plot_repicked(template, picks, det_stream, **kwargs):
     """
     Plot a template over a detected stream, with picks corrected by lag-calc.
 
@@ -1427,7 +1458,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
     :param det_stream: Stream to plot in the background, should be the \
         detection, data should encompass the time the picks are made.
     :type det_stream: obspy.core.stream.Stream
-    :param size: Plot size.
+    {plotting_kwargs}
 
     :return: Figure handle which can be edited.
     :rtype: :class:`matplotlib.figure.Figure`
@@ -1435,7 +1466,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
     .. image:: ../../plots/plot_repicked.png
     """
     import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(len(template), 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
     mintime = det_stream.sort(['starttime'])[0].stats.starttime
@@ -1485,8 +1516,8 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
         bx += bdelay
         axis.plot(bx, by, 'k', linewidth=1.5)
         if len(tr_picks) > 0:
-            template_line, = axis.plot(x, y, 'r', linewidth=1.6,
-                                       label='Template')
+            template_line, = axis.plot(
+                x, y, 'r', linewidth=1.6, label='Template')
             if not pick.phase_hint:
                 pcolor = 'k'
                 label = 'Unknown pick'
@@ -1538,6 +1569,7 @@ def plot_repicked(template, picks, det_stream, size=(10.5, 7.5), **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def svd_plot(svstreams, svalues, stachans, **kwargs):
     """
     Plot singular vectors from the :mod:`eqcorrscan.utils.clustering` routines.
@@ -1553,6 +1585,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
         List of floats of the singular values corresponding to the SVStreams
     :type stachans: list
     :param stachans: List of station.channel
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1622,8 +1655,8 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
     return figures
 
 
-def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
-                    **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def plot_synth_real(real_template, synthetic, channels=False, **kwargs):
     """
     Plot multiple channels of data for real data and synthetic.
 
@@ -1634,8 +1667,7 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
     :type channels: list
     :param channels: List of tuples of (station, channel) to plot, default is \
             False, which plots all.
-    :type size: tuple
-    :param size: Plot size.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1692,7 +1724,7 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
     # Extract the station and channels
     stachans = list(set([(tr.stats.station, tr.stats.channel)
                          for tr in real_template]))
-    fig, axes = plt.subplots(len(stachans), 1, sharex=True, figsize=size)
+    fig, axes = plt.subplots(len(stachans), 1, sharex=True)
     if len(stachans) > 1:
         axes = axes.ravel()
     for i, stachan in enumerate(stachans):
@@ -1729,10 +1761,13 @@ def plot_synth_real(real_template, synthetic, channels=False, size=(5, 10),
         axes[-1].set_xlabel('Time (s)')
     else:
         axes.set_xlabel('Time (s)')
+    if "size" not in kwargs.keys():
+        kwargs.update({"size": (5, 10)})  # Backwards compat
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     """
     Plot a frequency-magnitude histogram and cumulative density plot.
@@ -1749,6 +1784,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     :param max_mag: Maximum magnitude to try and fit a b-value to
     :type binsize: float
     :param binsize: Width of histogram bins, defaults to 0.2
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1834,8 +1870,9 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
-               size=(10, 13), fig=None, **kwargs):
+               fig=None, **kwargs):
     """
     Plots seismic data with spectrogram behind.
 
@@ -1860,9 +1897,8 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
     :param tralpha: Opacity level for the seismogram, from transparent (0.0) \
         to opaque (1.0).
     :type size: tuple
-    :param size: Plot size, tuple of floats, inches
-    :type fig: matplotlib.figure.Figure
     :param fig: Figure to plot onto, defaults to self generating.
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1910,8 +1946,9 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
                 transform=ax2.transAxes)
     ax.set_xlabel('Time (s)')
     fig.subplots_adjust(hspace=0)
-    fig.set_size_inches(w=size[0], h=size[1], forward=True)
     fig.text(0.04, 0.5, 'Frequency (Hz)', va='center', rotation='vertical')
+    if "size" not in kwargs.keys():
+        kwargs.update({"size": (10, 13)})  # backwards compat
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 
@@ -1969,7 +2006,8 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
         return ax1, ax2
 
 
-def subspace_detector_plot(detector, stachans, size, **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def subspace_detector_plot(detector, stachans, **kwargs):
     """
     Plotting for the subspace detector class.
 
@@ -1984,8 +2022,7 @@ def subspace_detector_plot(detector, stachans, size, **kwargs):
     :param stachans: List of tuples of (station, channel) to use.  Can set\
         to 'all' to use all the station-channel pairs available. If \
         detector is multiplexed, will just plot that.
-    :type size: tuple
-    :param size: Figure size.
+    {plotting_kwargs}
 
     :returns: Figure
     :rtype: matplotlib.pyplot.Figure
@@ -2028,7 +2065,7 @@ def subspace_detector_plot(detector, stachans, size, **kwargs):
     else:
         nrows = detector.dimension
     fig, axes = plt.subplots(nrows=nrows, ncols=len(stachans),
-                             sharex=True, sharey=True, figsize=size)
+                             sharex=True, sharey=True)
     x = np.arange(len(detector.u[0]), dtype=np.float32)
     if detector.multiplex:
         x /= len(detector.stachans) * detector.sampling_rate
@@ -2058,7 +2095,8 @@ def subspace_detector_plot(detector, stachans, size, **kwargs):
     return fig
 
 
-def subspace_fc_plot(detector, stachans, size, **kwargs):
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def subspace_fc_plot(detector, stachans, **kwargs):
     """
     Plot the fractional energy capture of the detector for all events in
     the design set
@@ -2070,8 +2108,7 @@ def subspace_fc_plot(detector, stachans, size, **kwargs):
     :param stachans: List of tuples of (station, channel) to use.  Can set\
         to 'all' to use all the station-channel pairs available. If \
         detector is multiplexed, will just plot that.
-    :type size: tuple
-    :param size: Figure size.
+    {plotting_kwargs}
 
     :returns: Figure
     :rtype: matplotlib.pyplot.Figure
@@ -2118,7 +2155,7 @@ def subspace_fc_plot(detector, stachans, size, **kwargs):
                     key=lambda x: abs((np.floor(np.sqrt(len(stachans))) - x)))
     nrows = len(stachans) // ncols
     fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True,
-                             sharey=True, figsize=size, squeeze=False)
+                             sharey=True, squeeze=False)
     for column, axis in enumerate(axes.reshape(-1)):
         axis.set_title('.'.join(stachans[column]))
         sig = diagsvd(detector.sigma[column], detector.u[column].shape[0],

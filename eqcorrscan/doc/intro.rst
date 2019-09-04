@@ -1,39 +1,10 @@
 Introduction to the EQcorrscan package
 ======================================
 
-This document is designed to give you an overview of the capabilities and
-implementation of the EQcorrscan Python package.
-
-Why EQcorrscan?
----------------
-EQcorrscan is designed to compute detections of earthquakes, or any seismic signal
-(explosions work *really* well) using more advanced routines than standard
-amplitude-ratio methods.
-
-The authors of EQcorrscan foresee this project as an open repository for the
-development of software for the detection and analysis of repeating and
-near-repeating earthquakes.  This repository will continue to grow and develop
-and any and all help/criticism will be appreciated.
-
-There are a lot of things that could be added to this project - if you want to
-get involved a good place to start would be to contribute tests and
-documentation.
-
-
 Supported environments
 ----------------------
 
-We support Linux, OSX and Windows environments running Python 2.7 and 3.x.
-
-We do **not** support Python 2.6.
-
-We will stop support for Python 2.7 in a forthcoming release, for more information
-see |#242|.
-
-.. |#242| raw:: html
-
-   <a href="https://github.com/eqcorrscan/EQcorrscan/issues/242" target="_blank">issue #242</a>
-
+We support Linux, OSX and Windows environments running Python 3.x.
 
 Functionality
 -------------
@@ -45,25 +16,15 @@ compute cross-channel correlations from these templates
 corrected pick-times (:doc:`lag_calc </submodules/core.lag_calc>`),
 and run subspace detection (:doc:`subspace </submodules/core.subspace>`).
 
-The match_filter submodules have been designed with parallel
-computing in mind, to the extent that the more cores and machines you have
-running them (generally) the better.  These rely on the python multiprocessing
-module, and some C extensions using openMP to handle parallelisation at
-lower-levels.
-
 .. _RunningTests:
 
 Running tests
 -------------
 
-One of the main goals of EQcorrscan is to improve reliability and reproducibility
-of earthquake detection.  To this end, EQcorrscan has a set of tests (you
-can check how much of our codebase if tested by looked at the badges in the
-|github| repository).  You can also run these tests yourself locally to ensure
-that everything runs as you would expect in your environment.  Although every
-effort has been made to ensure these tests run smoothly on all supported environments
-(using the ci bots), if you do find any issues, please let us know on the
-|github| page.
+You can run tests yourself locally to ensure that everything runs as you would expect
+in your environment.  Although we try to ensure that these tests run smoothly on all
+supported environments (using the ci bots), if you do find any issues, please let us
+know on the |github| page.
 
 .. |github| raw:: html
 
