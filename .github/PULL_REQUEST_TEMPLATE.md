@@ -1,4 +1,7 @@
+<!--
 Thank your for contributing to EQcorrscan!
+Please fill out the sections below.
+-->
 
 ### What does this PR do?
 
