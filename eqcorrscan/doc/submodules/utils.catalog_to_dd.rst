@@ -12,11 +12,12 @@ catalog_to_dd
        :toctree: autogen
        :nosignatures:
 
-       readSTATION0
+       compute_differential_times
        read_phase
-       sfiles_to_event
        write_catalog
        write_correlations
        write_event
+       write_phase
+       write_station
 
     .. comment to end block

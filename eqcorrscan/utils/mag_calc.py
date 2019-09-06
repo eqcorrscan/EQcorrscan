@@ -499,6 +499,9 @@ def _snr(tr, noise_window, signal_window):
 
     noise_amp = _rms(
         tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
+    if np.isnan(noise_amp):
+        Logger.info("Noise amplitude is nan, setting to 1")
+        noise_amp = 1.
     try:
         signal_amp = tr.slice(
             starttime=signal_window[0], endtime=signal_window[1]).data.max()
@@ -564,8 +567,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
             tr1, (pick1.time + noise_window[0], pick1.time + noise_window[1]),
             (pick1.time + signal_window[0], pick1.time + signal_window[1]))
         if np.isnan(snr1) or snr1 <= min_snr:
-            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
-                snr1, min_snr, tr1.id))
+            Logger.info(
+                "SNR of {0} is below min_snr ({1}) for {2} in st1".format(
+                    snr1, min_snr, tr1.id))
             continue
         tr2 = [tr for tr in st2 if tr.id == tr1.id]
         if len(tr2) == 0:
@@ -580,8 +584,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
             tr2, (pick2.time + noise_window[0], pick2.time + noise_window[1]),
             (pick2.time + signal_window[0], pick2.time + signal_window[1]))
         if np.isnan(snr2) or snr2 <= min_snr:
-            Logger.info("SNR of {0} is below min_snr ({1}) for {2}".format(
-                snr2, min_snr, tr2.id))
+            Logger.info(
+                "SNR of {0} is below min_snr ({1}) for {2} in st2".format(
+                    snr2, min_snr, tr2.id))
             continue
         # If we get here, actually compute the ratio in the signal windows
         amp1 = tr1.slice(starttime=pick1.time + signal_window[0],
