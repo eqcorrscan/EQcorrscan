@@ -14,7 +14,7 @@ from obspy.clients.fdsn import Client
 
 from eqcorrscan.utils import mag_calc
 from eqcorrscan.utils.mag_calc import (
-    dist_calc, _sim_WA, _max_p2t,_pairwise, svd_moments, amp_pick_event,
+    dist_calc, _sim_WA, _max_p2t, _pairwise, svd_moments, amp_pick_event,
     _snr, relative_amplitude, relative_magnitude)
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler

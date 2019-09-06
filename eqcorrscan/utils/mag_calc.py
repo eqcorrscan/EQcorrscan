@@ -374,11 +374,9 @@ def _get_pick_for_station(event, station, use_s_picks):
     return None
 
 
-def _snr(
-    tr: Trace,
-    noise_window: Tuple[UTCDateTime, UTCDateTime],
-    signal_window: Tuple[UTCDateTime, UTCDateTime]
-) -> Tuple[float, float]:
+def _snr(tr: Trace, noise_window: Tuple[UTCDateTime, UTCDateTime],
+         signal_window: Tuple[UTCDateTime, UTCDateTime]
+         ) -> Tuple[float, float]:
     """
     Compute ratio of maximum signal amplitude to rms noise amplitude.
 
@@ -405,14 +403,10 @@ def _snr(
     return signal_amp / noise_amp
 
 
-def _get_signal_and_noise(
-    stream: Stream,
-    event: Event,
-    seed_id: str,
-    noise_window: Tuple[float, float],
-    signal_window: Tuple[float, float],
-    use_s_picks: bool
-) -> Tuple[float, float, float]:
+def _get_signal_and_noise(stream: Stream, event: Event, seed_id: str,
+                          noise_window: Tuple[float, float],
+                          signal_window: Tuple[float, float],
+                          use_s_picks: bool) -> Tuple[float, float, float]:
     """
     Get noise and signal amplitudes and signal standard deviation for an event
     on a specific channel.
