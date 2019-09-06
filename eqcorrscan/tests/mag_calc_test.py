@@ -45,7 +45,7 @@ class TestMagCalcMethods(unittest.TestCase):
     @pytest.mark.network
     @pytest.mark.flaky(reruns=2)
     def test_sim_WA(self):
-        """Test feeding both PAZ and seedresp."""
+        """ Test simulating a Wood Anderson instrument. """
         t1 = UTCDateTime("2010-09-3T16:30:00.000")
         t2 = UTCDateTime("2010-09-3T17:00:00.000")
         fdsn_client = Client('IRIS')
