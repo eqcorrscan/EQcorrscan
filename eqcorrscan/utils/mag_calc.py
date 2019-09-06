@@ -24,8 +24,7 @@ from scipy.signal import iirfilter
 from collections import Counter
 from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
-from obspy import UTCDateTime, Trace, Stream
-from obspy.core.event import Amplitude, Pick, WaveformStreamID, Event
+from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
