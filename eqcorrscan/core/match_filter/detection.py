@@ -203,7 +203,7 @@ class Detection(object):
             _f.write(self._print_str() + '\n')
 
     def _calculate_event(self, template=None, template_st=None,
-                         estimate_origin=True):
+                         estimate_origin=True, correct_prepick=True):
         """
         Calculate an event for this detection using a given template.
 
@@ -217,6 +217,10 @@ class Detection(object):
         :param estimate_origin:
             Whether to include an estimate of the origin based on the template
             origin.
+        :type correct_prepick: bool
+        :param correct_prepick:
+            Whether to apply the prepick correction defined in the template.
+            Only applicable if template is not None
 
         .. rubric:: Note
             Works in place on Detection - over-writes previous events.
@@ -247,7 +251,10 @@ class Detection(object):
                     ' '.join([str(pair) for pair in self.chans]))))
         if template is not None:
             template_st = template.st
-            template_prepick = template.prepick
+            if correct_prepick:
+                template_prepick = template.prepick
+            else:
+                template_prepick = 0
             template_picks = template.event.picks
         else:
             template_prepick = 0

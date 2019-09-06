@@ -828,7 +828,8 @@ def _read_family(fname, all_cat, template, encoding="UTF8",
         detection = Detection(**det_dict)
         if gen_event:
             detection._calculate_event(
-                template=template, estimate_origin=estimate_origin)
+                template=template, estimate_origin=estimate_origin,
+                correct_prepick=False)
         detections.append(detection)
     return detections
 
