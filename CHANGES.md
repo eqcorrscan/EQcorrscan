@@ -1,4 +1,7 @@
 ## Current
+* Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
+  alleviate issue related to large-prime length transforms.  This requires an
+  additional dependency, but EQcorrscan already depends on FFTW itself.
 * Refactor of catalog_to_dd functions:
   - Speed-ups, using new correlation functions and better resource management
   - Removed enforcement of seisan, arguments are now standard obspy objects.
@@ -88,6 +91,10 @@
 * Add warning about unused data when using `Tribe.detect` methods with data that
   do not fit into chunks. Fixes #291.
 * Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
+* `utils.pre_processing` now uses the `.interpolate` method rather than
+  `.resample` to change the sampling rate of data. This is generally more
+  stable and faster than resampling in the frequency domain, but will likely
+  change the quality of correlations.
 * Removed depreciated `template_gen` functions and `bright_lights` and
   `seismo_logs`. See #315
 

@@ -208,9 +208,12 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     master_stream = _prepare_stream(
         stream=stream_dict[master.resource_id.id], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
+    available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
     master_seed_ids = {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
-        for pick in master.picks if pick.phase_hint[0] in "PS"}
+        for pick in master.picks if
+        pick.phase_hint[0] in "PS" and
+        pick.waveform_id.get_seed_string() in available_seed_ids}
     # Dictionary of travel-times for master keyed by {station}_{phase_hint}
     master_tts = dict()
     master_origin_time = (master.preferred_origin() or master.origins[0]).time
@@ -241,9 +244,15 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             delta = 1.0 / sampling_rate
             _master_stream = master_stream[phase_hint].select(
                 sampling_rate=sampling_rate)
-            _matched_streams = {
-                key: value[phase_hint].select(sampling_rate=sampling_rate)
-                for key, value in matched_streams.items()}
+            _matched_streams = dict()
+            for key, value in matched_streams.items():
+                _st = value[phase_hint].select(sampling_rate=sampling_rate)
+                if len(_st) > 0:
+                    _matched_streams.update({key: _st})
+            if len(_matched_streams) == 0:
+                Logger.info("No matching data for {0}, {1} phase".format(
+                    master.resource_id.id, phase_hint))
+                continue
             # Check lengths
             master_length = Counter(
                 (tr.stats.npts for tr in _master_stream)).most_common(1)[0][0]
