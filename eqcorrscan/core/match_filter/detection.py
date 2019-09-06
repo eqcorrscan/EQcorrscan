@@ -264,7 +264,7 @@ class Detection(object):
                 continue  # The channel contains no data and was not used.
             else:
                 pick_time = self.detect_time + (
-                        tr.stats.starttime - min_template_tm)
+                    tr.stats.starttime - min_template_tm)
                 pick_time += template_prepick
                 new_pick = Pick(
                     time=pick_time, waveform_id=WaveformStreamID(

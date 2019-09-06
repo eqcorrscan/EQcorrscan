@@ -770,8 +770,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
                 assert np.allclose(
-                    float(ev.comments[0].text.split("=")[-1]),
-                    float(chained_ev.comments[0].text.split("=")[-1]),
+                    float(ev.comments[1].text.split("=")[-1]),
+                    float(chained_ev.comments[1].text.split("=")[-1]),
                     atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
@@ -992,11 +992,12 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template=template, estimate_origin=False)
+        # Picks are adjusted by prepick
+        for pick in test_detection_altered.event.picks:
+            pick.time -= template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template_st=template.st, estimate_origin=False)
-        for p in test_detection_altered.event.picks:
-            p.time += template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         # Check that detection is left alone if wrong template given
         test_detection_altered._calculate_event(
@@ -1190,6 +1191,7 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(len(lines), 6)
         os.remove("test_party.csv")
 
+    # TODO: Track down where prepick has been incorrectly applied.
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_out_no_cat.tgz'):
