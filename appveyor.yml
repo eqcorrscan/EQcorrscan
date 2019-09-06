@@ -42,7 +42,7 @@ install:
   #      else
   #        PYFLAKES="pyflakes=0.9.0"
   #      fi
-  - "conda install -q --yes pip obspy numpy=1.14 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml pyfftw"
+  - "conda install -q --yes pip obspy numpy=1.14 scipy>=0.18 matplotlib mock flake8 pyflakes cython h5py pyproj bottleneck lxml"
   # additional dependecies
   - "pip install pyimgur"
 
@@ -53,6 +53,7 @@ install:
   - "conda list"
   # Copy the windows fftw header file
   - "cp misc/appveyor/fftw3.h eqcorrscan/utils/src/fftw3.h"
+  - "pip install pyfftw"
 
 # Not a .NET project
 build: false
