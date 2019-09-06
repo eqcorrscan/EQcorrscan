@@ -236,7 +236,7 @@ class Detection(object):
         ev.creation_info = CreationInfo(
             author='EQcorrscan', creation_time=UTCDateTime())
         ev.comments.append(
-            Comment(test="Template: {0}".format(self.template_name)))
+            Comment(text="Template: {0}".format(self.template_name)))
         ev.comments.append(
             Comment(text='threshold={0}'.format(self.threshold)))
         ev.comments.append(

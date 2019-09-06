@@ -412,6 +412,7 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     pick = _get_pick_for_station(
         event=event, station=station, use_s_picks=use_s_picks)
     if pick is None:
+        Logger.error("No pick for {0}".format(station))
         return None, None, None
     tr = stream.select(id=seed_id).merge()
     if len(tr) == 0:
@@ -420,6 +421,8 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     noise_amp = _rms(tr.slice(
         starttime=pick.time + noise_window[0],
         endtime=pick.time + noise_window[1]).data)
+    if np.isnan(noise_amp):
+        noise_amp = None
     signal = tr.slice(
         starttime=pick.time + signal_window[0],
         endtime=pick.time + signal_window[1]).data
@@ -495,8 +498,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
             continue
         snr1 = np.nan_to_num(signal1 / noise1)
         snr2 = np.nan_to_num(signal2 / noise2)
-        if snr1 <= min_snr or snr2 <= min_snr:
-            Logger.info("SNR too low for {0}".format(seed_id))
+        if snr1 < min_snr or snr2 < min_snr:
+            Logger.info("SNR (event1: {0:.2f}, event2: {1:.2f} too low "
+                        "for {2}".format(snr1, snr2, seed_id))
             continue
         ratio = std2 / std1
         Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(

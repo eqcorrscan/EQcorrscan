@@ -769,8 +769,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     for p in chained_ev_pick_corrs]
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                self.assertEqual(ev.resource_id.id[0:-5],
-                                 chained_ev.resource_id.id[0:-5])
                 assert np.allclose(
                     float(ev.comments[0].text.split("=")[-1]),
                     float(chained_ev.comments[0].text.split("=")[-1]),
@@ -791,7 +789,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
             template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Detected using template" in c.text][0]
+                           if "Template" in c.text][0]
             template = [fam.template for fam in self.party
                         if fam.template.name == template_id][0]
             self.assertAlmostEqual(
@@ -809,8 +807,10 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(catalog), 4)
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
+            print(event)
+            print(event.comments)
             template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Detected using template" in c.text][0]
+                           if "Template" in c.text][0]
             template = [fam.template for fam in self.party
                         if fam.template.name == template_id][0]
             self.assertAlmostEqual(
