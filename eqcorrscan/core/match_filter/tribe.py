@@ -805,7 +805,7 @@ class Tribe(object):
                         "Downloaded data for {0} traces".format(len(st)))
                     break
                 except FDSNException as e:
-                    if "Split the request in smaller parts" in " ".join(e.args):
+                    if "Split the request in smaller" in " ".join(e.args):
                         Logger.warning(
                             "Datacentre does not support large requests: "
                             "splitting request into smaller chunks")

@@ -855,7 +855,8 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
             template_channel = template.select(id=seed_id)
             if len(template_channel) <= channel_index:
                 out_template[channel_number].data = nan_channel
-                out_template[channel_number].stats.starttime = template_starttime
+                out_template[channel_number].stats.starttime = \
+                    template_starttime
             else:
                 out_template[channel_number] = template_channel[channel_index]
         _out.update({template_name: out_template})

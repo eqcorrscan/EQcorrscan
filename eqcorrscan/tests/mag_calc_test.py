@@ -9,7 +9,7 @@ import glob
 import logging
 
 from obspy.core.event import Event, Pick, WaveformStreamID
-from obspy import UTCDateTime, read, read_events, Trace
+from obspy import UTCDateTime, read, Trace
 from obspy.clients.fdsn import Client
 
 from eqcorrscan.utils import mag_calc

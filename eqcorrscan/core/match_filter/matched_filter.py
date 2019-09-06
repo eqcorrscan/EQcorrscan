@@ -11,7 +11,6 @@ with data and output the detections.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-import copy
 import logging
 from timeit import default_timer
 

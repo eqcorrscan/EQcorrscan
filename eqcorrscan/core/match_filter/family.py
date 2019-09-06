@@ -598,7 +598,6 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir)
-        catalog = Catalog()
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
                 pick.time += self.template.prepick

@@ -52,8 +52,8 @@ class Template(object):
         The high-cut filter used to achieve st (float, Hz)
     :type samp_rate: float
     :param samp_rate:
-        The Sampling-rate of the template (float, Hz) - note that this should be the
-        same as the sampling-rate of all traces in st.
+        The Sampling-rate of the template (float, Hz) - note that this should
+        be the same as the sampling-rate of all traces in st.
     :type filt_order: int
     :param filt_order:
         The order of the filter applied to achieve st (int), see pre-processing
@@ -65,7 +65,8 @@ class Template(object):
         process_length would be 86400.0 (float)
     :type prepick: float
     :param prepick:
-        The time before picks that waveforms were cut to make st (seconds, float)
+        The time before picks that waveforms were cut to make st
+        (seconds, float)
     :type event: `obspy.core.event.Event`
     :param event:
         The Event associated with the template (obspy.core.event.Event)

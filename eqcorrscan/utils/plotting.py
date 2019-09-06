@@ -65,7 +65,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     {plotting_kwargs}
     """
     import matplotlib.pyplot as plt
-    
+
     title = kwargs.get("title")
     show = kwargs.get("show", True)
     save = kwargs.get("save", False)
