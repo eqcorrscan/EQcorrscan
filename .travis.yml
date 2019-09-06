@@ -46,7 +46,7 @@ install:
   - conda update -q conda
   - conda info -a
   - echo $PYTHON_VERSION
-  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy=1.14 scipy matplotlib obspy flake8 mock coverage bottleneck pyproj
+  - conda create -q -n test-environment python=$PYTHON_VERSION colorama numpy=1.14 scipy matplotlib obspy flake8 mock coverage bottleneck pyproj pyfftw
   - source activate test-environment
   - conda install h5py
   - if [ "$MKL" == "1" ]; then conda install -q mkl mkl-include; fi

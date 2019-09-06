@@ -1,4 +1,7 @@
 ## Current
+* Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
+  alleviate issue related to large-prime length transforms.  This requires an
+  additional dependency, but EQcorrscan already depends on FFTW itself.
 * Refactor of catalog_to_dd functions:
   - Speed-ups, using new correlation functions and better resource management
   - Removed enforcement of seisan, arguments are now standard obspy objects.
