@@ -612,8 +612,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     return tr
 
 
-def _resample(tr, sampling_rate, window='hanning', no_filter=True,
-              strict_length=False, threads=1):
+def _resample(tr, sampling_rate, threads=1):
     """
     Provide a pyfftw version of obspy's trace resampling.  This code is
     modified from obspy's Trace.resample method.
@@ -623,22 +622,6 @@ def _resample(tr, sampling_rate, window='hanning', no_filter=True,
     from pyfftw.interfaces.scipy_fftpack import rfft, irfft
 
     factor = tr.stats.sampling_rate / float(sampling_rate)
-    # check if end time changes and this is not explicitly allowed
-    if strict_length:
-        if len(tr.data) % factor != 0.0:
-            msg = "End time of trace would change and strict_length=True."
-            raise ValueError(msg)
-    # do automatic lowpass filtering
-    if not no_filter:
-        # be sure filter still behaves good
-        if factor > 16:
-            msg = "Automatic filter design is unstable for resampling " + \
-                  "factors (current sampling rate/new sampling rate) " + \
-                  "above 16. Manual resampling is necessary."
-            raise ArithmeticError(msg)
-        freq = tr.stats.sampling_rate * 0.5 / float(factor)
-        tr.filter('lowpass_cheby_2', freq=freq, maxorder=12)
-
     # resample in the frequency domain. Make sure the byteorder is native.
     x = rfft(tr.data.newbyteorder("="), threads=threads)
     # Cast the value to be inserted to the same dtype as the array to avoid
@@ -649,20 +632,10 @@ def _resample(tr, sampling_rate, window='hanning', no_filter=True,
     x_r = x[::2]
     x_i = x[1::2]
 
-    if window is not None:
-        if callable(window):
-            large_w = window(np.fft.fftfreq(tr.stats.npts))
-        elif isinstance(window, np.ndarray):
-            if window.shape != (tr.stats.npts,):
-                msg = "Window has the wrong shape. Window length must " + \
-                      "equal the number of points."
-                raise ValueError(msg)
-            large_w = window
-        else:
-            large_w = np.fft.ifftshift(get_window(native_str(window),
-                                                  tr.stats.npts))
-        x_r *= large_w[:tr.stats.npts // 2 + 1]
-        x_i *= large_w[:tr.stats.npts // 2 + 1]
+    large_w = np.fft.ifftshift(
+        get_window(native_str("hanning"), tr.stats.npts))
+    x_r *= large_w[:tr.stats.npts // 2 + 1]
+    x_i *= large_w[:tr.stats.npts // 2 + 1]
 
     # interpolate
     num = int(tr.stats.npts / factor)
