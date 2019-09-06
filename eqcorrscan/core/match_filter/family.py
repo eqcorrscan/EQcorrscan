@@ -20,7 +20,7 @@ import logging
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
     StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution, Catalog)
+    CreationInfo, StationMagnitudeContribution)
 
 from eqcorrscan.core.match_filter.matched_filter import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
