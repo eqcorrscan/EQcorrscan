@@ -59,7 +59,7 @@ def _check_daylong(tr):
 def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
               num_cores=False, starttime=None, endtime=None,
               seisan_chan_names=False, fill_gaps=True, ignore_length=False,
-              ignore_bad_data=False):
+              ignore_bad_data=False, fft_threads=1):
     """
     Basic function to bandpass and downsample.
 
@@ -105,6 +105,11 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         If False (default), errors will be raised if data are excessively
         gappy or are mostly zeros. If True then no error will be raised, but
         an empty trace will be returned.
+    :type fft_threads: int
+    :param fft_threads:
+        Number of threads to use for pyFFTW FFT in resampling. Note that it
+        is not recommended to use fft_threads > 1 and num_cores > 1.
+
 
     :return: Processed stream
     :rtype: :class:`obspy.core.stream.Stream`
@@ -208,7 +213,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             'samp_rate': samp_rate, 'starttime': starttime,
             'clip': clip, 'seisan_chan_names': seisan_chan_names,
             'fill_gaps': fill_gaps, 'length': length,
-            'ignore_length': ignore_length,
+            'ignore_length': ignore_length, 'fft_threads': fft_threads,
             'ignore_bad_data': ignore_bad_data})
                    for tr in st]
         pool.close()
@@ -226,7 +231,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 samp_rate=samp_rate, starttime=starttime,
                 clip=clip, seisan_chan_names=seisan_chan_names,
                 fill_gaps=fill_gaps, length=length,
-                ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
+                ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
+                fft_threads=fft_threads)
     if tracein:
         st.merge()
         return st[0]
@@ -235,7 +241,8 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
 
 def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False):
+            seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False,
+            fft_threads=1):
     """
     Wrapper for dayproc to parallel multiple traces in a stream.
 
@@ -275,6 +282,10 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
         If False (default), errors will be raised if data are excessively
         gappy or are mostly zeros. If True then no error will be raised, but
         an empty trace will be returned.
+    :type fft_threads: int
+    :param fft_threads:
+        Number of threads to use for pyFFTW FFT in resampling. Note that it
+        is not recommended to use fft_threads > 1 and num_cores > 1.
 
     :return: Processed stream.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -367,7 +378,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
             'samp_rate': samp_rate, 'starttime': starttime, 'clip': True,
             'ignore_length': ignore_length, 'length': 86400,
             'seisan_chan_names': seisan_chan_names, 'fill_gaps': fill_gaps,
-            'ignore_bad_data': ignore_bad_data})
+            'ignore_bad_data': ignore_bad_data, 'fft_threads': fft_threads})
                    for tr in st]
         pool.close()
         try:
@@ -384,7 +395,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
                 samp_rate=samp_rate, starttime=starttime, clip=True,
                 length=86400, ignore_length=ignore_length,
                 seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-                ignore_bad_data=ignore_bad_data)
+                ignore_bad_data=ignore_bad_data, fft_threads=fft_threads)
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
@@ -397,7 +408,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
 def process(tr, lowcut, highcut, filt_order, samp_rate,
             starttime=False, clip=False, length=86400,
             seisan_chan_names=False, ignore_length=False, fill_gaps=True,
-            ignore_bad_data=False):
+            ignore_bad_data=False, fft_threads=1):
     """
     Basic function to process data, usually called by dayproc or shortproc.
 
@@ -411,11 +422,13 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     :type tr: obspy.core.trace.Trace
     :param tr: Trace to process
     :type lowcut: float
-    :param lowcut: Low cut in Hz, if set to None and highcut is set, will use \
+    :param lowcut:
+        Low cut in Hz, if set to None and highcut is set, will use
         a lowpass filter.
     :type highcut: float
-    :param highcut: High cut in Hz, if set to None and lowcut is set, will \
-        use a highpass filter.
+    :param highcut:
+        High cut in Hz, if set to None and lowcut is set, will use
+        a highpass filter.
     :type filt_order: int
     :param filt_order: Number of corners for filter.
     :type samp_rate: float
@@ -439,6 +452,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         If False (default), errors will be raised if data are excessively
         gappy or are mostly zeros. If True then no error will be raised, but
         an empty trace will be returned.
+    :type fft_threads: int
+    :param fft_threads: Number of threads to use for pyFFTW FFT in resampling
 
     :return: Processed trace.
     :type: :class:`obspy.core.stream.Trace`
@@ -540,7 +555,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     # Check sampling rate and resample
     if tr.stats.sampling_rate != samp_rate:
         Logger.debug('Resampling')
-        tr.resample(samp_rate)
+        tr = _resample(tr, samp_rate, threads=fft_threads)
     # Filtering section
     tr = tr.detrend('simple')    # Detrend data again before filtering
     if highcut and lowcut:
@@ -594,6 +609,52 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     # Replace the gaps with zeros
     if gappy:
         tr = _zero_pad_gaps(tr, gaps, fill_gaps=fill_gaps)
+    return tr
+
+
+def _resample(tr, sampling_rate, threads=1):
+    """
+    Provide a pyfftw version of obspy's trace resampling.  This code is
+    modified from obspy's Trace.resample method.
+    """
+    from future.utils import native_str
+    from scipy.signal import get_window
+    from pyfftw.interfaces.scipy_fftpack import rfft, irfft
+
+    factor = tr.stats.sampling_rate / float(sampling_rate)
+    # resample in the frequency domain. Make sure the byteorder is native.
+    x = rfft(tr.data.newbyteorder("="), threads=threads)
+    # Cast the value to be inserted to the same dtype as the array to avoid
+    # issues with numpy rule 'safe'.
+    x = np.insert(x, 1, x.dtype.type(0))
+    if tr.stats.npts % 2 == 0:
+        x = np.append(x, [0])
+    x_r = x[::2]
+    x_i = x[1::2]
+
+    large_w = np.fft.ifftshift(
+        get_window(native_str("hanning"), tr.stats.npts))
+    x_r *= large_w[:tr.stats.npts // 2 + 1]
+    x_i *= large_w[:tr.stats.npts // 2 + 1]
+
+    # interpolate
+    num = int(tr.stats.npts / factor)
+    df = 1.0 / (tr.stats.npts * tr.stats.delta)
+    d_large_f = 1.0 / num * sampling_rate
+    f = df * np.arange(0, tr.stats.npts // 2 + 1, dtype=np.int32)
+    n_large_f = num // 2 + 1
+    large_f = d_large_f * np.arange(0, n_large_f, dtype=np.int32)
+    large_y = np.zeros((2 * n_large_f))
+    large_y[::2] = np.interp(large_f, f, x_r)
+    large_y[1::2] = np.interp(large_f, f, x_i)
+
+    large_y = np.delete(large_y, 1)
+    if num % 2 == 0:
+        large_y = np.delete(large_y, -1)
+    tr.data = irfft(large_y, threads=threads) * (
+            float(num) / float(tr.stats.npts))
+    tr.stats.sampling_rate = sampling_rate
+
     return tr
 
 

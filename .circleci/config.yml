@@ -26,7 +26,11 @@ jobs:
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
-
+      - run:
+          name: install fftw
+          command: |
+            sudo apt-get update
+            sudo apt-get install libfftw3-dev
       - run:
           name: install dependencies
           command: |
@@ -38,11 +42,7 @@ jobs:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
             - "venv"
-      - run:
-          name: install fftw
-          command: |
-            sudo apt-get update
-            sudo apt-get install libfftw3-dev
+
       - run:
           name: install EQcorrscan
           command: |
