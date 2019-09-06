@@ -1,6 +1,107 @@
 What's new
 ==========
 
+Version 0.4.0
+-------------
+* Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
+  alleviate issue related to large-prime length transforms.  This requires an
+  additional dependency, but EQcorrscan already depends on FFTW itself (#316).
+* Refactor of catalog_to_dd functions (#322):
+  - Speed-ups, using new correlation functions and better resource management
+  - Removed enforcement of seisan, arguments are now standard obspy objects.
+* Add plotdir to lag-calc, template construction and matched-filter detection
+  methods and functions (#330, #325).
+* Wholesale re-write of lag-calc function and methods. External interface is
+  similar, but some arguments have been depreciated as they were unnecessary (#321).
+  - This was done to make use of the new internal correlation functions which
+    are faster and more memory efficient.
+  - Party.lag_calc and Family.lag_calc now work in-place on the events in
+    the grouping.
+  - Added relative_mags method to Party and Family; this can be called from
+    lag-calc to avoid reprocessing data.
+  - Added lag_calc.xcorr_pick_family as a public facing API to implement
+    correlation re-picking of a group of events.
+* Renamed utils.clustering.cross_chan_coherence to
+  utils.clustering.cross_chan_correlation to better reflect what it actually
+  does.
+* Add --no-mkl flag for setup.py to force the FFTW correlation routines not
+  to compile against intels mkl.  On NeSI systems mkl is currently causing
+  issues.
+* BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
+  the Earth when changing hemispheres. We now use the Haversine formula, which
+  should give better results at short distances, and does not use a flat-Earth
+  approximation, so is better suited to larger distances as well.
+* Add C-openmp parallel distance-clustering (speed-ups of ~100 times).
+* Allow option to not stack correlations in correlation functions.
+* Use compiled correlation functions for correlation clustering (speed-up).
+* Add time-clustering for catalogs and change how space-time cluster works
+  so that it uses the time-clustering, rather than just throwing out events
+  outside the time-range.
+* Changed all prints to calls to logging, as a result, debug is no longer
+  an argument for function calls.
+* `find-peaks` replaced by compiled peak finding routine - more efficient
+  both in memory and time #249 - approx 50x faster
+  * Note that the results of the C-func and the Python functions are slightly
+    different.  The C function (now the default) is more stable when peaks
+    are small and close together (e.g. in noisy data).
+* multi-find peaks makes use of openMP parallelism for more efficient
+  memory usage #249
+* enforce normalization of continuous data before correlation to avoid float32
+  overflow errors that result in correlation errors (see pr #292).
+* Add SEC-C style chunked cross-correlations.  This is both faster and more
+  memory efficient.  This is now used by default with an fft length of
+  2 ** 13.  This was found to be consistently the fastest length in testing.
+  This can be changed by the user by passing the `fft_len` keyword argument.
+  See PR #285.
+* Outer-loop parallelism has been disabled for all systems now. This was not
+  useful in most situations and is hard to maintain.
+* Improved support for compilation on RedHat systems
+* Refactored match-filter into smaller files. Namespace remains the same.
+  This was done to ease maintenance - the match_filter.py file had become
+  massive and was slow to load and process in IDEs.
+* Refactored `_prep_data_for_correlation` to reduce looping for speed,
+  now approximately six times faster than previously (minor speed-up)
+  * Now explicitly doesn't allow templates with different length traces -
+    previously this was ignored and templates with different length
+    channels to other templates had their channels padded with zeros or
+    trimmed.
+* Add `skip_short_channels` option to template generation.  This allows users
+  to provide data of unknown length and short channels will not be used, rather
+  than generating an error. This is useful for downloading data from
+  datacentres via the `from_client` method.
+* Remove pytest_namespace in conftest.py to support pytest 4.x
+* Add `ignore_bad_data` kwarg for all processing functions, if set to True
+  (defaults to False for continuity) then any errors related to bad data at
+  process-time will be supressed and empty traces returned.  This is useful
+  for downloading data from  datacentres via the `from_client` method when
+  data quality is not known.
+* Added relative amplitude measurements as
+  `utils.mag_calc.relative_amplitude` (#306).
+* Added relative magnitude calculation using relative amplitudes weighted by
+  correlations to `utils.mag_calc.relative_magnitude`.
+* Added `relative_magnitudes` argument to
+  `eqcorrscan.core.match_filter.party.Party.lag_calc` to provide an in-flow
+  way to compute relative magnitudes for detected events.
+* Events constructed from detections now include estimated origins alongside
+  the picks. These origins are time-shifted versions of the template origin and
+  should be used with caution. They are corrected for prepick (#308).
+* Picks in detection.event are now corrected for prepick *if* the template is
+  given. This is now standard in all Tribe, Party and Family methods. Picks will
+  not be corrected for prepick in match_filter (#308).
+* Fix #298 where the header was repeated in detection csv files. Also added
+  a `write_detections` function to `eqcorrscan.core.match_filter.detection`
+  to streamline writing detections.
+* Remove support for Python 2.7.
+* Add warning about unused data when using `Tribe.detect` methods with data that
+  do not fit into chunks. Fixes #291.
+* Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
+* `utils.pre_processing` now uses the `.interpolate` method rather than
+  `.resample` to change the sampling rate of data. This is generally more
+  stable and faster than resampling in the frequency domain, but will likely
+  change the quality of correlations.
+* Removed depreciated `template_gen` functions and `bright_lights` and
+  `seismo_logs`. See #315
+
 Version 0.3.3
 -------------
 * Make test-script more stable - use the installed script for testing.
