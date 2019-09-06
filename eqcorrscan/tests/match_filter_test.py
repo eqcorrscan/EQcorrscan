@@ -1,11 +1,6 @@
 """
 A series of test functions for the core functions in EQcorrscan.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
 import os
 import unittest
@@ -17,12 +12,12 @@ from obspy.clients.fdsn import Client
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
-from eqcorrscan.core.match_filter import MatchFilterError
-from eqcorrscan.core.match_filter import match_filter, normxcorr2, Detection
-from eqcorrscan.core.match_filter import read_detections, get_catalog
-from eqcorrscan.core.match_filter import write_catalog, extract_from_stream
-from eqcorrscan.core.match_filter import Tribe, Template, Party, Family
-from eqcorrscan.core.match_filter import read_party, read_tribe, _spike_test
+from eqcorrscan.core.match_filter import (
+    normxcorr2, Detection, read_detections, get_catalog,
+    write_catalog, extract_from_stream, Tribe, Template, Party, Family,
+    read_party, read_tribe, _spike_test)
+from eqcorrscan.core.match_filter.matched_filter import (
+    match_filter, MatchFilterError)
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -163,7 +158,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False, debug=3)
+                     plotvar=False)
 
 
 @pytest.mark.network
@@ -205,7 +200,7 @@ class TestGeoNetCase(unittest.TestCase):
         print('Processing continuous data')
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1)
+            num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -231,7 +226,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(NotImplementedError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
                          threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -367,7 +362,7 @@ class TestNCEDCCases(unittest.TestCase):
         cls.unproc_st = st.copy()
         cls.st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
         cls.template_names = [str(template[0].stats.starttime)
                               for template in cls.templates]
@@ -554,7 +549,7 @@ class TestNCEDCCases(unittest.TestCase):
         templates = [self.templates[0].copy()]
         templates[0][0].data = np.concatenate([templates[0][0].data,
                                                np.random.randn(10)])
-        with self.assertRaises(MatchFilterError):
+        with self.assertRaises(AssertionError):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
@@ -581,11 +576,11 @@ class TestMatchObjectHeavy(unittest.TestCase):
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         client = Client('NCEDC')
-        cls.t1 = UTCDateTime(2004, 9, 28, 17)
+        t1 = UTCDateTime(2004, 9, 28, 17)
         process_len = 3600
-        cls.t2 = cls.t1 + process_len
+        t2 = t1 + process_len
         catalog = client.get_events(
-            starttime=cls.t1, endtime=cls.t2, minmagnitude=4,
+            starttime=t1, endtime=t2, minmagnitude=4,
             minlatitude=35.7, maxlatitude=36.1, minlongitude=-120.6,
             maxlongitude=-120.2, includearrivals=True)
         catalog = catalog_utils.filter_picks(
@@ -597,38 +592,39 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     (pick.waveform_id.network_code,
                      pick.waveform_id.station_code,
                      pick.waveform_id.channel_code))
-        cls.template_stachans = list(set(template_stachans))
+        template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      cls.t1 - 5, cls.t2 + 5)
-                     for stachan in cls.template_stachans]
+                      t1 - 5, t2 + 5) for stachan in template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge()
-        st.trim(cls.t1, cls.t2)
+        st.trim(t1, t2)
         for tr in st:
             tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
             assert len(tr.data) == process_len * tr.stats.sampling_rate
-            assert tr.stats.starttime - cls.t1 < 0.1
-        cls.unproc_st = st.copy()
-        cls.tribe = Tribe().construct(
+            assert tr.stats.starttime - t1 < 0.1
+        unproc_st = st.copy()
+        tribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
-            length=3.0, prepick=0.15, swin='all', process_len=process_len,
-            debug=0)
-        print(cls.tribe)
-        cls.onehztribe = Tribe().construct(
+            length=3.0, prepick=0.15, swin='all', process_len=process_len)
+        print(tribe)
+        onehztribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        cls.st = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
-            debug=0, num_cores=1, starttime=st[0].stats.starttime,
+            num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
-        cls.party = Party().read(
+        party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
                 'test_data', 'test_party.tgz'))
-        cls.family = cls.party.sort()[0].copy()
+        cls.family = party.sort()[0].copy()
+        cls.t1, cls.t2, cls.template_stachans = (t1, t2, template_stachans)
+        cls.unproc_st, cls.tribe, cls.onehztribe, cls.st, cls.party = (
+            unproc_st, tribe, onehztribe, st, party)
 
     @classmethod
     def tearDownClass(cls):
@@ -682,7 +678,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent', debug=0)
+            xcorr_func='fftw', concurrency='concurrent')
         self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
@@ -693,8 +689,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
-            debug=2)
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -738,13 +733,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False).lag_calc(
             stream=self.unproc_st, pre_processed=False)
-        catalog = self.party.lag_calc(stream=self.unproc_st,
-                                      pre_processed=False)
-        self.assertEqual(len(catalog), 3)
-        # Check that the party is unaltered
-        self.assertEqual(self.party, read_party(
-            fname=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               'test_data', 'test_party.tgz')))
+        catalog = self.party.copy().lag_calc(
+            stream=self.unproc_st, pre_processed=False)
+        self.assertEqual(len(catalog), 4)
         for ev1, ev2 in zip(catalog, chained_cat):
             ev1.picks.sort(key=lambda p: p.time)
             ev2.picks.sort(key=lambda p: p.time)
@@ -780,22 +771,61 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     for p in chained_ev_pick_corrs]
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                self.assertEqual(ev.resource_id.id[0:-5],
-                                 chained_ev.resource_id.id[0:-5])
                 assert np.allclose(
-                    float(ev.comments[0].text.split("=")[-1]),
-                    float(chained_ev.comments[0].text.split("=")[-1]),
+                    float(ev.comments[1].text.split("=")[-1]),
+                    float(chained_ev.comments[1].text.split("=")[-1]),
                     atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.lag_calc(stream=self.st, pre_processed=True)
-        self.assertEqual(len(catalog), 3)
+        catalog = self.party.copy().lag_calc(
+            stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 4)
+
+    def test_party_mag_calc_unpreprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.copy().lag_calc(
+            stream=self.unproc_st, pre_processed=False,
+            relative_magnitudes=True, min_snr=0)
+        self.assertEqual(len(catalog), 4)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
+
+    def test_party_mag_calc_preprocessed(self):
+        """Test that the lag-calc works on pre-processed data."""
+        catalog = self.party.copy().lag_calc(
+            stream=self.st, pre_processed=True, relative_magnitudes=True,
+            min_snr=0)
+        self.assertEqual(len(catalog), 4)
+        for event in catalog:
+            self.assertGreater(len(event.station_magnitudes), 0)
+            print(event)
+            print(event.comments)
+            template_id = [c.text.split(": ")[-1] for c in event.comments
+                           if "Template" in c.text][0]
+            template = [fam.template for fam in self.party
+                        if fam.template.name == template_id][0]
+            self.assertAlmostEqual(
+                template.event.magnitudes[0].mag,
+                event.magnitudes[0].mag, 1)
+            self.assertEqual(
+                template.event.magnitudes[0].magnitude_type,
+                event.magnitudes[0].magnitude_type)
 
     @pytest.mark.network
     def test_day_long_methods(self):
         """Conduct a test using day-long data."""
-        client = Client('NCEDC')
+        client = Client('NCEDC', timeout=300)
         t1 = UTCDateTime(2004, 9, 28)
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2], t1, t1 + 86400)
                      for stachan in self.template_stachans]
@@ -815,13 +845,14 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(day_party), 4)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
-        self.assertEqual(len(day_catalog), 3)
+        self.assertEqual(len(day_catalog), 4)
         pre_picked_cat = day_party.get_catalog()
         self.assertEqual(len(pre_picked_cat), 4)
 
     def test_family_lag_calc(self):
         """Test the lag-calc method on family."""
-        catalog = self.family.lag_calc(stream=self.st, pre_processed=True)
+        catalog = self.family.copy().lag_calc(
+            stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 1)
 
     def test_template_detect(self):
@@ -961,13 +992,28 @@ class TestMatchObjectLight(unittest.TestCase):
         test_detection_altered = test_detection.copy()
         # Make sure they are equal going into this.
         self.assertEqual(test_detection, test_detection_altered)
-        test_detection_altered._calculate_event(template=template)
+        test_detection_altered._calculate_event(
+            template=template, estimate_origin=False)
         self.assertEqual(test_detection, test_detection_altered)
-        test_detection_altered._calculate_event(template_st=template.st)
+        test_detection_altered._calculate_event(
+            template_st=template.st, estimate_origin=False)
+        # Picks are adjusted by prepick
+        for pick in test_detection_altered.event.picks:
+            pick.time += template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         # Check that detection is left alone if wrong template given
         test_detection_altered._calculate_event(
             template=self.party[1].template)
+        # Check that the origin gets assigned with a useful time
+        test_detection_altered._calculate_event(template=template)
+        self.assertAlmostEqual(
+            test_detection_altered.event.origins[0].time,
+            template.event.origins[0].time, 1)
+        for pick in test_detection_altered.event.picks:
+            matched_pick = [p for p in template.event.picks
+                            if p.waveform_id == pick.waveform_id and
+                            p.phase_hint == pick.phase_hint]
+            self.assertEqual(len(matched_pick), 1)
 
     def test_party_basic_methods(self):
         """Test the basic methods on Party objects."""
@@ -1009,17 +1055,22 @@ class TestMatchObjectLight(unittest.TestCase):
 
     def test_party_decluster(self):
         """Test the decluster method on party."""
-        for trig_int in [40, 15, 3600]:
+        trig_ints = [40, 15, 3600]
+        trig_ints = [3600]
+        for trig_int in trig_ints:
             for metric in ['avg_cor', 'cor_sum']:
                 declust = self.party.copy().decluster(
                     trig_int=trig_int, metric=metric)
                 declustered_dets = [
                     d for family in declust for d in family.detections]
                 for det in declustered_dets:
-                    time_difs = [abs(det.detect_time - d.detect_time)
-                                 for d in declustered_dets if d != det]
-                    for dif in time_difs:
-                        self.assertTrue(dif > trig_int)
+                    for d in declustered_dets:
+                        if d == det:
+                            continue
+                        dif = abs(det.detect_time - d.detect_time)
+                        print('Time dif: {0} trig_int: {1}'.format(
+                            dif, trig_int))
+                        self.assertGreater(dif, trig_int)
                 with self.assertRaises(IndexError):
                     self.party.copy().decluster(
                         trig_int=trig_int, timing='origin', metric=metric)
@@ -1097,8 +1148,9 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_slicing_by_name(self):
         """Check that slicing by template name works as expected"""
         t_name = self.tribe[2].name
-        self.assertTrue(self.tribe[2] == self.tribe[t_name])
-        self.assertTrue(self.party[2] == self.party[t_name])
+        self.assertEqual(self.tribe[2], self.tribe[t_name])
+        t_name = self.party[2].template.name
+        self.assertEqual(self.party[2], self.party[t_name])
 
     def test_template_io(self):
         """Test template read/write."""
@@ -1132,6 +1184,16 @@ class TestMatchObjectLight(unittest.TestCase):
             if os.path.isfile('test_party_out.tgz'):
                 os.remove('test_party_out.tgz')
 
+    def test_party_write_csv(self):
+        """ There was an issue (#298) where the header was repeated."""
+        party = Party().read()
+        party.write("test_party.csv", format="csv")
+        with open("test_party.csv", "rb") as f:
+            lines = f.read().decode().split("\n")
+        self.assertEqual(len(lines), 6)
+        os.remove("test_party.csv")
+
+    # TODO: Track down where prepick has been incorrectly applied.
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_out_no_cat.tgz'):
@@ -1140,7 +1202,8 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(
                 filename='test_party_out_no_cat',
                 write_detection_catalog=False)
-            party_back = read_party(fname='test_party_out_no_cat.tgz')
+            party_back = read_party(fname='test_party_out_no_cat.tgz',
+                                    estimate_origin=False)
             self.assertTrue(self.party.__eq__(party_back, verbose=True))
         finally:
             if os.path.isfile('test_party_out_no_cat.tgz'):
@@ -1154,7 +1217,7 @@ class TestMatchObjectLight(unittest.TestCase):
             self.party.write(filename='test_party_out_no_cat2')
             party_back = read_party(
                 fname='test_party_out_no_cat2.tgz',
-                read_detection_catalog=False)
+                read_detection_catalog=False, estimate_origin=False)
             # creation times will differ - hack around this to make comparison
             # easier
             for family in self.party:
@@ -1243,6 +1306,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
     party_in.sort()
     for fam, check_fam in zip(party, party_in):
+        assert fam.template.name == check_fam.template.name
         fam.detections.sort(key=lambda d: d.detect_time)
         check_fam.detections.sort(key=lambda d: d.detect_time)
         for det, check_det in zip(fam.detections, check_fam.detections):
@@ -1291,6 +1355,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     if not det.__dict__[key] == check_det.__dict__[key]:
                         print("{0}: new: {1}\tcheck-against: {2}".format(
                             key, det.__dict__[key], check_det.__dict__[key]))
+                        print(det)
+                        print(check_det)
                     assert (abs(
                         det.__dict__[key] - check_det.__dict__[key]) <= 0.1)
                 elif key in ['template_name', 'id']:
@@ -1303,17 +1369,15 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert det.__dict__[key] == check_det.__dict__[key]
 
 
-def test_match_filter(
-        debug=0, plotvar=False, extract_detections=False, threshold_type='MAD',
-        threshold=10, template_excess=False, stream_excess=False):
+def test_match_filter(plotvar=False, extract_detections=False,
+                      threshold_type='MAD', threshold=10,
+                      template_excess=False, stream_excess=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
 
     :type samp_rate: float
     :param samp_rate: Sampling rate in Hz to use
-    :type debug: int
-    :param debug: Debug level, higher the number the more output.
     """
     from eqcorrscan.utils import pre_processing
     from obspy import UTCDateTime
@@ -1351,7 +1415,7 @@ def test_match_filter(
     detections = match_filter(
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
-        plotvar=plotvar, plotdir='.', cores=1, debug=debug, output_cat=False,
+        plotvar=plotvar, plotdir='.', cores=1, output_cat=False,
         extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]
@@ -1385,13 +1449,6 @@ def test_match_filter(
                 kfalse += 1
             print('Minimum difference in samples is: ' + str(min_diff))
     # print('Catalog created is of length: ' + str(len(out_cat)))
-    # Plot the detections
-    if debug > 3:
-        for i, template in enumerate(templates):
-            times = [d.detect_time.datetime for d in detections
-                     if d.template_name == template_names[i]]
-            print(times)
-            # plotting.detection_multiplot(data, template, times)
     # Set an 'acceptable' ratio of positive to false detections
     print(str(ktrue) + ' true detections and ' + str(kfalse) +
           ' false detections')

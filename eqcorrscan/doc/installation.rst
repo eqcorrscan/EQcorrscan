@@ -197,7 +197,7 @@ MUST test you install using the instructions here: :ref:`RunningTests`.
 Using Intel's MKL
 ~~~~~~~~~~~~~~~~~
 
-For version 0.3.0 EQcorrscan supports compilation against the Intel Math Kernel
+For versions >= 0.3.0 EQcorrscan supports compilation against the Intel Math Kernel
 Libraries (MKL). This has shown |speed-ups| compared to the standard FFTW library.
 To enable this you must install MKL before compiling EQcorrscan.  MKL is available from
 most package managers (including conda). Once you have MKL installed you can
@@ -211,10 +211,9 @@ Notes
 You may have issues with these installs if you don't have numpy installed: but if
 you don't have numpy installed then you have bigger issues...
 
-If you plan to run the *bright_lights* or generating a synthetic grid of
-templates you will need to have grid csv files, which the authors have
-previously used NonLinLoc to generate.  This is not provided here and should
-be sourced from |NLLoc_link|. This will provide
+If you plan to generate a grid of synthetic templates you will need to have
+grid csv files, which the authors have previously used NonLinLoc to generate.
+This is not provided here and should be sourced from |NLLoc_link|. This will provide
 the Grid2Time routine which is required to set-up a lag-time grid for your
 velocity model.  You should read the NonLinLoc documentation for more
 information regarding how this process works and the input files you are

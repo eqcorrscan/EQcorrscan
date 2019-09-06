@@ -21,7 +21,6 @@ arguments.
        freq_mag
        interev_mag
        multi_event_singlechan
-       NR_plot
        obspy_3d_plot
        peaks_plot
        plot_repicked
@@ -29,7 +28,7 @@ arguments.
        pretty_template_plot
        spec_trace
        subspace_detector_plot
-       SVD_plot
+       svd_plot
        threeD_gridplot
        threeD_seismplot
        triple_plot

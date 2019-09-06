@@ -4,36 +4,6 @@ EQcorrscan contains both an automatic amplitude picker and a
 singular-value decomposition derived magnitude calculation, which
 is very accurate but requires high levels of event similarity.
 
-Amplitude picker for local magnitudes
--------------------------------------
-
-Currently this is only implemented for seisan s-files, however we have no plans
-to extend this to other formats (although it would be simple as seisan files
-are read in as obspy events not).
-
-This example requires data downloaded from the eqcorrscan github repository.
-
-.. code-block:: python
-
-    >>> from eqcorrscan.utils.mag_calc import amp_pick_event
-    >>> from obspy import read, read_events
-    >>> from obspy.io.nordic.core import readwavename
-    >>> from eqcorrscan import tests
-    >>> import os
-    >>> # Get the path for the test-data so we can test this
-    >>> testing_path = os.path.dirname(tests.__file__) + '/test_data'
-    >>> sfile = os.path.join(testing_path, 'REA', 'TEST_',
-    ...                      '01-0411-15L.S201309')
-    >>> datapath = os.path.join(testing_path, 'WAV', 'TEST_')
-    >>> event = read_events(sfile)[0]
-    >>> st = read(os.path.join(datapath, readwavename(sfile)[0]))
-    >>> respdir = testing_path
-    >>> event = amp_pick_event(
-    ...     event=event, st=st, respdir=respdir, chans=['Z'],
-    ...     var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True,
-    ...     lowcut=1.0, highcut=20.0, corners=4) # doctest:+ELLIPSIS
-    Working on ...
-
 Relative moment by singular-value decomposition
 -----------------------------------------------
 
@@ -56,7 +26,7 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> import os
     >>> # Get the path for the test-data so we can test this
     >>> testing_path = os.path.dirname(
-    ...     tests.__file__) + '/test_data/similar_events'
+    ...     tests.__file__) + '/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
@@ -69,9 +39,6 @@ This example requires data downloaded from the eqcorrscan github repository.
     ...                 [('WHAT2', 'SH1'), ('WV04', 'SHZ'), ('GCSZ', 'EHZ')]:
     ...             stream.remove(tr)
     ...             continue
-    ...         tr.detrend('simple')
-    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     ...         st_list.append(i)
     ...     event_list.append(st_list)
     <obspy.core.stream.Stream object at ...>
@@ -79,4 +46,3 @@ This example requires data downloaded from the eqcorrscan github repository.
     >>> SVectors, SValues, Uvectors, stachans = svd(stream_list=stream_list)
     >>> M, events_out = svd_moments(u=Uvectors, s=SValues, v=SVectors,
     ...                             stachans=stachans, event_list=event_list) # doctest:+ELLIPSIS
-    Created Kernel matrix: ...

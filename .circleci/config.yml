@@ -26,7 +26,11 @@ jobs:
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
-
+      - run:
+          name: install fftw
+          command: |
+            sudo apt-get update
+            sudo apt-get install libfftw3-dev
       - run:
           name: install dependencies
           command: |
@@ -38,11 +42,7 @@ jobs:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
             - "venv"
-      - run:
-          name: install fftw
-          command: |
-            sudo apt-get update
-            sudo apt-get install libfftw3-dev
+
       - run:
           name: install EQcorrscan
           command: |
@@ -55,7 +55,7 @@ jobs:
             . venv/bin/activate
             py.test -m "network" -n 2
             py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
-            py.test --runsuperslow -s eqcorrscan/tests/tutorials_test.py --cov-append
+            py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-append
 
       - run:
           name: Upload to codecov

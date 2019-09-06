@@ -118,16 +118,14 @@ def append_name(list_like):
     return _append_func_name
 
 
-# add key variables to the pytest name space. All these can now be accessed
-# within any test by using getattr notation on the pytest package itself
-# eg pytest.test_path is bound to TEST_PATH
-def pytest_namespace():
-    odict = {'test_path': TEST_PATH,
-             'test_data_path': TEST_DATA_PATH,
-             'pkg_path': PKG_PATH,
-             'append_name': append_name,
-             }
-    return odict
+# Stop-gap as per
+# https://docs.pytest.org/en/latest/deprecations.html#pytest-namespace
+def pytest_configure():
+    pytest.append_name = append_name
+    pytest.test_path = TEST_PATH
+    pytest.test_data_path = TEST_DATA_PATH
+    pytest.pkg_path = PKG_PATH
+
 
 # Over-ride the -n auto in travis as this goes of the wall
 # import sys

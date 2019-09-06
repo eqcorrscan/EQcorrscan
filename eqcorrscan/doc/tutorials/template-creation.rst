@@ -1,5 +1,5 @@
-Template creation
-=================
+Template creation (old API)
+===========================
 
 Note: These tutorials are for the functional workflow - for details on creating
 Template and Tribe objects see the :doc:`matched filter <matched-filter>` docs
@@ -24,13 +24,13 @@ FDSN (see |obspy_fdsn| for a list of possible clients):
 
     >>> from obspy.clients.fdsn import Client
     >>> from obspy.core.event import Catalog
-    >>> from eqcorrscan.core.template_gen import from_client
+    >>> from eqcorrscan.core.template_gen import template_gen
     >>> client = Client('NCEDC')
     >>> catalog = client.get_events(eventid='72572665', includearrivals=True)
-    >>> templates = from_client(catalog=catalog, client_id='NCEDC',
-    ...                         lowcut=2.0, highcut=9.0, samp_rate=20.0,
-    ...                         filt_order=4, length=3.0, prepick=0.15,
-    ...                         swin='all', process_len=200)
+    >>> templates = template_gen(method="from_client", catalog=catalog,
+    ...                          client_id='NCEDC', lowcut=2.0, highcut=9.0,
+    ...                          samp_rate=20.0, filt_order=4, length=3.0,
+    ...                          prepick=0.15, swin='all', process_len=200)
 
 This will download data for a single event (given by eventid) from the NCEDC
 database, then use that information to download relevant waveform data.  These

@@ -1,11 +1,6 @@
 """
 Tests for the eqcorrscan.utils.picker functions.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import os
 
@@ -41,7 +36,7 @@ class PickerTests(unittest.TestCase):
                                '2013-09-01-0410-35.DFDPC_024_00'))
         event = cross_net(stream=st)
         self.assertEqual(len(event.picks), 24)
-        event = cross_net(stream=st, env=False, debug=3)
+        event = cross_net(stream=st, env=False)
         self.assertEqual(len(event.picks), 24)
 
 

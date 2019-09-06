@@ -158,6 +158,7 @@ def check_path_conftest(conftest):
     lines_out = []
     with open(conftest, "r") as f:
         for line in f:
+            line.rstrip("\n")
             if line.startswith("PKG_PATH"):
                 lines_out.append("PKG_PATH = '{0}'".format(PKG_PATH))
             else:
@@ -187,26 +188,27 @@ def run_tests(arg_list):
         arg_list.append("--runslow")
     arg_list.extend(
         ["--ignore", "EGG-INFO", "--ignore", PKG_PATH + "/utils/lib",
-         "--doctest-modules", "--cov-config",
+         "--doctest-modules", "--cov", "--cov-config",
          os.path.join(WORKING_DIR, ".coveragerc"), "--ignore=setup.py"])
     # arg_list.append(PKG_PATH)
     with cd(WORKING_DIR):
-        # If we are on windows, conftest.py has to be in the eqcorrscan dir :(
-        if sys.platform != "linux":
-            shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
-            shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
-            shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
+        # Copy files to eqcorrscan tree so that pytest can find them
+        shutil.copy("pytest.ini", os.path.join(PKG_PATH, "pytest.ini"))
+        shutil.copy(".coveragerc", os.path.join(PKG_PATH, ".coveragerc"))
+        shutil.copy("conftest.py", os.path.join(PKG_PATH, "conftest.py"))
+
         Logger.info("Working in {0}".format(WORKING_DIR))
         Logger.info("Running tests from {0}".format(PKG_PATH))
         Logger.info("pytest {0}".format(' '.join(arg_list)))
         # Run the tests!
         ret = pytest.main(args=arg_list)
+        # Remove the config files
         if os.path.isfile(os.path.join(PKG_PATH, "conftest.py")):
             os.remove(os.path.join(PKG_PATH, "pytest.ini"))
             os.remove(os.path.join(PKG_PATH, ".coveragerc"))
             os.remove(os.path.join(PKG_PATH, "conftest.py"))
         if ret != 0:
-            raise SystemExit("Failed test")
+            raise SystemExit("Failed tests")
 
 
 if __name__ == "__main__":

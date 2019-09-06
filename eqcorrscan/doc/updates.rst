@@ -1,6 +1,107 @@
 What's new
 ==========
 
+Version 0.4.0
+-------------
+* Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
+  alleviate issue related to large-prime length transforms.  This requires an
+  additional dependency, but EQcorrscan already depends on FFTW itself (#316).
+* Refactor of catalog_to_dd functions (#322):
+  - Speed-ups, using new correlation functions and better resource management
+  - Removed enforcement of seisan, arguments are now standard obspy objects.
+* Add plotdir to lag-calc, template construction and matched-filter detection
+  methods and functions (#330, #325).
+* Wholesale re-write of lag-calc function and methods. External interface is
+  similar, but some arguments have been depreciated as they were unnecessary (#321).
+  - This was done to make use of the new internal correlation functions which
+    are faster and more memory efficient.
+  - Party.lag_calc and Family.lag_calc now work in-place on the events in
+    the grouping.
+  - Added relative_mags method to Party and Family; this can be called from
+    lag-calc to avoid reprocessing data.
+  - Added lag_calc.xcorr_pick_family as a public facing API to implement
+    correlation re-picking of a group of events.
+* Renamed utils.clustering.cross_chan_coherence to
+  utils.clustering.cross_chan_correlation to better reflect what it actually
+  does.
+* Add --no-mkl flag for setup.py to force the FFTW correlation routines not
+  to compile against intels mkl.  On NeSI systems mkl is currently causing
+  issues.
+* BUG-FIX: `eqcorrscan.utils.mag_calc.dist_calc` calculated the long-way round
+  the Earth when changing hemispheres. We now use the Haversine formula, which
+  should give better results at short distances, and does not use a flat-Earth
+  approximation, so is better suited to larger distances as well.
+* Add C-openmp parallel distance-clustering (speed-ups of ~100 times).
+* Allow option to not stack correlations in correlation functions.
+* Use compiled correlation functions for correlation clustering (speed-up).
+* Add time-clustering for catalogs and change how space-time cluster works
+  so that it uses the time-clustering, rather than just throwing out events
+  outside the time-range.
+* Changed all prints to calls to logging, as a result, debug is no longer
+  an argument for function calls.
+* `find-peaks` replaced by compiled peak finding routine - more efficient
+  both in memory and time #249 - approx 50x faster
+  * Note that the results of the C-func and the Python functions are slightly
+    different.  The C function (now the default) is more stable when peaks
+    are small and close together (e.g. in noisy data).
+* multi-find peaks makes use of openMP parallelism for more efficient
+  memory usage #249
+* enforce normalization of continuous data before correlation to avoid float32
+  overflow errors that result in correlation errors (see pr #292).
+* Add SEC-C style chunked cross-correlations.  This is both faster and more
+  memory efficient.  This is now used by default with an fft length of
+  2 ** 13.  This was found to be consistently the fastest length in testing.
+  This can be changed by the user by passing the `fft_len` keyword argument.
+  See PR #285.
+* Outer-loop parallelism has been disabled for all systems now. This was not
+  useful in most situations and is hard to maintain.
+* Improved support for compilation on RedHat systems
+* Refactored match-filter into smaller files. Namespace remains the same.
+  This was done to ease maintenance - the match_filter.py file had become
+  massive and was slow to load and process in IDEs.
+* Refactored `_prep_data_for_correlation` to reduce looping for speed,
+  now approximately six times faster than previously (minor speed-up)
+  * Now explicitly doesn't allow templates with different length traces -
+    previously this was ignored and templates with different length
+    channels to other templates had their channels padded with zeros or
+    trimmed.
+* Add `skip_short_channels` option to template generation.  This allows users
+  to provide data of unknown length and short channels will not be used, rather
+  than generating an error. This is useful for downloading data from
+  datacentres via the `from_client` method.
+* Remove pytest_namespace in conftest.py to support pytest 4.x
+* Add `ignore_bad_data` kwarg for all processing functions, if set to True
+  (defaults to False for continuity) then any errors related to bad data at
+  process-time will be supressed and empty traces returned.  This is useful
+  for downloading data from  datacentres via the `from_client` method when
+  data quality is not known.
+* Added relative amplitude measurements as
+  `utils.mag_calc.relative_amplitude` (#306).
+* Added relative magnitude calculation using relative amplitudes weighted by
+  correlations to `utils.mag_calc.relative_magnitude`.
+* Added `relative_magnitudes` argument to
+  `eqcorrscan.core.match_filter.party.Party.lag_calc` to provide an in-flow
+  way to compute relative magnitudes for detected events.
+* Events constructed from detections now include estimated origins alongside
+  the picks. These origins are time-shifted versions of the template origin and
+  should be used with caution. They are corrected for prepick (#308).
+* Picks in detection.event are now corrected for prepick *if* the template is
+  given. This is now standard in all Tribe, Party and Family methods. Picks will
+  not be corrected for prepick in match_filter (#308).
+* Fix #298 where the header was repeated in detection csv files. Also added
+  a `write_detections` function to `eqcorrscan.core.match_filter.detection`
+  to streamline writing detections.
+* Remove support for Python 2.7.
+* Add warning about unused data when using `Tribe.detect` methods with data that
+  do not fit into chunks. Fixes #291.
+* Fix #179 when decimating for cccsum_hist in `_match_filter_plot`
+* `utils.pre_processing` now uses the `.interpolate` method rather than
+  `.resample` to change the sampling rate of data. This is generally more
+  stable and faster than resampling in the frequency domain, but will likely
+  change the quality of correlations.
+* Removed depreciated `template_gen` functions and `bright_lights` and
+  `seismo_logs`. See #315
+
 Version 0.3.3
 -------------
 * Make test-script more stable - use the installed script for testing.
@@ -160,18 +261,17 @@ Version 0.2.6
   methods through the parameter xcorr_func of match_filter, Template.detect
   and Tribe.detect, or using the set_xcorr context manager in
   the utils.correlate module. Supported options are:
-    * numpy
-    * fftw
-    * time-domain
-    * or passing a function that implements the xcorr interface.
+  * numpy
+  * fftw
+  * time-domain
+  * or passing a function that implements the xcorr interface.
 * Added the ability to change the concurrency strategy of xcorr functions
   using the paramter concurrency of match_filter, Template.detect
   and Tribe.detect. Supported options are:
-    * None - for single-threaded execution in a single process
-    * multithread - for multi-threaded execution
-    * multiprocess- for multiprocess execution
-    * concurrent - allows functions to describe their own preferred currency
-    methods, defaults to multithread
+  * None - for single-threaded execution in a single process
+  * multithread - for multi-threaded execution
+  * multiprocess- for multiprocess execution
+  * concurrent - allows functions to describe their own preferred currency methods, defaults to multithread
 * Change debug printing output, it should be a little quieter;
 * Speed-up time-domain using a threaded C-routine - separate from frequency
   domain C-routines;
@@ -206,73 +306,51 @@ Version 0.2.4
 -------------
 * Increase test coverage (edge-cases) in template_gen;
 * Fix bug in template_gen.extract_from_stack for duplicate channels in
-template;
+  template;
 * Increase coverage somewhat in bright_lights, remove non-parallel
-option (previously only used for debugging in development);
+  option (previously only used for debugging in development);
 * Increase test coverage in lag_calc;
 * Speed-up tests for brightness;
 * Increase test coverage for match_filter including testing io of
-detections;
+  detections;
 * Increase subspace test coverage for edge cases;
 * Speed-up catalog_to_dd_tests;
 * Lag-calc will pick S-picks on channels ending E, N, 1 and 2, change
-from only picking on E and N before; warning added to docs;
+  from only picking on E and N before; warning added to docs;
 * Add full tests for pre-processing;
 * Run tests in parallel on ci, speed-up tests dramatically;
 * Rename singular-value decomposition functions (with depreciation
-warnings);
+  warnings);
 * Rename SVD_moments to lower-case and add depreciation warning;
 * Increase test coverage in utils.mag_calc;
-* Add Template, Tribe, Family, Party objects and rename DETECTION to
-Detection;
-    * Template objects maintain meta-data associated with their creation
-    to stream-line processing of data (e.g. reduce chance of using the
-    wrong filters).
-    * Template events have a detect method which takes unprocessed data
-    and does the correct processing using the Template meta-data, and
-    computes the matched-filter detections.
-    * Tribe objects are containers for multiple Templates.
-    * Tribe objects have a detect method which groups Templates with
-    similar meta-data (processing information) and runs these templates
-    in parallel through the matched-filter routine. Tribe.detect outputs
-    a Party of Family objects.
-    * The Party object is a container for many Family objects.
-    * Family objects are containers for detections from the same
-    Template.
-    * Family and Party objects have a lag_calc method which computes
-    the cross-correlation pick-refinements.
-    * The upshot of this is that it is possible to, in one line,
-    generate a Tribe of templates, compute their matched-filter
-    detections, and generate cross-correlation pick refinements, which
-    output Event objects, which can be written to a catalog:
-        Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
-    * Added 25 tests for these methods.
-    * Add parameters *threshold_type* and *threshold_input* to Detection
-    class.  Add support for legacy Detection objects via NaN and unset
-    values.
+* Add Template, Tribe, Family, Party objects and rename DETECTION to Detection
+  * Template objects maintain meta-data associated with their creation to stream-line processing of data (e.g. reduce chance of using the wrong filters).
+  * Template events have a detect method which takes unprocessed data and does the correct processing using the Template meta-data, and computes the matched-filter detections.
+  * Tribe objects are containers for multiple Templates.
+  * Tribe objects have a detect method which groups Templates with similar meta-data (processing information) and runs these templates in parallel through the matched-filter routine. Tribe.detect outputs a Party of Family objects.
+  * The Party object is a container for many Family objects.
+  * Family objects are containers for detections from the same Template.
+  * Family and Party objects have a lag_calc method which computes the cross-correlation pick-refinements.
+  * The upshot of this is that it is possible to, in one line, generate a Tribe of templates, compute their matched-filter detections, and generate cross-correlation pick refinements, which output Event objects, which can be written to a catalog: Tribe.construct(method, **kwargs).detect(st, **kwargs).lag_calc(**kwargs).write()
+  * Added 25 tests for these methods.
+  * Add parameters *threshold_type* and *threshold_input* to Detection class.  Add support for legacy Detection objects via NaN and unset values.
 * Removed support for obspy < 1.0.0
 * Update / correct doc-strings in template-gen functions when describing
-processing parameters.
+  processing parameters.
 * Add warning message when removing channels from continuous data in
-match_filter;
+  match_filter;
 * Add min_snr option for template generation routines, if the
-signal-to-noise ratio is below a user-defined threshold, the channel
-will not be used.
+  signal-to-noise ratio is below a user-defined threshold, the channel
+  will not be used.
 * Stop enforcing two-channel template channel names.
 * Fix bug in detection_multiplot which didn't allow streams with
-fewer traces than template;
+  fewer traces than template;
 * Update internals to custom C fftw-based correlation rather than openCV (Major change);
-    * OpenCV has been removed as a dependancy;
-    * eqcorrscan.core.match_filter.normxcorr2 now calls a compiled C routine;
-    * Parallel workflows handled by openMP rather than Python Multiprocessing
-      for matched-filter operations to allow better memory handling.
-        * It is worth noting that we tried re-writing using SciPy internals
-        which led to a significant speed-up, but with high memory costs,
-        we ended up going with this option, which was the more difficult
-        option, because it allows effective use on SLURM managed systems
-        where python multiprocessing results in un-real memory spikes
-        (issue #88).
-        
+  * OpenCV has been removed as a dependancy;
+  * eqcorrscan.core.match_filter.normxcorr2 now calls a compiled C routine;
+  * Parallel workflows handled by openMP rather than Python Multiprocessing for matched-filter operations to allow better memory handling.
+  * It is worth noting that we tried re-writing using SciPy internals which led to a significant speed-up, but with high memory costs, we ended up going with this option, which was the more difficult option, because it allows effective use on SLURM managed systems where python multiprocessing results in un-real memory spikes (issue #88).
+
 Version 0.2.0-0.2.3
 -------------------
 * See 0.2.4: these versions were not fully released while trying to get
@@ -281,20 +359,20 @@ Version 0.2.0-0.2.3
 Version 0.1.6
 -------------
 * Fix bug introduced in version 0.1.5 for match_filter where looping
-through multiple templates did not correctly match image and template
-data: 0.1.5 fix did not work;
+  through multiple templates did not correctly match image and template
+  data: 0.1.5 fix did not work;
 * Bug-fix in catalog_to_dd for events without magnitudes;
 * Amend match-filter to not edit the list of template names in place.
-Previously, if a template was not used (due to no matching continuous
-data) then the name of the template was removed: this now copies the
-list of template_names internally and does not change the external list.
+  Previously, if a template was not used (due to no matching continuous
+  data) then the name of the template was removed: this now copies the
+  list of template_names internally and does not change the external list.
 
 Version 0.1.5
 -------------
 * Migrate coverage to codecov;
 * Fix bug introduced in version 0.1.5 for match_filter where looping
-through multiple templates did not correctly match image and template
-data.
+  through multiple templates did not correctly match image and template
+  data.
 
 Version 0.1.4
 -------------

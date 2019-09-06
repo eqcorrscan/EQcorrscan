@@ -2,11 +2,6 @@
 Functions for testing the tutorials - written as a somewhat monolithic test
 because we need certain behaviour.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import os
 import pytest
@@ -18,26 +13,13 @@ from eqcorrscan.tutorials import match_filter, lag_calc, subspace
 from eqcorrscan.core.match_filter import read_detections
 
 
-slow = pytest.mark.skipif(
-    not pytest.config.getoption("--runslow"),
-    reason="need --runslow option to run"
-)
-
-
-superslow = pytest.mark.skipif(
-    not pytest.config.getoption("--runsuperslow"),
-    reason="need --runsuperslow option to run"
-)
-
-
 class TestTutorialScripts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.testing_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
 
-    # @pytest.mark.flaky(reruns=2)
-    @slow
+    @pytest.mark.slow
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
         print("Making templates")
@@ -87,8 +69,7 @@ class TestTutorialScripts(unittest.TestCase):
                               str(template_no) + '.ms'):
                 os.remove('tutorial_template_' + str(template_no) + '.ms')
 
-    # @pytest.mark.flaky(reruns=2)
-    @slow
+    @pytest.mark.slow
     def test_lag_calc(self):
         """Test the lag calculation tutorial."""
         shift_len = 0.2
@@ -121,13 +102,16 @@ class TestTutorialScripts(unittest.TestCase):
                 re_picked_delay = pick.time - (detection.detect_time + delay)
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
-    @superslow
+    @pytest.mark.superslow
     @pytest.mark.flaky(reruns=2)
     def test_subspace(self):
         """Test the subspace tutorial."""
         print("Running subspace")
         detections = subspace.run_tutorial(plot=False, cores=1, verbose=True)
         print("Subspace ran")
+        if not len(detections) == 11:
+            for detection in detections:
+                print(detection)
         self.assertEqual(len(detections), 11)
 
 

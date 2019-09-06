@@ -17,6 +17,8 @@ mag_calc
        calc_max_curv
        dist_calc
        svd_moments
+       relative_amplitude
+       relative_magnitude
 
     .. comment to end block
 

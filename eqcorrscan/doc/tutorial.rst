@@ -4,16 +4,10 @@ Welcome to EQcorrscan - this package is designed to compute earthquake detection
 using a paralleled matched-filter network cross-correlation routine, and analyse the
 results.
 
-Before continuing with this tutorial please check that you have installed all
-the pre-requisite modules, as not all will be installed by the setup.py file.
-The list of these is in the :doc:`Introduction <intro>` section of this documentation.
-
 As you will see, this package is divided into two main sub-modules, the
 :doc:`core </core>` and :doc:`utils </utils>` sub-modules.
 The core sub-module contains the main, high-level functions:
 
-:bright_lights:
-        A brightness based template detection routine;
 :template_gen:
         A series of routines to generate templates for match-filter detection
         from continuous or cut data, with pick-times either defined manually,
@@ -47,19 +41,46 @@ detections for |hypoDD| (a double difference relocation software)
 magnitudes (:doc:`mag_calc </submodules/utils.mag_calc>`),
 clustering detections (:doc:`clustering </submodules/utils.clustering>`),
 stacking detections (:doc:`stacking </submodules/utils.stacking>`),
-making pretty plots (:doc:`plotting </submodules/utils.plotting>`),
+making plots (:doc:`plotting </submodules/utils.plotting>`),
 and processing seismic data in the same way repeatedly using |Obspy|'s
 functionality (:doc:`pre_processing </submodules/utils.pre_processing>`).
 
-What follows is an expanding set of tutorials that should take you
-through some of the key functionality of the EQcorrscan package.
+As of EQcorrscan v.0.4.0, output is controlled by the |logging| module.
+This allows the user to decide now much output is needed (via the `level`
+option), and where output should be sent (either to a file, stdout, or both).
+By default, if no logging parameters are set before calling EQcorrscan functions
+only messages of WARNING or above are printed to stdout. To make things a little
+prettier you can begin your work using something like:
+
+.. code-block:: python
+
+  import logging
+
+  logging.basicConfig(
+      level=logging.INFO,
+      format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
+
+This will output messages at level INFO and above (quite verbose), in messages
+like:
+
+.. code-block:: python
+
+  2018-06-25 22:48:17,113	eqcorrscan.utils.pre_processing	INFO	Working on: NZ.CPWZ.10.EHZ
+
+For more options, see the |logginghowto| guide.
+
+The following is an expanding set of tutorials that should take you
+through some of the key functionality of the EQcorrscan package.  The tutorials
+are a (slow) work in progress to convert to jupyter notebook.  If you have anything
+you want to see in the tutorials please let us know on github.
 
 .. toctree::
   :numbered:
   :titlesonly:
 
-  tutorials/template-creation.rst
+  tutorials/quick_start.ipynb
   tutorials/matched-filter.rst
+  tutorials/template-creation.rst
   tutorials/subspace.rst
   tutorials/lag-calc.rst
   tutorials/mag-calc.rst
@@ -76,3 +97,11 @@ through some of the key functionality of the EQcorrscan package.
 .. |Obspy| raw:: html
 
   <a href="https://github.com/obspy/obspy/wiki" target="_blank">Obspy</a>
+
+.. |logging| raw:: html
+
+  <a href="https://docs.python.org/3/library/logging.html" target="_blank">Logging</a>
+
+.. |logginghowto| raw:: html
+
+  <a href="https://docs.python.org/3/howto/logging.html#logging-basic-tutorial" target="_blank">Logging HOWTO</a>

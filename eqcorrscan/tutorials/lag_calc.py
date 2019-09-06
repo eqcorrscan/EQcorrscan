@@ -1,12 +1,18 @@
 """Tutorial to illustrate the lag_calc usage."""
+import logging
+from multiprocessing import cpu_count
 
 from obspy.clients.fdsn import Client
 from obspy.core.event import Catalog
 from obspy import UTCDateTime
-from multiprocessing import cpu_count
 
 from eqcorrscan.core import template_gen, match_filter, lag_calc
 from eqcorrscan.utils import pre_processing, catalog_utils
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
 
 def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
@@ -33,10 +39,10 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
                         pick.onset == 'emergent':
             catalog[3].picks.remove(pick)
     print('Generating templates')
-    templates = template_gen.from_client(
-        catalog=catalog, client_id='NCEDC', lowcut=2.0, highcut=9.0,
-        samp_rate=50.0, filt_order=4, length=3.0, prepick=0.15,
-        swin='all', process_len=3600)
+    templates = template_gen.template_gen(
+        method="from_client", catalog=catalog, client_id='NCEDC',
+        lowcut=2.0, highcut=9.0, samp_rate=50.0, filt_order=4, length=3.0,
+        prepick=0.15, swin='all', process_len=3600)
     # In this section we generate a series of chunks of data.
     start_time = UTCDateTime(2004, 9, 28, 17)
     end_time = UTCDateTime(2004, 9, 28, 20)
@@ -52,7 +58,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
 
     all_detections = []
     picked_catalog = Catalog()
-    template_names = [str(template[0].stats.starttime)
+    template_names = [template[0].stats.starttime.strftime("%Y%m%d_%H%M%S")
                       for template in templates]
     for t1, t2 in chunks:
         print('Downloading and processing for start-time: %s' % t1)
@@ -64,7 +70,7 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
         st.merge(fill_value='interpolate')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
-            debug=0, num_cores=num_cores)
+            num_cores=num_cores)
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates, st=st,
             threshold=8.0, threshold_type='MAD', trig_int=6.0, plotvar=False,
@@ -88,12 +94,10 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
         picked_catalog += lag_calc.lag_calc(
             detections=unique_detections, detect_data=st,
             template_names=template_names, templates=templates,
-            shift_len=shift_len, min_cc=min_cc, interpolate=False, plot=False,
-            parallel=True, debug=3)
+            shift_len=shift_len, min_cc=min_cc, interpolate=False, plot=False)
     # Return all of this so that we can use this function for testing.
     return all_detections, picked_catalog, templates, template_names
 
 
 if __name__ == '__main__':
-    from multiprocessing import cpu_count
     run_tutorial(min_magnitude=4, num_cores=cpu_count())
