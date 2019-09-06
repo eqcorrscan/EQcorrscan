@@ -5,15 +5,12 @@ import unittest
 import pytest
 import numpy as np
 import os
-import datetime as dt
 import glob
 import logging
 
-from obspy.core.util import NamedTemporaryFile
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy import UTCDateTime, read, read_events, Trace
 from obspy.clients.fdsn import Client
-from obspy.clients.iris import Client as OldIris_Client
 from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils import mag_calc
@@ -58,7 +55,7 @@ class TestMagCalcMethods(unittest.TestCase):
         tr = st[0]
         # Test with inventory
         _sim_WA(trace=tr, inventory=inventory, water_level=10)
-        # TODO: This doesn't really test the accuracy.
+        # TODO: This doesn't really test the accuracy
 
     def test_max_p2t(self):
         """Test the minding of maximum peak-to-trough."""
@@ -108,23 +105,27 @@ class TestRelativeAmplitudes(unittest.TestCase):
     @pytest.mark.network
     def setUpClass(cls):
         client = Client("GEONET")
-        cls.event1 = client.get_events(eventid="2016p912302")[0]
-        cls.event2 = client.get_events(eventid="3470170")[0]
+        event1 = client.get_events(eventid="2016p912302")[0]
+        event2 = client.get_events(eventid="3470170")[0]
         shared_chans = {p1.waveform_id.get_seed_string()
-                        for p1 in cls.event1.picks}.intersection(
-            {p2.waveform_id.get_seed_string() for p2 in cls.event2.picks})
+                        for p1 in event1.picks}.intersection(
+            {p2.waveform_id.get_seed_string() for p2 in event2.picks})
         bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
                  p.waveform_id.location_code, p.waveform_id.channel_code,
-                 p.time - 20, p.time + 60) for p in cls.event1.picks
+                 p.time - 20, p.time + 60) for p in event1.picks
                 if p.waveform_id.get_seed_string() in shared_chans]
         st1 = client.get_waveforms_bulk(bulk)
-        cls.st1 = st1.detrend().filter("bandpass", freqmin=2, freqmax=20)
+        st1 = st1.detrend().filter("bandpass", freqmin=2, freqmax=20)
         bulk = [(p.waveform_id.network_code, p.waveform_id.station_code,
                  p.waveform_id.location_code, p.waveform_id.channel_code,
-                 p.time - 20, p.time + 60) for p in cls.event2.picks
+                 p.time - 20, p.time + 60) for p in event2.picks
                 if p.waveform_id.get_seed_string() in shared_chans]
         st2 = client.get_waveforms_bulk(bulk)
-        cls.st2 = st2.detrend().filter("bandpass", freqmin=2, freqmax=20)
+        st2 = st2.detrend().filter("bandpass", freqmin=2, freqmax=20)
+        cls.event1 = event1
+        cls.event2 = event2
+        cls.st1 = st1
+        cls.st2 = st2
 
     def test_snr(self):
         noise = np.random.randn(100)
@@ -278,58 +279,63 @@ class TestAmpPickEvent(unittest.TestCase):
         cls._log_handler = MockLoggingHandler(level='DEBUG')
         log.addHandler(cls._log_handler)
         cls.log_messages = cls._log_handler.messages
-        cls.testing_path = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), 'test_data')
-        sfile = os.path.join(cls.testing_path, 'REA', 'TEST_',
-                             '01-0411-15L.S201309')
-        cls.event = read_events(sfile)[0]
-        cls.wavfiles = readwavename(sfile)
-        cls.datapath = os.path.join(cls.testing_path, 'WAV', 'TEST_')
-        cls.st = read(os.path.join(cls.datapath, cls.wavfiles[0]))
-        cls.respdir = cls.testing_path
+        client = Client("GEONET")
+        cls.event = client.get_events(eventid="2019p498440")[0]
+        origin_time = cls.event.preferred_origin().time
+        bulk = [(
+            p.waveform_id.network_code, p.waveform_id.station_code,
+            p.waveform_id.location_code, p.waveform_id.channel_code,
+            origin_time - 10, origin_time + 120)
+            for p in cls.event.picks]
+        cls.inventory = client.get_stations_bulk(bulk, level='response')
+        cls.st = client.get_waveforms_bulk(bulk)
+        cls.available_stations = len({p.waveform_id.station_code
+                                      for p in cls.event.picks})
 
     def setUp(self):
         self._log_handler.reset()
 
     def test_amp_pick_event(self):
         """Test the main amplitude picker."""
-        picked_event = amp_pick_event(event=self.event.copy(),
-                                      st=self.st.copy(),
-                                      respdir=self.respdir)
-        self.assertEqual(len(picked_event.picks), len(self.event.picks) + 1)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy(),
+            inventory=self.inventory)
+        self.assertEqual(len(picked_event.picks),
+                         len(self.st) + self.available_stations)
 
     def test_amp_pick_remove_old_picks(self):
-        picked_event = amp_pick_event(event=self.event.copy(),
-                                      st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True)
-        self.assertEqual(len(picked_event.amplitudes), 1)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy(),
+            inventory=self.inventory, remove_old=True)
+        self.assertEqual(len(picked_event.amplitudes), self.available_stations)
 
     def test_amp_pick_missing_channel(self):
         picked_event = amp_pick_event(
-            event=self.event.copy(), st=self.st.copy()[0:-4],
-            respdir=self.respdir, remove_old=True)
+            event=self.event.copy(), st=self.st.copy()[0:-3],
+            inventory=self.inventory, remove_old=True)
         missed = False
         for warning in self.log_messages['warning']:
             if 'no station and channel match' in warning:
                 missed = True
         self.assertTrue(missed)
-        self.assertEqual(len(picked_event.amplitudes), 1)
+        self.assertEqual(len(picked_event.amplitudes),
+                         self.available_stations - 1)
 
     def test_amp_pick_not_varwin(self):
-        picked_event = amp_pick_event(event=self.event.copy(),
-                                      st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=False)
-        self.assertEqual(len(picked_event.amplitudes), 1)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy(),
+            inventory=self.inventory, remove_old=True,
+            var_wintype=False)
+        self.assertEqual(len(picked_event.amplitudes), self.available_stations)
 
     def test_amp_pick_not_varwin_no_S(self):
         event = self.event.copy()
         for pick in event.picks:
             if pick.phase_hint.upper() == 'S':
                 event.picks.remove(pick)
-        picked_event = amp_pick_event(event=event, st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=False)
+        picked_event = amp_pick_event(
+            event=event, st=self.st.copy(), inventory=self.inventory,
+            remove_old=True, var_wintype=False)
         self.assertEqual(len(picked_event.amplitudes), 1)
 
     def test_amp_pick_varwin_no_S(self):
@@ -337,9 +343,9 @@ class TestAmpPickEvent(unittest.TestCase):
         for pick in event.picks:
             if pick.phase_hint.upper() == 'S':
                 event.picks.remove(pick)
-        picked_event = amp_pick_event(event=event, st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=True)
+        picked_event = amp_pick_event(
+            event=event, st=self.st.copy(), inventory=self.inventory,
+            remove_old=True, var_wintype=True)
         self.assertEqual(len(picked_event.amplitudes), 1)
 
     def test_amp_pick_varwin_no_P(self):
@@ -347,24 +353,24 @@ class TestAmpPickEvent(unittest.TestCase):
         for pick in event.picks:
             if pick.phase_hint.upper() == 'P':
                 event.picks.remove(pick)
-        picked_event = amp_pick_event(event=event, st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=True)
-        self.assertEqual(len(picked_event.amplitudes), 1)
+        picked_event = amp_pick_event(
+            event=event, st=self.st.copy(), inventory=self.inventory,
+            remove_old=True, var_wintype=True)
+        self.assertEqual(len(picked_event.amplitudes), self.available_stations)
 
     def test_amp_pick_high_min_snr(self):
-        picked_event = amp_pick_event(event=self.event.copy(),
-                                      st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=False, min_snr=15)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy(),
+            inventory=self.inventory, remove_old=True, var_wintype=False,
+            min_snr=15)
         self.assertEqual(len(picked_event.amplitudes), 0)
 
     def test_amp_pick_no_prefilt(self):
-        picked_event = amp_pick_event(event=self.event.copy(),
-                                      st=self.st.copy(),
-                                      respdir=self.respdir, remove_old=True,
-                                      var_wintype=False, pre_filt=False)
-        self.assertEqual(len(picked_event.amplitudes), 1)
+        picked_event = amp_pick_event(
+            event=self.event.copy(), st=self.st.copy(),
+            inventory=self.inventory, remove_old=True,
+            var_wintype=False, pre_filt=False)
+        self.assertEqual(len(picked_event.amplitudes), 4)
 
 
 if __name__ == '__main__':

@@ -341,10 +341,7 @@ def _pairwise(iterable):
     """
     a, b = itertools.tee(iterable)
     next(b, None)
-    if sys.version_info.major == 2:
-        return itertools.izip(a, b)
-    else:
-        return zip(a, b)
+    return zip(a, b)
 
 
 # Helpers for relative magnitude calculation
@@ -495,10 +492,12 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
     for seed_id in seed_ids:
         noise1, signal1, std1 = _get_signal_and_noise(
             stream=st1, event=event1, signal_window=signal_window,
-            noise_window=noise_window, use_s_picks=use_s_picks)
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
         noise2, signal2, std2 = _get_signal_and_noise(
             stream=st2, event=event2, signal_window=signal_window,
-            noise_window=noise_window, use_s_picks=use_s_picks)
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
         noise1 = noise1 or noise2
         noise2 = noise2 or noise1
         if noise1 is None or noise2 is None:
@@ -513,7 +512,7 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         if snr1 <= min_snr or snr2 <= min_snr:
             Logger.info("SNR too low for {0}".format(seed_id))
             continue
-        ratio = std1 / std2
+        ratio = std2 / std1
         Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
             seed_id, ratio))
         amplitudes.update({seed_id: ratio})
@@ -750,8 +749,10 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
     if remove_old and event.amplitudes:
         for amp in event.amplitudes:
             # Find the pick and remove it too
-            pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
-            event.picks.remove(pick)
+            pick = [p for p in event.picks if p.resource_id == amp.pick_id]
+            if len(pick) == 0:
+                continue
+            event.picks.remove(pick[0])
         event.amplitudes = []
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
@@ -923,10 +924,7 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                             'sensitivity': 1.0}
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(
                     filt_paz, 1 / period) * filt_paz['sensitivity'])
-            if PAZ:
-                amplitude /= 1000
-            if seedresp:  # Seedresp method returns mm
-                amplitude *= 1000000
+            amplitude /= 1000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
             amplitude *= 0.5
