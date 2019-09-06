@@ -25,13 +25,10 @@ from eqcorrscan.utils.correlate import (  # NOQA
 
 __all__ = ['core', 'utils', 'tutorials', 'tests']
 
-__version__ = '0.3.3'
+__version__ = '0.4.0'
 
 # Cope with changes to name-space to remove most of the camel-case
-_import_map = {
-    "eqcorrscan.utils.catalogue2DD": "eqcorrscan.utils.catalog_to_dd",
-    "eqcorrscan.utils.EQcorrscan_plotting": "eqcorrscan.utils.plotting"
-}
+_import_map = {}
 
 
 class EQcorrscanDeprecationWarning(UserWarning):
