@@ -576,11 +576,11 @@ class TestMatchObjectHeavy(unittest.TestCase):
     @pytest.mark.flaky(reruns=2)
     def setUpClass(cls):
         client = Client('NCEDC')
-        cls.t1 = UTCDateTime(2004, 9, 28, 17)
+        t1 = UTCDateTime(2004, 9, 28, 17)
         process_len = 3600
-        cls.t2 = cls.t1 + process_len
+        t2 = t1 + process_len
         catalog = client.get_events(
-            starttime=cls.t1, endtime=cls.t2, minmagnitude=4,
+            starttime=t1, endtime=t2, minmagnitude=4,
             minlatitude=35.7, maxlatitude=36.1, minlongitude=-120.6,
             maxlongitude=-120.2, includearrivals=True)
         catalog = catalog_utils.filter_picks(
@@ -592,37 +592,39 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     (pick.waveform_id.network_code,
                      pick.waveform_id.station_code,
                      pick.waveform_id.channel_code))
-        cls.template_stachans = list(set(template_stachans))
+        template_stachans = list(set(template_stachans))
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
-                      cls.t1 - 5, cls.t2 + 5)
-                     for stachan in cls.template_stachans]
+                      t1 - 5, t2 + 5) for stachan in template_stachans]
         # Just downloading an hour of data
         st = client.get_waveforms_bulk(bulk_info)
         st.merge()
-        st.trim(cls.t1, cls.t2)
+        st.trim(t1, t2)
         for tr in st:
             tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
             assert len(tr.data) == process_len * tr.stats.sampling_rate
-            assert tr.stats.starttime - cls.t1 < 0.1
-        cls.unproc_st = st.copy()
-        cls.tribe = Tribe().construct(
+            assert tr.stats.starttime - t1 < 0.1
+        unproc_st = st.copy()
+        tribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=2.0, highcut=9.0, samp_rate=20.0, filt_order=4,
             length=3.0, prepick=0.15, swin='all', process_len=process_len)
-        print(cls.tribe)
-        cls.onehztribe = Tribe().construct(
+        print(tribe)
+        onehztribe = Tribe().construct(
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        cls.st = pre_processing.shortproc(
+        st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
-        cls.party = Party().read(
+        party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
                 'test_data', 'test_party.tgz'))
-        cls.family = cls.party.sort()[0].copy()
+        cls.family = party.sort()[0].copy()
+        cls.t1, cls.t2, cls.template_stachans = (t1, t2, template_stachans)
+        cls.unproc_st, cls.tribe, cls.onehztribe, cls.st, cls.party = (
+            unproc_st, tribe, onehztribe, st, party)
 
     @classmethod
     def tearDownClass(cls):
@@ -769,11 +771,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     for p in chained_ev_pick_corrs]
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                self.assertEqual(ev.resource_id.id[0:-5],
-                                 chained_ev.resource_id.id[0:-5])
                 assert np.allclose(
-                    float(ev.comments[0].text.split("=")[-1]),
-                    float(chained_ev.comments[0].text.split("=")[-1]),
+                    float(ev.comments[1].text.split("=")[-1]),
+                    float(chained_ev.comments[1].text.split("=")[-1]),
                     atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
@@ -791,7 +791,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
             template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Detected using template" in c.text][0]
+                           if "Template" in c.text][0]
             template = [fam.template for fam in self.party
                         if fam.template.name == template_id][0]
             self.assertAlmostEqual(
@@ -809,8 +809,10 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(catalog), 4)
         for event in catalog:
             self.assertGreater(len(event.station_magnitudes), 0)
+            print(event)
+            print(event.comments)
             template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Detected using template" in c.text][0]
+                           if "Template" in c.text][0]
             template = [fam.template for fam in self.party
                         if fam.template.name == template_id][0]
             self.assertAlmostEqual(
@@ -992,11 +994,12 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template=template, estimate_origin=False)
+        # Picks are adjusted by prepick
+        for pick in test_detection_altered.event.picks:
+            pick.time -= template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template_st=template.st, estimate_origin=False)
-        for p in test_detection_altered.event.picks:
-            p.time += template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         # Check that detection is left alone if wrong template given
         test_detection_altered._calculate_event(
@@ -1190,6 +1193,7 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(len(lines), 6)
         os.remove("test_party.csv")
 
+    # TODO: Track down where prepick has been incorrectly applied.
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_out_no_cat.tgz'):

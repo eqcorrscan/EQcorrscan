@@ -603,13 +603,12 @@ class Family(object):
             for pick in event.picks:
                 pick.time += self.template.prepick
             d = [d for d in self.detections if d.id == detection_id][0]
-            d.event = event
-            catalog += event
+            d.event.picks = event.picks
         if relative_magnitudes:
-            catalog = self.relative_magnitudes(
+            self.relative_magnitudes(
                 stream=processed_stream, pre_processed=True, min_cc=min_cc,
                 **kwargs)
-        return catalog
+        return self.catalog
 
     def relative_magnitudes(self, stream, pre_processed, process_cores=1,
                             ignore_bad_data=False, parallel=False, min_cc=0.4,
@@ -655,7 +654,6 @@ class Family(object):
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,
             ignore_bad_data=ignore_bad_data)
-        catalog = Catalog()
         for detection in self.detections:
             event = detection.event
             if event is None:
@@ -675,10 +673,9 @@ class Family(object):
                     " be computed for {0}".format(event.resource_id))
                 continue
             # Set the signal-window to be the template length
-            signal_window = (
-                -template.prepick,
-                min([tr.stats.npts * tr.stats.delta
-                     for tr in template.st]) - template.prepick)
+            signal_window = (-template.prepick,
+                             min([tr.stats.npts * tr.stats.delta
+                                  for tr in template.st]) - template.prepick)
             delta_mag = relative_magnitude(
                 st1=template.st, st2=processed_stream,
                 event1=template.event, event2=event,
@@ -713,8 +710,7 @@ class Family(object):
                     creation_info=CreationInfo(
                         author="EQcorrscan",
                         creation_time=UTCDateTime())))
-            catalog += event
-        return catalog
+        return self.catalog
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
                          parallel=False, ignore_bad_data=False,
@@ -742,7 +738,7 @@ class Family(object):
             processed_stream.merge(method=1)
             Logger.debug(processed_stream)
         else:
-            processed_stream = stream
+            processed_stream = stream.merge()
         return processed_stream
 
     def extract_streams(self, stream, length, prepick):
@@ -832,7 +828,8 @@ def _read_family(fname, all_cat, template, encoding="UTF8",
         detection = Detection(**det_dict)
         if gen_event:
             detection._calculate_event(
-                template=template, estimate_origin=estimate_origin)
+                template=template, estimate_origin=estimate_origin,
+                correct_prepick=False)
         detections.append(detection)
     return detections
 

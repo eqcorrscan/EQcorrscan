@@ -203,7 +203,7 @@ class Detection(object):
             _f.write(self._print_str() + '\n')
 
     def _calculate_event(self, template=None, template_st=None,
-                         estimate_origin=True):
+                         estimate_origin=True, correct_prepick=True):
         """
         Calculate an event for this detection using a given template.
 
@@ -217,6 +217,10 @@ class Detection(object):
         :param estimate_origin:
             Whether to include an estimate of the origin based on the template
             origin.
+        :type correct_prepick: bool
+        :param correct_prepick:
+            Whether to apply the prepick correction defined in the template.
+            Only applicable if template is not None
 
         .. rubric:: Note
             Works in place on Detection - over-writes previous events.
@@ -236,7 +240,7 @@ class Detection(object):
         ev.creation_info = CreationInfo(
             author='EQcorrscan', creation_time=UTCDateTime())
         ev.comments.append(
-            Comment(test="Template: {0}".format(self.template_name)))
+            Comment(text="Template: {0}".format(self.template_name)))
         ev.comments.append(
             Comment(text='threshold={0}'.format(self.threshold)))
         ev.comments.append(
@@ -247,7 +251,10 @@ class Detection(object):
                     ' '.join([str(pair) for pair in self.chans]))))
         if template is not None:
             template_st = template.st
-            template_prepick = template.prepick
+            if correct_prepick:
+                template_prepick = template.prepick
+            else:
+                template_prepick = 0
             template_picks = template.event.picks
         else:
             template_prepick = 0
@@ -264,7 +271,7 @@ class Detection(object):
                 continue  # The channel contains no data and was not used.
             else:
                 pick_time = self.detect_time + (
-                        tr.stats.starttime - min_template_tm)
+                    tr.stats.starttime - min_template_tm)
                 pick_time += template_prepick
                 new_pick = Pick(
                     time=pick_time, waveform_id=WaveformStreamID(

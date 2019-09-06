@@ -434,7 +434,7 @@ class Party(object):
 
         Using the absolute thresholding method on the same Party:
 
-        >>> party = Party().read().rethreshold(6.0, 'absolute')
+        >>> party = Party().read().rethreshold(5.9, 'absolute')
         >>> len(party)
         1
 
@@ -463,7 +463,7 @@ class Party(object):
                     raise MatchFilterError(
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
-                if d.detect_val >= new_thresh:
+                if float(d.detect_val) >= new_thresh:
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type

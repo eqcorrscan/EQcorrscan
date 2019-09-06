@@ -14,9 +14,7 @@ import logging
 import os
 import glob
 import matplotlib.pyplot as plt
-import datetime as dt
 import itertools
-import sys
 import copy
 import random
 import pickle
@@ -25,8 +23,7 @@ import math
 from scipy.signal import iirfilter
 from collections import Counter
 from obspy.signal.invsim import simulate_seismometer as seis_sim
-from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
-from obspy import UTCDateTime
+from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
@@ -37,40 +34,7 @@ from eqcorrscan.utils.catalog_utils import _get_origin
 Logger = logging.getLogger(__name__)
 
 
-def dist_calc(loc1, loc2):
-    """
-    Function to calculate the distance in km between two points.
-
-    Uses the
-    `haversine formula <https://en.wikipedia.org/wiki/Haversine_formula>`_
-    to calculate great circle distance at the Earth's surface, then uses
-    trig to include depth.
-
-    :type loc1: tuple
-    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
-    :type loc2: tuple
-    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
-
-    :returns: Distance between points in km.
-    :rtype: float
-    """
-    from eqcorrscan.utils.libnames import _load_cdll
-    import ctypes
-
-    utilslib = _load_cdll('libutils')
-
-    utilslib.dist_calc.argtypes = [
-        ctypes.c_float, ctypes.c_float, ctypes.c_float,
-        ctypes.c_float, ctypes.c_float, ctypes.c_float]
-    utilslib.dist_calc.restype = ctypes.c_float
-
-    dist = utilslib.dist_calc(
-        float(math.radians(loc1[0])), float(math.radians(loc1[1])),
-        float(loc1[2]),
-        float(math.radians(loc2[0])), float(math.radians(loc2[1])),
-        float(loc2[2]))
-    return dist
-
+# Magnitude - frequency funcs
 
 def calc_max_curv(magnitudes, plotvar=False):
     """
@@ -237,7 +201,44 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     return b_values
 
 
-def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
+# Helpers for local magnitude estimation
+
+def dist_calc(loc1, loc2):
+    """
+    Function to calculate the distance in km between two points.
+
+    Uses the
+    `haversine formula <https://en.wikipedia.org/wiki/Haversine_formula>`_
+    to calculate great circle distance at the Earth's surface, then uses
+    trig to include depth.
+
+    :type loc1: tuple
+    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
+    :type loc2: tuple
+    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
+
+    :returns: Distance between points in km.
+    :rtype: float
+    """
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.dist_calc.argtypes = [
+        ctypes.c_float, ctypes.c_float, ctypes.c_float,
+        ctypes.c_float, ctypes.c_float, ctypes.c_float]
+    utilslib.dist_calc.restype = ctypes.c_float
+
+    dist = utilslib.dist_calc(
+        float(math.radians(loc1[0])), float(math.radians(loc1[1])),
+        float(loc1[2]),
+        float(math.radians(loc2[0])), float(math.radians(loc2[1])),
+        float(loc2[2]))
+    return dist
+
+
+def _sim_WA(trace, inventory, water_level, velocity=False):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.
 
@@ -254,12 +255,9 @@ def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
         amplitude determination for magnitudes you will need to
         worry about how you cope with the response of this filter
         yourself.
-    :type PAZ: dict
-    :param PAZ:
-        Dictionary containing lists of poles and zeros, the gain and
-        the sensitivity. If unset will expect seedresp.
-    :type seedresp: dict
-    :param seedresp: Seed response information - if unset will expect PAZ.
+    :type inventory: obspy.core.inventory.Inventory
+    :param inventory:
+        Inventory containing response information for the stations in st.
     :type water_level: int
     :param water_level: Water level for the simulation.
     :type velocity: bool
@@ -279,20 +277,18 @@ def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
-    if PAZ:
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=PAZ, paz_simulate=PAZ_WA,
-                              water_level=water_level,
-                              remove_sensitivity=True)
-    elif seedresp:
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=None, paz_simulate=PAZ_WA,
-                              water_level=water_level, seedresp=seedresp)
-    else:
-        Logger.warning('No response given to remove, will just simulate WA')
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=None, paz_simulate=PAZ_WA,
-                              water_level=water_level)
+    resp = inventory.get_response(
+        seed_id=trace.id, datetime=trace.stats.starttime)
+    paz = resp.get_paz()
+    paz = {
+        'poles': paz.poles,
+        'zeros': paz.zeros,
+        'gain': paz.normalization_factor,
+        'sensitivity': resp.instrument_sensitivity.value,
+    }
+    trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
+                          paz_remove=paz, paz_simulate=PAZ_WA,
+                          water_level=water_level)
     return trace
 
 
@@ -335,269 +331,16 @@ def _max_p2t(data, delta):
     return amplitude, period, delta * turning_points[np.argmax(amplitudes)][1]
 
 
-def _GSE2_PAZ_read(gsefile):
-    """
-    Read the instrument response information from a GSE Poles and Zeros file.
-
-    Formatted for files generated by the SEISAN program RESP.
-
-    Format must be CAL2, not coded for any other format at the moment,
-    contact the authors to add others in.
-
-    :type gsefile: string
-    :param gsefile: Path to GSE file
-
-    :returns: Dictionary of poles, zeros, gain and sensitivity
-    :rtype: dict
-    """
-    with open(gsefile, 'r') as f:
-        # First line should start with CAL2
-        header = f.readline()
-        if not header[0:4] == 'CAL2':
-            raise IOError('Unknown format for GSE file, only coded for CAL2')
-        station = header.split()[1]
-        channel = header.split()[2]
-        sensor = header.split()[3]
-        date = dt.datetime.strptime(header.split()[7], '%Y/%m/%d')
-        header = f.readline()
-        if not header[0:4] == 'PAZ2':
-            raise IOError('Unknown format for GSE file, only coded for PAZ2')
-        gain = float(header.split()[3])  # Measured in nm/counts
-        kpoles = int(header.split()[4])
-        kzeros = int(header.split()[5])
-        poles = []
-        for i in range(kpoles):
-            pole = f.readline()
-            poles.append(complex(float(pole.split()[0]),
-                                 float(pole.split()[1])))
-        zeros = []
-        for i in range(kzeros):
-            zero = f.readline()
-            zeros.append(complex(float(zero.split()[0]),
-                                 float(zero.split()[1])))
-        # Have Poles and Zeros, but need Gain and Sensitivity
-        # Gain should be in the DIG2 line:
-        for line in f:
-            if line[0:4] == 'DIG2':
-                sensitivity = float(line.split()[2])
-                # measured in counts/muVolt
-    PAZ = {'poles': poles, 'zeros': zeros, 'gain': gain,
-           'sensitivity': sensitivity}
-    return PAZ, date, station, channel, sensor
-
-
-def _find_resp(station, channel, network, time, delta, directory):
-    """
-    Helper function to find the response information.
-
-    Works for a given station and channel at a given time and return a
-    dictionary of poles and zeros, gain and sensitivity.
-
-    :type station: str
-    :param station: Station name (as in the response files)
-    :type channel: str
-    :param channel: Channel name (as in the response files)
-    :type network: str
-    :param network: Network to scan for, can be a wildcard
-    :type time: datetime.datetime
-    :param time: Date-time to look for repsonse information
-    :type delta: float
-    :param delta: Sample interval in seconds
-    :type directory: str
-    :param directory: Directory to scan for response information
-
-    :returns: dictionary of response information
-    :rtype: dict
-    """
-    possible_respfiles = glob.glob(directory + os.path.sep + 'RESP.' +
-                                   network + '.' + station +
-                                   '.*.' + channel)  # GeoNet RESP naming
-    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
-                                    network + '.' + channel +
-                                    '.' + station)  # RDseed RESP naming
-    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
-                                    station + '.' + network)
-    # WIZARD resp naming
-    # GSE format, station needs to be 5 characters padded with _, channel is 4
-    # characters padded with _
-    station = str(station)
-    channel = str(channel)
-    possible_respfiles += glob.glob(directory + os.path.sep +
-                                    station.ljust(5, str('_')) +
-                                    channel[0:len(channel) - 1].
-                                    ljust(3, str('_')) +
-                                    channel[-1] + '.*_GSE')
-    PAZ = []
-    seedresp = []
-    for respfile in possible_respfiles:
-        Logger.info('Reading response from: ' + respfile)
-        if respfile.split(os.path.sep)[-1][0:4] == 'RESP':
-            # Read from a resp file
-            seedresp = {'filename': respfile, 'date': UTCDateTime(time),
-                        'units': 'DIS', 'network': network, 'station': station,
-                        'channel': channel, 'location': '*'}
-            try:
-                # Attempt to evaluate the response for this information, if not
-                # then this is not the correct response info!
-                freq_resp, freqs = evalresp(
-                    delta, 100, seedresp['filename'], seedresp['date'],
-                    units=seedresp['units'], freq=True,
-                    network=seedresp['network'], station=seedresp['station'],
-                    channel=seedresp['channel'])
-            except Exception as e:
-                Logger.warning('Issues with RESP file: {0}'.format(e))
-                seedresp = []
-                continue
-        elif respfile[-3:] == 'GSE':
-            PAZ, pazdate, pazstation, pazchannel, pazsensor =\
-                _GSE2_PAZ_read(respfile)
-            # check that the date is good!
-            if pazdate >= time and pazchannel != channel and\
-               pazstation != station:
-                Logger.warning('Issue with GSE file: date: ' +
-                               str(pazdate) + ' channel: ' + pazchannel +
-                               ' station: ' + pazstation)
-                PAZ = []
-        else:
-            continue
-        # Check that PAZ are for the correct station, channel and date
-        if PAZ or seedresp:
-            break
-    if PAZ:
-        return PAZ
-    elif seedresp:
-        return seedresp
-
-
 def _pairwise(iterable):
     """
     Wrapper on itertools for SVD_magnitude.
     """
     a, b = itertools.tee(iterable)
     next(b, None)
-    if sys.version_info.major == 2:
-        return itertools.izip(a, b)
-    else:
-        return zip(a, b)
+    return zip(a, b)
 
 
-def _snr(tr, noise_window, signal_window):
-    """
-    Compute ratio of maximum signal amplitude to rms noise amplitude.
-
-    :type tr: `obspy.core.Trace`
-    :param tr: Trace to compute signal-to-noise ratio for
-    :type noise_window: tuple of UTCDateTime
-    :param noise_window: (start, end) of window to use for noise
-    :type signal_window: tuple of UTCDateTime
-    :param signal_window: (start, end) of window to use for signal
-
-    :rtype: float
-    :return: Signal-to-noise ratio.
-    """
-    from eqcorrscan.core.template_gen import _rms
-
-    noise_amp = _rms(
-        tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
-    if np.isnan(noise_amp):
-        Logger.info("Noise amplitude is nan, setting to 1")
-        noise_amp = 1.
-    try:
-        signal_amp = tr.slice(
-            starttime=signal_window[0], endtime=signal_window[1]).data.max()
-    except ValueError as e:
-        Logger.error(e)
-        return np.nan
-    return signal_amp / noise_amp
-
-
-def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
-                       signal_window=(-.5, 20), min_snr=5.0,
-                       use_s_picks=False):
-    """
-    Compute the relative amplitudes between two streams.
-
-    Uses standard deviation of amplitudes within trace. Relative amplitudes are
-    computed as:
-
-    .. math::
-
-       \\frac{std(tr2)}{std(tr1)}
-
-    where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
-    from st2.  The standard deviation of the amplitudes is computed in the
-    signal window given. If the ratio of amplitudes between the signal window
-    and the noise window is below `min_snr` then no result is returned for that
-    trace. Windows are computed relative to the first pick for that station.
-
-    :type st1: `obspy.core.stream.Stream`
-    :param st1: Stream for event1
-    :type st2: `obspy.core.stream.Stream`
-    :param st2: Stream for event2
-    :type event1: `obspy.core.event.Event`
-    :param event1: Event with picks (nothing else is needed)
-    :type event2: `obspy.core.event.Event`
-    :param event2: Event with picks (nothing else is needed)
-    :type noise_window: tuple of float
-    :param noise_window:
-        Start and end of noise window in seconds relative to pick
-    :type signal_window: tuple of float
-    :param signal_window:
-        Start and end of signal window in seconds relative to pick
-    :type min_snr: float
-    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
-    :type use_s_picks: bool
-    :param use_s_picks:
-        Whether to allow relative amplitude estimates to be made from S-picks.
-        Note that noise and signal windows are relative to pick-times, so using
-        an S-pick might result in a noise window including P-energy.
-
-    :rtype: dict
-    :return: Dictionary of relative amplitudes keyed by seed-id
-    """
-    from obspy import Stream
-
-    amplitudes = {}
-    for tr1 in st1:
-        pick1 = _get_pick_for_station(
-            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
-        if pick1 is None:
-            continue
-        snr1 = _snr(
-            tr1, (pick1.time + noise_window[0], pick1.time + noise_window[1]),
-            (pick1.time + signal_window[0], pick1.time + signal_window[1]))
-        if np.isnan(snr1) or snr1 <= min_snr:
-            Logger.info(
-                "SNR of {0} is below min_snr ({1}) for {2} in st1".format(
-                    snr1, min_snr, tr1.id))
-            continue
-        tr2 = [tr for tr in st2 if tr.id == tr1.id]
-        if len(tr2) == 0:
-            Logger.info("No matched traces for {0}".format(tr1.id))
-            continue
-        tr2 = Stream(tr2).merge()[0]
-        pick2 = _get_pick_for_station(
-            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
-        if pick2 is None:
-            continue
-        snr2 = _snr(
-            tr2, (pick2.time + noise_window[0], pick2.time + noise_window[1]),
-            (pick2.time + signal_window[0], pick2.time + signal_window[1]))
-        if np.isnan(snr2) or snr2 <= min_snr:
-            Logger.info(
-                "SNR of {0} is below min_snr ({1}) for {2} in st2".format(
-                    snr2, min_snr, tr2.id))
-            continue
-        # If we get here, actually compute the ratio in the signal windows
-        amp1 = tr1.slice(starttime=pick1.time + signal_window[0],
-                         endtime=pick1.time + signal_window[1]).data.std()
-        amp2 = tr2.slice(starttime=pick2.time + signal_window[0],
-                         endtime=pick2.time + signal_window[1]).data.std()
-        Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
-            tr1.id, amp2/amp1))
-        amplitudes.update({tr1.id: amp2 / amp1})
-    return amplitudes
-
+# Helpers for relative magnitude calculation
 
 def _get_pick_for_station(event, station, use_s_picks):
     """
@@ -626,6 +369,147 @@ def _get_pick_for_station(event, station, use_s_picks):
     Logger.info("No suitable pick found for {0}".format(station))
     return None
 
+
+def _snr(tr, noise_window, signal_window):
+    """
+    Compute ratio of maximum signal amplitude to rms noise amplitude.
+
+    :param tr: Trace to compute signal-to-noise ratio for
+    :param noise_window: (start, end) of window to use for noise
+    :param signal_window: (start, end) of window to use for signal
+
+    :return: Signal-to-noise ratio, noise amplitude
+    """
+    from eqcorrscan.core.template_gen import _rms
+
+    noise_amp = _rms(
+        tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
+    if np.isnan(noise_amp):
+        Logger.warning("Could not calculate noise with this data, setting "
+                       "to 1")
+        noise_amp = 1.0
+    try:
+        signal_amp = tr.slice(
+            starttime=signal_window[0], endtime=signal_window[1]).data.max()
+    except ValueError as e:
+        Logger.error(e)
+        return np.nan
+    return signal_amp / noise_amp
+
+
+def _get_signal_and_noise(stream, event, seed_id, noise_window,
+                          signal_window, use_s_picks):
+    """
+    Get noise and signal amplitudes and signal standard deviation for an event
+    on a specific channel.
+
+    Noise amplitude is calculated as the RMS amplitude in the noise window,
+    signal amplitude is the maximum amplitude in the signal window.
+    """
+    from eqcorrscan.core.template_gen import _rms
+
+    station = seed_id.split('.')[1]
+    pick = _get_pick_for_station(
+        event=event, station=station, use_s_picks=use_s_picks)
+    if pick is None:
+        Logger.error("No pick for {0}".format(station))
+        return None, None, None
+    tr = stream.select(id=seed_id).merge()
+    if len(tr) == 0:
+        return None, None, None
+    tr = tr[0]
+    noise_amp = _rms(tr.slice(
+        starttime=pick.time + noise_window[0],
+        endtime=pick.time + noise_window[1]).data)
+    if np.isnan(noise_amp):
+        noise_amp = None
+    signal = tr.slice(
+        starttime=pick.time + signal_window[0],
+        endtime=pick.time + signal_window[1]).data
+    return noise_amp, signal.max(), signal.std()
+
+
+def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0,
+                       use_s_picks=False):
+    """
+    Compute the relative amplitudes between two streams.
+
+    Uses standard deviation of amplitudes within trace. Relative amplitudes are
+    computed as:
+
+    .. math::
+
+       \\frac{std(tr2)}{std(tr1)}
+
+    where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
+    from st2.  The standard deviation of the amplitudes is computed in the
+    signal window given. If the ratio of amplitudes between the signal window
+    and the noise window is below `min_snr` then no result is returned for that
+    trace. Windows are computed relative to the first pick for that station.
+
+    If one stream has insufficient data to estimate noise amplitude, the noise
+    amplitude of the other will be used.
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+
+    :rtype: dict
+    :return: Dictionary of relative amplitudes keyed by seed-id
+    """
+    seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
+    amplitudes = {}
+    for seed_id in seed_ids:
+        noise1, signal1, std1 = _get_signal_and_noise(
+            stream=st1, event=event1, signal_window=signal_window,
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
+        noise2, signal2, std2 = _get_signal_and_noise(
+            stream=st2, event=event2, signal_window=signal_window,
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
+        noise1 = noise1 or noise2
+        noise2 = noise2 or noise1
+        if noise1 is None or noise2 is None:
+            Logger.error("Insufficient data for noise to be estimated for "
+                         "{0}".format(seed_id))
+            continue
+        if signal1 is None or signal2 is None:
+            Logger.error("No signal data found for {0}".format(seed_id))
+            continue
+        snr1 = np.nan_to_num(signal1 / noise1)
+        snr2 = np.nan_to_num(signal2 / noise2)
+        if snr1 < min_snr or snr2 < min_snr:
+            Logger.info("SNR (event1: {0:.2f}, event2: {1:.2f} too low "
+                        "for {2}".format(snr1, snr2, seed_id))
+            continue
+        ratio = std2 / std1
+        Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
+            seed_id, ratio))
+        amplitudes.update({seed_id: ratio})
+    return amplitudes
+
+
+# Magnitude estimation functions
 
 def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
                        signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
@@ -730,7 +614,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     return relative_magnitudes
 
 
-def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
+def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
                    remove_old=False, ps_multiplier=0.34, velocity=False):
@@ -741,7 +625,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     picks this amplitude and period.  There are a few things it does
     internally to stabilise the result:
 
-        1. Applies a given filter to the data - very necessary for small
+        1. Applies a given filter to the data - often necessary for small
         magnitude earthquakes;
 
         2. Keeps track of the poles and zeros of this filter and removes them
@@ -779,8 +663,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :param event: Event to pick
     :type st: obspy.core.stream.Stream
     :param st: Stream associated with event
-    :type respdir: str
-    :param respdir: Path to the response information directory
+    :type inventory: obspy.core.inventory.Inventory
+    :param inventory:
+        Inventory containing response information for the stations in st.
     :type chans: list
     :param chans:
         List of the channels to pick on, defaults to ['Z'] - should just be
@@ -854,8 +739,10 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     if remove_old and event.amplitudes:
         for amp in event.amplitudes:
             # Find the pick and remove it too
-            pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
-            event.picks.remove(pick)
+            pick = [p for p in event.picks if p.resource_id == amp.pick_id]
+            if len(pick) == 0:
+                continue
+            event.picks.remove(pick[0])
         event.amplitudes = []
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
@@ -898,24 +785,10 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                         'For some reason trace is not continuous: {0}'.format(
                             tr))
                     continue
-            # Find the response information
-            resp_info = _find_resp(
-                tr.stats.station, tr.stats.channel, tr.stats.network,
-                tr.stats.starttime, tr.stats.delta, respdir)
-            PAZ = []
-            seedresp = []
-            if resp_info and 'gain' in resp_info:
-                PAZ = resp_info
-            elif resp_info:
-                seedresp = resp_info
-            # Simulate a Wood Anderson Seismograph
-            if PAZ and len(tr.data) > 10:
-                # Set ten data points to be the minimum to pass
-                tr = _sim_WA(tr, PAZ, None, 10, velocity=velocity)
-            elif seedresp and len(tr.data) > 10:
-                tr = _sim_WA(tr, None, seedresp, 10, velocity=velocity)
-            elif len(tr.data) > 10:
-                Logger.warning('No PAZ for ' + tr.stats.station + ' ' +
+            try:
+                tr = _sim_WA(tr, inventory, 10, velocity=velocity)
+            except:
+                Logger.warning('No response for ' + tr.stats.station + ' ' +
                                tr.stats.channel + ' at time: ' +
                                str(tr.stats.starttime))
                 continue
@@ -1041,10 +914,6 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                             'sensitivity': 1.0}
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(
                     filt_paz, 1 / period) * filt_paz['sensitivity'])
-            if PAZ:
-                amplitude /= 1000
-            if seedresp:  # Seedresp method returns mm
-                amplitude *= 1000000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
             amplitude *= 0.5
@@ -1059,40 +928,27 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 evaluation_mode='automatic'))
             if not velocity:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m',
                     magnitude_hint='ML', type='AML', category='point'))
             else:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m/s',
                     magnitude_hint='ML', type='AML', category='point'))
     return event
 
 
-def amp_pick_sfile(*args, **kwargs):
-    raise ImportError(
-        "Sfile support is depreciated, read in using obspy.io.nordic")
-
-
-def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
-    """Depreciated."""
-    Logger.warning('Depreciated, use svd_moments instead')
-    return svd_moments(u=U, s=s, v=V, stachans=stachans,
-                       event_list=event_list, n_svs=n_SVs)
-
-
 def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     """
     Calculate relative moments/amplitudes using singular-value decomposition.
 
-    Convert basis vectors calculated by singular value \
-    decomposition (see the SVD functions in clustering) into relative \
-    moments.
+    Convert basis vectors calculated by singular value decomposition (see the
+    SVD functions in clustering) into relative moments.
 
-    For more information see the paper by \
+    For more information see the paper by
     `Rubinstein & Ellsworth (2010).
     <http://www.bssaonline.org/content/100/5A/1952.short>`_
 
@@ -1111,12 +967,12 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     :type stachans: list
     :param stachans: List of station.channel input
     :type event_list: list
-    :param event_list: List of events for which you have data, such that \
-        event_list[i] corresponds to stachans[i], U[i] etc. and \
-        event_list[i][j] corresponds to event j in U[i].  These are a series \
-        of indexes that map the basis vectors to their relative events and \
-        channels - if you have every channel for every event generating these \
-        is trivial (see example).
+    :param event_list:
+        List of events for which you have data, such that event_list[i]
+        corresponds to stachans[i], U[i] etc. and event_list[i][j] corresponds
+        to event j in U[i].  These are a series of indexes that map the basis
+        vectors to their relative events and channels - if you have every
+        channel for every event generating these is trivial (see example).
     :type n_svs: int
     :param n_svs: Number of singular values to use, defaults to 4.
 
@@ -1167,6 +1023,10 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     ...                             event_list=event_list) # doctest: +SKIP
 
     """
+    Logger.critical(
+        "Proceed with caution: this function is experimental and somewhat"
+        " stochastic - you should run this multiple times to ensure you get"
+        " a stable result.")
     # Define maximum number of events, will be the width of K
     K_width = max([max(ev_list) for ev_list in event_list]) + 1
     # Sometimes the randomisation generates a singular matrix - rather than

@@ -4,35 +4,6 @@ EQcorrscan contains both an automatic amplitude picker and a
 singular-value decomposition derived magnitude calculation, which
 is very accurate but requires high levels of event similarity.
 
-Amplitude picker for local magnitudes
--------------------------------------
-
-Currently this is only implemented for seisan s-files, however we have no plans
-to extend this to other formats (although it would be simple as seisan files
-are read in as obspy events not).
-
-This example requires data downloaded from the eqcorrscan github repository.
-
-.. code-block:: python
-
-    >>> from eqcorrscan.utils.mag_calc import amp_pick_event
-    >>> from obspy import read, read_events
-    >>> from obspy.io.nordic.core import readwavename
-    >>> from eqcorrscan import tests
-    >>> import os
-    >>> # Get the path for the test-data so we can test this
-    >>> testing_path = os.path.dirname(tests.__file__) + '/test_data'
-    >>> sfile = os.path.join(testing_path, 'REA', 'TEST_',
-    ...                      '01-0411-15L.S201309')
-    >>> datapath = os.path.join(testing_path, 'WAV', 'TEST_')
-    >>> event = read_events(sfile)[0]
-    >>> st = read(os.path.join(datapath, readwavename(sfile)[0]))
-    >>> respdir = testing_path
-    >>> event = amp_pick_event(
-    ...     event=event, st=st, respdir=respdir, chans=['Z'],
-    ...     var_wintype=True, winlen=0.9, pre_pick=0.2, pre_filt=True,
-    ...     lowcut=1.0, highcut=20.0, corners=4) # doctest:+ELLIPSIS
-
 Relative moment by singular-value decomposition
 -----------------------------------------------
 
