@@ -522,15 +522,6 @@ class Tribe(object):
             merged stream without the `fill_value` argument
             (e.g.: `stream = stream.merge()`).
 
-        .. Note::
-            Detections are not corrected for `pre-pick`, the
-            detection.detect_time corresponds to the beginning of the earliest
-            template channel at detection.
-
-        .. warning::
-            Picks included in the output Party.get_catalog() will not be
-            corrected for pre-picks in the template.
-
         .. note::
             **Data overlap:**
 
@@ -710,15 +701,6 @@ class Tribe(object):
         .. Note::
             When using the "fftw" correlation backend the length of the fft
             can be set. See :mod:`eqcorrscan.utils.correlate` for more info.
-
-        .. Note::
-            Detections are not corrected for `pre-pick`, the
-            detection.detect_time corresponds to the beginning of the earliest
-            template channel at detection.
-
-        .. warning::
-            Picks included in the output Party.get_catalog() will not be
-            corrected for pre-picks in the template.
 
         .. Note::
             Ensures that data overlap between loops, which will lead to no

@@ -994,12 +994,12 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template=template, estimate_origin=False)
-        # Picks are adjusted by prepick
-        for pick in test_detection_altered.event.picks:
-            pick.time -= template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         test_detection_altered._calculate_event(
             template_st=template.st, estimate_origin=False)
+        # Picks are adjusted by prepick
+        for pick in test_detection_altered.event.picks:
+            pick.time += template.prepick
         self.assertEqual(test_detection, test_detection_altered)
         # Check that detection is left alone if wrong template given
         test_detection_altered._calculate_event(

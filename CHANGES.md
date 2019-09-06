@@ -1,14 +1,14 @@
-## Current
+## 0.4.0
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
   alleviate issue related to large-prime length transforms.  This requires an
-  additional dependency, but EQcorrscan already depends on FFTW itself.
-* Refactor of catalog_to_dd functions:
+  additional dependency, but EQcorrscan already depends on FFTW itself (#316).
+* Refactor of catalog_to_dd functions (#322):
   - Speed-ups, using new correlation functions and better resource management
   - Removed enforcement of seisan, arguments are now standard obspy objects.
 * Add plotdir to lag-calc, template construction and matched-filter detection
-  methods and functions.
+  methods and functions (#330, #325).
 * Wholesale re-write of lag-calc function and methods. External interface is
-  similar, but some arguments have been depreciated as they were unnecesary.
+  similar, but some arguments have been depreciated as they were unnecessary (#321).
   - This was done to make use of the new internal correlation functions which
     are faster and more memory efficient.
   - Party.lag_calc and Family.lag_calc now work in-place on the events in 
@@ -72,7 +72,7 @@
   for downloading data from  datacentres via the `from_client` method when
   data quality is not known.
 * Added relative amplitude measurements as
-  `utils.mag_calc.relative_amplitude`.
+  `utils.mag_calc.relative_amplitude` (#306).
 * Added relative magnitude calculation using relative amplitudes weighted by
   correlations to `utils.mag_calc.relative_magnitude`.
 * Added `relative_magnitudes` argument to 
@@ -80,10 +80,10 @@
   way to compute relative magnitudes for detected events.
 * Events constructed from detections now include estimated origins alongside
   the picks. These origins are time-shifted versions of the template origin and
-  should be used with caution. They are corrected for prepick.
+  should be used with caution. They are corrected for prepick (#308).
 * Picks in detection.event are now corrected for prepick *if* the template is
   given. This is now standard in all Tribe, Party and Family methods. Picks will
-  not be corrected for prepick in match_filter.
+  not be corrected for prepick in match_filter (#308).
 * Fix #298 where the header was repeated in detection csv files. Also added
   a `write_detections` function to `eqcorrscan.core.match_filter.detection`
   to streamline writing detections.

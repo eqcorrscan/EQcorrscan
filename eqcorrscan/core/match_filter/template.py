@@ -461,11 +461,6 @@ class Template(object):
             merged stream without the `fill_value` argument
             (e.g.: `stream = stream.merge()`).
 
-        .. Note::
-            Detections are not corrected for `pre-pick`, the
-            detection.detect_time corresponds to the beginning of the earliest
-            template channel at detection.
-
         .. note::
             **Data overlap:**
 
