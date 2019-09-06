@@ -52,6 +52,8 @@ class TestCatalogMethods(unittest.TestCase):
         catalog = client.get_events(
             starttime=starttime, endtime=endtime, latitude=-44.5,
             longitude=167.9, maxradius=0.2)
+        catalog.events.sort(
+            key=lambda e: (e.preferred_origin() or e.origins[0]).time)
         StationInfo = namedtuple(
             "StationInfo", ["network", "station", "location"])
         picked_stations = [StationInfo(p.waveform_id.network_code,
@@ -267,9 +269,9 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_event_string(self):
         event_str = _hypodd_event_str(event=self.catalog[0], event_id=1)
-        self.assertEqual(event_str, '20190812  10352718  -44.4843   '
-                                    '167.8174     8.4565   5.70   0.01   '
-                                    '4.29   0.58          1')
+        self.assertEqual(event_str, '20190812  10352775  -44.5152   167.8586'
+                                    '    12.0000   5.51   0.01   0.00   '
+                                    '0.74          1')
 
 
 if __name__ == '__main__':
