@@ -924,7 +924,6 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                             'sensitivity': 1.0}
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(
                     filt_paz, 1 / period) * filt_paz['sensitivity'])
-            amplitude /= 1000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
             amplitude *= 0.5
@@ -939,13 +938,13 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                 evaluation_mode='automatic'))
             if not velocity:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m',
                     magnitude_hint='ML', type='AML', category='point'))
             else:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m/s',
                     magnitude_hint='ML', type='AML', category='point'))

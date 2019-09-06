@@ -11,7 +11,6 @@ import logging
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy import UTCDateTime, read, read_events, Trace
 from obspy.clients.fdsn import Client
-from obspy.io.nordic.core import readwavename
 
 from eqcorrscan.utils import mag_calc
 from eqcorrscan.utils.mag_calc import (
