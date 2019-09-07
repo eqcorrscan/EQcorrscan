@@ -7,3 +7,6 @@ dependencies:
   - fftw
   - h5py
   - obspy
+  - bottleneck
+  - nbsphinx
+  - matplotlib
