@@ -1,4 +1,6 @@
 name: eqcorrscan-dcos
+channels:
+  - conda-forge
 dependencies:
   - numpy
   - pyfftw
