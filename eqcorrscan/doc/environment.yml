@@ -1,0 +1,7 @@
+name: eqcorrscan-dcos
+dependencies:
+  - numpy
+  - pyfftw
+  - fftw
+  - h5py
+  - obspy

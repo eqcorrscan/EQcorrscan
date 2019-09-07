@@ -22,3 +22,6 @@ python:
   install:
     - requirements: eqcorrscan/doc/requirements.txt
     - requirements: requirements.txt
+
+conda:
+  environment: eqcorrscan/doc/environment.yml
