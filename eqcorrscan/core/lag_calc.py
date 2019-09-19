@@ -386,7 +386,7 @@ def _prepare_data(family, detect_data, shift_len):
 def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False):
+             plot=False, plotdir=None):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -434,6 +434,8 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type plot: bool
     :param plot:
         To generate a plot for every detection or not, defaults to False
+    :param plotdir:
+        Path to plotting folder, plots will be output here.
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -513,7 +515,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                 family=family, stream=detect_data,
                 min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
-                cores=cores, shift_len=shift_len, plot=plot)
+                cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()
