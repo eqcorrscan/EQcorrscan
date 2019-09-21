@@ -2230,7 +2230,7 @@ def origintime_detections(detections, method='simple', **kwargs):
                         parent.date() == day.date]
             yparents = np.zeros(len(parents))
             plt.plot(xparents, yparents, '.', color='blue', label='parents')
-        except Exception as execption:
+        except Exception as exception:
             print(exception)
             print(txt)
     elif method == 'advance':
@@ -2260,7 +2260,7 @@ def origintime_detections(detections, method='simple', **kwargs):
             shift = dt.timedelta(seconds=700)
             for parent in xparents:
                 plt.text(parent-shift, 0.1, parent, rotation=90)
-        except Exception as execption:
+        except Exception as exception:
             print(exception)
             print(txt)
     if number_parents > 30:
