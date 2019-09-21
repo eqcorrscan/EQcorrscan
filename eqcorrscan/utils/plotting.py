@@ -2169,7 +2169,7 @@ def origintime_detections(detections, method='simple', **kwargs):
 
     '''
     Plot detections before and after applying match-filter and visual
-    comparision between them in one day.
+    comparison between them in one day.
 
     :type detections: list
     :param detections: list of eqcorrscan.core.match_filter.Detection
