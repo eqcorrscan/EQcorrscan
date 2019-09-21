@@ -2231,6 +2231,7 @@ def origintime_detections(detections, method='simple', **kwargs):
             yparents = np.zeros(len(parents))
             plt.plot(xparents, yparents, '.', color='blue', label='parents')
         except Exception as execption:
+            print(exception)
             print(txt)
     elif method == 'advance':
         families = {}
@@ -2260,6 +2261,7 @@ def origintime_detections(detections, method='simple', **kwargs):
             for parent in xparents:
                 plt.text(parent-shift, 0.1, parent, rotation=90)
         except Exception as execption:
+            print(exception)
             print(txt)
     if number_parents > 30:
         ncol = 2
