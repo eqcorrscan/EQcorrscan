@@ -2117,7 +2117,7 @@ def subspace_fc_plot(detector, stachans, **kwargs):
                                show=True)
 
     """
-    
+
     if stachans == 'all' and not detector.multiplex:
         stachans = detector.stachans
     elif detector.multiplex:
