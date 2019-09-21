@@ -1,3 +1,4 @@
+* Write new function utils.plotting.origintime_detections
 * Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
 ## 0.4.0
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
