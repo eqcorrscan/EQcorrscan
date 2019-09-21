@@ -2184,6 +2184,120 @@ def subspace_fc_plot(detector, stachans, **kwargs):
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def origintime_detections(detections, method='simple', **kwargs):
+
+    '''
+    Plot detections before and after applying match-filter and visual
+    comparision between them in one day.
+
+    :type detections: list
+    :param detections: list of eqcorrscan.core.match_filter.Detection
+    :type method: str
+    :param method: 'simple' or 'advance' defult to 'simple'
+    {plotting_kwargs}
+
+    :returns: :class:`matplotlib.figure.Figure`
+
+    .. warning::
+        For showing templates' origin, template name must be str of
+        the origin time of each template in match_filter or being changed to
+        origin time later.
+        Something like 2014-10-18T04:02:02
+        If template's name is something else, only detections will be plot.
+
+    .. rubric:: Example
+    >>> from eqcorrscan.core.match_filter import read_detections
+    >>> from eqcorrscan.utils.plotting import origintime_detections
+    >>> # Read text file detections
+    >>> detections = read_detections('path/to/file/filename')
+    >>> origintime_detections(detections, method='advance',
+    ...                       save=Ture, show=True,
+    ...                       savefile='./output.png')
+
+    .. rubric:: Example
+
+    >>> from eqcorrscan.core.match_filter import match_filter
+    >>> detections = match_filter(
+    ...     template_names=['2014-10-18T04:02:02'], template_list=[template],
+    ...     st=stream, threshold=10, threshold_type='MAD', trig_int=3,
+    ...     plot=False, output_cat=False, output_event=True)
+    >>> origintime_detections(detections, method='advance',
+    ...                       save=Ture, show=True,
+    ...                       savefile='./output.png')
+    '''
+    txt = '''
+        Can't show templates!
+        For showing templates' origin, template name must be str of
+        the origin time of each template in all detections.
+        Something like 2014-10-18T04:02:02
+        '''
+
+    day = UTCDateTime(detections[0].detect_time.date)
+    times = [day.datetime, (day+(3600*24)).datetime]
+    plt.figure()
+    plt.plot(times, [0, 0])
+    if method == 'simple':
+        xdetects = [detect.detect_time.datetime for detect in detections]
+        ydetects = np.zeros(len(xdetects))
+        plt.plot(xdetects, ydetects, 'rx', markersize=7, label='child events')
+        try:
+            parents = [detection.template_name for detection in detections]
+            parents = list(set(parents))
+            number_parents = len(parents)
+            parents = [UTCDateTime(parent).datetime for parent in parents]
+            xparents = [parent for parent in parents if
+                        parent.date() == day.date]
+            yparents = np.zeros(len(parents))
+            plt.plot(xparents, yparents, '.', color='blue', label='parents')
+        except Exception as execption:
+            print(txt)
+    elif method == 'advance':
+        families = {}
+        for detect in detections:
+            template_name = detect.template_name
+            detect_time = detect.detect_time.datetime
+            if template_name in families.keys():
+                families[template_name].append(detect_time)
+            else:
+                families[template_name] = []
+                families[template_name].append(detect_time)
+        number_parents = len(families)
+        for family in sorted(families.keys()):
+            xdetects = families[family]
+            ydetects = np.zeros(len(xdetects))
+            plt.plot(xdetects, ydetects, 'x', markersize=7,
+                     label='{}({})'.format(family, len(xdetects)))
+        try:
+            xparents = [UTCDateTime(parent).datetime
+                        for parent in families.keys()
+                        if UTCDateTime(parent).date == day.date]
+            yparents = np.zeros(len(xparents))
+            plt.plot(xparents, yparents, '.', color='blue', markersize=7,
+                     label='parents')
+            plt.vlines(xparents, 0, 0.25, linewidth=0.6, alpha=0.5)
+            shift = dt.timedelta(seconds=700)
+            for parent in xparents:
+                plt.text(parent-shift, 0.1, parent, rotation=90)
+        except Exception as execption:
+            print(txt)
+    if number_parents > 30:
+        ncol = 2
+    else:
+        ncol = 1
+    legend = plt.legend(loc=(1.04, 0), edgecolor='g', ncol=ncol,
+                        title='parents({})\nchild-events({})'
+                        .format(number_parents, len(detections)))
+    legend._legend_box.align = "left"
+    plt.xlabel('Origin time')
+    plt.gca().axes.get_yaxis().set_visible(False)
+    fig = plt.gcf()
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    fig = _finalise_figure(fig=fig, **kwargs)
+    return fig
+
+
 def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
                        plot_format, i):  # pragma: no cover
     """
