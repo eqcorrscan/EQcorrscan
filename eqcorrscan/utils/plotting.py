@@ -13,7 +13,7 @@ import logging
 import datetime as dt
 import copy
 import os
-import matplotlib.pyplot as plt
+
 import matplotlib.dates as mdates
 from copy import deepcopy
 from collections import Counter
@@ -64,6 +64,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     Internal function to wrap up a figure.
     {plotting_kwargs}
     """
+    import matplotlib.pyplot as plt
 
     title = kwargs.get("title")
     show = kwargs.get("show", True)
@@ -173,6 +174,7 @@ def xcorr_plot(template, image, shift=None, cc=None, cc_vec=None, **kwargs):
 
     .. image:: ../../plots/xcorr_plot.png
     """
+    import matplotlib.pyplot as plt
     if cc is None or shift is None:
         if not isinstance(cc_vec, np.ndarray):
             Logger.error('Given cc: %s and shift: %s' % (cc, shift))
@@ -224,6 +226,7 @@ def triple_plot(cccsum, cccsum_hist, trace, threshold, **kwargs):
 
     .. image:: ../../plots/triple_plot.png
     """
+    import matplotlib.pyplot as plt
     if len(cccsum) != len(trace.data):
         Logger.error(
             'cccsum is: ' + str(len(cccsum)) + ' trace is: ' +
@@ -311,6 +314,7 @@ def peaks_plot(data, starttime, samp_rate, peaks=None, **kwargs):
         peaks_plot(data=data, starttime=UTCDateTime("2008001"),
                    samp_rate=10, peaks=peaks)
     """
+    import matplotlib.pyplot as plt
     peaks = peaks or [(0, 0)]
     npts = len(data)
     t = np.arange(npts, dtype=np.float32) / (samp_rate * 3600)
@@ -425,6 +429,7 @@ def cumulative_detections(dates=None, template_names=None, detections=None,
                               rate=True, show=True)
 
     """
+    import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import Detection
     # Set up a default series of parameters for lines
     colors = cycle(['red', 'green', 'blue', 'cyan', 'magenta', 'yellow',
@@ -589,6 +594,7 @@ def threeD_gridplot(nodes, **kwargs):
         threeD_gridplot(nodes=nodes)
     """
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+    import matplotlib.pyplot as plt
     lats = []
     longs = []
     depths = []
@@ -687,6 +693,7 @@ def multi_event_singlechan(streams, catalog, station, channel,
 
     .. image:: ../../plots/multi_event_singlechan.png
     """
+    import matplotlib.pyplot as plt
     # Work out how many picks we should have...
     short_cat = Catalog()
     short_streams = []
@@ -796,6 +803,7 @@ def multi_trace_plot(traces, corr=True, stack='linstack', **kwargs):
          stack: 'linstack' or 'PWS', or None.
     {plotting_kwargs}
     """
+    import matplotlib.pyplot as plt
     from eqcorrscan.core.match_filter import normxcorr2
     n_axes = len(traces)
     if stack in ['linstack', 'PWS']:
@@ -922,6 +930,7 @@ def detection_multiplot(stream, template, times, streamcolour='k',
                             times=times)
 
     """
+    import matplotlib.pyplot as plt
     # Only take traces that match in both accounting for streams shorter than
     # templates
     template_stachans = [(tr.stats.station, tr.stats.channel)
@@ -1041,6 +1050,7 @@ def interev_mag(times, mags, **kwargs):
         times = [event.preferred_origin().time for event in catalog]
         interev_mag(times, magnitudes)
     """
+    import matplotlib.pyplot as plt
     info = [(times[i], mags[i]) for i in range(len(times))]
     info.sort(key=lambda tup: tup[0])
     times = [x[0] for x in info]
@@ -1155,6 +1165,7 @@ def threeD_seismplot(stations, nodes, **kwargs):
     .. Note::
         See :func:`eqcorrscan.utils.plotting.obspy_3d_plot` for example output.
     """
+    import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     stalats, stalongs, staelevs = zip(*stations)
     evlats, evlongs, evdepths = zip(*nodes)
@@ -1205,6 +1216,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
 
     :return: `matplotlib.pyplot.Figure`
     """
+    import matplotlib.pyplot as plt
 
     # Work out how many traces we can plot
     n_traces = 0
@@ -1333,6 +1345,7 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
         pretty_template_plot(template, background=st,
                              picks=event.picks)
     """
+    import matplotlib.pyplot as plt
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1451,6 +1464,7 @@ def plot_repicked(template, picks, det_stream, **kwargs):
 
     .. image:: ../../plots/plot_repicked.png
     """
+    import matplotlib.pyplot as plt
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1615,6 +1629,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
         svd_plot(svstreams=svstreams, svalues=sval,
                  stachans=stachans)
     """
+    import matplotlib.pyplot as plt
     figures = []
     for sval, stachan in zip(svalues, stachans):
         Logger.info(stachan)
@@ -1691,6 +1706,7 @@ def plot_synth_real(real_template, synthetic, channels=False, **kwargs):
                   endtime=real[0].stats.starttime + 6.9).detrend('simple')
         plot_synth_real(real_template=real, synthetic=synth, size=(7, 4))
     """
+    import matplotlib.pyplot as plt
     colours = ['k', 'r']
     labels = ['Real', 'Synthetic']
     if channels:
@@ -1800,6 +1816,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
         magnitudes = [event.preferred_magnitude().mag for event in catalog]
         freq_mag(magnitudes, completeness=4, max_mag=7)
     """
+    import matplotlib.pyplot as plt
     # Ensure magnitudes are sorted
     magnitudes.sort()
     # Check that there are no nans or infs
@@ -1900,6 +1917,7 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
         spec_trace(st, trc='white')
 
     """
+    import matplotlib.pyplot as plt
     if isinstance(traces, Stream):
         traces.sort(['station', 'channel'])
     if not fig:
@@ -1962,6 +1980,7 @@ def _spec_trace(trace, cmap=None, wlen=0.4, log=False, trc='k',
     :type title: str
     :param title: Title for the plot.
     """
+    import matplotlib.pyplot as plt
     if not axes:
         fig = plt.figure(figsize=size)
         ax1 = fig.add_subplot(111)
@@ -2032,6 +2051,7 @@ def subspace_detector_plot(detector, stachans, **kwargs):
         subspace_detector_plot(detector=detector, stachans='all', size=(10, 7),
                                show=True)
     """
+    import matplotlib.pyplot as plt
     if stachans == 'all' and not detector.multiplex:
         stachans = detector.stachans
     elif detector.multiplex:
@@ -2117,7 +2137,7 @@ def subspace_fc_plot(detector, stachans, **kwargs):
                                show=True)
 
     """
-
+    import matplotlib.pyplot as plt
     if stachans == 'all' and not detector.multiplex:
         stachans = detector.stachans
     elif detector.multiplex:
@@ -2212,7 +2232,7 @@ def origintime_detections(detections, method='simple', **kwargs):
         the origin time of each template in all detections.
         Something like 2014-10-18T04:02:02
         '''
-
+    import matplotlib.pyplot as plt
     day = UTCDateTime(detections[0].detect_time.date)
     times = [day.datetime, (day+(3600*24)).datetime]
     plt.figure()
@@ -2293,6 +2313,7 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     :param plot_format: Output plot type (e.g. png, svg, eps, pdf...)
     :param i: Template index name to plot.
     """
+    import matplotlib.pyplot as plt
     if plotdir is not None:
         plt.ioff()
     stream_plot = copy.deepcopy(stream[0])
