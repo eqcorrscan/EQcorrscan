@@ -2185,7 +2185,7 @@ def subspace_fc_plot(detector, stachans, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def origintime_detections(detections, method='simple', **kwargs):
+def detections_time(detections, method='simple', **kwargs):
 
     '''
     Plot detections before and after applying match-filter and visual
@@ -2194,7 +2194,7 @@ def origintime_detections(detections, method='simple', **kwargs):
     :type detections: list
     :param detections: list of eqcorrscan.core.match_filter.Detection
     :type method: str
-    :param method: 'simple' or 'advance' defult to 'simple'
+    :param method: 'simple' or 'advanced' defult to 'simple'
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -2205,27 +2205,8 @@ def origintime_detections(detections, method='simple', **kwargs):
         origin time later.
         Something like 2014-10-18T04:02:02
         If template's name is something else, only detections will be plot.
-
-    .. rubric:: Example
-    >>> from eqcorrscan.core.match_filter import read_detections
-    >>> from eqcorrscan.utils.plotting import origintime_detections
-    >>> # Read text file detections
-    >>> detections = read_detections('path/to/file/filename')
-    >>> origintime_detections(detections, method='advance',
-    ...                       save=Ture, show=True,
-    ...                       savefile='./output.png')
-
-    .. rubric:: Example
-
-    >>> from eqcorrscan.core.match_filter import match_filter
-    >>> detections = match_filter(
-    ...     template_names=['2014-10-18T04:02:02'], template_list=[template],
-    ...     st=stream, threshold=10, threshold_type='MAD', trig_int=3,
-    ...     plot=False, output_cat=False, output_event=True)
-    >>> origintime_detections(detections, method='advance',
-    ...                       save=Ture, show=True,
-    ...                       savefile='./output.png')
     '''
+    
     txt = '''
         Can't show templates!
         For showing templates' origin, template name must be str of
@@ -2250,10 +2231,10 @@ def origintime_detections(detections, method='simple', **kwargs):
                         parent.date() == day.date]
             yparents = np.zeros(len(parents))
             plt.plot(xparents, yparents, '.', color='blue', label='parents')
-        except Exception as exception:
-            print(exception)
+        except ValueError as error:
+            print(error)
             print(txt)
-    elif method == 'advance':
+    elif method == 'advanced':
         families = {}
         for detect in detections:
             template_name = detect.template_name
@@ -2280,8 +2261,8 @@ def origintime_detections(detections, method='simple', **kwargs):
             shift = dt.timedelta(seconds=700)
             for parent in xparents:
                 plt.text(parent-shift, 0.1, parent, rotation=90)
-        except Exception as exception:
-            print(exception)
+        except ValueError as error:
+            print(error)
             print(txt)
     if number_parents > 30:
         ncol = 2
@@ -2291,7 +2272,7 @@ def origintime_detections(detections, method='simple', **kwargs):
                         title='parents({})\nchild-events({})'
                         .format(number_parents, len(detections)))
     legend._legend_box.align = "left"
-    plt.xlabel('Origin time')
+    plt.xlabel('detection time')
     plt.gca().axes.get_yaxis().set_visible(False)
     fig = plt.gcf()
     fig.autofmt_xdate()
