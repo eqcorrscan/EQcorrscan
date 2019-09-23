@@ -2206,7 +2206,7 @@ def detections_time(detections, method='simple', **kwargs):
         Something like 2014-10-18T04:02:02
         If template's name is something else, only detections will be plot.
     '''
-    
+
     txt = '''
         Can't show templates!
         For showing templates' origin, template name must be str of
