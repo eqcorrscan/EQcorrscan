@@ -278,22 +278,17 @@ int normxcorr_fftw_main(
     missed_corr:    Pointer to array to store warnings for unused correlations
     stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
   */
-    long i, t, chunk, n_chunks, chunk_len, startind, offset, step_len;
+    double tic, toc, super_tic, super_toc;
+    long i, t, chunk, n_chunks, chunk_len, startind = template_len - 1, offset, step_len;
     int status = 0, N2 = fft_len / 2 + 1, unused_corr = 0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
     int * flatline_count = (int *) calloc(image_len - template_len + 1, sizeof(int));
     double * mean = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     double * var = (double*) malloc((image_len - template_len + 1) * sizeof(double));
-    float ** full_length_ccc = (float**) malloc(image_len * sizeof(float*));
 
     if (norm_sums == NULL) {
         printf("Error allocating norm_sums in normxcorr_fftw_main\n");
         return 1;
-    }
-
-    // Allocate full_length_ccc
-    for (i = 0; i < image_len; ++i){
-        full_length_ccc[i] = (float*) malloc(n_templates * sizeof(float));
     }
 
     // zero padding - and flip template
@@ -306,7 +301,10 @@ int normxcorr_fftw_main(
     }
 
     //  Compute fft of template
+    tic = omp_get_wtime();
     fftwf_execute_dft_r2c(pa, template_ext, outa);
+    toc = omp_get_wtime();
+    printf("Template ffts took \t\t%f s\n", toc - tic);
 
     if (fft_len >= image_len){
         n_chunks = 1;
@@ -319,10 +317,14 @@ int normxcorr_fftw_main(
         if (n_chunks * step_len < image_len){n_chunks += 1;}
     }
 
+    // Procedures for normalisation
     // TODO: Run this as a parallel section
+    tic = omp_get_wtime();
     running_mean_var(mean, var, flatline_count, image, image_len, template_len);
+    toc = omp_get_wtime();
+    printf("Running mean took \t\t%f s\n", toc - tic);
 
-    // Compute chunked convolution
+    super_tic = omp_get_wtime();
     for (chunk = 0; chunk < n_chunks; ++chunk){
         offset = chunk * step_len;
         if (offset + chunk_len > image_len){
@@ -332,9 +334,13 @@ int normxcorr_fftw_main(
         for (i = 0; i < chunk_len; ++i){image_ext[i] = image[offset + i];}
 
         // Forward FFT
+        tic = omp_get_wtime();
         fftwf_execute_dft_r2c(pb, image_ext, outb);
+        toc = omp_get_wtime();
+        printf("Chunk FFT took \t\t%f s\n", toc - tic);
 
         // Dot product
+        tic = omp_get_wtime();
         #pragma omp parallel for num_threads(num_threads) private(i)
         for (t = 0; t < n_templates; ++t){
             for (i = 0; i < N2; ++i)
@@ -343,45 +349,68 @@ int normxcorr_fftw_main(
                 out[(t * N2) + i][1] = outa[(t * N2) + i][0] * outb[i][1] + outa[(t * N2) + i][1] * outb[i][0];
             }
         }
+        toc = omp_get_wtime();
+        printf("Dot product took \t\t%f s\n", toc - tic);
 
         //  Compute inverse fft
+        tic = omp_get_wtime();
         fftwf_execute_dft_c2r(px, out, ccc);
+        toc = omp_get_wtime();
+        printf("Inverse FFT took \t\t%f s\n", toc - tic);
 
-        // Build complete ccc array
-        startind = template_len - 1;
-        for (i = 0; i < (chunk_len - template_len + 1); ++i){
+        // Centre and normalise
+
+        tic = omp_get_wtime();
+        if (var[offset] >= ACCEPTED_DIFF) {
+            double stdev = sqrt(var[offset]);
             for (t = 0; t < n_templates; ++t){
-                full_length_ccc[i + offset][t] = ccc[(t * fft_len) + i + startind];
+                double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[offset]);
+                c /= stdev;
+                status += set_ncc(t, offset, chan, n_chans, template_len, image_len,
+                                  (float) c, used_chans, pad_array, ncc, stack_option);
+            }
+            if (var[offset] <= WARN_DIFF){
+                variance_warning[0] = 1;
+            }
+        } else {
+            unused_corr += 1;
+        }
+
+        // Center and divide by length to generate scaled convolution
+        #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
+        for(i = 1; i < (chunk_len - template_len + 1); ++i){
+            if (var[offset + i] >= ACCEPTED_DIFF && flatline_count[offset + i] < template_len - 1) {
+                double stdev = sqrt(var[offset + i]);
+                double meanstd = fabs(mean[offset + i] * stdev);
+                if (meanstd >= ACCEPTED_DIFF){
+                    for (t = 0; t < n_templates; ++t){
+                        double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[offset + i]);
+                        c /= stdev;
+                        status += set_ncc(t, i + offset, chan, n_chans, template_len,
+                                          image_len, (float) c, used_chans,
+                                          pad_array, ncc, stack_option);
+                    }
+                }
+                else {
+                    unused_corr += 1;
+                }
+                if (var[offset + i] <= WARN_DIFF){
+                    variance_warning[0] += 1;
+                }
+            } else {
+                unused_corr += 1;
             }
         }
+        missed_corr[0] += unused_corr;
+        toc = omp_get_wtime()
+        printf("Normalising took \t\t%f s\n", toc - tic);
     }
-
-    // Normalise
-    #pragma omp parallel for reduction(+:status,unused_corr) num_threads(num_threads) private(t)
-    for (i = 0; i < (image_len - template_len + 1); ++i){
-        if (var[i] >= ACCEPTED_DIFF && flatline_count[i] < template_len - 1){
-            double stdev = sqrt(var[i]);
-            double meanstd = fabs(mean[i] * stdev);
-            if (meanstd >= ACCEPTED_DIFF){
-                for (t = 0; t < n_templates; ++t){
-                    double c = (full_length_ccc[i][t] / (fft_len * n_templates) - norm_sums[t] * mean[i]);
-                    c /= stdev;
-                    status += set_ncc(t, i, chan, n_chans, template_len,
-                                      image_len, (float) c, used_chans,
-                                      pad_array, ncc, stack_option);
-                }
-            } else {unused_corr += 1;}
-            if (var[i] <= WARN_DIFF){variance_warning[0] += 1;}
-        } else {unused_corr += 1;}
-    }
-    missed_corr[0] += unused_corr;
-
+    super_toc = omp_get_wtime();
+    printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
     free(mean);
     free(var);
     free(flatline_count);
     free(norm_sums);
-    for (t = 0; t < n_templates; ++t){free(full_length_ccc[t]);}
-    free(full_length_ccc);
     return status;
 }
 
