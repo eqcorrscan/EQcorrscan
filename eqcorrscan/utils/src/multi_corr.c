@@ -402,7 +402,7 @@ int normxcorr_fftw_main(
             }
         }
         missed_corr[0] += unused_corr;
-        toc = omp_get_wtime()
+        toc = omp_get_wtime();
         printf("Normalising took \t\t%f s\n", toc - tic);
     }
     super_toc = omp_get_wtime();
