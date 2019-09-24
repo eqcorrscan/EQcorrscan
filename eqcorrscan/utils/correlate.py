@@ -818,7 +818,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     if fft_len is None:
         # In testing, 2**13 consistently comes out fastest - setting to
         # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
-        fft_len = min(2 ** 13, next_fast_len(template_len + image_len - 1))
+        # But this results in lots of chunks - 2 ** 17 is also good.
+        fft_len = min(2 ** 17, next_fast_len(template_len + image_len - 1))
     if fft_len < template_len:
         Logger.warning(
             "FFT length of {0} is shorter than the template, setting to "
