@@ -334,13 +334,13 @@ int normxcorr_fftw_main(
         for (i = 0; i < chunk_len; ++i){image_ext[i] = image[offset + i];}
 
         // Forward FFT
-        tic = omp_get_wtime();
+//        tic = omp_get_wtime();
         fftwf_execute_dft_r2c(pb, image_ext, outb);
-        toc = omp_get_wtime();
-        printf("Chunk FFT took \t\t%f s\n", toc - tic);
+//        toc = omp_get_wtime();
+//        printf("Chunk FFT took \t\t%f s\n", toc - tic);
 
         // Dot product
-        tic = omp_get_wtime();
+//        tic = omp_get_wtime();
         #pragma omp parallel for num_threads(num_threads) private(i)
         for (t = 0; t < n_templates; ++t){
             for (i = 0; i < N2; ++i)
@@ -349,18 +349,18 @@ int normxcorr_fftw_main(
                 out[(t * N2) + i][1] = outa[(t * N2) + i][0] * outb[i][1] + outa[(t * N2) + i][1] * outb[i][0];
             }
         }
-        toc = omp_get_wtime();
-        printf("Dot product took \t\t%f s\n", toc - tic);
+//        toc = omp_get_wtime();
+//        printf("Dot product took \t\t%f s\n", toc - tic);
 
         //  Compute inverse fft
-        tic = omp_get_wtime();
+//        tic = omp_get_wtime();
         fftwf_execute_dft_c2r(px, out, ccc);
-        toc = omp_get_wtime();
-        printf("Inverse FFT took \t\t%f s\n", toc - tic);
+//        toc = omp_get_wtime();
+//        printf("Inverse FFT took \t\t%f s\n", toc - tic);
 
         // Centre and normalise
 
-        tic = omp_get_wtime();
+//        tic = omp_get_wtime();
         if (var[offset] >= ACCEPTED_DIFF) {
             double stdev = sqrt(var[offset]);
             for (t = 0; t < n_templates; ++t){
@@ -402,8 +402,8 @@ int normxcorr_fftw_main(
             }
         }
         missed_corr[0] += unused_corr;
-        toc = omp_get_wtime();
-        printf("Normalising took \t\t%f s\n", toc - tic);
+//        toc = omp_get_wtime();
+//        printf("Normalising took \t\t%f s\n", toc - tic);
     }
     super_toc = omp_get_wtime();
     printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
