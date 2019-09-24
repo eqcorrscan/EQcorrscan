@@ -84,7 +84,7 @@ void free_fftw_arrays(
 
 int multi_normxcorr_fftw(
     float*, long, long, long, float*, long, float*, long, int*, int*, int,
-    int*, int*, int);
+    int, int*, int*, int);
 
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*, int*);
 

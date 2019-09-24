@@ -710,6 +710,19 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     num_cores_inner = kwargs.pop('cores', None)
     if num_cores_inner is None:
         num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+    num_cores_outer = kwargs.pop('cores_outer', 1)
+    if num_cores_outer > 1:
+        if num_cores_outer > len(stream):
+            Logger.info(
+                "More outer cores than channels, setting to {0}".format(
+                    len(stream)))
+            num_cores_outer = len(stream)
+        if num_cores_outer * num_cores_inner > cpu_count():
+            Logger.info("More threads requested than exist, falling back to "
+                        "outer-loop parallelism")
+            num_cores_outer = min(cpu_count(), num_cores_outer)
+            if 2 * num_cores_outer < cpu_count():
+                num_cores_inner = cpu_count() % num_cores_outer
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
@@ -718,7 +731,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        stack=stack, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -729,7 +742,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, stack=True, *args, **kwargs):
+                         cores_inner, cores_outer, stack=True, *args, **kwargs):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -761,7 +774,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
-        ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags=native_str('C_CONTIGUOUS')),
         np.ctypeslib.ndpointer(dtype=np.intc,
@@ -780,7 +793,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         fft-length
         used channels (stacked as per templates)
         pad array (stacked as per templates)
-        num thread inner
+        num threads inner
+        num threads outer
         variance warnings
         missed correlation warnings (usually due to gaps)
         stack option
@@ -844,7 +858,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np,
-        cores_inner, variance_warnings, missed_correlations, int(stack))
+        cores_inner, cores_outer, variance_warnings, missed_correlations,
+        int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret > 0:

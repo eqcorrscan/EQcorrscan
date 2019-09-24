@@ -536,10 +536,10 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
                          float *image, long image_len, float *ncc, long fft_len, int *used_chans,
-                         int *pad_array, int num_threads_inner, int *variance_warning, int *missed_corr,
-                         int stack_option)
+                         int *pad_array, int num_threads_inner, int num_threads_outer,
+                         int *variance_warning, int *missed_corr, int stack_option)
     {
-    int i, chan, n_chans, num_threads_outer=1;
+    int i, chan, n_chans;
     int r = 0;
     size_t N2 = (size_t) fft_len / 2 + 1;
     float **template_ext = NULL;
