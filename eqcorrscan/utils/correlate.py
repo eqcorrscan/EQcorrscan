@@ -722,7 +722,9 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
                         "outer-loop parallelism")
             num_cores_outer = min(cpu_count(), num_cores_outer)
             if 2 * num_cores_outer < cpu_count():
-                num_cores_inner = cpu_count() % num_cores_outer
+                num_cores_inner = cpu_count() // num_cores_outer
+            else:
+                num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
