@@ -412,15 +412,15 @@ def match_filter(template_names, template_list, st, threshold,
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
     :type full_peaks: bool
-    :param full_peaks: For more information see:
-        :func: `eqcorrscan.utils.findpeaks.find_peaks2_short`.
+    :param full_peaks: See
+        :func: `eqcorrscan.utils.findpeaks.find_peaks2_short`
     :type peak_cores: int
     :param peak_cores:
         Number of processes to use for parallel peak-finding (if different to
         `cores`).
     :type spike_test: bool
     :param spike_test: If set True, raise error when there is a spike in data.
-        defaults to True
+        defaults to True.
 
     .. Note::
         When using the "fftw" correlation backend the length of the fft
