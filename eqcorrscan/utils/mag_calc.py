@@ -426,6 +426,11 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     signal = tr.slice(
         starttime=pick.time + signal_window[0],
         endtime=pick.time + signal_window[1]).data
+    if len(signal) == 0:
+        Logger.error("No signal data between {0} and {1}".format(
+            pick.time + signal_window[0], pick.time + signal_window[1]))
+        Logger.error(tr)
+        return noise_amp, None, None
     return noise_amp, signal.max(), signal.std()
 
 
