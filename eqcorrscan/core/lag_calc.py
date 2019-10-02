@@ -232,9 +232,10 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     detection_ids = list(detect_streams_dict.keys())
     detect_streams = [detect_streams_dict[detection_id]
                       for detection_id in detection_ids]
-    assert len(detect_streams) > 0, "No appropriate data found, check your " \
-                                    "family and detections - make sure seed " \
-                                    "ids match"
+    if len(detect_streams) == 0:
+        Logger.warning("No appropriate data found, check your family and "
+                       "detections - make sure seed ids match")
+        return picked_dict
     if len(detect_streams) != len(family):
         Logger.warning("Not all detections have matching data. "
                        "Proceeding anyway. HINT: Make sure SEED IDs match")

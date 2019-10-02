@@ -657,10 +657,19 @@ class Family(object):
             event = detection.event
             if event is None:
                 continue
-            corr_dict = {
-                p.waveform_id.get_seed_string():
-                    float(p.comments[0].text.split("=")[-1])
-                for p in event.picks}
+            corr_dict = {}
+            for pick in event.picks:
+                if len(pick.comments) == 0:
+                    continue
+                try:
+                    corr = float(pick.comments[0].text.split("=")[-1])
+                except IndexError:
+                    continue
+                corr_dict.update({pick.waveform_id.get_seed_string(): corr})
+            if len(corr_dict) == 0:
+                Logger.info("Correlations not run for {0}".format(
+                    detection.id))
+                continue
             template = self.template
             try:
                 t_mag = (

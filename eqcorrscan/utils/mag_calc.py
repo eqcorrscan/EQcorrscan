@@ -426,6 +426,11 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     signal = tr.slice(
         starttime=pick.time + signal_window[0],
         endtime=pick.time + signal_window[1]).data
+    if len(signal) == 0:
+        Logger.debug("No signal data between {0} and {1}".format(
+            pick.time + signal_window[0], pick.time + signal_window[1]))
+        Logger.debug(tr)
+        return noise_amp, None, None
     return noise_amp, signal.max(), signal.std()
 
 
@@ -490,11 +495,11 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         noise1 = noise1 or noise2
         noise2 = noise2 or noise1
         if noise1 is None or noise2 is None:
-            Logger.error("Insufficient data for noise to be estimated for "
-                         "{0}".format(seed_id))
+            Logger.info("Insufficient data for noise to be estimated for "
+                        "{0}".format(seed_id))
             continue
         if signal1 is None or signal2 is None:
-            Logger.error("No signal data found for {0}".format(seed_id))
+            Logger.info("No signal data found for {0}".format(seed_id))
             continue
         snr1 = np.nan_to_num(signal1 / noise1)
         snr2 = np.nan_to_num(signal2 / noise2)
