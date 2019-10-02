@@ -707,9 +707,10 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
+    max_threads = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
     num_cores_inner = kwargs.pop('cores', None)
     if num_cores_inner is None:
-        num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+        num_cores_inner = max_threads
     num_cores_outer = kwargs.pop('cores_outer', 1)
     if num_cores_outer > 1:
         if num_cores_outer > len(stream):
@@ -717,12 +718,14 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
                 "More outer cores than channels, setting to {0}".format(
                     len(stream)))
             num_cores_outer = len(stream)
-        if num_cores_outer * num_cores_inner > cpu_count():
+        if num_cores_outer * num_cores_inner > max_threads:
             Logger.info("More threads requested than exist, falling back to "
                         "outer-loop parallelism")
-            num_cores_outer = min(cpu_count(), num_cores_outer)
-            if 2 * num_cores_outer < cpu_count():
-                num_cores_inner = cpu_count() % num_cores_outer
+            num_cores_outer = min(max_threads, num_cores_outer)
+            if 2 * num_cores_outer < max_threads:
+                num_cores_inner = max_threads // num_cores_outer
+            else:
+                num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)

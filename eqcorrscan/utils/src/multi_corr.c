@@ -304,7 +304,7 @@ int normxcorr_fftw_main(
     tic = omp_get_wtime();
     fftwf_execute_dft_r2c(pa, template_ext, outa);
     toc = omp_get_wtime();
-    printf("Template ffts took \t\t%f s\n", toc - tic);
+    //printf("Template ffts took \t\t%f s\n", toc - tic);
 
     if (fft_len >= image_len){
         n_chunks = 1;
@@ -322,7 +322,7 @@ int normxcorr_fftw_main(
     tic = omp_get_wtime();
     running_mean_var(mean, var, flatline_count, image, image_len, template_len);
     toc = omp_get_wtime();
-    printf("Running mean took \t\t%f s\n", toc - tic);
+    // printf("Running mean took \t\t%f s\n", toc - tic);
 
     super_tic = omp_get_wtime();
     for (chunk = 0; chunk < n_chunks; ++chunk){
@@ -406,7 +406,7 @@ int normxcorr_fftw_main(
 //        printf("Normalising took \t\t%f s\n", toc - tic);
     }
     super_toc = omp_get_wtime();
-    printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
+    // printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
     free(mean);
     free(var);
     free(flatline_count);
@@ -576,13 +576,14 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
         printf("Warning: requesting more threads than available - this could negatively impact performance\n");
+        printf("Requested %d inner and %d outer = %d total, but %d are available\n", num_threads_inner, num_threads_outer, num_threads_outer * num_threads_inner, N_THREADS);
     }
     #else
     /* threading/OpenMP is disabled */
     num_threads_outer = 1;
     num_threads_inner = 1;
     #endif
-
+    printf("Using %d outer threads and %d inner threads\n", num_threads_outer, num_threads_inner);
     /* allocate memory for all threads here */
     template_ext = (float**) malloc(num_threads_outer * sizeof(float*));
     if (template_ext == NULL) {
