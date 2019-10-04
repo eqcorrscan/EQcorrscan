@@ -5,25 +5,6 @@ for the application of cross-correlation of seismic data for the detection of
 repeating events.
 
 .. note::
-    By convention templates are generated with P-phases on the
-    vertical channel and S-phases on the horizontal channels, normal
-    seismograph naming conventions are assumed, where Z denotes vertical
-    and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-    or not.  To this end we will **only** use Z channels if they have a
-    P-pick, and will use one or other horizontal channels **only** if
-    there is an S-pick on it.
-
-.. warning::
-    If there is no phase_hint included in picks, and swin=all, all channels
-    with picks will be used.
-
-.. note::
-    If swin=all, then all picks will be used, not just phase-picks (e.g. it
-    will use amplitude picks).  If you do not want this then we suggest that
-    you remove any picks you do not want to use in your templates before using
-    the event.
-
-.. note::
     All functions use obspy filters, which are implemented such that
     if both highcut and lowcut are set a bandpass filter will be used,
     but of highcut is not set (None) then a highpass filter will be used and
@@ -112,7 +93,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type plot: bool
     :param plot: Plot templates or not.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
     :type return_event: bool
@@ -142,6 +123,25 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
+
+    .. note::
+        By convention templates are generated with P-phases on the
+        vertical channel and S-phases on the horizontal channels, normal
+        seismograph naming conventions are assumed, where Z denotes vertical
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
+        or not.  To this end we will **only** use Z channels if they have a
+        P-pick, and will use one or other horizontal channels **only** if
+        there is an S-pick on it.
+
+    .. warning::
+        If there is no phase_hint included in picks, and swin=all, all channels
+        with picks will be used.
+
+    .. note::
+        If swin=all, then all picks will be used, not just phase-picks (e.g. it
+        will use amplitude picks). If you do not want this then we suggest
+        that you remove any picks you do not want to use in your templates
+        before using the event.
 
     .. note::
         *Method specific arguments:*
