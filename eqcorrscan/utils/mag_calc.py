@@ -519,7 +519,7 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
 def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
                        signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
                        use_s_picks=False, correlations=None, shift=.2,
-                       return_correlations=False):
+                       return_correlations=False, weight_by_correlation=True):
     """
     Compute the relative magnitudes between two events.
 
@@ -571,6 +571,9 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :type return_correlations: bool
     :param return_correlations:
         If true will also return maximum correlations as a dictionary.
+    :type weight_by_correlation: bool
+    :param weight_by_correlation:
+        Whether to weight the magnitude by the correlation or not.
 
     :rtype: dict
     :return: Dictionary of relative magnitudes keyed by seed-id
@@ -594,21 +597,24 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
             event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
         pick2 = _get_pick_for_station(
             event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
-        if compute_correlations:
-            cc = correlate(
-                tr1.slice(
-                    starttime=pick1.time + signal_window[0],
-                    endtime=pick1.time + signal_window[1]),
-                tr2.slice(
-                    starttime=pick2.time + signal_window[0],
-                    endtime=pick2.time + signal_window[1]),
-                shift=int(shift * tr1.stats.sampling_rate))
-            cc = cc.max()
-            correlations.update({seed_id: cc})
+        if weight_by_correlation:
+            if compute_correlations:
+                cc = correlate(
+                    tr1.slice(
+                        starttime=pick1.time + signal_window[0],
+                        endtime=pick1.time + signal_window[1]),
+                    tr2.slice(
+                        starttime=pick2.time + signal_window[0],
+                        endtime=pick2.time + signal_window[1]),
+                    shift=int(shift * tr1.stats.sampling_rate))
+                cc = cc.max()
+                correlations.update({seed_id: cc})
+            else:
+                cc = correlations.get(seed_id, 0.0)
+            if cc < min_cc:
+                continue
         else:
-            cc = correlations.get(seed_id, 0.0)
-        if cc < min_cc:
-            continue
+            cc = 1.0
         # Weight and add to relative_magnitudes
         rel_mag = math.log10(amplitude_ratio) * cc
         Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
