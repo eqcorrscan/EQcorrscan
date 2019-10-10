@@ -448,7 +448,7 @@ class Tribe(object):
         :type plot: bool
         :param plot: Turn plotting on or off.
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type daylong: bool
@@ -632,7 +632,7 @@ class Tribe(object):
         :type plot: bool
         :param plot: Turn plotting on or off.
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type min_gap: float
@@ -940,7 +940,7 @@ class Tribe(object):
         :type plot: bool
         :param plot: Plot templates or not.
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type min_snr: float
