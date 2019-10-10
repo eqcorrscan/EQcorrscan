@@ -278,7 +278,7 @@ int normxcorr_fftw_main(
     missed_corr:    Pointer to array to store warnings for unused correlations
     stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
   */
-    double tic, toc, super_tic, super_toc;
+//    double tic, toc, super_tic, super_toc;
     long i, t, chunk, n_chunks, chunk_len, startind = template_len - 1, offset, step_len;
     int status = 0, N2 = fft_len / 2 + 1, unused_corr = 0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
@@ -301,10 +301,10 @@ int normxcorr_fftw_main(
     }
 
     //  Compute fft of template
-    tic = omp_get_wtime();
+//    tic = omp_get_wtime();
     fftwf_execute_dft_r2c(pa, template_ext, outa);
-    toc = omp_get_wtime();
-    //printf("Template ffts took \t\t%f s\n", toc - tic);
+//    toc = omp_get_wtime();
+//    printf("Template ffts took \t\t%f s\n", toc - tic);
 
     if (fft_len >= image_len){
         n_chunks = 1;
@@ -319,12 +319,12 @@ int normxcorr_fftw_main(
 
     // Procedures for normalisation
     // TODO: Run this as a parallel section
-    tic = omp_get_wtime();
+//    tic = omp_get_wtime();
     running_mean_var(mean, var, flatline_count, image, image_len, template_len);
-    toc = omp_get_wtime();
-    // printf("Running mean took \t\t%f s\n", toc - tic);
+//    toc = omp_get_wtime();
+//    printf("Running mean took \t\t%f s\n", toc - tic);
 
-    super_tic = omp_get_wtime();
+//    super_tic = omp_get_wtime();
     for (chunk = 0; chunk < n_chunks; ++chunk){
         offset = chunk * step_len;
         if (offset + chunk_len > image_len){
@@ -405,8 +405,8 @@ int normxcorr_fftw_main(
 //        toc = omp_get_wtime();
 //        printf("Normalising took \t\t%f s\n", toc - tic);
     }
-    super_toc = omp_get_wtime();
-    // printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
+//    super_toc = omp_get_wtime();
+//    printf("Looping over chunks took \t\t%f s\n", super_toc - super_tic);
     free(mean);
     free(var);
     free(flatline_count);
