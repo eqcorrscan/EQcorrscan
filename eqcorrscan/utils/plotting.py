@@ -2198,17 +2198,21 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     :param i: Template index name to plot.
     """
     import matplotlib.pyplot as plt
+    tr = stream[0]
+    pad_len = len(tr.data) - len(cccsum)
+    cccsum = np.pad(cccsum, (0, pad_len))
     if plotdir is not None:
         plt.ioff()
     stream_plot = copy.deepcopy(stream[0])
     # Downsample for plotting
     stream_plot = _plotting_decimation(stream_plot, 10e5, 4)
+    samp_rate = tr.stats.sampling_rate/(tr.stats.npts/len(stream_plot))
     cccsum_plot = Trace(cccsum)
     cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
     # Resample here to maintain shape better
     cccsum_hist = cccsum_plot.copy()
     cccsum_hist = _plotting_decimation(cccsum_hist, 10e5, 4).data
-    cccsum_plot = chunk_data(cccsum_plot, 10, 'Maxabs').data
+    cccsum_plot = chunk_data(cccsum_plot, samp_rate, 'Maxabs').data
     # Enforce same length
     stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
     cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
