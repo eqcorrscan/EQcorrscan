@@ -112,10 +112,6 @@ def _concatenate_and_correlate(streams, template, cores):
     """
     UsedChannel = namedtuple("UsedChannel", "channel used")
 
-    channel_length = {tr.stats.npts for st in streams for tr in st}
-    assert len(channel_length) == 1, "Multiple lengths found."
-    channel_length = channel_length.pop()
-
     samp_rate = {tr.stats.sampling_rate for st in streams for tr in st}
     assert len(samp_rate) == 1, "Multiple sample rates found"
     samp_rate = samp_rate.pop()
@@ -124,6 +120,10 @@ def _concatenate_and_correlate(streams, template, cores):
     assert len(template_length) == 1, "Multiple data lengths in template"
     template_length = template_length.pop()
 
+    channel_length = {tr.stats.npts for st in streams for tr in st}
+    if len(channel_length) > 1:
+        Logger.warning("Multiple lengths of stream found, using the longest")
+    channel_length = sorted(list(channel_length))[-1]
     # pre-define stream for efficiency
     chans = {tr.id for st in streams for tr in st}.intersection(
         {tr.id for tr in template})
