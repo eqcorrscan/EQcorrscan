@@ -336,7 +336,8 @@ class Template(object):
             self.st.write(filename, format=format)
         return self
 
-    def read(self, filename):
+    @classmethod
+    def read(cls, filename):
         """
         Read template from tar format with metadata.
 
@@ -364,13 +365,10 @@ class Template(object):
         """
         from eqcorrscan.core.match_filter.tribe import Tribe
 
-        tribe = Tribe()
-        tribe.read(filename=filename)
+        tribe = Tribe.read(filename=filename)
         if len(tribe) > 1:
             raise IOError('Multiple templates in file')
-        for key in self.__dict__.keys():
-            self.__dict__[key] = tribe[0].__dict__[key]
-        return self
+        return tribe[0]
 
     def detect(self, stream, threshold, threshold_type, trig_int,
                plot=False, plotdir=None, pre_processed=False, daylong=False,
@@ -522,7 +520,8 @@ class Template(object):
             overlap=overlap, full_peaks=full_peaks, **kwargs)
         return party[0]
 
-    def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
+    @classmethod
+    def construct(cls, method, name, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin="all", process_len=86400,
                   all_horiz=False, delayed=True, plot=False, plotdir=None,
                   min_snr=None, parallel=False, num_cores=False,
@@ -610,7 +609,7 @@ class Template(object):
         >>> TEST_PATH = (
         ...     os.path.dirname(eqcorrscan.__file__) + '/tests/test_data')
         >>> sac_files = glob.glob(TEST_PATH + '/SAC/2014p611252/*')
-        >>> template = Template().construct(
+        >>> template = Template.construct(
         ...     method='from_sac', name='test', lowcut=2.0, highcut=8.0,
         ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
         ...     length=2.0, sac_files=sac_files)
@@ -626,7 +625,7 @@ class Template(object):
 
         This will raise an error if the method is unsupported:
 
-        >>> template = Template().construct(
+        >>> template = Template.construct(
         ...     method='from_meta_file', name='test', lowcut=2.0, highcut=8.0,
         ...     samp_rate=20.0, filt_order=4, prepick=0.1, swin='all',
         ...     length=2.0) # doctest: +IGNORE_EXCEPTION_DETAIL
@@ -646,7 +645,6 @@ class Template(object):
             all_horiz=all_horiz, delayed=delayed, plot=plot, plotdir=plotdir,
             min_snr=min_snr, parallel=parallel, num_cores=num_cores,
             skip_short_chans=skip_short_chans, **kwargs)
-        self.name = name
         st = streams[0]
         event = events[0]
         process_length = process_lengths[0]
@@ -655,15 +653,9 @@ class Template(object):
                 Logger.warning('Data are zero in float16, missing data,'
                                ' will not use: {0}'.format(tr.id))
                 st.remove(tr)
-        self.st = st
-        self.lowcut = lowcut
-        self.highcut = highcut
-        self.filt_order = filt_order
-        self.samp_rate = samp_rate
-        self.process_length = process_length
-        self.prepick = prepick
-        self.event = event
-        return self
+        return cls(name=name, st=st, lowcut=lowcut, highcut=highcut,
+                   filt_order=filt_order, samp_rate=samp_rate,
+                   process_length=process_length, prepick=prepick, event=event)
 
 
 def read_template(fname):
@@ -675,9 +667,7 @@ def read_template(fname):
 
     :return: :class:`eqcorrscan.core.match_filter.Template`
     """
-    template = Template()
-    template.read(filename=fname)
-    return template
+    return Template.read(filename=fname)
 
 
 def group_templates(templates):

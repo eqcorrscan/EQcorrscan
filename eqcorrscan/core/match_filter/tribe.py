@@ -331,7 +331,8 @@ class Tribe(object):
                 parfile.write('\n')
         return self
 
-    def read(self, filename):
+    @classmethod
+    def read(cls, filename):
         """
         Read a tribe of templates from a tar formatted file.
 
@@ -343,17 +344,18 @@ class Tribe(object):
         >>> tribe = Tribe(templates=[Template(name='c', st=read())])
         >>> tribe.write('test_tribe')
         Tribe of 1 templates
-        >>> tribe_back = Tribe().read('test_tribe.tgz')
+        >>> tribe_back = Tribe.read('test_tribe.tgz')
         >>> tribe_back == tribe
         True
         """
+        tribe = cls()
         with tarfile.open(filename, "r:*") as arc:
             temp_dir = tempfile.mkdtemp()
             arc.extractall(path=temp_dir, members=_safemembers(arc))
             tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
-            self._read_from_folder(dirname=tribe_dir)
+            tribe._read_from_folder(dirname=tribe_dir)
         shutil.rmtree(temp_dir)
-        return self
+        return tribe
 
     def _read_from_folder(self, dirname):
         """
@@ -894,7 +896,8 @@ class Tribe(object):
         else:
             return party
 
-    def construct(self, method, lowcut, highcut, samp_rate, filt_order,
+    @classmethod
+    def construct(cls, method, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin="all", process_len=86400,
                   all_horiz=False, delayed=True, plot=False, plotdir=None,
                   min_snr=None, parallel=False, num_cores=False,
@@ -1010,6 +1013,7 @@ class Tribe(object):
             delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
             num_cores=num_cores, skip_short_chans=skip_short_chans,
             **kwargs)
+        _templates = []
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
@@ -1035,8 +1039,8 @@ class Tribe(object):
                 creation_info=CreationInfo(agency='eqcorrscan',
                                            author=getpass.getuser())))
             t.event = event
-            self.templates.append(t)
-        return self
+            _templates.append(t)
+        return cls(templates=_templates)
 
 
 def read_tribe(fname):

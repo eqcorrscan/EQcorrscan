@@ -668,7 +668,8 @@ class Party(object):
             self.get_catalog().write(filename=filename, format=format)
         return self
 
-    def read(self, filename=None, read_detection_catalog=True,
+    @classmethod
+    def read(cls, filename=None, read_detection_catalog=True,
              estimate_origin=True):
         """
         Read a Party from a file.
@@ -681,8 +682,8 @@ class Party(object):
         :param read_detection_catalog:
             Whether to read the detection catalog or not, if False, catalog
             will be regenerated - for large catalogs this can be faster.
-        :type estimate_origins: bool
-        :param estimate_origins:
+        :type estimate_origin: bool
+        :param estimate_origin:
             If True and no catalog is found, or read_detection_catalog is False
             then new events with origins estimated from the template origin
             time will be created.
@@ -694,8 +695,8 @@ class Party(object):
         """
         from eqcorrscan.core.match_filter.tribe import Tribe
 
-        tribe = Tribe()
         families = []
+        tribe = Tribe()
         if filename is None:
             # If there is no filename given, then read the example.
             filename = os.path.join(
@@ -717,7 +718,7 @@ class Party(object):
             # files then we can just read in extra templates as needed.
             # Read in families here!
             party_dir = glob.glob(temp_dir + os.sep + '*')[0]
-            tribe._read_from_folder(dirname=party_dir)
+            tribe += Tribe()._read_from_folder(dirname=party_dir)
             det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
             if len(det_cat_file) != 0 and read_detection_catalog:
                 try:
@@ -743,8 +744,7 @@ class Party(object):
                 if new_family:
                     families.append(family)
             shutil.rmtree(temp_dir)
-        self.families = families
-        return self
+        return cls(families=families)
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
