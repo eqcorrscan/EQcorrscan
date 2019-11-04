@@ -471,8 +471,8 @@ static inline int set_ncc(
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-//            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
-//                   ncc_index, t, i, value);
+            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
+                   ncc_index, t, i, value);
             status = 1;
         }
         else if (value > 1.0) {
@@ -583,7 +583,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     num_threads_outer = 1;
     num_threads_inner = 1;
     #endif
-    printf("Using %d outer threads and %d inner threads\n", num_threads_outer, num_threads_inner);
+//    printf("Using %d outer threads and %d inner threads\n", num_threads_outer, num_threads_inner);
     /* allocate memory for all threads here */
     template_ext = (float**) malloc(num_threads_outer * sizeof(float*));
     if (template_ext == NULL) {

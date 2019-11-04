@@ -18,6 +18,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+import traceback
 import logging
 
 import numpy as np
@@ -882,6 +883,7 @@ class Tribe(object):
                 Logger.critical(
                     'Error, routine incomplete, returning incomplete Party')
                 Logger.error('Error: {0}'.format(e))
+                traceback.print_exc()
                 if return_stream:
                     return party, stream
                 else:
