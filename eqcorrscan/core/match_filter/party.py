@@ -790,7 +790,7 @@ class Party(object):
         :param plot:
             To generate a plot for every detection or not, defaults to False
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type parallel: bool
