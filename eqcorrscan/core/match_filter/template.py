@@ -75,7 +75,7 @@ class Template(object):
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,
                  samp_rate=None, filt_order=None, process_length=None,
                  prepick=None, event=None):
-        name_regex = re.compile(r"^[a-z_0-9]+$")
+        name_regex = re.compile(r"^[-A-Za-z_0-9]+$")
         if name is not None and not re.match(name_regex, name):
             raise ValueError("Invalid name: '%s' - Must satisfy the regex "
                              "'%s'." % (name, name_regex.pattern))
