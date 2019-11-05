@@ -630,7 +630,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         the maximum amplitude in the template window to the rms amplitude in
         the whole window given.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
 
