@@ -2218,7 +2218,8 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
     cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
     plot_name = "{0}/cccsum_plot_{1}_{2}.{3}".format(
-        plotdir, template_names[i], stream[0].stats.starttime, plot_format)
+        plotdir, template_names[i], stream[0].stats.starttime.strftime(
+                  "%Y-%m-%dT%H%M%S"), plot_format)
     plot_kwargs = dict(show=True)
     if plotdir is not None:
         if not os.path.isdir(plotdir):
