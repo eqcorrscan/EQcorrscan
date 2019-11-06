@@ -99,7 +99,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param plot:
         Turn plotting on or off.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the
         figure will be shown on screen.
     :type group_size: int

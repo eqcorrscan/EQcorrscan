@@ -75,7 +75,7 @@ class Template(object):
     def __init__(self, name=None, st=None, lowcut=None, highcut=None,
                  samp_rate=None, filt_order=None, process_length=None,
                  prepick=None, event=None):
-        name_regex = re.compile(r"^[a-z_0-9]+$")
+        name_regex = re.compile(r"^[-a-z_0-9]+$")
         if name is not None and not re.match(name_regex, name):
             raise ValueError("Invalid name: '%s' - Must satisfy the regex "
                              "'%s'." % (name, name_regex.pattern))
@@ -398,7 +398,7 @@ class Template(object):
         :type plot: bool
         :param plot: Turn plotting on or off.
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type pre_processed: bool
@@ -570,7 +570,7 @@ class Template(object):
         :type plot: bool
         :param plot: Plot templates or not.
         :type plotdir: str
-    ￼	:param plotdir:
+        :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
         :type min_snr: float
