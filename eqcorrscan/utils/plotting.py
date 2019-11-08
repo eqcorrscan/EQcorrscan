@@ -1426,7 +1426,7 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     else:
         axis = axes
     axis.set_xlabel('Time (s) from start of template')
-    axes[0].legend(lines, labels, 'upper right')
+    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
     axes[0].set_zorder(2)
     title = kwargs.get("title") or None
     if title:
@@ -1553,7 +1553,7 @@ def plot_repicked(template, picks, det_stream, **kwargs):
         axis = axes
     axis.set_xlabel('Time (s) from %s' %
                     mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
-    axes[0].legend(lines, labels, 'upper right')
+    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
     axes[0].set_zorder(2)
     title = kwargs.get("title") or None
     if title:
