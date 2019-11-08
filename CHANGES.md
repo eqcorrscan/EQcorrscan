@@ -97,6 +97,8 @@
   change the quality of correlations.
 * Removed depreciated `template_gen` functions and `bright_lights` and
   `seismo_logs`. See #315
+*  BUG-FIX: `eqcorrscan.core.template_gen.py` fix conflict with special character on windows
+  output-filename. See issue #344
 
 ## 0.3.3
 * Make test-script more stable.
