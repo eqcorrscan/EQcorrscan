@@ -1767,7 +1767,8 @@ def plot_synth_real(real_template, synthetic, channels=False, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
+def freq_mag(magnitudes, completeness, max_mag,
+             templates_mag=None, binsize=0.2, **kwargs):
     """
     Plot a frequency-magnitude histogram and cumulative density plot.
 
@@ -1781,6 +1782,8 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     :param completeness: Level to compute the b-value above
     :type max_mag: float
     :param max_mag: Maximum magnitude to try and fit a b-value to
+    :type templates_mag: list (defult=None)
+    :param templates_mag: list of float of templates' magnitude
     :type binsize: float
     :param binsize: Width of histogram bins, defaults to 0.2
     {plotting_kwargs}
@@ -1831,7 +1834,18 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     bins = np.arange(int(min(magnitudes) - 1), int(max(magnitudes) + 1),
                      binsize)
     n, bins, patches = ax1.hist(magnitudes, bins, facecolor='Black',
-                                alpha=0.5, label='Magnitudes')
+                                alpha=0.5, label='detections')
+    if templates_mag:
+        # Check that there are no nans or infs
+        if np.isnan(templates_mag).any():
+            Logger.warning('Found nan values in templates_mag, removing them')
+            templates_mag = [mag for mag in templates_mag if not np.isnan(mag)]
+        if np.isinf(templates_mag).any():
+            Logger.warning('Found inf values in templates_mag, removing them')
+            templates_mag = [mag for mag in templates_mag if not np.isinf(mag)]
+        n_temps, bins_temps, patches_temps = ax1.hist(
+            templates_mag, bins, facecolor='Black', alpha=1,
+            label='templates (last catalog)')
     ax1.set_ylabel('Frequency')
     ax1.set_ylim([0, max(n) + 0.5 * max(n)])
     plt.xlabel('Magnitude')
@@ -1845,6 +1859,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
             cdf[i] = cdf[i - 1] + counts[magnitude]
         else:
             cdf[i] = counts[magnitude]
+    plt.legend(loc=1)
     ax2 = ax1.twinx()
     # ax2.scatter(magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
     ax2.scatter(mag_steps, np.log10(cdf), c='k', marker='+', s=20, lw=2,
