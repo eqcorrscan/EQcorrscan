@@ -255,7 +255,10 @@ class Detection(object):
                 template_prepick = template.prepick
             else:
                 template_prepick = 0
-            template_picks = template.event.picks
+            try:
+                template_picks = template.event.picks
+            except AttributeError:
+                template_picks = []
         else:
             template_prepick = 0
             template_picks = []
@@ -298,7 +301,7 @@ class Detection(object):
                     except IndexError:
                         Logger.error("No pick for trace")
                 ev.picks.append(new_pick)
-        if estimate_origin and template is not None:
+        if estimate_origin and template is not None and template.event is not None:
             try:
                 template_origin = (template.event.preferred_origin() or
                                    template.event.origins[0])
