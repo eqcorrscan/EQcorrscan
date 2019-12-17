@@ -16,3 +16,8 @@ Please fill out the form below so that we can help as best we can
 # Provide an example so that we can reproduce your problem
 
 # What help would you like?
+
+# What is your setup? (please complete the following information):**
+ - Operating System:
+ - Python version:
+ - EQcorrscan version:
