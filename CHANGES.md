@@ -1,5 +1,6 @@
 * Some problem solved in _match_filter_plot. Now it shows all new detections.
 * Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
+* The new function with the name mapplot for plotting seismicity added (#365). 
 ## 0.4.0
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
   alleviate issue related to large-prime length transforms.  This requires an
