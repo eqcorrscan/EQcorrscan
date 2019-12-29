@@ -2338,6 +2338,7 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
     return fig
 
 
+@additional_docstring(plotting_kwargs=plotting_kwargs)
 def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
             s=1, lw=1, marker=',', **kwargs):
     """
