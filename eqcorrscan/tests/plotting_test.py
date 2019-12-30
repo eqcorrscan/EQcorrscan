@@ -10,18 +10,83 @@ import glob
 
 from obspy import read, read_events, UTCDateTime, Catalog, Stream, Trace
 from obspy.io.nordic.core import readwavename
-from obspy.signal import filter
 
 from eqcorrscan.utils.plotting import (
     chunk_data, xcorr_plot, triple_plot, peaks_plot,
     cumulative_detections, threeD_gridplot, multi_event_singlechan,
     detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
     pretty_template_plot, plot_repicked, svd_plot, plot_synth_real,
-    freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot)
+    freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot,
+    mapplot)
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.core import template_gen, subspace
+
+
+class SeimicityPlottingMethods(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        sfiles = glob.glob(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'test_data/REA/TEST_/*.S??????'))
+        cls.catalog = Catalog()
+        for sfile in sfiles:
+            cls.catalog += read_events(sfile)
+        cls.nodes = []
+        data = np.genfromtxt("./catalog.txt")
+        lon = data[:, 0]
+        lat = data[:, 1]
+        dep = data[:, 2] * -1
+        sec = data[:, -1].astype(str)
+        mint = data[:, -2].astype(int).astype(str)
+        hour = data[:, -3].astype(int).astype(str)
+        day = data[:, -4].astype(int).astype(str)
+        month = data[:, -5].astype(int).astype(str)
+        year = data[:, -6].astype(int).astype(str)
+        Date = []
+        for ii in range(len(year)):
+            date = '{}-{}-{}T{}:{}:{}'.format(
+                year[ii], month[ii], day[ii], hour[ii], mint[ii], sec[ii])
+            Date.append(UTCDateTime(date))
+        for Lat, Lon, Dep, time in zip(lat, lon, dep, Date):
+            cls.nodes.append((Lat, Lon, Dep, time))
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_depth_catalog(self):
+        fig = mapplot(self.catalog, method='depth', show=False,
+                      return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_time_catalog(self):
+        fig = mapplot(self.catalog, method='time', show=False,
+                      return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_sequence_catalog(self):
+        fig = mapplot(self.catalog, method='sequence', show=False,
+                      return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_depth_nodes(self):
+        fig = mapplot(self.nodes, method='depth', show=False,
+                      return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_time_nodes(self):
+        fig = mapplot(self.nodes, method='time', show=False,
+                      return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_mapplot_sequence_nodes(self):
+        fig = mapplot(self.nodes, method='sequence', show=False,
+                      return_figure=True)
+        return fig
 
 
 class MultiStreamMethods(unittest.TestCase):
