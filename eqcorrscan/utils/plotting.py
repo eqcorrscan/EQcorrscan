@@ -2187,7 +2187,7 @@ def subspace_fc_plot(detector, stachans, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
+def mapplot(events, bgcolor='#909090', method='depth', cpalette='jet_r',
             s=1, lw=1, marker=',', **kwargs):
     """
     Plot seismicity in a 2D map with two cross section along latitude and
@@ -2199,8 +2199,8 @@ def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
         down positive or obspy catalog.
     :type bgcolor: string
     :param bgcolor: all name or RGB code that acceptable in matplotlib.
-    :type mode: string
-    :param mode:
+    :type method: string
+    :param method:
         make color pallete according to thrid part of area 'depth' or
         occouring time 'time' or occouring sequence 'sequence'.
     :type cpalette: string
@@ -2247,13 +2247,13 @@ def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
             dep.append(origin.depth)
             time.append(origin.time)
         dt = [t-time[0] for t in time]
-    if mode == 'depth':
+    if method == 'depth':
         c0, c1, c2 = dep, lon, lat
         label0, label1, label2 = 'Depth', 'Longitue', 'Latitude'
-    elif mode == 'time':
+    elif method == 'time':
         c0 = c1 = c2 = dt
         label = 'second from first event'
-    elif mode == 'sequence':
+    elif method == 'sequence':
         c0 = c1 = c2 = range(len(dep))
         label = 'sequence of occuring'
     fig = plt.figure()
@@ -2282,7 +2282,7 @@ def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
     map2 = ax2.scatter(lon, dep, marker=marker, c=c2, cmap=cpalette,
                        lw=lw, s=s)
     # location of color bar
-    if mode == 'depth':
+    if method == 'depth':
         # location of colorbar
         divider0 = make_axes_locatable(ax0)
         cax0 = divider0.append_axes("top", size="4%", pad="2%")
@@ -2302,7 +2302,7 @@ def mapplot(events, bgcolor='#909090', mode='3bode', cpalette='jet_r',
                              pad=0.7)
         cbar2.set_label(label2, rotation=0, labelpad=-8, x=1.02)
         ax2.xaxis.set_label_coords(1.02, -0.1)
-    elif mode == 'time' or mode == 'sequence':
+    elif method == 'time' or method == 'sequence':
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes("right", size="4%", pad="2%")
         cbar1 = fig.colorbar(map1, ax=ax1, cax=cax1, orientation="vertical")
