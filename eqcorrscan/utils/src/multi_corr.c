@@ -471,9 +471,10 @@ static inline int set_ncc(
         }
         else if (fabsf(value) > 1.01) {
             // this will raise an exception when we return to Python
-            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
+            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f, setting to 0.0\n",
                    ncc_index, t, i, value);
-            status = 1;
+            value = 0;
+            // status = 1;
         }
         else if (value > 1.0) {
             value = 1.0;
