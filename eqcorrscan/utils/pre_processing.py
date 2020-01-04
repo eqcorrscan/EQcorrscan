@@ -547,8 +547,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         if tr.stats.sampling_rate * length != tr.stats.npts:
-                raise ValueError('Data are not long enough for ' +
-                                 tr.stats.id)
+                raise ValueError('Data are not long enough for {0}'.format(
+                    tr.id))
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
