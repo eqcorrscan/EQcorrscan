@@ -295,7 +295,9 @@ class Tribe(object):
             if t.event is not None:
                 # Check that the name in the comment matches the template name
                 for comment in t.event.comments:
-                    if comment.text.startswith("eqcorrscan_template_"):
+                    if not comment.text:
+                        comment.text = "eqcorrscan_template_{0}".format(t.name)
+                    elif comment.text.startswith("eqcorrscan_template_"):
                         comment.text = "eqcorrscan_template_{0}".format(t.name)
                 tribe_cat.append(t.event)
         if len(tribe_cat) > 0:
