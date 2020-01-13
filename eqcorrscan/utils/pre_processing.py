@@ -547,8 +547,19 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         if tr.stats.sampling_rate * length != tr.stats.npts:
-                raise ValueError('Data are not long enough for {0}'.format(
-                    tr.id))
+            msg = ("Data sampling-rate ({0} * {1} = {2}) does not match "
+                   "number of samples ({3}) for {4}".format(
+                tr.stats.sampling_rate, length,
+                tr.stats.sampling_rate * length, tr.stats.npts, tr.id))
+            if not ignore_bad_data:
+                raise ValueError(msg)
+            else:
+                Logger.warning(msg)
+                return Trace(data=np.array([]), header={
+                    "station": tr.stats.station, "channel": tr.stats.channel,
+                    "network": tr.stats.network, "location": tr.stats.location,
+                    "starttime": tr.stats.starttime,
+                    "sampling_rate": tr.stats.sampling_rate})
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
