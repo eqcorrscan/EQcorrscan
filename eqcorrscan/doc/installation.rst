@@ -19,8 +19,7 @@ with the following:
 
 .. code-block:: bash
 
-    conda config --add channels conda-forge  # if you already use conda-forge, then skip this.
-    conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
+    conda create -n eqcorrscan -c conda-forge colorama numpy scipy matplotlib obspy bottleneck pyproj
     source activate eqcorrscan
 
 To then install EQcorrscan you can simply run:
