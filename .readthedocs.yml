@@ -23,5 +23,5 @@ python:
     - requirements: eqcorrscan/doc/requirements.txt
     - requirements: requirements.txt
 
-conda:
-  environment: eqcorrscan/doc/environment.yml
+# conda:
+#   environment: eqcorrscan/doc/environment.yml
