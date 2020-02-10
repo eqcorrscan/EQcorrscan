@@ -1,12 +1,6 @@
 """
 Functions for testing the core.subspace functions
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-
 import numpy as np
 import unittest
 import pytest
@@ -97,6 +91,7 @@ class SimpleSubspaceMethods(unittest.TestCase):
         self.assertEqual((stat.max().round(6) - 0.229755).round(6), 0)
 
 
+@pytest.mark.superslow
 @pytest.mark.network
 class SubspaceTestingMethods(unittest.TestCase):
     """
@@ -141,13 +136,10 @@ class SubspaceTestingMethods(unittest.TestCase):
             identity = np.dot(u.T, u).astype(np.float16)
             self.assertTrue(np.allclose(
                 identity, np.diag(np.ones(len(identity), dtype=np.float16))))
-        comparison_detector = \
-            subspace.read_detector(os.path.
-                                   join(os.path.
-                                        abspath(os.path.
-                                                dirname(__file__)),
-                                        'test_data', 'subspace',
-                                        'master_detector_multi_unaligned.h5'))
+        comparison_detector = subspace.read_detector(
+                os.path.join(os.path.abspath(
+                    os.path.dirname(__file__)), 'test_data', 'subspace',
+                    'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -277,8 +269,9 @@ class SubspaceTestingMethods(unittest.TestCase):
                     np.allclose(np.abs(item), np.abs(other_item), atol=0.005))
 
     def test_refactor(self):
-        """Test subspace refactoring, checks that np.dot(U.T, U) is\
-         identity."""
+        """
+        Test subspace refactoring, checks that np.dot(U.T, U) is identity.
+        """
         templates = copy.deepcopy(self.templates)
         # Test a multiplexed version
         detector = subspace.Detector()
@@ -318,8 +311,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                            shift_len=4, reject=0.3,
                            no_missed=False).partition(4)
         st = self.st
-        detections = detector.detect(st=st, threshold=0.2, trig_int=4,
-                                     debug=1)
+        detections = detector.detect(st=st, threshold=0.2, trig_int=4)
         self.assertEqual(len(detections), 34)
 
     def test_not_multiplexed(self):
@@ -332,7 +324,7 @@ class SubspaceTestingMethods(unittest.TestCase):
                            shift_len=4, reject=0.3).partition(4)
         st = self.st
         detections = detector.detect(st=st, threshold=0.5, trig_int=4,
-                                     debug=1, moveout=2, min_trig=5)
+                                     moveout=2, min_trig=5)
         self.assertEqual(len(detections), 16)
 
     def test_multi_detectors(self):
@@ -382,42 +374,48 @@ def get_test_data():
     :return: List of cut templates with no filters applied
     :rtype: list
     """
-    from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
     from obspy import UTCDateTime
     from eqcorrscan.utils.catalog_utils import filter_picks
-    from eqcorrscan.utils.clustering import space_cluster
+    from eqcorrscan.utils.clustering import catalog_cluster
     from obspy.clients.fdsn import Client
 
-    cat = get_geonet_events(minlat=-40.98, maxlat=-40.85, minlon=175.4,
-                            maxlon=175.5, startdate=UTCDateTime(2016, 5, 11),
-                            enddate=UTCDateTime(2016, 5, 13))
+    client = Client("GEONET")
+    cat = client.get_events(
+        minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+        maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 11),
+        endtime=UTCDateTime(2016, 5, 13))
     cat = filter_picks(catalog=cat, top_n_picks=5)
-    stachans = list(set([(pick.waveform_id.station_code,
-                          pick.waveform_id.channel_code) for event in cat
-                         for pick in event.picks]))
-    clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
+    stachans = list(set([
+        (pick.waveform_id.station_code, pick.waveform_id.channel_code)
+        for event in cat for pick in event.picks]))
+    clusters = catalog_cluster(
+        catalog=cat, thresh=2, show=False, metric='distance')
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     client = Client('GEONET')
     design_set = []
-    bulk_info = []
+    st = Stream()
     for event in cluster:
+        # This print is just in to force some output during long running test
+        print("Downloading for event {0}".format(event.resource_id))
+        bulk_info = []
         t1 = event.origins[0].time + 5
         t2 = t1 + 15.1
         for station, channel in stachans:
-            bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-    st = client.get_waveforms_bulk(bulk=bulk_info)
+            bulk_info.append(
+                ('NZ', station, '10', channel[0:2] + '?', t1, t2))
+        st += client.get_waveforms_bulk(bulk=bulk_info)
     for event in cluster:
         t1 = event.origins[0].time + 5
         t2 = t1 + 15
         design_set.append(st.copy().trim(t1, t2))
     t1 = UTCDateTime(2016, 5, 11, 19)
     t2 = UTCDateTime(2016, 5, 11, 20)
-    bulk_info = [('NZ', stachan[0], '*',
-                  stachan[1][0:2] + '?',
-                  t1, t2) for stachan in stachans]
+    bulk_info = [('NZ', stachan[0], '10', stachan[1][0:2] + '?', t1, t2)
+                 for stachan in stachans]
     st = client.get_waveforms_bulk(bulk_info)
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     return design_set, st
+
 
 if __name__ == '__main__':
     unittest.main()

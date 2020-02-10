@@ -5,7 +5,7 @@ from os.path import join, dirname
 import pytest
 
 # ------------------------- Paths constants
-# these are added to pytest namespace for convinience if finding things
+# these are added to pytest namespace for convenience if finding things
 # eg test data
 
 PKG_PATH = join(dirname(__file__), 'eqcorrscan')
@@ -17,10 +17,18 @@ TEST_DATA_PATH = join(TEST_PATH, 'test_data')
 
 
 def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true",
-                     help="run slow tests")
-    parser.addoption("--runsuperslow", action="store_true",
-                     help="run super-slow tests")
+    try:
+        parser.addoption("--runslow", action="store_true",
+                         help="run slow tests")
+    except ValueError as e:
+        print(e)
+        pass
+    try:
+        parser.addoption("--runsuperslow", action="store_true",
+                         help="run super-slow tests")
+    except ValueError as e:
+        print(e)
+        pass
 
 
 # ------------------ session fixtures
@@ -110,16 +118,14 @@ def append_name(list_like):
     return _append_func_name
 
 
-# add key variables to the pytest name space. All these can now be accessed
-# within any test by using getattr notation on the pytest package itself
-# eg pytest.test_path is bound to TEST_PATH
-def pytest_namespace():
-    odict = {'test_path': TEST_PATH,
-             'test_data_path': TEST_DATA_PATH,
-             'pkg_path': PKG_PATH,
-             'append_name': append_name,
-             }
-    return odict
+# Stop-gap as per
+# https://docs.pytest.org/en/latest/deprecations.html#pytest-namespace
+def pytest_configure():
+    pytest.append_name = append_name
+    pytest.test_path = TEST_PATH
+    pytest.test_data_path = TEST_DATA_PATH
+    pytest.pkg_path = PKG_PATH
+
 
 # Over-ride the -n auto in travis as this goes of the wall
 # import sys

@@ -16,7 +16,7 @@ clustering
        svd_to_stream
        cluster
        corr_cluster
-       cross_chan_coherence
+       cross_chan_correlation
        dist_mat_km
        distance_matrix
        empirical_svd

@@ -9,15 +9,19 @@ except ImportError:
     from distutils.command.build_ext import build_ext
     using_setuptools = False
 
+from distutils import sysconfig
 from distutils.ccompiler import get_default_compiler
+from pkg_resources import get_build_platform
 
 import os
 import sys
 import shutil
 import glob
-import eqcorrscan
 
-VERSION = eqcorrscan.__version__
+with open("eqcorrscan/__init__.py", "r") as init_file:
+    version_line = [line for line in init_file
+                    if '__version__' in line][0]
+VERSION = version_line.split()[-1].split("'")[1]
 
 # Check if we are on RTD and don't build extensions if we are.
 READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
@@ -77,7 +81,7 @@ def get_include_dirs():
     from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
-                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'lib'),
+                    os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
@@ -182,9 +186,8 @@ def export_symbols(*path):
     return [s.strip() for s in lines if s.strip() != '']
 
 
-def get_extensions():
+def get_extensions(no_mkl=False):
     from distutils.extension import Extension
-    from pkg_resources import get_build_platform
 
     if READ_THE_DOCS:
         return []
@@ -198,11 +201,17 @@ def get_extensions():
 
     sources = [os.path.join('eqcorrscan', 'utils', 'src', 'multi_corr.c'),
                os.path.join('eqcorrscan', 'utils', 'src', 'time_corr.c'),
-               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c')]
+               os.path.join('eqcorrscan', 'utils', 'src', 'find_peaks.c'),
+               os.path.join('eqcorrscan', 'utils', 'src',
+                            'distance_cluster.c')]
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
     if get_build_platform() not in ('win32', 'win-amd64'):
-        extra_link_args = ['-lm', '-lgomp']
+        if get_build_platform().startswith('freebsd'):
+            # Clang uses libomp, not libgomp
+            extra_link_args = ['-lm', '-lomp']
+        else:
+            extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp']
         if all(arch not in get_build_platform()
                for arch in ['arm', 'aarch']):
@@ -232,7 +241,10 @@ def get_extensions():
         common_extension_args['extra_link_args'] = extra_link_args
         common_extension_args['extra_compile_args'] = extra_compile_args
         common_extension_args['export_symbols'] = exp_symbols
-        mkl = get_mkl()
+        if no_mkl:
+            mkl = None
+        else:
+            mkl = get_mkl()
         if mkl is not None:
             # use MKL if we have it
             common_extension_args['include_dirs'].extend(mkl[0])
@@ -255,6 +267,38 @@ class CustomBuildExt(build_ext):
             compiler = get_default_compiler()
         else:
             compiler = self.compiler
+
+        cfg_vars = sysconfig.get_config_vars()
+        # Hack around OSX setting a -m flag
+        if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
+            print("System C-flags:")
+            print(cfg_vars["CFLAGS"])
+            cflags = []
+            for flag in cfg_vars["CFLAGS"].split():
+                if flag in ["-m", "-isysroot"]:
+                    continue
+                # Remove sdk links
+                if flag.endswith(".sdk"):
+                    continue
+                cflags.append(flag)
+            cfg_vars["CFLAGS"] = " ".join(cflags)
+            print("Editted C-flags:")
+            print(cfg_vars["CFLAGS"])
+        # Remove unsupported C-flags
+        unsupported_flags = [
+            "-fuse-linker-plugin", "-ffat-lto-objects", "-flto-partition=none"]
+        for key in ["CFLAGS", "LDFLAGS", "LDSHARED"]:
+            if key in cfg_vars:
+                print("System {0}:".format(key))
+                print(cfg_vars[key])
+                flags = []
+                for flag in cfg_vars[key].split():
+                    if flag in unsupported_flags:
+                        continue
+                    flags.append(flag)
+                cfg_vars[key] = " ".join(flags)
+                print("Editted {0}:".format(key))
+                print(cfg_vars[key])
 
         if compiler == 'msvc':
             # Add msvc specific hacks
@@ -313,12 +357,11 @@ def setup_package():
         build_requires = ['numpy>=1.6, <2.0']
 
     if not READ_THE_DOCS:
-        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18', 'LatLon',
+        install_requires = ['matplotlib>=1.3.0', 'scipy>=0.18',
                             'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12',
                             'h5py']
     else:
-        install_requires = ['matplotlib>=1.3.0', 'LatLon', 'obspy>=1.0.3',
-                            'mock']
+        install_requires = ['matplotlib>=1.3.0', 'obspy>=1.0.3', 'mock']
     install_requires.extend(build_requires)
 
     setup_args = {
@@ -326,7 +369,7 @@ def setup_package():
         'version': VERSION,
         'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
-        'url': 'https://github.com/calum-chamberlain/EQcorrscan',
+        'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
         'license': 'LGPL',
@@ -336,10 +379,8 @@ def setup_package():
             'Topic :: Scientific/Engineering',
             'License :: OSI Approved :: GNU Library or Lesser General Public '
             'License (LGPL)',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
         ],
         'keywords': 'earthquake correlation detection match-filter',
         'scripts': scriptfiles,
@@ -355,6 +396,10 @@ def setup_package():
         setup_args['setup_requires'] = build_requires
         setup_args['install_requires'] = install_requires
 
+    no_mkl = False
+    if "--no-mkl" in sys.argv:
+        no_mkl = True
+        sys.argv.remove("--no-mkl")
     if len(sys.argv) >= 2 and (
         '--help' in sys.argv[1:] or
         sys.argv[1] in ('--help-commands', 'egg_info', '--version',
@@ -362,10 +407,11 @@ def setup_package():
         # For these actions, NumPy is not required.
         pass
     else:
-        setup_args['packages'] = ['eqcorrscan', 'eqcorrscan.utils',
-                                  'eqcorrscan.core', 'eqcorrscan.utils.lib',
-                                  'eqcorrscan.tutorials']
-        setup_args['ext_modules'] = get_extensions()
+        setup_args['packages'] = [
+            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
+            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
+        setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
     if os.path.isdir("build"):

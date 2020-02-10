@@ -10,17 +10,15 @@ model would fit with real data.  Mostly used in EQcorrscan for testing.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
-import warnings
+import logging
 
 from obspy import Stream, Trace, UTCDateTime
 
 from eqcorrscan.utils import clustering
+
+
+Logger = logging.getLogger(__name__)
 
 
 def seis_sim(sp, amp_ratio=1.5, flength=False, phaseout='all'):
@@ -211,8 +209,8 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
                                    flength=flength, phaseout=phaseout)
                 st.append(tr)
             elif flength and phaseout == 'all':
-                warnings.warn('Cannot make a bulk synthetic with this fixed ' +
-                              'length for station ' + station)
+                Logger.warning('Cannot make a bulk synthetic with this fixed '
+                               'length for station ' + station)
             elif phaseout == 'all':
                 tr.data = seis_sim(sp=int(SP_time * samp_rate), amp_ratio=1.5,
                                    flength=flength, phaseout=phaseout)
@@ -240,7 +238,8 @@ def template_grid(stations, nodes, travel_times, phase, PS_ratio=1.68,
 
 
 def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
-                        max_amp, max_lag, debug=0):
+                        max_amp, max_lag, phaseout="all", jitter=0,
+                        noise=True, same_phase=False):
     """
     Generate a synthetic dataset to be used for testing.
 
@@ -266,8 +265,13 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     :param max_amp: Maximum signal-to-noise ratio of seeds.
     :param max_lag: Maximum lag time in seconds (randomised).
     :type max_lag: float
-    :type debug: int
-    :param debug: Debug level, bigger the number, the more plotting/output.
+    :type jitter: int
+    :param jitter:
+        Random range to allow arrival shifts for seeded phases (samples)
+    :type noise: bool
+    :param noise: Set to False to give noise-free data.
+    :type same_phase: bool
+    :param same_phase: Whether to enforce all positive repeats (True) or not.
 
     :returns: Templates: List of :class:`obspy.core.stream.Stream`
     :rtype: list
@@ -276,6 +280,7 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     :returns: Seeds: dictionary of seed SNR and time with time in samples.
     :rtype: dict
     """
+    jitter = abs(jitter)
     # Generate random arrival times
     t_times = np.abs(np.random.random([nsta, ntemplates])) * max_lag
     # Generate random node locations - these do not matter as they are only
@@ -288,17 +293,16 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     stations = ['ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
                 'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
                 'MALC']
-    if debug > 1:
-        print(nodes)
-        print(t_times)
-        print(stations[0:nsta])
+    Logger.debug(nodes)
+    Logger.debug(t_times)
+    Logger.debug(stations[0:nsta])
     templates = template_grid(stations=stations[0:nsta], nodes=nodes,
                               travel_times=t_times, phase='S',
                               samp_rate=samp_rate,
-                              flength=int(t_length * samp_rate))
-    if debug > 2:
-        for template in templates:
-            print(template)
+                              flength=int(t_length * samp_rate),
+                              phaseout=phaseout)
+    for template in templates:
+        Logger.debug(template)
     # Now we want to create a day of synthetic data
     seeds = []
     data = templates[0].copy()  # Copy a template to get the correct length
@@ -310,11 +314,13 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
     for i, template in enumerate(templates):
         impulses = np.zeros(86400 * int(samp_rate))
         # Generate a series of impulses for seeding
-        # Need three seperate impulse traces for each of the three templates,
+        # Need three separate impulse traces for each of the three templates,
         # all will be convolved within the data though.
         impulse_times = np.random.randint(86400 * int(samp_rate),
                                           size=nseeds)
         impulse_amplitudes = np.random.randn(nseeds) * max_amp
+        if same_phase:
+            impulse_amplitudes = np.abs(impulse_amplitudes)
         # Generate amplitudes up to maximum amplitude in a normal distribution
         seeds.append({'SNR': impulse_amplitudes,
                       'time': impulse_times})
@@ -326,15 +332,21 @@ def generate_synth_data(nsta, ntemplates, nseeds, samp_rate, t_length,
                        for template_tr in template])
         for j, template_tr in enumerate(template):
             offset = int((template_tr.stats.starttime - mintime) * samp_rate)
-            pad = np.zeros(offset)
-            tr_impulses = np.append(pad, impulses)[0:len(impulses)]
+            if jitter > 0:
+                offset += np.random.randint(-jitter, jitter)
+            pad = np.zeros(abs(offset))
+            if offset >= 0:
+                tr_impulses = np.append(pad, impulses)[0:len(impulses)]
+            elif offset < 0:
+                tr_impulses = np.append(impulses, pad)[-len(impulses):]
             # Convolve this with the template trace to give the daylong seeds
-            data[j].data += np.convolve(tr_impulses,
-                                        template_tr.data)[0:len(impulses)]
+            data[j].data += np.convolve(
+                tr_impulses, template_tr.data)[0:len(impulses)]
     # Add the noise
-    for tr in data:
-        noise = np.random.randn(86400 * int(samp_rate))
-        tr.data += noise / max(noise)
+    if noise:
+        for tr in data:
+            noise_array = np.random.randn(86400 * int(samp_rate))
+            tr.data += noise_array / max(noise_array)
     return templates, data, seeds
 
 

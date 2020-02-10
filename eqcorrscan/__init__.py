@@ -11,23 +11,24 @@ import importlib
 import sys
 import warnings
 
-from eqcorrscan.core.match_filter import (  # NOQA
-    match_filter, Detection, Party, Tribe, Family, Template)
+
+from eqcorrscan.core.match_filter.party import Party  # NOQA
+from eqcorrscan.core.match_filter.family import Family  # NOQA
+from eqcorrscan.core.match_filter.detection import Detection  # NOQA
+from eqcorrscan.core.match_filter.tribe import Tribe  # NOQA
+from eqcorrscan.core.match_filter.template import Template  # NOQA
 from eqcorrscan.core.subspace import Detector, read_detector  # NOQA
 from eqcorrscan.core.lag_calc import lag_calc  # NOQA
 
 from eqcorrscan.utils.correlate import (  # NOQA
     get_stream_xcorr, get_array_xcorr, register_array_xcorr)
 
-__all__ = ['core', 'utils', 'tutorials']
+__all__ = ['core', 'utils', 'tutorials', 'tests']
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 # Cope with changes to name-space to remove most of the camel-case
-_import_map = {
-    "eqcorrscan.utils.catalogue2DD": "eqcorrscan.utils.catalog_to_dd",
-    "eqcorrscan.utils.EQcorrscan_plotting": "eqcorrscan.utils.plotting"
-}
+_import_map = {}
 
 
 class EQcorrscanDeprecationWarning(UserWarning):
@@ -35,6 +36,13 @@ class EQcorrscanDeprecationWarning(UserWarning):
     Force pop-up of warnings.
     """
     pass
+
+
+if sys.version_info.major < 3:
+    raise NotImplementedError(
+        "EQcorrscan no longer supports Python 2.x"
+        " See https://github.com/eqcorrscan/EQcorrscan/issues/242 to read "
+        "more.")
 
 
 class EQcorrscanRestructureAndLoad(object):

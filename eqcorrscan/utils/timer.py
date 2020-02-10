@@ -3,11 +3,7 @@ Useful timer for performance testing.
 
 Not licenced as part of EQcorrscan.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-import time
+from timeit import default_timer
 
 
 class Timer(object):
@@ -32,12 +28,12 @@ class Timer(object):
 
     def __enter__(self):
         """Enter timer."""
-        self.start = time.time()
+        self.start = default_timer()
         return self
 
     def __exit__(self, *args):
         """Exit timer."""
-        self.end = time.time()
+        self.end = default_timer()
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
@@ -47,11 +43,12 @@ class Timer(object):
 def time_func(func, name, *args, **kwargs):
     """ call a func with args and kwargs, print name of func and how
     long it took. """
-    tic = time.time()
+    tic = default_timer()
     out = func(*args, **kwargs)
-    toc = time.time()
+    toc = default_timer()
     print('%s took %0.2f seconds' % (name, toc - tic))
     return out
+
 
 if __name__ == "__main__":
     """Doc-test."""

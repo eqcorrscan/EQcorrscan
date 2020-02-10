@@ -13,7 +13,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.5
+      - image: circleci/python:3.7
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -26,7 +26,11 @@ jobs:
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
-
+      - run:
+          name: install fftw
+          command: |
+            sudo apt-get update
+            sudo apt-get install libfftw3-dev
       - run:
           name: install dependencies
           command: |
@@ -38,17 +42,12 @@ jobs:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
             - "venv"
-      - run:
-          name: install fftw
-          command: |
-            sudo apt-get update
-            sudo apt-get install libfftw3-dev
+
       - run:
           name: install EQcorrscan
           command: |
             . venv/bin/activate
-            python setup.py install
-            python setup.py build_ext --inplace
+            python setup.py develop
       # run tests!
       - run:
           name: run tests
@@ -56,6 +55,7 @@ jobs:
             . venv/bin/activate
             py.test -m "network" -n 2
             py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-append
+            py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-append
 
       - run:
           name: Upload to codecov

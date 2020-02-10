@@ -1,12 +1,6 @@
 """
 Functions to test the synth_seis generation.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import numpy as np
 from obspy import Stream
@@ -97,13 +91,12 @@ class TestTemplateGrid(unittest.TestCase):
 
 class TestRandomData(unittest.TestCase):
     def test_generate_synth_dataset(self):
-        for debug in [0, 2, 3]:
-            templates, data, seeds = generate_synth_data(
-                nsta=2, ntemplates=2, nseeds=2, samp_rate=100, t_length=10,
-                max_amp=10, max_lag=20, debug=debug)
-            self.assertEqual(len(templates), 2)
-            self.assertEqual(len(seeds[0]['time']), 2)
-            self.assertTrue(isinstance(data, Stream))
+        templates, data, seeds = generate_synth_data(
+            nsta=2, ntemplates=2, nseeds=2, samp_rate=100, t_length=10,
+            max_amp=10, max_lag=20)
+        self.assertEqual(len(templates), 2)
+        self.assertEqual(len(seeds[0]['time']), 2)
+        self.assertTrue(isinstance(data, Stream))
 
 
 if __name__ == '__main__':

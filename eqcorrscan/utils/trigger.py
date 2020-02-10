@@ -9,24 +9,20 @@ different stations have different noise parameters.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import getpass
 import ast
-import warnings
-import numpy as np
-from pprint import pprint
+import logging
 
 from multiprocessing import Pool, cpu_count
 from obspy.core.util import AttribDict
 from obspy import UTCDateTime
-from obspy.signal.trigger import trigger_onset, plot_trigger, recursive_sta_lta
+from obspy.signal.trigger import trigger_onset, recursive_sta_lta
 
 import eqcorrscan
 from eqcorrscan.utils.despike import median_filter
+
+
+Logger = logging.getLogger(__name__)
 
 
 class TriggerParameters(AttribDict):
@@ -147,7 +143,7 @@ def read_trigger_parameters(filename):
 
 
 def _channel_loop(tr, parameters, max_trigger_length=60,
-                  despike=False, debug=0):
+                  despike=False):
     """
     Internal loop for parellel processing.
 
@@ -157,7 +153,6 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
     :param parameters: List of TriggerParameter class for trace.
     :type max_trigger_length: float
     :type despike: bool
-    :type debug: int
 
     :return: trigger
     :rtype: list
@@ -168,13 +163,12 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
             parameter = par
             break
     else:
-        msg = 'No parameters set for station ' + str(tr.stats.station)
-        warnings.warn(msg)
+        Logger.warning(
+            'No parameters set for station ' + str(tr.stats.station))
         return []
 
     triggers = []
-    if debug > 0:
-        print(tr)
+    Logger.debug(tr)
     tr.detrend('simple')
     if despike:
         median_filter(tr)
@@ -193,8 +187,6 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
         trig_args = {'max_len_delete': True}
         trig_args['max_len'] = int(max_trigger_length *
                                    df + 0.5)
-    if debug > 3:
-        plot_trigger(tr, cft, parameter['thr_on'], parameter['thr_off'])
     tmp_trigs = trigger_onset(cft, float(parameter['thr_on']),
                               float(parameter['thr_off']),
                               **trig_args)
@@ -212,7 +204,7 @@ def _channel_loop(tr, parameters, max_trigger_length=60,
 
 
 def network_trigger(st, parameters, thr_coincidence_sum, moveout,
-                    max_trigger_length=60, despike=True, debug=0):
+                    max_trigger_length=60, despike=True, parallel=True):
     """
     Main function to compute triggers for a network of stations.
     Computes single-channel characteristic functions using given parameters,
@@ -234,8 +226,8 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
         remove long triggers - can set to False to not use.
     :type despike: bool
     :param despike: Whether to apply simple despiking routine or not
-    :type debug: int
-    :param debug: Debug output level, higher is more output.
+    :type parallel: bool
+    :param parallel: Whether to run in parallel or not
 
     :returns: List of triggers
     :rtype: list
@@ -259,26 +251,25 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
     >>> triggers = network_trigger(st=st, parameters=parameters,
     ...                            thr_coincidence_sum=5, moveout=30,
     ...                            max_trigger_length=60, despike=False)
-    Looking for coincidence triggers ...
-    Found 1 Coincidence triggers
+    >>> print(len(triggers))
+    1
     """
     triggers = []
     trace_ids = [tr.id for tr in st]
     trace_ids = dict.fromkeys(trace_ids, 1)
-    if debug > 3:
-        print('Not running in parallel')
+    if not parallel:
         # Don't run in parallel
         for tr in st:
-            triggers += _channel_loop(tr=tr, parameters=parameters,
-                                      max_trigger_length=max_trigger_length,
-                                      despike=despike, debug=debug)
+            triggers += _channel_loop(
+                tr=tr, parameters=parameters,
+                max_trigger_length=max_trigger_length, despike=despike)
     else:
         # Needs to be pickleable
         parameters = [par.__dict__ for par in parameters]
         pool = Pool(processes=cpu_count())
         results = [pool.apply_async(_channel_loop,
                                     args=(tr, parameters, max_trigger_length,
-                                          despike, debug))
+                                          despike))
                    for tr in st]
         pool.close()
         triggers = [p.get() for p in results]
@@ -286,12 +277,7 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
         triggers = [item for sublist in triggers for item in sublist]
     triggers.sort()
 
-    if debug > 0:
-        details = True
-    else:
-        details = False
-
-    print('Looking for coincidence triggers ...')
+    Logger.info('Looking for coincidence triggers ...')
     # the coincidence triggering and coincidence sum computation
     coincidence_triggers = []
     last_off_time = 0.0
@@ -303,9 +289,6 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
         event['stations'] = [tr_id.split(".")[1]]
         event['trace_ids'] = [tr_id]
         event['coincidence_sum'] = trace_ids[tr_id]
-        if details:
-            event['cft_peaks'] = [cft_peak]
-            event['cft_stds'] = [cft_std]
         # compile the list of stations that overlap with the current trigger
         for trigger in triggers:
             tmp_on, tmp_off, tmp_tr_id, tmp_cft_peak, tmp_cft_std = trigger
@@ -318,9 +301,6 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
                 event['stations'].append(tmp_tr_id.split(".")[1])
                 event['trace_ids'].append(tmp_tr_id)
                 event['coincidence_sum'] += trace_ids[tmp_tr_id]
-                if details:
-                    event['cft_peaks'].append(tmp_cft_peak)
-                    event['cft_stds'].append(tmp_cft_std)
                 # allow sets of triggers that overlap only on subsets of all
                 # stations (e.g. A overlaps with B and B overlaps w/ C => ABC)
                 off = max(off, tmp_off)
@@ -335,21 +315,12 @@ def network_trigger(st, parameters, thr_coincidence_sum, moveout,
         if off == last_off_time:
             continue
         event['duration'] = off - on
-        if details:
-            weights = np.array([trace_ids[i] for i in event['trace_ids']])
-            weighted_values = np.array(event['cft_peaks']) * weights
-            event['cft_peak_wmean'] = weighted_values.sum() / weights.sum()
-            weighted_values = np.array(event['cft_stds']) * weights
-            event['cft_std_wmean'] = \
-                (np.array(event['cft_stds']) * weights).sum() / weights.sum()
         coincidence_triggers.append(event)
         last_off_time = off
 
-    if debug > 1:
-        print('Coincidence triggers :')
-        pprint(coincidence_triggers)
+    Logger.debug('Coincidence triggers : {0}'.format(coincidence_triggers))
 
-    print('Found %s Coincidence triggers' % len(coincidence_triggers))
+    Logger.info('Found %s Coincidence triggers' % len(coincidence_triggers))
     return coincidence_triggers
 
 

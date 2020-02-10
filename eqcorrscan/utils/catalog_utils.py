@@ -14,15 +14,13 @@ Helper functions for common handling tasks for catalog objects.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import warnings
+import logging
 
 from collections import Counter
 from obspy.core.event import Catalog
+
+
+Logger = logging.getLogger(__name__)
 
 
 def filter_picks(catalog, stations=None, channels=None, networks=None,
@@ -126,8 +124,9 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
             event.picks = [pick for pick in event.picks
                            if pick.evaluation_mode == 'automatic']
     elif evaluation_mode != 'all':
-        warnings.warn('Unrecognised evaluation_mode: %s, using all picks' %
-                      evaluation_mode)
+        Logger.warning(
+            'Unrecognised evaluation_mode: {0}, using all picks'.format(
+                evaluation_mode))
     if top_n_picks:
         all_picks = []
         for event in filtered_catalog:
@@ -217,14 +216,14 @@ def _get_origin(event):
     :param event: Event to get the origin of.
     :return: :class:`obspy.core.event.Origin`
     """
-    from eqcorrscan.core.match_filter import MatchFilterError
     if event.preferred_origin() is not None:
         origin = event.preferred_origin()
     elif len(event.origins) > 0:
         origin = event.origins[0]
     else:
-        raise MatchFilterError('No origin set, cannot constrain')
+        raise IndexError('No origin set, cannot constrain')
     return origin
+
 
 if __name__ == "__main__":
     import doctest

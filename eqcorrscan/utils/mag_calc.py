@@ -9,59 +9,32 @@ decomposition techniques.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
-import warnings
+import logging
 import os
 import glob
 import matplotlib.pyplot as plt
-import datetime as dt
 import itertools
-import sys
 import copy
 import random
 import pickle
+import math
 
 from scipy.signal import iirfilter
 from collections import Counter
 from obspy.signal.invsim import simulate_seismometer as seis_sim
-from obspy.signal.invsim import evalresp, paz_2_amplitude_value_of_freq_resp
-from obspy import UTCDateTime
+from obspy.signal.invsim import paz_2_amplitude_value_of_freq_resp
 from obspy.core.event import Amplitude, Pick, WaveformStreamID
 from obspy.geodetics import degrees2kilometers
 
-from eqcorrscan.core.match_filter import MatchFilterError
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.utils.catalog_utils import _get_origin
 
 
-def dist_calc(loc1, loc2):
-    """
-    Function to calculate the distance in km between two points.
+Logger = logging.getLogger(__name__)
 
-    Uses the flat Earth approximation. Better things are available for this,
-    like `gdal <http://www.gdal.org/>`_.
 
-    :type loc1: tuple
-    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
-    :type loc2: tuple
-    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
-
-    :returns: Distance between points in km.
-    :rtype: float
-    """
-    R = 6371.009  # Radius of the Earth in km
-    dlat = np.radians(abs(loc1[0] - loc2[0]))
-    dlong = np.radians(abs(loc1[1] - loc2[1]))
-    ddepth = abs(loc1[2] - loc2[2])
-    mean_lat = np.radians((loc1[0] + loc2[0]) / 2)
-    dist = R * np.sqrt(dlat ** 2 + (np.cos(mean_lat) * dlong) ** 2)
-    dist = np.sqrt(dist ** 2 + ddepth ** 2)
-    return dist
-
+# Magnitude - frequency funcs
 
 def calc_max_curv(magnitudes, plotvar=False):
     """
@@ -187,8 +160,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         max_mag = max(magnitudes)
     for m_c in completeness:
         if m_c >= max_mag or m_c >= max(magnitudes):
-            warnings.warn('Not computing completeness at %s, above max_mag' %
-                          str(m_c))
+            Logger.warning('Not computing completeness at %s, above max_mag' %
+                           str(m_c))
             break
         complete_mags = []
         complete_freq = []
@@ -197,8 +170,8 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
                 complete_mags.append(mag)
                 complete_freq.append(np.log10(cdf[i]))
         if len(complete_mags) < 4:
-            warnings.warn('Not computing completeness above ' + str(m_c) +
-                          ', fewer than 4 events')
+            Logger.warning('Not computing completeness above ' + str(m_c) +
+                           ', fewer than 4 events')
             break
         fit = np.polyfit(complete_mags, complete_freq, 1, full=True)
         # Calculate the residuals according to the Wiemer & Wys 2000 definition
@@ -228,7 +201,44 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     return b_values
 
 
-def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
+# Helpers for local magnitude estimation
+
+def dist_calc(loc1, loc2):
+    """
+    Function to calculate the distance in km between two points.
+
+    Uses the
+    `haversine formula <https://en.wikipedia.org/wiki/Haversine_formula>`_
+    to calculate great circle distance at the Earth's surface, then uses
+    trig to include depth.
+
+    :type loc1: tuple
+    :param loc1: Tuple of lat, lon, depth (in decimal degrees and km)
+    :type loc2: tuple
+    :param loc2: Tuple of lat, lon, depth (in decimal degrees and km)
+
+    :returns: Distance between points in km.
+    :rtype: float
+    """
+    from eqcorrscan.utils.libnames import _load_cdll
+    import ctypes
+
+    utilslib = _load_cdll('libutils')
+
+    utilslib.dist_calc.argtypes = [
+        ctypes.c_float, ctypes.c_float, ctypes.c_float,
+        ctypes.c_float, ctypes.c_float, ctypes.c_float]
+    utilslib.dist_calc.restype = ctypes.c_float
+
+    dist = utilslib.dist_calc(
+        float(math.radians(loc1[0])), float(math.radians(loc1[1])),
+        float(loc1[2]),
+        float(math.radians(loc2[0])), float(math.radians(loc2[1])),
+        float(loc2[2]))
+    return dist
+
+
+def _sim_WA(trace, inventory, water_level, velocity=False):
     """
     Remove the instrument response from a trace and simulate a Wood-Anderson.
 
@@ -245,12 +255,9 @@ def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
         amplitude determination for magnitudes you will need to
         worry about how you cope with the response of this filter
         yourself.
-    :type PAZ: dict
-    :param PAZ:
-        Dictionary containing lists of poles and zeros, the gain and
-        the sensitivity. If unset will expect seedresp.
-    :type seedresp: dict
-    :param seedresp: Seed response information - if unset will expect PAZ.
+    :type inventory: obspy.core.inventory.Inventory
+    :param inventory:
+        Inventory containing response information for the stations in st.
     :type water_level: int
     :param water_level: Water level for the simulation.
     :type velocity: bool
@@ -270,20 +277,18 @@ def _sim_WA(trace, PAZ, seedresp, water_level, velocity=False):
     # De-trend data
     trace.detrend('simple')
     # Simulate Wood Anderson
-    if PAZ:
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=PAZ, paz_simulate=PAZ_WA,
-                              water_level=water_level,
-                              remove_sensitivity=True)
-    elif seedresp:
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=None, paz_simulate=PAZ_WA,
-                              water_level=water_level, seedresp=seedresp)
-    else:
-        UserWarning('No response given to remove, will just simulate WA')
-        trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                              paz_remove=None, paz_simulate=PAZ_WA,
-                              water_level=water_level)
+    resp = inventory.get_response(
+        seed_id=trace.id, datetime=trace.stats.starttime)
+    paz = resp.get_paz()
+    paz = {
+        'poles': paz.poles,
+        'zeros': paz.zeros,
+        'gain': paz.normalization_factor,
+        'sensitivity': resp.instrument_sensitivity.value,
+    }
+    trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
+                          paz_remove=paz, paz_simulate=PAZ_WA,
+                          water_level=water_level)
     return trace
 
 
@@ -312,8 +317,9 @@ def _max_p2t(data, delta):
         amplitudes = np.empty([len(turning_points) - 1],)
         half_periods = np.empty([len(turning_points) - 1],)
     else:
-        print('Turning points has length: ' + str(len(turning_points)) +
-              ' data have length: ' + str(len(data)))
+        Logger.warning(
+            'Turning points has length: ' + str(len(turning_points)) +
+            ' data have length: ' + str(len(data)))
         return 0.0, 0.0, 0.0
     for i in range(1, len(turning_points)):
         half_periods[i - 1] = (delta * (turning_points[i][1] -
@@ -325,153 +331,301 @@ def _max_p2t(data, delta):
     return amplitude, period, delta * turning_points[np.argmax(amplitudes)][1]
 
 
-def _GSE2_PAZ_read(gsefile):
-    """
-    Read the instrument response information from a GSE Poles and Zeros file.
-
-    Formatted for files generated by the SEISAN program RESP.
-
-    Format must be CAL2, not coded for any other format at the moment,
-    contact the authors to add others in.
-
-    :type gsefile: string
-    :param gsefile: Path to GSE file
-
-    :returns: Dictionary of poles, zeros, gain and sensitivity
-    :rtype: dict
-    """
-    with open(gsefile, 'r') as f:
-        # First line should start with CAL2
-        header = f.readline()
-        if not header[0:4] == 'CAL2':
-            raise IOError('Unknown format for GSE file, only coded for CAL2')
-        station = header.split()[1]
-        channel = header.split()[2]
-        sensor = header.split()[3]
-        date = dt.datetime.strptime(header.split()[7], '%Y/%m/%d')
-        header = f.readline()
-        if not header[0:4] == 'PAZ2':
-            raise IOError('Unknown format for GSE file, only coded for PAZ2')
-        gain = float(header.split()[3])  # Measured in nm/counts
-        kpoles = int(header.split()[4])
-        kzeros = int(header.split()[5])
-        poles = []
-        for i in range(kpoles):
-            pole = f.readline()
-            poles.append(complex(float(pole.split()[0]),
-                                 float(pole.split()[1])))
-        zeros = []
-        for i in range(kzeros):
-            zero = f.readline()
-            zeros.append(complex(float(zero.split()[0]),
-                                 float(zero.split()[1])))
-        # Have Poles and Zeros, but need Gain and Sensitivity
-        # Gain should be in the DIG2 line:
-        for line in f:
-            if line[0:4] == 'DIG2':
-                sensitivity = float(line.split()[2])
-                # measured in counts/muVolt
-    PAZ = {'poles': poles, 'zeros': zeros, 'gain': gain,
-           'sensitivity': sensitivity}
-    return PAZ, date, station, channel, sensor
-
-
-def _find_resp(station, channel, network, time, delta, directory):
-    """
-    Helper function to find the response information.
-
-    Works for a given station and channel at a given time and return a
-    dictionary of poles and zeros, gain and sensitivity.
-
-    :type station: str
-    :param station: Station name (as in the response files)
-    :type channel: str
-    :param channel: Channel name (as in the response files)
-    :type network: str
-    :param network: Network to scan for, can be a wildcard
-    :type time: datetime.datetime
-    :param time: Date-time to look for repsonse information
-    :type delta: float
-    :param delta: Sample interval in seconds
-    :type directory: str
-    :param directory: Directory to scan for response information
-
-    :returns: dictionary of response information
-    :rtype: dict
-    """
-    possible_respfiles = glob.glob(directory + os.path.sep + 'RESP.' +
-                                   network + '.' + station +
-                                   '.*.' + channel)  # GeoNet RESP naming
-    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
-                                    network + '.' + channel +
-                                    '.' + station)  # RDseed RESP naming
-    possible_respfiles += glob.glob(directory + os.path.sep + 'RESP.' +
-                                    station + '.' + network)
-    # WIZARD resp naming
-    # GSE format, station needs to be 5 characters padded with _, channel is 4
-    # characters padded with _
-    station = str(station)
-    channel = str(channel)
-    possible_respfiles += glob.glob(directory + os.path.sep +
-                                    station.ljust(5, str('_')) +
-                                    channel[0:len(channel) - 1].
-                                    ljust(3, str('_')) +
-                                    channel[-1] + '.*_GSE')
-    PAZ = []
-    seedresp = []
-    for respfile in possible_respfiles:
-        print('Reading response from: ' + respfile)
-        if respfile.split(os.path.sep)[-1][0:4] == 'RESP':
-            # Read from a resp file
-            seedresp = {'filename': respfile, 'date': UTCDateTime(time),
-                        'units': 'DIS', 'network': network, 'station': station,
-                        'channel': channel, 'location': '*'}
-            try:
-                # Attempt to evaluate the response for this information, if not
-                # then this is not the correct response info!
-                freq_resp, freqs = evalresp(
-                    delta, 100, seedresp['filename'], seedresp['date'],
-                    units=seedresp['units'], freq=True,
-                    network=seedresp['network'], station=seedresp['station'],
-                    channel=seedresp['channel'])
-            except:
-                print('Issues with RESP file')
-                seedresp = []
-                continue
-        elif respfile[-3:] == 'GSE':
-            PAZ, pazdate, pazstation, pazchannel, pazsensor =\
-                _GSE2_PAZ_read(respfile)
-            # check that the date is good!
-            if pazdate >= time and pazchannel != channel and\
-               pazstation != station:
-                print('Issue with GSE file')
-                print('date: ' + str(pazdate) + ' channel: ' + pazchannel +
-                      ' station: ' + pazstation)
-                PAZ = []
-        else:
-            continue
-        # Check that PAZ are for the correct station, channel and date
-        if PAZ or seedresp:
-            break
-    if PAZ:
-        return PAZ
-    elif seedresp:
-        return seedresp
-
-
 def _pairwise(iterable):
     """
     Wrapper on itertools for SVD_magnitude.
     """
     a, b = itertools.tee(iterable)
     next(b, None)
-    if sys.version_info.major == 2:
-        return itertools.izip(a, b)
-    else:
-        return zip(a, b)
+    return zip(a, b)
 
 
-def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
+# Helpers for relative magnitude calculation
+
+def _get_pick_for_station(event, station, use_s_picks):
+    """
+    Get the first reported pick for a given station.
+
+    :type event: `obspy.core.event.Event`
+    :param event: Event with at least picks
+    :type station: str
+    :param station: Station to get pick for
+    :type use_s_picks: bool
+    :param use_s_picks: Whether to allow S-picks to be returned
+
+    :rtype: `obspy.core.event.Pick`
+    :return: First reported pick for station
+    """
+    picks = [p for p in event.picks if p.waveform_id.station_code == station]
+    if len(picks) == 0:
+        Logger.info("No pick for {0}".format(station))
+        return None
+    picks.sort(key=lambda p: p.time)
+    for pick in picks:
+        if pick.phase_hint and pick.phase_hint[0].upper() == 'S'\
+                and not use_s_picks:
+            continue
+        return pick
+    Logger.info("No suitable pick found for {0}".format(station))
+    return None
+
+
+def _snr(tr, noise_window, signal_window):
+    """
+    Compute ratio of maximum signal amplitude to rms noise amplitude.
+
+    :param tr: Trace to compute signal-to-noise ratio for
+    :param noise_window: (start, end) of window to use for noise
+    :param signal_window: (start, end) of window to use for signal
+
+    :return: Signal-to-noise ratio, noise amplitude
+    """
+    from eqcorrscan.core.template_gen import _rms
+
+    noise_amp = _rms(
+        tr.slice(starttime=noise_window[0], endtime=noise_window[1]).data)
+    if np.isnan(noise_amp):
+        Logger.warning("Could not calculate noise with this data, setting "
+                       "to 1")
+        noise_amp = 1.0
+    try:
+        signal_amp = tr.slice(
+            starttime=signal_window[0], endtime=signal_window[1]).data.max()
+    except ValueError as e:
+        Logger.error(e)
+        return np.nan
+    return signal_amp / noise_amp
+
+
+def _get_signal_and_noise(stream, event, seed_id, noise_window,
+                          signal_window, use_s_picks):
+    """
+    Get noise and signal amplitudes and signal standard deviation for an event
+    on a specific channel.
+
+    Noise amplitude is calculated as the RMS amplitude in the noise window,
+    signal amplitude is the maximum amplitude in the signal window.
+    """
+    from eqcorrscan.core.template_gen import _rms
+
+    station = seed_id.split('.')[1]
+    pick = _get_pick_for_station(
+        event=event, station=station, use_s_picks=use_s_picks)
+    if pick is None:
+        Logger.error("No pick for {0}".format(station))
+        return None, None, None
+    tr = stream.select(id=seed_id).merge()
+    if len(tr) == 0:
+        return None, None, None
+    tr = tr[0]
+    noise_amp = _rms(tr.slice(
+        starttime=pick.time + noise_window[0],
+        endtime=pick.time + noise_window[1]).data)
+    if np.isnan(noise_amp):
+        noise_amp = None
+    signal = tr.slice(
+        starttime=pick.time + signal_window[0],
+        endtime=pick.time + signal_window[1]).data
+    if len(signal) == 0:
+        Logger.debug("No signal data between {0} and {1}".format(
+            pick.time + signal_window[0], pick.time + signal_window[1]))
+        Logger.debug(tr)
+        return noise_amp, None, None
+    return noise_amp, signal.max(), signal.std()
+
+
+def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0,
+                       use_s_picks=False):
+    """
+    Compute the relative amplitudes between two streams.
+
+    Uses standard deviation of amplitudes within trace. Relative amplitudes are
+    computed as:
+
+    .. math::
+
+       \\frac{std(tr2)}{std(tr1)}
+
+    where tr1 is a trace from st1 and tr2 is a matching (seed ids match) trace
+    from st2.  The standard deviation of the amplitudes is computed in the
+    signal window given. If the ratio of amplitudes between the signal window
+    and the noise window is below `min_snr` then no result is returned for that
+    trace. Windows are computed relative to the first pick for that station.
+
+    If one stream has insufficient data to estimate noise amplitude, the noise
+    amplitude of the other will be used.
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+
+    :rtype: dict
+    :return: Dictionary of relative amplitudes keyed by seed-id
+    """
+    seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
+    amplitudes = {}
+    for seed_id in seed_ids:
+        noise1, signal1, std1 = _get_signal_and_noise(
+            stream=st1, event=event1, signal_window=signal_window,
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
+        noise2, signal2, std2 = _get_signal_and_noise(
+            stream=st2, event=event2, signal_window=signal_window,
+            noise_window=noise_window, use_s_picks=use_s_picks,
+            seed_id=seed_id)
+        noise1 = noise1 or noise2
+        noise2 = noise2 or noise1
+        if noise1 is None or noise2 is None:
+            Logger.info("Insufficient data for noise to be estimated for "
+                        "{0}".format(seed_id))
+            continue
+        if signal1 is None or signal2 is None:
+            Logger.info("No signal data found for {0}".format(seed_id))
+            continue
+        snr1 = np.nan_to_num(signal1 / noise1)
+        snr2 = np.nan_to_num(signal2 / noise2)
+        if snr1 < min_snr or snr2 < min_snr:
+            Logger.info("SNR (event1: {0:.2f}, event2: {1:.2f} too low "
+                        "for {2}".format(snr1, snr2, seed_id))
+            continue
+        ratio = std2 / std1
+        Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
+            seed_id, ratio))
+        amplitudes.update({seed_id: ratio})
+    return amplitudes
+
+
+# Magnitude estimation functions
+
+def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
+                       signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
+                       use_s_picks=False, correlations=None, shift=.2,
+                       return_correlations=False, weight_by_correlation=True):
+    """
+    Compute the relative magnitudes between two events.
+
+    See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
+    on how relative amplitudes are calculated. To compute relative magnitudes
+    from relative amplitudes this function weights the amplitude ratios by
+    the cross-correlation of the two events. The relation used is similar to
+    Schaff and Richards (2014) and is:
+
+    .. math::
+
+        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+
+    :type st1: `obspy.core.stream.Stream`
+    :param st1: Stream for event1
+    :type st2: `obspy.core.stream.Stream`
+    :param st2: Stream for event2
+    :type event1: `obspy.core.event.Event`
+    :param event1: Event with picks (nothing else is needed)
+    :type event2: `obspy.core.event.Event`
+    :param event2: Event with picks (nothing else is needed)
+    :type noise_window: tuple of float
+    :param noise_window:
+        Start and end of noise window in seconds relative to pick
+    :type signal_window: tuple of float
+    :param signal_window:
+        Start and end of signal window in seconds relative to pick
+    :type min_snr: float
+    :param min_snr: Minimum signal-to-noise ratio allowed to make a measurement
+    :type min_cc: float
+    :param min_cc:
+        Minimum inter-event correlation (between -1 and 1) allowed to make a
+        measurement.
+    :type use_s_picks: bool
+    :param use_s_picks:
+        Whether to allow relative amplitude estimates to be made from S-picks.
+        Note that noise and signal windows are relative to pick-times, so using
+        an S-pick might result in a noise window including P-energy.
+    :type correlations: dict
+    :param correlations:
+        Pre-computed dictionary of correlations keyed by seed-id. If None
+        (default) then correlations will be computed for the provided data in
+        the `signal_window`.
+    :type shift: float
+    :param shift:
+        Shift length for correlations in seconds - maximum correlation within
+        a window between +/- shift of the P-pick will be used to weight the
+        magnitude.
+    :type return_correlations: bool
+    :param return_correlations:
+        If true will also return maximum correlations as a dictionary.
+    :type weight_by_correlation: bool
+    :param weight_by_correlation:
+        Whether to weight the magnitude by the correlation or not.
+
+    :rtype: dict
+    :return: Dictionary of relative magnitudes keyed by seed-id
+    """
+    import math
+    from obspy.signal.cross_correlation import correlate
+
+    relative_magnitudes = {}
+    compute_correlations = False
+    if correlations is None:
+        correlations = {}
+        compute_correlations = True
+    relative_amplitudes = relative_amplitude(
+        st1=st1, st2=st2, event1=event1, event2=event2,
+        noise_window=noise_window, signal_window=signal_window,
+        min_snr=min_snr, use_s_picks=use_s_picks)
+    for seed_id, amplitude_ratio in relative_amplitudes.items():
+        tr1 = st1.select(id=seed_id)[0]
+        tr2 = st2.select(id=seed_id)[0]
+        pick1 = _get_pick_for_station(
+            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
+        pick2 = _get_pick_for_station(
+            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
+        if weight_by_correlation:
+            if compute_correlations:
+                cc = correlate(
+                    tr1.slice(
+                        starttime=pick1.time + signal_window[0],
+                        endtime=pick1.time + signal_window[1]),
+                    tr2.slice(
+                        starttime=pick2.time + signal_window[0],
+                        endtime=pick2.time + signal_window[1]),
+                    shift=int(shift * tr1.stats.sampling_rate))
+                cc = cc.max()
+                correlations.update({seed_id: cc})
+            else:
+                cc = correlations.get(seed_id, 0.0)
+            if cc < min_cc:
+                continue
+        else:
+            cc = 1.0
+        # Weight and add to relative_magnitudes
+        rel_mag = math.log10(amplitude_ratio) * cc
+        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
+            tr1.id, rel_mag))
+        relative_magnitudes.update({seed_id: rel_mag})
+    if return_correlations:
+        return relative_magnitudes, correlations
+    return relative_magnitudes
+
+
+def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
                    remove_old=False, ps_multiplier=0.34, velocity=False):
@@ -482,7 +636,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     picks this amplitude and period.  There are a few things it does
     internally to stabilise the result:
 
-        1. Applies a given filter to the data - very necessary for small
+        1. Applies a given filter to the data - often necessary for small
         magnitude earthquakes;
 
         2. Keeps track of the poles and zeros of this filter and removes them
@@ -520,8 +674,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     :param event: Event to pick
     :type st: obspy.core.stream.Stream
     :param st: Stream associated with event
-    :type respdir: str
-    :param respdir: Path to the response information directory
+    :type inventory: obspy.core.inventory.Inventory
+    :param inventory:
+        Inventory containing response information for the stations in st.
     :type chans: list
     :param chans:
         List of the channels to pick on, defaults to ['Z'] - should just be
@@ -595,8 +750,10 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
     if remove_old and event.amplitudes:
         for amp in event.amplitudes:
             # Find the pick and remove it too
-            pick = [p for p in event.picks if p.resource_id == amp.pick_id][0]
-            event.picks.remove(pick)
+            pick = [p for p in event.picks if p.resource_id == amp.pick_id]
+            if len(pick) == 0:
+                continue
+            event.picks.remove(pick[0])
         event.amplitudes = []
     for pick in event.picks:
         if pick.phase_hint in ['P', 'S']:
@@ -607,16 +764,16 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             picktimes.append(pick.time)
             picktypes.append(pick.phase_hint)
     if len(picktypes) == 0:
-        warnings.warn('No P or S picks found')
+        Logger.warning('No P or S picks found')
     st.merge()  # merge the data, just in case!
     # For each station cut the window
     uniq_stas = list(set(stations))
     for sta in uniq_stas:
         for chan in chans:
-            print('Working on ' + sta + ' ' + chan)
+            Logger.info('Working on ' + sta + ' ' + chan)
             tr = st.select(station=sta, channel='*' + chan)
             if not tr:
-                warnings.warn(
+                Logger.warning(
                     'There is no station and channel match in the wavefile!')
                 continue
             else:
@@ -625,8 +782,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
             if pre_filt:
                 try:
                     tr.split().detrend('simple').merge(fill_value=0)
-                except:
-                    print('Some issue splitting this one')
+                except Exception as e:
+                    Logger.warning(
+                        'Some issue splitting this one: {0}'.format(e))
                     dummy = tr.split()
                     dummy.detrend('simple')
                     tr = dummy.merge(fill_value=0)
@@ -634,29 +792,16 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                     tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
                               corners=corners)
                 except NotImplementedError:
-                    print('For some reason trace is not continuous:')
-                    print(tr)
+                    Logger.error(
+                        'For some reason trace is not continuous: {0}'.format(
+                            tr))
                     continue
-            # Find the response information
-            resp_info = _find_resp(
-                tr.stats.station, tr.stats.channel, tr.stats.network,
-                tr.stats.starttime, tr.stats.delta, respdir)
-            PAZ = []
-            seedresp = []
-            if resp_info and 'gain' in resp_info:
-                PAZ = resp_info
-            elif resp_info:
-                seedresp = resp_info
-            # Simulate a Wood Anderson Seismograph
-            if PAZ and len(tr.data) > 10:
-                # Set ten data points to be the minimum to pass
-                tr = _sim_WA(tr, PAZ, None, 10, velocity=velocity)
-            elif seedresp and len(tr.data) > 10:
-                tr = _sim_WA(tr, None, seedresp, 10, velocity=velocity)
-            elif len(tr.data) > 10:
-                warnings.warn('No PAZ for ' + tr.stats.station + ' ' +
-                              tr.stats.channel + ' at time: ' +
-                              str(tr.stats.starttime))
+            try:
+                tr = _sim_WA(tr, inventory, 10, velocity=velocity)
+            except:
+                Logger.warning('No response for ' + tr.stats.station + ' ' +
+                               tr.stats.channel + ' at time: ' +
+                               str(tr.stats.starttime))
                 continue
             sta_picks = [i for i in range(len(stations))
                          if stations[i] == sta]
@@ -698,14 +843,14 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                               if picktypes[i] == 'P']
                     p_pick = min(p_pick)
                     s_modelled = p_pick + (hypo_dist * ps_multiplier)
-                    print('P_pick=%s' % str(p_pick))
-                    print('hypo_dist: %s' % str(hypo_dist))
-                    print('S modelled=%s' % str(s_modelled))
+                    Logger.info('P_pick=%s' % str(p_pick))
+                    Logger.info('hypo_dist: %s' % str(hypo_dist))
+                    Logger.info('S modelled=%s' % str(s_modelled))
                     try:
                         tr.trim(starttime=s_modelled - pre_pick,
                                 endtime=s_modelled + (s_modelled - p_pick) *
                                 winlen)
-                        print(tr)
+                        Logger.debug(tr)
                     except ValueError:
                         continue
                 # Work out the window length based on p-s time or distance
@@ -731,7 +876,7 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 # are not using any kind of velocity model.
                 p_pick = [picktimes[i] for i in sta_picks
                           if picktypes[i] == 'P']
-                print(picktimes)
+                Logger.debug(picktimes)
                 p_pick = min(p_pick)
                 s_modelled = p_pick + hypo_dist * ps_multiplier
                 try:
@@ -740,21 +885,22 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 except ValueError:
                     continue
             if len(tr.data) <= 10:
-                warnings.warn('No data found for: ' + tr.stats.station)
+                Logger.warning('No data found for: ' + tr.stats.station)
                 continue
             # Get the amplitude
             try:
                 amplitude, period, delay = _max_p2t(tr.data, tr.stats.delta)
             except ValueError:
-                print('No amplitude picked for tr %s' % str(tr))
+                Logger.error('No amplitude picked for tr %s' % str(tr))
                 continue
             # Calculate the normalized noise amplitude
             noise_amplitude = np.sqrt(np.mean(np.square(tr.data)))
             if amplitude == 0.0:
                 continue
             if amplitude / noise_amplitude < min_snr:
-                print('Signal to noise ratio of %s is below threshold.' %
-                      (amplitude / noise_amplitude))
+                Logger.info(
+                    'Signal to noise ratio of %s is below threshold.' %
+                    (amplitude / noise_amplitude))
                 continue
             if plot:
                 plt.plot(np.arange(len(tr.data)), tr.data, 'k')
@@ -762,9 +908,9 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 plt.scatter(tr.stats.sampling_rate * (delay + period),
                             -amplitude / 2)
                 plt.show()
-            print('Amplitude picked: ' + str(amplitude))
-            print('Signal-to-noise ratio is: %s' %
-                  (amplitude / noise_amplitude))
+            Logger.info('Amplitude picked: ' + str(amplitude))
+            Logger.info('Signal-to-noise ratio is: %s' %
+                        (amplitude / noise_amplitude))
             # Note, amplitude should be in meters at the moment!
             # Remove the pre-filter response
             if pre_filt:
@@ -779,10 +925,6 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                             'sensitivity': 1.0}
                 amplitude /= (paz_2_amplitude_value_of_freq_resp(
                     filt_paz, 1 / period) * filt_paz['sensitivity'])
-            if PAZ:
-                amplitude /= 1000
-            if seedresp:  # Seedresp method returns mm
-                amplitude *= 1000000
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
             amplitude *= 0.5
@@ -797,40 +939,27 @@ def amp_pick_event(event, st, respdir, chans=['Z'], var_wintype=True,
                 evaluation_mode='automatic'))
             if not velocity:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m',
                     magnitude_hint='ML', type='AML', category='point'))
             else:
                 event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude / 1e9, period=period,
+                    generic_amplitude=amplitude / 1e3, period=period,
                     pick_id=event.picks[pick_ind].resource_id,
                     waveform_id=event.picks[pick_ind].waveform_id, unit='m/s',
                     magnitude_hint='ML', type='AML', category='point'))
     return event
 
 
-def amp_pick_sfile(*args, **kwargs):
-    raise ImportError(
-        "Sfile support is depreciated, read in using obspy.io.nordic")
-
-
-def SVD_moments(U, s, V, stachans, event_list, n_SVs=4):
-    """Depreciated."""
-    print('Depreciated, use svd_moments instead')
-    return svd_moments(u=U, s=s, v=V, stachans=stachans,
-                       event_list=event_list, n_svs=n_SVs)
-
-
 def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     """
     Calculate relative moments/amplitudes using singular-value decomposition.
 
-    Convert basis vectors calculated by singular value \
-    decomposition (see the SVD functions in clustering) into relative \
-    moments.
+    Convert basis vectors calculated by singular value decomposition (see the
+    SVD functions in clustering) into relative moments.
 
-    For more information see the paper by \
+    For more information see the paper by
     `Rubinstein & Ellsworth (2010).
     <http://www.bssaonline.org/content/100/5A/1952.short>`_
 
@@ -849,12 +978,12 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     :type stachans: list
     :param stachans: List of station.channel input
     :type event_list: list
-    :param event_list: List of events for which you have data, such that \
-        event_list[i] corresponds to stachans[i], U[i] etc. and \
-        event_list[i][j] corresponds to event j in U[i].  These are a series \
-        of indexes that map the basis vectors to their relative events and \
-        channels - if you have every channel for every event generating these \
-        is trivial (see example).
+    :param event_list:
+        List of events for which you have data, such that event_list[i]
+        corresponds to stachans[i], U[i] etc. and event_list[i][j] corresponds
+        to event j in U[i].  These are a series of indexes that map the basis
+        vectors to their relative events and channels - if you have every
+        channel for every event generating these is trivial (see example).
     :type n_svs: int
     :param n_svs: Number of singular values to use, defaults to 4.
 
@@ -885,7 +1014,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     >>> from eqcorrscan.utils.clustering import svd
     >>> import numpy as np
     >>> # Do the set-up
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [read(stream_file) for stream_file in stream_files]
     >>> event_list = []
@@ -896,9 +1025,6 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     ...         if (tr.stats.station, tr.stats.channel) not in remove_list:
     ...             stream.remove(tr)
     ...             continue
-    ...         tr.detrend('simple')
-    ...         tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
     ...         st_list.append(i)
     ...     event_list.append(st_list) # doctest: +SKIP
     >>> event_list = np.asarray(event_list).T.tolist()
@@ -908,14 +1034,18 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     ...                             event_list=event_list) # doctest: +SKIP
 
     """
+    Logger.critical(
+        "Proceed with caution: this function is experimental and somewhat"
+        " stochastic - you should run this multiple times to ensure you get"
+        " a stable result.")
     # Define maximum number of events, will be the width of K
     K_width = max([max(ev_list) for ev_list in event_list]) + 1
     # Sometimes the randomisation generates a singular matrix - rather than
     # attempting to regulerize this matrix I propose undertaking the
     # randomisation step a further time
     if len(stachans) == 1:
-        print('Only provided data from one station-channel - '
-              'will not try to invert')
+        Logger.critical('Only provided data from one station-channel - '
+                        'will not try to invert')
         return u[0][:, 0], event_list[0]
     for i, stachan in enumerate(stachans):
         k = []  # Small kernel matrix for one station - channel
@@ -926,8 +1056,8 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
         s_working = copy.deepcopy(s[i].T)
         ev_list = event_list[i]
         if len(ev_list) > len(U_working):
-            print('U is : ' + str(U_working.shape))
-            print('ev_list is len %s' % str(len(ev_list)))
+            Logger.error('U is : ' + str(U_working.shape))
+            Logger.error('ev_list is len %s' % str(len(ev_list)))
             f_dump = open('mag_calc_U_working.pkl', 'wb')
             pickle.dump(U_working, f_dump)
             f_dump.close()
@@ -942,7 +1072,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
         SVD_weights = U_working[:, 0]
         # If all the weights are negative take the abs
         if np.all(SVD_weights < 0):
-            warnings.warn('All weights are negative - flipping them')
+            Logger.warning('All weights are negative - flipping them')
             SVD_weights = np.abs(SVD_weights)
         SVD_weights = np.array(SVD_weights).reshape(-1).tolist()
         # Shuffle the SVD_weights prior to pairing - will give one of multiple
@@ -1005,10 +1135,10 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
     K_width = len(K[0])
     # Add an extra row to K, so average moment = 1
     K.append(np.ones(K_width) * (1. / K_width))
-    print("Created Kernel matrix: ")
+    Logger.debug("Created Kernel matrix: ")
     del row
-    print('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
-          for item in row]) for row in K]))
+    Logger.debug('\n'.join([''.join([str(round(float(item), 3)).ljust(6)
+                 for item in row]) for row in K]))
     Krounded = np.around(K, decimals=4)
     # Create a weighting matrix to put emphasis on the final row.
     W = np.matrix(np.identity(len(K)))

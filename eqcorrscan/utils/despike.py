@@ -12,21 +12,22 @@ Functions for despiking seismic data.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+import logging
 import numpy as np
-import matplotlib.pyplot as plt
 
 from multiprocessing import Pool, cpu_count
+from obspy import Trace
 
 from eqcorrscan.utils.timer import Timer
+from eqcorrscan.utils.correlate import get_array_xcorr
+from eqcorrscan.utils.findpeaks import find_peaks2_short
+
+
+Logger = logging.getLogger(__name__)
 
 
 def median_filter(tr, multiplier=10, windowlength=0.5,
-                  interp_len=0.05, debug=0):
+                  interp_len=0.05):
     """
     Filter out spikes in data above a multiple of MAD of the data.
 
@@ -43,8 +44,6 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
     :param windowlength: Length of window to look for spikes in in seconds.
     :type interp_len: float
     :param interp_len: Length in seconds to interpolate around spikes.
-    :type debug: int
-    :param debug: Debug output level between 0 and 5, higher is more output.
 
     :returns: :class:`obspy.core.trace.Trace`
 
@@ -53,15 +52,16 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
         caution.
     """
     num_cores = cpu_count()
-    if debug >= 1:
-        data_in = tr.copy()
     # Note - might be worth finding spikes in filtered data
     filt = tr.copy()
     filt.detrend('linear')
-    filt.filter('bandpass', freqmin=10.0,
-                freqmax=(tr.stats.sampling_rate / 2) - 1)
+    try:
+        filt.filter('bandpass', freqmin=10.0,
+                    freqmax=(tr.stats.sampling_rate / 2) - 1)
+    except Exception as e:
+        Logger.error("Could not filter due to error: {0}".format(e))
     data = filt.data
-    del(filt)
+    del filt
     # Loop through windows
     _windowlength = int(windowlength * tr.stats.sampling_rate)
     _interp_len = int(interp_len * tr.stats.sampling_rate)
@@ -73,8 +73,7 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
                                                (chunk + 1) * _windowlength],
                                           chunk * _windowlength, multiplier,
                                           tr.stats.starttime + windowlength,
-                                          tr.stats.sampling_rate,
-                                          debug))
+                                          tr.stats.sampling_rate))
                    for chunk in range(int(len(data) / _windowlength))]
         pool.close()
         for p in results:
@@ -82,17 +81,11 @@ def median_filter(tr, multiplier=10, windowlength=0.5,
         pool.join()
         for peak in peaks:
             tr.data = _interp_gap(tr.data, peak[1], _interp_len)
-    print("Despiking took: %s s" % t.secs)
-    if debug >= 1:
-        plt.plot(data_in.data, 'r', label='raw')
-        plt.plot(tr.data, 'k', label='despiked')
-        plt.legend()
-        plt.show()
+    Logger.debug("Despiking took: %s s" % t.secs)
     return tr
 
 
-def _median_window(window, window_start, multiplier, starttime, sampling_rate,
-                   debug=0):
+def _median_window(window, window_start, multiplier, starttime, sampling_rate):
     """
     Internal function to aid parallel processing
 
@@ -107,26 +100,16 @@ def _median_window(window, window_start, multiplier, starttime, sampling_rate,
     :param starttime: Starttime of window, used in debug plotting.
     :type sampling_rate: float
     :param sampling_rate in Hz, used for debug plotting
-    :type debug: int
-    :param debug: debug level, if want plots, >= 4.
 
     :returns: peaks
     :rtype: list
     """
-    from eqcorrscan.utils.findpeaks import find_peaks2_short
-    from eqcorrscan.utils.plotting import peaks_plot
-
     MAD = np.median(np.abs(window))
     thresh = multiplier * MAD
-    if debug >= 2:
-        print('Threshold for window is: ' + str(thresh) +
-              '\nMedian is: ' + str(MAD) +
-              '\nMax is: ' + str(np.max(window)))
-    peaks = find_peaks2_short(arr=window,
-                              thresh=thresh, trig_int=5, debug=0)
-    if debug >= 4 and peaks:
-        peaks_plot(window, starttime, sampling_rate,
-                   save=False, peaks=peaks)
+    Logger.debug(
+        'Threshold for window is: ' + str(thresh) + '\nMedian is: ' +
+        str(MAD) + '\nMax is: ' + str(np.max(window)))
+    peaks = find_peaks2_short(arr=window, thresh=thresh, trig_int=5)
     if peaks:
         peaks = [(peak[0], peak[1] + window_start) for peak in peaks]
     else:
@@ -159,8 +142,7 @@ def _interp_gap(data, peak_loc, interp_len):
     return data
 
 
-def template_remove(tr, template, cc_thresh, windowlength,
-                    interp_len, debug=0):
+def template_remove(tr, template, cc_thresh, windowlength, interp_len):
     """
     Looks for instances of template in the trace and removes the matches.
 
@@ -174,47 +156,29 @@ def template_remove(tr, template, cc_thresh, windowlength,
     :param windowlength: Length of window to look for spikes in in seconds.
     :type interp_len: float
     :param interp_len: Window length to remove and fill in seconds.
-    :type debug: int
-    :param debug: Debug level.
 
     :returns: tr, works in place.
     :rtype: :class:`obspy.core.trace.Trace`
     """
-    from eqcorrscan.core.match_filter import normxcorr2
-    from eqcorrscan.utils.findpeaks import find_peaks2_short
-    from obspy import Trace
-    from eqcorrscan.utils.timer import Timer
-    import matplotlib.pyplot as plt
-    import warnings
-
-    data_in = tr.copy()
     _interp_len = int(tr.stats.sampling_rate * interp_len)
     if _interp_len < len(template.data):
-        warnings.warn('Interp_len is less than the length of the template,'
-                      'will used the length of the template!')
+        Logger.warning('Interp_len is less than the length of the template, '
+                       'will used the length of the template!')
         _interp_len = len(template.data)
     if isinstance(template, Trace):
-        template = template.data
+        template = np.array([template.data])
     with Timer() as t:
-        cc = normxcorr2(image=tr.data.astype(np.float32),
-                        template=template.astype(np.float32))
-        if debug > 3:
-            plt.plot(cc.flatten(), 'k', label='cross-correlation')
-            plt.legend()
-            plt.show()
-        peaks = find_peaks2_short(arr=cc.flatten(), thresh=cc_thresh,
-                                  trig_int=windowlength * tr.stats.
-                                  sampling_rate)
+        normxcorr = get_array_xcorr("fftw")
+        cc, _ = normxcorr(stream=tr.data.astype(np.float32),
+                          templates=template.astype(np.float32), pads=[0])
+        peaks = find_peaks2_short(
+            arr=cc.flatten(), thresh=cc_thresh,
+            trig_int=windowlength * tr.stats.sampling_rate)
         for peak in peaks:
-            tr.data = _interp_gap(data=tr.data,
-                                  peak_loc=peak[1] + int(0.5 * _interp_len),
-                                  interp_len=_interp_len)
-    print("Despiking took: %s s" % t.secs)
-    if debug > 2:
-        plt.plot(data_in.data, 'r', label='raw')
-        plt.plot(tr.data, 'k', label='despiked')
-        plt.legend()
-        plt.show()
+            tr.data = _interp_gap(
+                data=tr.data, peak_loc=peak[1] + int(0.5 * _interp_len),
+                interp_len=_interp_len)
+    Logger.info("Despiking took: {0:.4f} s".format(t.secs))
     return tr
 
 

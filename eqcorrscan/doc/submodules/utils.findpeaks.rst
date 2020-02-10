@@ -13,6 +13,9 @@ findpeaks
        :nosignatures:
 
        coin_trig
+       decluster
+       find_peaks_compiled
        find_peaks2_short
+       multi_find_peaks
 
     .. comment to end block

@@ -1,11 +1,6 @@
 """
 Functions for testing the utils.stacking functions
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import unittest
 import numpy as np
 import os
@@ -115,6 +110,7 @@ class TestAlignRealData(unittest.TestCase):
         ccs = [round(cc, 3) for cc in ccs]
         known_ccs = [round(cc, 3) for cc in known_ccs]
         self.assertEqual(ccs, list(known_ccs))
+
 
 if __name__ == '__main__':
     """

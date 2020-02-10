@@ -15,12 +15,10 @@ and for the analysis of waveforms detected by cross-correlation.
    submodules/utils.despike
    submodules/utils.findpeaks
    submodules/utils.mag_calc
-   submodules/utils.parameters
    submodules/utils.picker
    submodules/utils.plotting
    submodules/utils.pre_processing
    submodules/utils.sac_util
-   submodules/utils.seismo_logs
    submodules/utils.stacking
    submodules/utils.synth_seis
    submodules/utils.trigger

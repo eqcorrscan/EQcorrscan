@@ -9,30 +9,33 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 
 """
 
-from obspy.clients.fdsn import Client
-from obspy import UTCDateTime
+import logging
 
-from eqcorrscan.tutorials.get_geonet_events import get_geonet_events
+from obspy.clients.fdsn import Client
+from obspy import UTCDateTime, Stream
+
 from eqcorrscan.utils.catalog_utils import filter_picks
-from eqcorrscan.utils.clustering import space_cluster
+from eqcorrscan.utils.clustering import catalog_cluster
 from eqcorrscan.core import subspace
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
 
-def run_tutorial(plot=False, multiplex=True, return_streams=False):
+
+def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
+                 verbose=False):
     """
     Run the tutorial.
 
     :return: detections
     """
-    # We are going to use data from the GeoNet (New Zealand) catalogue. GeoNet
-    # do not implement the full FDSN system yet, so we have a hack to get
-    # around this.  It is not strictly part of EQcorrscan, so we haven't
-    # included it here, but you can find it in the tutorials directory of the
-    # github repository
-
-    cat = get_geonet_events(
-        minlat=-40.98, maxlat=-40.85, minlon=175.4, maxlon=175.5,
-        startdate=UTCDateTime(2016, 5, 1), enddate=UTCDateTime(2016, 5, 20))
+    client = Client("GEONET", debug=verbose)
+    cat = client.get_events(
+        minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
+        maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
+        endtime=UTCDateTime(2016, 5, 20))
     print("Downloaded a catalog of %i events" % len(cat))
     # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!
@@ -43,7 +46,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
          for event in cat for pick in event.picks]))
     # In this tutorial we will only work on one cluster, defined spatially.
     # You can work on multiple clusters, or try to whole set.
-    clusters = space_cluster(catalog=cat, d_thresh=2, show=False)
+    clusters = catalog_cluster(
+        catalog=cat, metric="distance", thresh=2, show=False)
     # We will work on the largest cluster
     cluster = sorted(clusters, key=lambda c: len(c))[-1]
     # This cluster contains 32 events, we will now download and trim the
@@ -53,22 +57,25 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # the detection statistics by that amount before stacking and detection.
     client = Client('GEONET')
     design_set = []
-    bulk_info = []
+    st = Stream()
     for event in cluster:
+        print("Downloading for event {0}".format(event.resource_id.id))
+        bulk_info = []
         t1 = event.origins[0].time
         t2 = t1 + 25.1  # Have to download extra data, otherwise GeoNet will
         # trim wherever suits.
         t1 -= 0.1
         for station, channel in stachans:
             bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-    print("Downloading data for %i events" % len(cluster))
-    st = client.get_waveforms_bulk(bulk=bulk_info)
+        st += client.get_waveforms_bulk(bulk=bulk_info)
+    print("Downloaded %i channels" % len(st))
     for event in cluster:
         t1 = event.origins[0].time
         t2 = t1 + 25
         design_set.append(st.copy().trim(t1, t2))
     # Construction of the detector will process the traces, then align them,
     # before multiplexing.
+    print("Making detector")
     detector = subspace.Detector()
     detector.construct(
         streams=design_set, lowcut=2.0, highcut=9.0, filt_order=4,
@@ -93,7 +100,8 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False):
     # two real detections.
     print("Computing detections")
     detections, det_streams = detector.detect(
-        st=st, threshold=0.3, trig_int=2, extract_detections=True)
+        st=st, threshold=0.3, trig_int=2, extract_detections=True,
+        cores=cores)
     if return_streams:
         return detections, det_streams
     else:

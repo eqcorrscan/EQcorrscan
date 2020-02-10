@@ -18,7 +18,7 @@ threshold to 1,000km
 
 .. code-block:: python
 
-    >>> from eqcorrscan.utils.clustering import space_cluster
+    >>> from eqcorrscan.utils.clustering import catalog_cluster
     >>> from obspy.clients.fdsn import Client
     >>> from obspy import UTCDateTime
 
@@ -27,7 +27,8 @@ threshold to 1,000km
     >>> endtime = UTCDateTime("2002-02-01")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=6, catalog="ISC")
-    >>> groups = space_cluster(catalog=cat, d_thresh=1000, show=False)
+    >>> groups = catalog_cluster(
+    ...    catalog=cat, metric="distance", thresh=1000, show=False)
 
 Download a local catalog of earthquakes and cluster much finer (distance
 threshold of 2km).
@@ -37,7 +38,8 @@ threshold of 2km).
     >>> client = Client("NCEDC")
     >>> cat = client.get_events(starttime=starttime, endtime=endtime,
     ...                         minmagnitude=2)
-    >>> groups = space_cluster(catalog=cat, d_thresh=2, show=False)
+    >>> groups = catalog_cluster(
+    ...    catalog=cat, metric="distance", thresh=2, show=False)
 
 
 Setting show to true will plot the dendrogram for grouping with individual
@@ -87,8 +89,10 @@ in the tests directory.
     >>> import glob
     >>> import os
     >>> from eqcorrscan.utils.clustering import cluster
+    >>> from eqcorrscan import tests
     >>> # You will need to edit this line to the location of your eqcorrscan repo.
-    >>> testing_path = 'eqcorrscan/tests/test_data/similar_events'
+    >>> TEST_PATH = os.path.dirname(tests.__file__)
+    >>> testing_path = TEST_PATH + '/test_data/similar_events_processed'
     >>> stream_files = glob.glob(os.path.join(testing_path, '*'))
     >>> stream_list = [(read(stream_file), i)
     ...                for i, stream_file in enumerate(stream_files)]
@@ -97,17 +101,8 @@ in the tests directory.
     ...         if tr.stats.station not in ['WHAT2', 'WV04', 'GCSZ']:
     ...             stream[0].remove(tr) # doctest:+ELLIPSIS
     ...             continue
-    ...         tr = tr.detrend('simple')
-    ...         tr = tr.filter('bandpass', freqmin=5.0, freqmax=15.0)
-    ...         tr = tr.trim(tr.stats.starttime + 40, tr.stats.endtime - 45)
-    <obspy.core.stream.Stream object at ...>
     >>> groups = cluster(template_list=stream_list, show=False,
     ...                  corr_thresh=0.3, cores=2)
-    Computing the distance matrix using 2 cores
-    Computing linkage
-    Clustering
-    Found 9 groups
-    Extracting and grouping
 
 
 Stack waveforms (linear)
@@ -148,5 +143,3 @@ of the instantaneous phase.  In this manor coherent signals are amplified.
     >>> # groups[0] should contain 3 streams, which we can now stack
     >>> # Groups are returned as lists of tuples, of the stream and event index
     >>> stack = PWS_stack(streams=group_streams)
-    Computing instantaneous phase
-    Computing the phase stack

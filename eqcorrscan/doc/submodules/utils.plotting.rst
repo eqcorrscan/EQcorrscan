@@ -4,6 +4,9 @@ plotting
 .. currentmodule:: eqcorrscan.utils.plotting
 .. automodule:: eqcorrscan.utils.plotting
 
+All plotting functions accept the `save`, `savefile`, `title` and `show` keyword
+arguments.
+
     .. comment to end block
 
     Classes & Functions
@@ -18,7 +21,6 @@ plotting
        freq_mag
        interev_mag
        multi_event_singlechan
-       NR_plot
        obspy_3d_plot
        peaks_plot
        plot_repicked
@@ -26,10 +28,11 @@ plotting
        pretty_template_plot
        spec_trace
        subspace_detector_plot
-       SVD_plot
+       svd_plot
        threeD_gridplot
        threeD_seismplot
        triple_plot
        xcorr_plot
+       noise_plot
 
     .. comment to end block

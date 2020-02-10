@@ -71,6 +71,38 @@ There are currently 3 different correlations functions currently included in EQc
 
 Number 3 is the default.
 
+Setting FFT length
+~~~~~~~~~~~~~~~~~~
+For version 0.4.0 onwards, the "fftw" backend allows the user to pass an `fft_len`
+keyword to it.  This will set the length of the FFT internally.  Smaller FFT's use
+less memory, but can be faster. Larger FFTs use more memory and can be slower.
+By default this is set to the minimum of 2 ** 13, or the next fast length of the
+sum of the template length and the stream length. |#285| showed that 2 ** 13 was
+consistently fastest over a range of data shapes on an intel i7 with 8-threads.
+Powers of two are generally fastest.
+
+.. |#285| raw:: html
+
+    <a href="https://github.com/eqcorrscan/EQcorrscan/pull/285" target="_blank">#285</a>
+
+
+Using Fast Matched Filter within EQcorrscan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|FMF| provides fast time-domain correlations for both CPU and GPU
+architectures.  For massively multi-threaded environment this runs faster than
+the frequency-domain routines native to EQcorrscan (when more than 40 CPU cores,
+or an NVIDIA GPU card is available) with less memory consumption. Documentation
+on how to call Fast Matched Filter from within EQcorrscan is provided here: 
+fast_matched_filter_
+
+.. _fast_matched_filter: utils.correlate.fast_matched_filter.html
+
+.. |FMF| raw:: html
+
+    <a href="https://github.com/beridel/fast_matched_filter" target="_blank">Fast Matched Filter</a>
+
+
 Switching which correlation function is used
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
