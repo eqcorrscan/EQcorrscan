@@ -546,7 +546,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if tr.stats.sampling_rate * length != tr.stats.npts:
+        if int(tr.stats.sampling_rate * length) != tr.stats.npts:
             msg = ("Data sampling-rate ({0} * {1} = {2}) does not match "
                    "number of samples ({3}) for {4}".format(
                 tr.stats.sampling_rate, length,
