@@ -380,7 +380,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     :type pre_pick: float
     :param pre_pick: Time before the pick to start the correlation window
     :type shift_len: float
-    :param shift_len: 
+    :param shift_len:
         Time (+/-) to allow pick to vary in seconds. e.g. if shift_len
         is set to 1s, the pick will be allowed to shift between
         pick_time - 1 and pick_time + 1.
