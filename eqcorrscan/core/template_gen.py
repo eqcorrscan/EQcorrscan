@@ -338,7 +338,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                             "Data for {0} are too short, skipping".format(
                                 tr.id))
                     else:
-                        _st += tr
+                        # Trim to enforce process-len
+                        _st += tr.trim(
+                            tr.stats.starttime,
+                            tr.stats.starttime + process_len)
                 st = _st
                 if len(st) == 0:
                     Logger.info("No data")
@@ -403,7 +406,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             for template in temp_list:
                 template.write(
                     "eqcorrscan_temporary_templates{0}{1}.ms".format(
-                        os.path.sep, template[0].stats.starttime),
+                        os.path.sep, template[0].stats.starttime.strftime(
+                            "%Y-%m-%dT%H%M%S")),
                     format="MSEED")
         del st
     if return_event:
@@ -828,11 +832,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         tplot(st1, background=stplot, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime),
               savefile="{0}/{1}_template.png".format(
-                  plotdir, st1[0].stats.starttime),
+                  plotdir, st1[0].stats.starttime.strftime(
+                      "%Y-%m-%dT%H%M%S")),
               **plot_kwargs)
         noise_plot(signal=st1, noise=noise,
                    savefile="{0}/{1}_noise.png".format(
-                       plotdir, st1[0].stats.starttime),
+                       plotdir, st1[0].stats.starttime.strftime(
+                           "%Y-%m-%dT%H%M%S")),
                    **plot_kwargs)
         del stplot
     return st1

@@ -380,7 +380,10 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     :type pre_pick: float
     :param pre_pick: Time before the pick to start the correlation window
     :type shift_len: float
-    :param shift_len: Time to allow pick to vary in seconds
+    :param shift_len:
+        Time (+/-) to allow pick to vary in seconds. e.g. if shift_len
+        is set to 1s, the pick will be allowed to shift between
+        pick_time - 1 and pick_time + 1.
     :type interpolate: bool
     :param interpolate:
         Whether to interpolate correlations or not. Allows subsample accuracy
@@ -772,7 +775,7 @@ def _hypodd_event_str(event, event_id):
         magnitude = 0.0
     try:
         time_error = origin.quality['standard_error']
-    except AttributeError:
+    except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
 
