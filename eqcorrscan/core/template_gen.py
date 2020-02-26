@@ -338,7 +338,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                             "Data for {0} are too short, skipping".format(
                                 tr.id))
                     else:
-                        _st += tr
+                        # Trim to enforce process-len
+                        _st += tr.trim(
+                            tr.stats.starttime,
+                            tr.stats.starttime + process_len)
                 st = _st
                 if len(st) == 0:
                     Logger.info("No data")

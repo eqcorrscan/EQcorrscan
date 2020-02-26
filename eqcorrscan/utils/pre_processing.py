@@ -546,8 +546,21 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if tr.stats.sampling_rate * length != tr.stats.npts:
-            raise ValueError('Data are not long enough for {0}'.format(tr.id))
+        # Cope with time precision.
+        if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
+            msg = ("Data sampling-rate * length ({0} * {1} = {2}) does not "
+                   "match number of samples ({3}) for {4}".format(
+                    tr.stats.sampling_rate, length,
+                    tr.stats.sampling_rate * length, tr.stats.npts, tr.id))
+            if not ignore_bad_data:
+                raise ValueError(msg)
+            else:
+                Logger.warning(msg)
+                return Trace(data=np.array([]), header={
+                    "station": tr.stats.station, "channel": tr.stats.channel,
+                    "network": tr.stats.network, "location": tr.stats.location,
+                    "starttime": tr.stats.starttime,
+                    "sampling_rate": tr.stats.sampling_rate})
         Logger.debug(
             'I now have {0} data points after enforcing length'.format(
                 tr.stats.npts))
@@ -590,10 +603,10 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             [pre_pad, tr.data[pre_pad_len: len(tr.data) - post_pad_len],
              post_pad])
         Logger.debug(str(tr))
-    # Sanity check to ensure files are daylong
-    if float(tr.stats.npts / tr.stats.sampling_rate) != length and clip:
+    # Sanity check to ensure files are correct length
+    if float(tr.stats.npts * tr.stats.delta) != length and clip:
         Logger.info(
-            'Data for {0} are not of daylong length, will zero pad'.format(
+            'Data for {0} are not of required length, will zero pad'.format(
                 tr.id))
         # Use obspy's trim function with zero padding
         tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
@@ -602,8 +615,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if not tr.stats.sampling_rate * length == tr.stats.npts:
-            raise ValueError('Data are not daylong for ' +
+        if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
+            raise ValueError('Data are not required length for ' +
                              tr.stats.station + '.' + tr.stats.channel)
     # Replace the gaps with zeros
     if gappy:
