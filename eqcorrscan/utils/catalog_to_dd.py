@@ -775,7 +775,7 @@ def _hypodd_event_str(event, event_id):
         magnitude = 0.0
     try:
         time_error = origin.quality['standard_error']
-    except AttributeError:
+    except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
 
