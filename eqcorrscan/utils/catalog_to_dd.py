@@ -575,13 +575,16 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         Logger.warning("cc_thresh is depreciated, use min_cc instead")
     max_workers = max_workers or cpu_count()
     # Process the streams
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        func = partial(_meta_filter_stream, stream_dict=stream_dict,
-                       lowcut=lowcut, highcut=highcut)
-        results = executor.map(func, stream_dict.keys())
-    processed_stream_dict = dict()
-    for result in results:
-        processed_stream_dict.update(result)
+    if not (lowcut is None and highcut is None):
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            func = partial(_meta_filter_stream, stream_dict=stream_dict,
+                           lowcut=lowcut, highcut=highcut)
+            results = executor.map(
+                func, stream_dict.keys(), 
+                chunksize=max(1, len(stream_dict) // max_workers))
+        processed_stream_dict = dict()
+        for result in results:
+            processed_stream_dict.update(result)
 
     correlation_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=True, event_id_mapper=event_id_mapper,
