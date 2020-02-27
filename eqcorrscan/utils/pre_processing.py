@@ -536,15 +536,15 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
             post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
             Logger.debug(str(tr))
-            Logger.debug("Padding to day long with {0} s before and {1} s "
-                         "at end".format(pre_pad_secs, post_pad_secs))
+            Logger.info("Padding to length with {0} s before and {1} s "
+                        "at end".format(pre_pad_secs, post_pad_secs))
             tr.data = np.concatenate([pre_pad, tr.data, post_pad])
             # Use this rather than the expected pad because of rounding samples
             tr.stats.starttime -= len(pre_pad) * tr.stats.delta
             Logger.debug(str(tr))
         # If there is one sample too many after this remove the first one
         # by convention
-        if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
+        if tr.stats.npts == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         # Cope with time precision.
         if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
