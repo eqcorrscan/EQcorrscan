@@ -13,6 +13,7 @@ import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from multiprocessing import cpu_count
 
 from obspy import UTCDateTime, Stream
@@ -490,6 +491,12 @@ def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8):
 
 # dt.cc functions
 
+def _meta_filter_stream(event_id, stream_dict, lowcut, highcut):
+    return _filter_stream(
+        event_id=event_id, st=stream_dict[event_id], lowcut=lowcut,
+        highcut=highcut)
+
+
 def _filter_stream(event_id, st, lowcut, highcut):
     if lowcut is not None and highcut is not None:
         st_out = st.copy().detrend().filter(
@@ -568,13 +575,16 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         Logger.warning("cc_thresh is depreciated, use min_cc instead")
     max_workers = max_workers or cpu_count()
     # Process the streams
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        results = [executor.submit(
-            _filter_stream, event_id, stream, lowcut, highcut)
-            for event_id, stream in stream_dict.items()]
-    processed_stream_dict = dict()
-    for result in results:
-        processed_stream_dict.update(result.result())
+    if not (lowcut is None and highcut is None):
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            func = partial(_meta_filter_stream, stream_dict=stream_dict,
+                           lowcut=lowcut, highcut=highcut)
+            results = executor.map(
+                func, stream_dict.keys(), 
+                chunksize=max(1, len(stream_dict) // max_workers))
+        processed_stream_dict = dict()
+        for result in results:
+            processed_stream_dict.update(result)
 
     correlation_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=True, event_id_mapper=event_id_mapper,
