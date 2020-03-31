@@ -13,6 +13,7 @@ import numpy as np
 import logging
 import datetime as dt
 
+from collections import Counter
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
@@ -536,15 +537,15 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
             pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
             post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
             Logger.debug(str(tr))
-            Logger.debug("Padding to day long with {0} s before and {1} s "
-                         "at end".format(pre_pad_secs, post_pad_secs))
+            Logger.info("Padding to length with {0} s before and {1} s "
+                        "at end".format(pre_pad_secs, post_pad_secs))
             tr.data = np.concatenate([pre_pad, tr.data, post_pad])
             # Use this rather than the expected pad because of rounding samples
             tr.stats.starttime -= len(pre_pad) * tr.stats.delta
             Logger.debug(str(tr))
         # If there is one sample too many after this remove the first one
         # by convention
-        if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
+        if tr.stats.npts == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         # Cope with time precision.
         if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
@@ -776,16 +777,12 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     stream_ids = {tr.id for tr in stream}
 
     # Need to ensure that a channel can be in the template multiple times.
-    template_ids = {stream_id: [] for stream_id in stream_ids}
-    for template in templates:
-        # Only include those in the stream.
-        channels_in_template = {
-            tr.id for tr in template}.intersection(stream_ids)
-        for channel in channels_in_template:
-            template_ids[channel].append(len(template.select(id=channel)))
-
-    template_ids = {key: max(value) for key, value in template_ids.items()
-                    if len(value) > 0}
+    all_template_ids = [
+        Counter([tr.id for tr in template]) for template in templates]
+    template_ids = {
+        stream_id: max(tid.get(stream_id, 0) for tid in all_template_ids)
+        for stream_id in stream_ids}
+    template_ids = {_id: value for _id, value in template_ids.items() if value}
 
     seed_ids = sorted(
         [key.split('.') + [i] for key, value in template_ids.items()
@@ -860,7 +857,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
 
     # Fill out the templates with nan channels
     for template_name, template in _out.items():
-        template_starttime = min([tr.stats.starttime for tr in template])
+        template_starttime = min(tr.stats.starttime for tr in template)
         out_template = nan_template.copy()
         for channel_number, _seed_id in enumerate(seed_ids):
             seed_id, channel_index = _seed_id
