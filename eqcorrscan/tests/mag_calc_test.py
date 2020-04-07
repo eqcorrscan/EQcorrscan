@@ -408,10 +408,10 @@ class TestAmpPickAccuracy(unittest.TestCase):
 
         # Make dummy trace
         tr = Trace(data=data, header=dict(
-            station=self.inv.networks[0].stations[0].code,
-            network=self.inv.networks[0].code,
-            location=self.inv.networks[0].stations[0].channels[0].location_code,
-            channel=self.inv.networks[0].stations[0].channels[0].code,
+            station=self.inv[0][0].code,
+            network=self.inv[0].code,
+            location=self.inv[0][0][0].location_code,
+            channel=self.inv[0][0][0].code,
             sampling_rate=self.sampling_rate,
             starttime=UTCDateTime(2020, 1, 1)))
         tr = tr.detrend()
