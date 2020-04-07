@@ -339,12 +339,11 @@ def _max_p2t(data, delta, return_peak_trough=False):
     delay = delta * turning_points[np.argmax(amplitudes)][1]
     if not return_peak_trough:
         return amplitude, period, delay
+    max_position = np.argmax(amplitudes)
     peak = max(
-        t[0] for t in turning_points[np.argmax(amplitudes) - 1:
-                                     np.argmax(amplitudes) + 1])
+        t[0] for t in turning_points[max_position: max_position + 2])
     trough = min(
-        t[0] for t in turning_points[np.argmax(amplitudes) - 1:
-                                     np.argmax(amplitudes) + 1])
+        t[0] for t in turning_points[max_position: max_position + 2])
     return amplitude, period, delay, peak, trough
 
 
