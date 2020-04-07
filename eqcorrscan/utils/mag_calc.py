@@ -887,15 +887,15 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
             # Remove the pre-filter response
             if pre_filt:
                 # Generate poles and zeros for the filter we used earlier.
-                # We need to get the PAZ for the analog equivalent filter
-                # to the digital SOS filter used in obspy.
+                # We need to get the gain for the digital SOS filter used by
+                # obspy.
                 sos = iirfilter(
                     corners, [lowcut / (0.5 * tr.stats.sampling_rate),
                               highcut / (0.5 * tr.stats.sampling_rate)],
                     btype='band', ftype='butter', output='sos')
                 _, gain = sosfreqz(sos, worN=[1 / period],
                                    fs=tr.stats.sampling_rate)
-                gain = np.abs(gain)  # Convert from complex to real.
+                gain = np.abs(gain[0])  # Convert from complex to real.
                 amplitude /= gain
                 Logger.debug(f"Removed filter gain: {gain}")
             # Write out the half amplitude, approximately the peak amplitude as
