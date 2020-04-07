@@ -796,7 +796,7 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                 distances += [
                     a.distance for a in event_origin.arrivals
                     if a.pick_id == pick.resource_id and
-                       a.distance is not None]
+                    a.distance is not None]
             if len(distances) == 0:
                 Logger.error(f"Arrivals for station: {sta} do not contain "
                              "distances. Have you located this event?")
