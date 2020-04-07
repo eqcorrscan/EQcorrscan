@@ -370,7 +370,7 @@ class TestAmpPickEvent(unittest.TestCase):
             event=self.event.copy(), st=self.st.copy(),
             inventory=self.inventory, remove_old=True,
             var_wintype=False, pre_filt=False)
-        self.assertEqual(len(picked_event.amplitudes), 4)
+        self.assertEqual(len(picked_event.amplitudes), 5)
 
 
 class TestAmpPickAccuracy(unittest.TestCase):
