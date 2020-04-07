@@ -1,5 +1,13 @@
+## Current
+* utils.mag_calc:
+  - `amp_pick_event` now works on a copy of the data by default
+  - `amp_pick_event` uses the appropriate digital filter gain to correct the
+    applied filter. See issue #376.
+  - `amp_pick_event` rewritten for simplicity.
+  - `amp_pick_event` now has simple synthetic tests for accuracy.
 * Some problem solved in _match_filter_plot. Now it shows all new detections.
 * Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
+
 ## 0.4.0
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
   alleviate issue related to large-prime length transforms.  This requires an
