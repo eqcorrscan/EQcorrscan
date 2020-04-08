@@ -1,4 +1,14 @@
 ## Current
+* utils.catalog_to_dd
+  - Added ability to turn off parallel processing (this is turned off by 
+    default now) for `write_correlations` - parallel processing for moderate
+    to large datasets was copying far too much data and using lots of memory.
+    This is a short-term fix - ideally we will move filtering and resampling to
+    C functions with shared-memory parallelism and GIL releasing.
+    See PR #374.
+  - Moved parallelism for `_compute_dt_correlations` to the C functions to
+    reduce memory overhead. Using a generator to construct sub-catalogs rather
+    than making a list of lists in memory. See issue #361.
 * utils.mag_calc:
   - `amp_pick_event` now works on a copy of the data by default
   - `amp_pick_event` uses the appropriate digital filter gain to correct the
