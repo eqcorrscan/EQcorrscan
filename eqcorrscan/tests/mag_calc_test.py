@@ -9,6 +9,7 @@ import glob
 import logging
 
 from typing import Tuple
+from http.client import IncompleteRead
 
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy import UTCDateTime, read, Trace, read_inventory, Stream
@@ -288,7 +289,12 @@ class TestAmpPickEvent(unittest.TestCase):
             origin_time - 10, origin_time + 120)
             for p in cls.event.picks]
         cls.inventory = client.get_stations_bulk(bulk, level='response')
-        cls.st = client.get_waveforms_bulk(bulk)
+        cls.st = Stream()
+        for _bulk in bulk:
+            try:
+                cls.st += client.get_waveforms(*_bulk)
+            except IncompleteRead:
+                print(f"Could not download {_bulk}")
         cls.available_stations = len({p.waveform_id.station_code
                                       for p in cls.event.picks})
 

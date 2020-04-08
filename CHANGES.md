@@ -15,6 +15,7 @@
     applied filter. See issue #376.
   - `amp_pick_event` rewritten for simplicity.
   - `amp_pick_event` now has simple synthetic tests for accuracy.
+  - `calc_max_curv` is now computed using the non-cumulative distribution.
 * Some problem solved in _match_filter_plot. Now it shows all new detections.
 * Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
 

@@ -33,15 +33,18 @@ Logger = logging.getLogger(__name__)
 
 # Magnitude - frequency funcs
 
-def calc_max_curv(magnitudes, plotvar=False):
+def calc_max_curv(magnitudes, bin_size=0.5, plotvar=False):
     """
     Calculate the magnitude of completeness using the maximum curvature method.
 
-    :type magnitudes: list
+    :type magnitudes: list or numpy array
     :param magnitudes:
         List of magnitudes from which to compute the maximum curvature which
         will give an estimate of the magnitude of completeness given the
         assumption of a power-law scaling.
+    :type bin_size: float
+    :param bin_size:
+        Width of magnitude bins used to compute the non-cumulative distribution
     :type plotvar: bool
     :param plotvar: Turn plotting on and off
 
@@ -53,50 +56,50 @@ def calc_max_curv(magnitudes, plotvar=False):
     .. rubric:: Example
 
     >>> import numpy as np
-    >>> mags = []
-    >>> for mag in np.arange(2.5,3, 0.1):
-    ...     mags.extend([mag] * int(20000 - 10 * mag))
-    >>> for mag in np.arange(3,7, 0.1):
-    ...     mags.extend([mag] * int(10 ** (7 - 1 * mag)))
+    >>> mags = np.arange(3, 6, .1)
+    >>> N = 10 ** (5 - 1 * mags)
+    >>> magnitudes = [0, 2, 3, 2.5, 2.2, 1.0]  # Some below completeness
+    >>> for mag, n in zip(mags, N):
+    ...     magnitudes.extend([mag for _ in range(int(n))])
     >>> calc_max_curv(mags, plotvar=False)
     3.0
     """
-    counts = Counter(magnitudes)
-    df = np.zeros(len(counts))
-    mag_steps = np.zeros(len(counts))
-    grad = np.zeros(len(counts) - 1)
-    grad_points = grad.copy()
-    for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
-        mag_steps[i] = magnitude
-        if i > 0:
-            df[i] = counts[magnitude] + df[i - 1]
-        else:
-            df[i] = counts[magnitude]
-    for i, val in enumerate(df):
-        if i > 0:
-            grad[i - 1] = (val - df[i - 1]) / (mag_steps[i] - mag_steps[i - 1])
-            grad_points[i - 1] = mag_steps[i] - ((mag_steps[i] -
-                                                  mag_steps[i - 1]) / 2.0)
+    min_bin, max_bin = int(min(magnitudes)), int(max(magnitudes) + 1)
+    bins = np.arange(min_bin, max_bin + bin_size, bin_size)
+    df, bins = np.histogram(magnitudes, bins)
+    grad = (df[1:] - df[0:-1]) / bin_size
     # Need to find the second order derivative
-    curvature = np.zeros(len(grad) - 1)
-    curvature_points = curvature.copy()
-    for i, _grad in enumerate(grad):
-        if i > 0:
-            curvature[i - 1] = (_grad - grad[i - 1]) / (grad_points[i] -
-                                                        grad_points[i - 1])
-            curvature_points[i - 1] = grad_points[i] - ((grad_points[i] -
-                                                         grad_points[i - 1]) /
-                                                        2.0)
+    curvature = (grad[1:] - grad[0:-1]) / bin_size
+    max_curv = bins[np.argmax(np.abs(curvature))] + bin_size
     if plotvar:
-        plt.scatter(mag_steps, df, c='k', label='Magnitude function')
-        plt.plot(mag_steps, df, c='k')
-        plt.scatter(grad_points, grad, c='r', label='Gradient')
-        plt.plot(grad_points, grad, c='r')
-        plt.scatter(curvature_points, curvature, c='g', label='Curvature')
-        plt.plot(curvature_points, curvature, c='g')
-        plt.legend()
-        plt.show()
-    return curvature_points[np.argmax(abs(curvature))]
+        fig, ax = plt.subplots()
+        ax.scatter(bins[:-1] + bin_size / 2, df, color="k",
+                   label="Magnitudes")
+        ax.axvline(x=max_curv, color="red", label="Maximum curvature")
+        ax1 = ax.twinx()
+        ax1.plot(bins[:-1] + bin_size / 2, np.cumsum(df[::-1])[::-1],
+                 color="k", label="Cumulative distribution")
+        ax1.scatter(bins[1:-1], grad, color="r", label="Gradient")
+        ax2 = ax.twinx()
+        ax2.scatter(bins[1:-2] + bin_size, curvature, color="blue",
+                    label="Curvature")
+        # Code borrowed from https://matplotlib.org/3.1.1/gallery/ticks_and_
+        # spines/multiple_yaxis_with_spines.html#sphx-glr-gallery-ticks-and-
+        # spines-multiple-yaxis-with-spines-py
+        ax2.spines["right"].set_position(("axes", 1.2))
+        ax2.set_frame_on(True)
+        ax2.patch.set_visible(False)
+        for sp in ax2.spines.values():
+            sp.set_visible(False)
+        ax2.spines["right"].set_visible(True)
+
+        ax.set_ylabel("N earthquakes in bin")
+        ax.set_xlabel("Magnitude")
+        ax1.set_ylabel("Cumulative events and gradient")
+        ax2.set_ylabel("Curvature")
+        fig.legend()
+        fig.show()
+    return float(max_curv)
 
 
 def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
