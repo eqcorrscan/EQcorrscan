@@ -206,8 +206,10 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
                              shift_len, interpolate, max_workers=1):
+    """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
-    Logger.info(f"Correlating {master.resource_id.id} with {len(catalog)} events")
+    Logger.info(
+        f"Correlating {master.resource_id.id} with {len(catalog)} events")
     differential_times_dict = dict()
     master_stream = _prepare_stream(
         stream=stream_dict[master.resource_id.id], event=master,
@@ -429,21 +431,22 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
-        sub_catalogs = [[ev for i, ev in enumerate(catalog)
+        sub_catalogs = ([ev for i, ev in enumerate(catalog)
                          if master_filter[i]]
-                        for master_filter in distance_filter]
-        differential_times = {}
+                        for master_filter in distance_filter)
         additional_args.update(correlation_kwargs)
-        differential_times = {master.resource_id.id:
-            _compute_dt_correlations(sub_catalog, master, **additional_args)
+        differential_times = {
+            master.resource_id.id:
+                _compute_dt_correlations(
+                    sub_catalog, master, **additional_args)
             for sub_catalog, master in zip(sub_catalogs, catalog)}
     else:
         # Reformat catalog to sparse catalog
         sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
 
-        sub_catalogs = [[ev for i, ev in enumerate(sparse_catalog)
+        sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                          if master_filter[i]]
-                        for master_filter in distance_filter]
+                        for master_filter in distance_filter)
         differential_times = {
             master.resource_id: _compute_dt(
                 sub_catalog, master, **additional_args)
@@ -517,7 +520,7 @@ def _filter_stream(event_id, st, lowcut, highcut):
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
                        highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
-                       interpolate=False, max_workers=None, 
+                       interpolate=False, max_workers=None,
                        parallel_process=False, *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
@@ -563,7 +566,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         threads will be used.
     :type parallel_process: bool
     :param parallel_process:
-        Whether to process streams in parallel or not. Experimental   
+        Whether to process streams in parallel or not. Experimental, may use
+        too much memory.
 
     :rtype: dict
     :returns: event_id_mapper
@@ -587,7 +591,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                 func = partial(
                     _meta_filter_stream, stream_dict=stream_dict,
                     lowcut=lowcut, highcut=highcut)
-                results = [pool.apply_async(func, key) 
+                results = [pool.apply_async(func, key)
                            for key in stream_dict.keys()]
             for result in results:
                 processed_stream_dict.update(result.get())

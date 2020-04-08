@@ -7,8 +7,9 @@ import os
 import numpy as np
 
 from collections import Counter, namedtuple
+from http.client import IncompleteRead
 
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Stream
 from obspy.clients.fdsn import Client
 from obspy.geodetics import gps2dist_azimuth
 
@@ -64,11 +65,19 @@ class TestCatalogMethods(unittest.TestCase):
             sta for sta, _ in Counter(picked_stations).most_common(5)]
         streams = []
         for event in catalog[0:10]:  # Just get the first 10 events
-            bulk = [(sta.network, sta.station, sta.location, "HH?",
-                     event.preferred_origin().time - 10,
-                     event.preferred_origin().time + 80)
-                    for sta in stations_to_download]
-            streams.append(client.get_waveforms_bulk(bulk))
+            print(event.preferred_origin().time)
+            stream = Stream()
+            for station in stations_to_download:
+                print(station)
+                try:
+                    stream += client.get_waveforms(
+                        network=station.network, station=station.station,
+                        location=station.location, channel="HH?",
+                        starttime=event.preferred_origin().time - 10,
+                        endtime=event.preferred_origin().time + 80)
+                except IncompleteRead:
+                    print(f"Could not download {station.station}")
+            streams.append(stream)
 
         picked_stations = set(picked_stations)
         inv_bulk = [(sta.network, sta.station, sta.location, "HH?",
