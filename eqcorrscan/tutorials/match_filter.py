@@ -8,6 +8,7 @@ then you will need to before you can run this script.
 import glob
 import logging
 
+from http.client import IncompleteRead
 from multiprocessing import cpu_count
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream, read
@@ -77,7 +78,12 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(),
 
         # Note this will take a little while.
         print('Downloading seismic data, this may take a while')
-        st = client.get_waveforms_bulk(bulk_info)
+        st = Stream()
+        for _bulk in bulk_info:
+            try:
+                st += client.get_waveforms(*_bulk)
+            except IncompleteRead:
+                print(f"Could not download {_bulk}")
         # Merge the stream, it will be downloaded in chunks
         st.merge()
 
