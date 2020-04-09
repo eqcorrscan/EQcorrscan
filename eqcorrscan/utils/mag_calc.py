@@ -274,26 +274,22 @@ def _sim_WA(trace, inventory, water_level, velocity=False):
     :rtype: :class:`obspy.core.trace.Trace`
     """
     assert isinstance(trace, Trace)
+    paz_wa = copy.deepcopy(PAZ_WA)
+    # Need to make a copy because we might edit it.
     if velocity:
-        PAZ_WA['zeros'] = [0 + 0j, 0 + 0j]
+        paz_wa['zeros'] = [0 + 0j, 0 + 0j]
     # De-trend data
     trace.detrend('simple')
-    # Simulate Wood Anderson
+    # Remove response to Velocity
     try:
-        resp = inventory.get_response(
-            seed_id=trace.id, datetime=trace.stats.starttime)
+        trace.remove_response(
+            inventory=inventory, output="VEL", water_level=water_level)
     except Exception:
         Logger.error(f"No response for {trace.id} at {trace.stats.starttime}")
         return None
-    paz = resp.get_paz()
-    paz = {
-        'poles': paz.poles,
-        'zeros': paz.zeros,
-        'gain': paz.normalization_factor,
-        'sensitivity': resp.instrument_sensitivity.value,
-    }
+    # Simulate Wood Anderson
     trace.data = seis_sim(trace.data, trace.stats.sampling_rate,
-                          paz_remove=paz, paz_simulate=PAZ_WA,
+                          paz_remove=None, paz_simulate=paz_wa,
                           water_level=water_level)
     return trace
 
