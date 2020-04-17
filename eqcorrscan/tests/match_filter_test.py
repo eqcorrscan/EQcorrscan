@@ -600,7 +600,8 @@ class TestTribeConstruction(unittest.TestCase):
         for template in tribe:
             self.assertEqual(process_len, template.process_length)
             for tr in template.st:
-                self.assertEqual(tr.stats.npts / tr.stats.sampling_rate, length)
+                self.assertEqual(tr.stats.npts / tr.stats.sampling_rate,
+                                 length)
                 matched_pick = [p for p in template.event.picks
                                 if p.waveform_id.get_seed_string() == tr.id
                                 and p.phase_hint == swin]
