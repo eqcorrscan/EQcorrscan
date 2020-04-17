@@ -1,4 +1,8 @@
 ## Current
+* core.template_gen
+  - BUG-FIX: Fix bug where events were incorrectly associated with templates
+    in `Tribe().construct()` if the given catalog contained events outside
+    of the time-range of the stream. See issue #381 and PR #
 * utils.catalog_to_dd
   - Added ability to turn off parallel processing (this is turned off by 
     default now) for `write_correlations` - parallel processing for moderate
