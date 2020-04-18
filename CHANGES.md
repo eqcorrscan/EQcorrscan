@@ -1,4 +1,8 @@
 ## Current
+* core.match_filter
+  - BUG-FIX: Empty families are no longer run through lag-calc when using 
+    Party.lag_calc().  Previously this resulted in a "No matching data" error,
+    see #341.
 * core.template_gen
   - BUG-FIX: Fix bug where events were incorrectly associated with templates
     in `Tribe().construct()` if the given catalog contained events outside

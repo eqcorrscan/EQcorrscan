@@ -823,6 +823,13 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 4)
 
+    def test_party_lag_calc_empty_families(self):
+        """ Test that passing some empty families works properly, see #341. """
+        party = self.party.copy()
+        party[1].detections = []  # Make an empty family
+        catalog = party.lag_calc(stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 3)
+
     def test_party_mag_calc_unpreprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.copy().lag_calc(
