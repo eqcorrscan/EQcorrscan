@@ -1,4 +1,4 @@
-## Current
+## 0.4.1
 * core.match_filter
   - BUG-FIX: Empty families are no longer run through lag-calc when using 
     Party.lag_calc().  Previously this resulted in a "No matching data" error,
