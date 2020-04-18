@@ -548,7 +548,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         if tr.stats.npts == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
         # Cope with time precision.
-        if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
+        if abs((tr.stats.sampling_rate * length) -
+               tr.stats.npts) > tr.stats.delta:
             msg = ("Data sampling-rate * length ({0} * {1} = {2}) does not "
                    "match number of samples ({3}) for {4}".format(
                     tr.stats.sampling_rate, length,
@@ -616,7 +617,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         # by convention
         if len(tr.data) == (length * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
-        if abs((tr.stats.sampling_rate * length) - tr.stats.npts) > tr.stats.delta:
+        if abs((tr.stats.sampling_rate * length) -
+               tr.stats.npts) > tr.stats.delta:
             raise ValueError('Data are not required length for ' +
                              tr.stats.station + '.' + tr.stats.channel)
     # Replace the gaps with zeros
