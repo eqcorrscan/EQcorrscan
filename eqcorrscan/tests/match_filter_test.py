@@ -571,6 +571,47 @@ class TestMatchCopy(unittest.TestCase):
         self.assertEqual(tribe, copied)
 
 
+@pytest.mark.network
+class TestTribeConstruction(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        client = Client("GEONET")
+        cat = client.get_events(
+            latitude=-41.7, longitude=174.1, maxradius=0.5, minmagnitude=4.0,
+            starttime=UTCDateTime(2013, 7, 30),
+            endtime=UTCDateTime(2013, 8, 2))
+        cls.cat, cls.client = cat, client
+
+    def test_short_stream(self):
+        """ Check that events are correctly associated with templates, #381"""
+        process_len = 3600
+        length = 6
+        swin = "P"
+
+        st = self.client.get_waveforms(
+            network="NZ", station="TCW", location="10", channel="EHZ",
+            starttime=UTCDateTime(2013, 7, 31, 23),
+            endtime=UTCDateTime(2013, 8, 1))
+        tribe = Tribe().construct(
+            method="from_meta_file", lowcut=2, highcut=10, samp_rate=50,
+            filt_order=4, length=length, prepick=0.5, st=st,
+            meta_file=self.cat, swin=swin, process_len=process_len)
+        self.assertEqual(len(tribe), 2)
+        for template in tribe:
+            self.assertEqual(process_len, template.process_length)
+            for tr in template.st:
+                self.assertEqual(tr.stats.npts / tr.stats.sampling_rate,
+                                 length)
+                matched_pick = [p for p in template.event.picks
+                                if p.waveform_id.get_seed_string() == tr.id
+                                and p.phase_hint == swin]
+                if len(matched_pick) == 0:
+                    continue
+                self.assertLessEqual(
+                    abs(matched_pick[0].time -
+                        tr.stats.starttime) - template.prepick, tr.stats.delta)
+
+
 class TestMatchObjectHeavy(unittest.TestCase):
     @classmethod
     @pytest.mark.flaky(reruns=2)
@@ -1193,7 +1234,6 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(len(lines), 6)
         os.remove("test_party.csv")
 
-    # TODO: Track down where prepick has been incorrectly applied.
     def test_party_io_no_catalog_writing(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_out_no_cat.tgz'):
