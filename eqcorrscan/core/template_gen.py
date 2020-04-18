@@ -5,25 +5,6 @@ for the application of cross-correlation of seismic data for the detection of
 repeating events.
 
 .. note::
-    By convention templates are generated with P-phases on the
-    vertical channel and S-phases on the horizontal channels, normal
-    seismograph naming conventions are assumed, where Z denotes vertical
-    and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-    or not.  To this end we will **only** use Z channels if they have a
-    P-pick, and will use one or other horizontal channels **only** if
-    there is an S-pick on it.
-
-.. warning::
-    If there is no phase_hint included in picks, and swin=all, all channels
-    with picks will be used.
-
-.. note::
-    If swin=all, then all picks will be used, not just phase-picks (e.g. it
-    will use amplitude picks).  If you do not want this then we suggest that
-    you remove any picks you do not want to use in your templates before using
-    the event.
-
-.. note::
     All functions use obspy filters, which are implemented such that
     if both highcut and lowcut are set a bandpass filter will be used,
     but of highcut is not set (None) then a highpass filter will be used and
@@ -112,7 +93,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :type plot: bool
     :param plot: Plot templates or not.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
     :type return_event: bool
@@ -142,6 +123,25 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
+
+    .. note::
+        By convention templates are generated with P-phases on the
+        vertical channel and S-phases on the horizontal channels, normal
+        seismograph naming conventions are assumed, where Z denotes vertical
+        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
+        or not.  To this end we will **only** use Z channels if they have a
+        P-pick, and will use one or other horizontal channels **only** if
+        there is an S-pick on it.
+
+    .. warning::
+        If there is no phase_hint included in picks, and swin=all, all channels
+        with picks will be used.
+
+    .. note::
+        If swin=all, then all picks will be used, not just phase-picks (e.g. it
+        will use amplitude picks). If you do not want this then we suggest
+        that you remove any picks you do not want to use in your templates
+        before using the event.
 
     .. note::
         *Method specific arguments:*
@@ -264,7 +264,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             catalog = kwargs.get('meta_file')
         elif kwargs.get('meta_file'):
             catalog = read_events(kwargs.get('meta_file'))
-        elif kwargs.get('catalog'):
+        else:
             catalog = kwargs.get('catalog')
         sub_catalogs = [catalog]
         st = kwargs.get('st', Stream())
@@ -288,6 +288,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     temp_list = []
     process_lengths = []
+    catalog_out = Catalog()
 
     if "P_all" in swin or "S_all" in swin or all_horiz:
         all_channels = True
@@ -326,23 +327,22 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 daylong = False
             # Check if the required amount of data have been downloaded - skip
             # channels if arg set.
-            if skip_short_chans:
-                _st = Stream()
-                for tr in st:
-                    if np.ma.is_masked(tr.data):
-                        _len = np.ma.count(tr.data) * tr.stats.delta
-                    else:
-                        _len = tr.stats.npts * tr.stats.delta
-                    if _len < process_len * .8:
-                        Logger.info(
-                            "Data for {0} are too short, skipping".format(
-                                tr.id))
-                    else:
-                        _st += tr
-                st = _st
-                if len(st) == 0:
-                    Logger.info("No data")
-                    continue
+            for tr in st:
+                if np.ma.is_masked(tr.data):
+                    _len = np.ma.count(tr.data) * tr.stats.delta
+                else:
+                    _len = tr.stats.npts * tr.stats.delta
+                if _len < process_len * .8:
+                    Logger.info(
+                        "Data for {0} are too short, skipping".format(
+                            tr.id))
+                    if skip_short_chans:
+                        continue
+                # Trim to enforce process-len
+                tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
+            if len(st) == 0:
+                Logger.info("No data")
+                continue
             if daylong:
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
@@ -397,17 +397,19 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
+            catalog_out += event
         if save_progress:
             if not os.path.isdir("eqcorrscan_temporary_templates"):
                 os.makedirs("eqcorrscan_temporary_templates")
             for template in temp_list:
                 template.write(
                     "eqcorrscan_temporary_templates{0}{1}.ms".format(
-                        os.path.sep, template[0].stats.starttime),
+                        os.path.sep, template[0].stats.starttime.strftime(
+                            "%Y-%m-%dT%H%M%S")),
                     format="MSEED")
         del st
     if return_event:
-        return temp_list, catalog, process_lengths
+        return temp_list, catalog_out, process_lengths
     return temp_list
 
 
@@ -630,7 +632,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         the maximum amplitude in the template window to the rms amplitude in
         the whole window given.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
 
@@ -769,11 +771,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for _starttime in starttimes:
-        Logger.info("Working on channel %s.%s" %
-                    (_starttime['station'], _starttime['channel']))
+        Logger.info(f"Working on channel {_starttime['station']}."
+                    f"{_starttime['channel']}")
         tr = st.select(
             station=_starttime['station'], channel=_starttime['channel'])[0]
-        Logger.info("Found Trace {0}".format(tr))
+        Logger.info(f"Found Trace {tr}")
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:
@@ -828,11 +830,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
         tplot(st1, background=stplot, picks=picks_copy,
               title='Template for ' + str(st1[0].stats.starttime),
               savefile="{0}/{1}_template.png".format(
-                  plotdir, st1[0].stats.starttime),
+                  plotdir, st1[0].stats.starttime.strftime(
+                      "%Y-%m-%dT%H%M%S")),
               **plot_kwargs)
         noise_plot(signal=st1, noise=noise,
                    savefile="{0}/{1}_noise.png".format(
-                       plotdir, st1[0].stats.starttime),
+                       plotdir, st1[0].stats.starttime.strftime(
+                           "%Y-%m-%dT%H%M%S")),
                    **plot_kwargs)
         del stplot
     return st1

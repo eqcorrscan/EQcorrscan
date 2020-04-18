@@ -99,7 +99,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param plot:
         Turn plotting on or off.
     :type plotdir: str
-￼	:param plotdir:
+    :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the
         figure will be shown on screen.
     :type group_size: int
@@ -219,7 +219,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
-                full_peaks=full_peaks, peak_cores=process_cores, **kwargs)
+                full_peaks=full_peaks, peak_cores=process_cores,
+                **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -412,11 +413,15 @@ def match_filter(template_names, template_list, st, threshold,
         Check arguments, defaults to True, but if running in bulk, and you are
         certain of your arguments, then set to False.
     :type full_peaks: bool
-    :param full_peaks: See `eqcorrscan.core.findpeaks.find_peaks2_short`.
+    :param full_peaks: See
+        :func: `eqcorrscan.utils.findpeaks.find_peaks2_short`
     :type peak_cores: int
     :param peak_cores:
         Number of processes to use for parallel peak-finding (if different to
         `cores`).
+    :type spike_test: bool
+    :param spike_test: If set True, raise error when there is a spike in data.
+        defaults to True.
 
     .. Note::
         When using the "fftw" correlation backend the length of the fft
@@ -594,6 +599,7 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template contains masked array, split first')
     if spike_test:
+        Logger.info("Checking for spikes in data")
         _spike_test(st)
     if cores is not None:
         parallel = True
@@ -606,6 +612,7 @@ def match_filter(template_names, template_list, st, threshold,
     templates = [t.copy() for t in template_list]
     _template_names = template_names.copy()  # This can just be a shallow copy
 
+    Logger.info("Reshaping templates")
     stream, templates, _template_names = _prep_data_for_correlation(
         stream=stream, templates=templates, template_names=_template_names)
     if len(templates) == 0:

@@ -112,10 +112,6 @@ def _concatenate_and_correlate(streams, template, cores):
     """
     UsedChannel = namedtuple("UsedChannel", "channel used")
 
-    channel_length = {tr.stats.npts for st in streams for tr in st}
-    assert len(channel_length) == 1, "Multiple lengths found."
-    channel_length = channel_length.pop()
-
     samp_rate = {tr.stats.sampling_rate for st in streams for tr in st}
     assert len(samp_rate) == 1, "Multiple sample rates found"
     samp_rate = samp_rate.pop()
@@ -124,6 +120,10 @@ def _concatenate_and_correlate(streams, template, cores):
     assert len(template_length) == 1, "Multiple data lengths in template"
     template_length = template_length.pop()
 
+    channel_length = {tr.stats.npts for st in streams for tr in st}
+    if len(channel_length) > 1:
+        Logger.debug("Multiple lengths of stream found, using the longest")
+    channel_length = sorted(list(channel_length))[-1]
     # pre-define stream for efficiency
     chans = {tr.id for st in streams for tr in st}.intersection(
         {tr.id for tr in template})
@@ -145,7 +145,7 @@ def _concatenate_and_correlate(streams, template, cores):
                 start_index += channel_length
                 continue
             assert len(tr) == 1, "Multiple channels found for {0}".format(chan)
-            data[i][start_index:start_index + channel_length] = tr[0].data
+            data[i][start_index:start_index + tr[0].stats.npts] = tr[0].data
             start_index += channel_length
             used_chans[j].append(UsedChannel(
                 channel=(chan.split('.')[1], chan.split('.')[-1]), used=True))
@@ -232,9 +232,10 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     detection_ids = list(detect_streams_dict.keys())
     detect_streams = [detect_streams_dict[detection_id]
                       for detection_id in detection_ids]
-    assert len(detect_streams) > 0, "No appropriate data found, check your " \
-                                    "family and detections - make sure seed " \
-                                    "ids match"
+    if len(detect_streams) == 0:
+        Logger.warning("No appropriate data found, check your family and "
+                       "detections - make sure seed ids match")
+        return picked_dict
     if len(detect_streams) != len(family):
         Logger.warning("Not all detections have matching data. "
                        "Proceeding anyway. HINT: Make sure SEED IDs match")
@@ -386,7 +387,7 @@ def _prepare_data(family, detect_data, shift_len):
 def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False):
+             plot=False, plotdir=None):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -434,6 +435,8 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type plot: bool
     :param plot:
         To generate a plot for every detection or not, defaults to False
+    :param plotdir:
+        Path to plotting folder, plots will be output here.
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -513,7 +516,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                 family=family, stream=detect_data,
                 min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
-                cores=cores, shift_len=shift_len, plot=plot)
+                cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()

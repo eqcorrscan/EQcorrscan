@@ -1426,7 +1426,8 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     else:
         axis = axes
     axis.set_xlabel('Time (s) from start of template')
-    plt.figlegend(lines, labels, 'upper right')
+    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
+    axes[0].set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:
@@ -1552,7 +1553,8 @@ def plot_repicked(template, picks, det_stream, **kwargs):
         axis = axes
     axis.set_xlabel('Time (s) from %s' %
                     mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
-    plt.figlegend(lines, labels, 'upper right')
+    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
+    axes[0].set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:
@@ -2198,23 +2200,28 @@ def _match_filter_plot(stream, cccsum, template_names, rawthresh, plotdir,
     :param i: Template index name to plot.
     """
     import matplotlib.pyplot as plt
+    tr = stream[0]
+    pad_len = len(tr.data) - len(cccsum)
+    cccsum = np.pad(cccsum, (0, pad_len))
     if plotdir is not None:
         plt.ioff()
-    stream_plot = copy.deepcopy(stream[0])
+    stream_plot = copy.deepcopy(tr)
     # Downsample for plotting
     stream_plot = _plotting_decimation(stream_plot, 10e5, 4)
+    samp_rate = stream_plot.stats.sampling_rate
     cccsum_plot = Trace(cccsum)
-    cccsum_plot.stats.sampling_rate = stream[0].stats.sampling_rate
+    cccsum_plot.stats.sampling_rate = tr.stats.sampling_rate
     # Resample here to maintain shape better
     cccsum_hist = cccsum_plot.copy()
     cccsum_hist = _plotting_decimation(cccsum_hist, 10e5, 4).data
-    cccsum_plot = chunk_data(cccsum_plot, 10, 'Maxabs').data
+    cccsum_plot = chunk_data(cccsum_plot, samp_rate, 'Maxabs').data
     # Enforce same length
     stream_plot.data = stream_plot.data[0:len(cccsum_plot)]
     cccsum_plot = cccsum_plot[0:len(stream_plot.data)]
     cccsum_hist = cccsum_hist[0:len(stream_plot.data)]
     plot_name = "{0}/cccsum_plot_{1}_{2}.{3}".format(
-        plotdir, template_names[i], stream[0].stats.starttime, plot_format)
+        plotdir, template_names[i], stream[0].stats.starttime.strftime(
+                  "%Y-%m-%dT%H%M%S"), plot_format)
     plot_kwargs = dict(show=True)
     if plotdir is not None:
         if not os.path.isdir(plotdir):
