@@ -949,10 +949,13 @@ class Party(object):
 
     def min_chans(self, min_chans):
         """
-        Remove detections with fewer channels used than min_chans
+        Remove detections using min_chans or fewer channels.
 
         :type min_chans: int
-        :param min_chans: Minimum number of channels to allow a detection.
+        :param min_chans:
+            Detections using more than this number of channels are maintained.
+            Note that this is a strict `if detection.no_chans > min_chans:`
+            rather than >=. Maintained for backwards compatability.
         :return: Party
 
         .. Note:: Works in place on Party.
