@@ -61,7 +61,7 @@ def calc_max_curv(magnitudes, bin_size=0.5, plotvar=False):
     >>> magnitudes = [0, 2, 3, 2.5, 2.2, 1.0]  # Some below completeness
     >>> for mag, n in zip(mags, N):
     ...     magnitudes.extend([mag for _ in range(int(n))])
-    >>> calc_max_curv(mags, plotvar=False)
+    >>> calc_max_curv(magnitudes, plotvar=False)
     3.0
     """
     min_bin, max_bin = int(min(magnitudes)), int(max(magnitudes) + 1)
