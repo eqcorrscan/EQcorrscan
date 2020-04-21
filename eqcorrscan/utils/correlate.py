@@ -883,7 +883,7 @@ def fftw_multi_normxcorr(
             (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
         Logger.critical('Recommend checking your data for spikes, clipping '
                         'or artefacts')
-        raise CorrelationError("Internal correlation error")
+        # raise CorrelationError("Internal correlation error")
     for i, missed_corr in enumerate(missed_correlations):
         if missed_corr:
             Logger.debug(

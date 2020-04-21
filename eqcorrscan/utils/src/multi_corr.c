@@ -474,7 +474,7 @@ static inline int set_ncc(
             printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f, setting to 0.0\n",
                    ncc_index, t, i, value);
             value = 0;
-            // status = 1;
+            status = 1;
         }
         else if (value > 1.0) {
             value = 1.0;
@@ -487,7 +487,7 @@ static inline int set_ncc(
             ncc[ncc_index] += value;
         } else if (stack_option == 0){
             ncc[ncc_index] = value;
-        } else {status = 2;}
+        }
     }
     return status;
 }
@@ -555,6 +555,12 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
     #ifdef N_THREADS
     /* num_threads_outer cannot be greater than the number of channels */
     num_threads_outer = (num_threads_outer > n_channels) ? n_channels : num_threads_outer;
+
+    // Ensure stack-option is within supported range
+    if (stack_option > 1){
+        printf("Stack option %i unsupported, returning\n", stack_option);
+        return -1;
+    }
 
     /* Outer loop parallelism seems to cause issues on OSX */
     if (OUTER_SAFE != 1 && num_threads_outer > 1){
@@ -715,7 +721,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
                                  &missed_corr[i], stack_option);
         if (results[i] != 0){
-            printf("Some error on channel %i, status: %i\n", i, results[i]);
+            printf("Normalisation issues on channel %i, %i correlations were skipped\n", i, results[i]);
         }
     }
 
