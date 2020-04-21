@@ -1,5 +1,36 @@
+## 0.4.1
+* core.match_filter
+  - BUG-FIX: Empty families are no longer run through lag-calc when using 
+    Party.lag_calc().  Previously this resulted in a "No matching data" error,
+    see #341.
+* core.template_gen
+  - BUG-FIX: Fix bug where events were incorrectly associated with templates
+    in `Tribe().construct()` if the given catalog contained events outside
+    of the time-range of the stream. See issue #381 and PR #382.
+* utils.catalog_to_dd
+  - Added ability to turn off parallel processing (this is turned off by 
+    default now) for `write_correlations` - parallel processing for moderate
+    to large datasets was copying far too much data and using lots of memory.
+    This is a short-term fix - ideally we will move filtering and resampling to
+    C functions with shared-memory parallelism and GIL releasing.
+    See PR #374.
+  - Moved parallelism for `_compute_dt_correlations` to the C functions to
+    reduce memory overhead. Using a generator to construct sub-catalogs rather
+    than making a list of lists in memory. See issue #361.
+* utils.mag_calc:
+  - `amp_pick_event` now works on a copy of the data by default
+  - `amp_pick_event` uses the appropriate digital filter gain to correct the
+    applied filter. See issue #376.
+  - `amp_pick_event` rewritten for simplicity.
+  - `amp_pick_event` now has simple synthetic tests for accuracy.
+  - `_sim_wa` uses the full response information to correct to velocity
+    this includes FIR filters (previously not used), and ensures that the
+    wood-anderson poles (with a single zero) are correctly applied to velocity
+    waveforms.
+  - `calc_max_curv` is now computed using the non-cumulative distribution.
 * Some problem solved in _match_filter_plot. Now it shows all new detections.
 * Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
+
 ## 0.4.0
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
   alleviate issue related to large-prime length transforms.  This requires an

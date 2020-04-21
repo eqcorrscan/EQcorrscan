@@ -1,0 +1,12 @@
+name: eqcorrscan-dcos
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - pyfftw
+  - fftw
+  - h5py
+  - obspy
+  - bottleneck
+  - nbsphinx
+  - matplotlib

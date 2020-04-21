@@ -19,14 +19,14 @@ with the following:
 
 .. code-block:: bash
 
-    conda create -n eqcorrscan colorama numpy scipy matplotlib obspy bottleneck pyproj
+    conda create -n eqcorrscan -c conda-forge colorama numpy scipy matplotlib obspy bottleneck pyproj
     source activate eqcorrscan
 
 To then install EQcorrscan you can simply run:
 
 .. code-block:: bash
 
-    conda install -c conda-forge eqcorrscan
+    conda install eqcorrscan
 
 Installation without conda
 --------------------------
@@ -148,7 +148,7 @@ Once you have installed fftw the EQcorrscan install should be as simple as:
 
 .. |conda-install| raw:: html
 
-    <a href="https://conda.io/docs/user-guide/install/index.html#installing-conda-on-a-system-that-has-other-python-installations-or-packages" target="_blank">conda-install</a>
+    <a href="https://docs.conda.io/en/latest/miniconda.html" target="_blank">conda-install</a>
 
 
 .. |fftw-install| raw:: html
