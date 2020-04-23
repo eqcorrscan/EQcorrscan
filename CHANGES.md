@@ -1,3 +1,14 @@
+## Current
+* utils.correlation
+  - Cross-correlation normalisation errors no-longer raise an error
+  - When "out-of-range" correlations occur a warning is given by the C-function
+    with details of what channel, what template and where in the data vector
+    the issue occurred for the user to check their data.
+  - Out-of-range correlations are set to 0.0
+  - After extensive testing these errors have always been related to data issues
+    within regions where correlations should not be computed (spikes, step
+    artifacts due to incorrectly padding data gaps).
+  - USERS SHOULD BE CAREFUL TO CHECK THEIR DATA IF THEY SEE THESE WARNINGS
 ## 0.4.1
 * core.match_filter
   - BUG-FIX: Empty families are no longer run through lag-calc when using 
