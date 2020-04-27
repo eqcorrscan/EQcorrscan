@@ -53,7 +53,7 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
                                  ) * multiplier).sum() > 0:
             msg = ('Spikes above ' + str(multiplier) +
                    ' of the range of ' + str(percent) +
-                   ' of the data present, check. \n ' +
+                   ' of the data present, check: ' + tr.id + '.\n' +
                    'This would otherwise likely result in an issue during ' +
                    'FFT prior to cross-correlation.\n' +
                    'If you think this spike is real please report ' +
