@@ -723,11 +723,25 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     starttimes = []
     for _swin in swin:
         for tr in st:
-            starttime = {'station': tr.stats.station,
-                         'channel': tr.stats.channel, 'picks': []}
-            station_picks = [pick for pick in picks_copy
-                             if pick.waveform_id.station_code ==
-                             tr.stats.station]
+            if check_full_seed:
+                starttime = {'network': tr.stats.network,
+                             'station': tr.stats.station,
+                             'location': tr.stats.location,
+                             'channel': tr.stats.channel,
+                             'picks': []}
+                station_picks = [pick for pick in picks_copy
+                                 if pick.waveform_id.network_code ==
+                                 tr.stats.network and
+                                 pick.waveform_id.station_code ==
+                                 tr.stats.station and
+                                 pick.waveform_id.location_code ==
+                                 tr.stats.location]
+            else:
+                starttime = {'station': tr.stats.station,
+                             'channel': tr.stats.channel, 'picks': []}
+                station_picks = [pick for pick in picks_copy
+                                 if pick.waveform_id.station_code ==
+                                 tr.stats.station]
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'P']
