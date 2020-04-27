@@ -56,7 +56,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  all_horiz=False, delayed=True, plot=False, plotdir=None,
                  return_event=False, min_snr=None, parallel=False,
                  num_cores=False, save_progress=False, skip_short_chans=False,
-                 check_full_seed=False, **kwargs):
+                 **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -120,13 +120,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         Whether to ignore channels that have insufficient length data or not.
         Useful when the quality of data is not known, e.g. when downloading
         old, possibly triggered data from a datacentre
-    :type check_full_seed: bool
-    :param check_full_seed:
-        If True, will check the trace header against the full SEED id,
-        including Network, Station, Location and Channel. If False (default),
-        will check only against Station and Channel. This behavior was
-        originally necessary to cope with some software (i.e. SEISAN) not
-        storing picks with full SEED info.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -400,7 +393,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
                 all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
-                plotdir=plotdir, check_full_seed=check_full_seed)
+                plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -741,10 +734,6 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                                  pick.waveform_id.location_code ==
                                  tr.stats.location]
             else:
-                Logger.warning(
-                    'Not checking full SEED id compatibility between' +
-                    ' picks and waveforms. Checking full net.sta.loc.chan ' +
-                    'compatibility will be default behavior in future release')
                 starttime = {'station': tr.stats.station,
                              'channel': tr.stats.channel, 'picks': []}
                 station_picks = [pick for pick in picks_copy
@@ -804,15 +793,8 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     for _starttime in starttimes:
         Logger.info(f"Working on channel {_starttime['station']}."
                     f"{_starttime['channel']}")
-        if check_full_seed:
-            tr = st.select(
-                network=_starttime['network'],
-                station=_starttime['station'],
-                location=_starttime['location'],
-                channel=_starttime['channel'])[0]
-        else:
-            tr = st.select(
-                station=_starttime['station'], channel=_starttime['channel'])[0]
+        tr = st.select(
+            station=_starttime['station'], channel=_starttime['channel'])[0]
         Logger.info(f"Found Trace {tr}")
         used_tr = False
         for pick in _starttime['picks']:
