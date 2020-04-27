@@ -615,6 +615,7 @@ def match_filter(template_names, template_list, st, threshold,
         Logger.debug(template.__str__())
     Logger.debug(stream.__str__())
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+    print(multichannel_normxcorr)
     outtic = default_timer()
     [cccsums, no_chans, chans] = multichannel_normxcorr(
         templates=templates, stream=stream, cores=cores, **kwargs)
@@ -641,10 +642,16 @@ def match_filter(template_names, template_list, st, threshold,
     if peak_cores is None:
         peak_cores = cores
     outtic = default_timer()
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(nrows=2)
+    axes[0].plot(cccsums[0])
     all_peaks = multi_find_peaks(
         arr=cccsums, thresh=thresholds, parallel=parallel,
         trig_int=int(trig_int * stream[0].stats.sampling_rate),
         full_peaks=full_peaks, cores=peak_cores)
+    print('all_peaks:\n{}'.format(all_peaks))
+    print('thresholds:\n{}'.format(thresholds))
+    plt.show()
     outtoc = default_timer()
     Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
