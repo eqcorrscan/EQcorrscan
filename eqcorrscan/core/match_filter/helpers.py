@@ -47,18 +47,22 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
+    list_ids = []
     for tr in stream:
         if (tr.data > 2 * np.max(np.sort(
                 np.abs(tr.data))[0:int(percent * len(tr.data))]
                                  ) * multiplier).sum() > 0:
-            msg = ('Spikes above ' + str(multiplier) +
-                   ' of the range of ' + str(percent) +
-                   ' of the data present, check: ' + tr.id + '.\n' +
-                   'This would otherwise likely result in an issue during ' +
-                   'FFT prior to cross-correlation.\n' +
-                   'If you think this spike is real please report ' +
-                   'this as a bug.')
-            raise MatchFilterError(msg)
+            list_ids.append(tr.id)
+    if list_ids != []:
+        ids = ', '.join(list_ids)
+        msg = ('Spikes above ' + str(multiplier) +
+               ' of the range of ' + str(percent) +
+               ' of the data present, check:\n' + ids + '.\n'
+               'This would otherwise likely result in an issue during ' +
+               'FFT prior to cross-correlation.\n' +
+               'If you think this spike is real please report ' +
+               'this as a bug.')
+        raise MatchFilterError(msg)
 
 
 def _total_microsec(t1, t2):

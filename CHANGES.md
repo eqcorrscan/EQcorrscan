@@ -1,5 +1,5 @@
 ## Current
-* Add seed-id to the _spike_test's message.
+* Add seed-ids to the _spike_test's message.
 * utils.correlation
   - Cross-correlation normalisation errors no-longer raise an error
   - When "out-of-range" correlations occur a warning is given by the C-function
