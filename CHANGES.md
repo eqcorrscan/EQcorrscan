@@ -1,4 +1,7 @@
 ## Current
+* Better approch to handling spike.
+  - Spike test function is not make errors anymore.
+    With removing the spiky data the process will continue on the rest of data.
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
   - Cross-correlation normalisation errors no-longer raise an error
