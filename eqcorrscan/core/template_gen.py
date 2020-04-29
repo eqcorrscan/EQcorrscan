@@ -288,6 +288,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     temp_list = []
     process_lengths = []
+    catalog_out = Catalog()
 
     if "P_all" in swin or "S_all" in swin or all_horiz:
         all_channels = True
@@ -396,6 +397,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
+            catalog_out += event
         if save_progress:
             if not os.path.isdir("eqcorrscan_temporary_templates"):
                 os.makedirs("eqcorrscan_temporary_templates")
@@ -407,7 +409,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     format="MSEED")
         del st
     if return_event:
-        return temp_list, catalog, process_lengths
+        return temp_list, catalog_out, process_lengths
     return temp_list
 
 

@@ -14,7 +14,7 @@ import logging
 from collections import namedtuple, defaultdict, Counter
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, Pool
 
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
@@ -22,6 +22,7 @@ from obspy.core.event import (
     OriginQuality)
 from eqcorrscan.utils.clustering import dist_mat_km
 from eqcorrscan.core.lag_calc import _concatenate_and_correlate, _xcorr_interp
+from eqcorrscan.utils.correlate import pool_boy
 
 Logger = logging.getLogger(__name__)
 
@@ -204,17 +205,23 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate):
+                             shift_len, interpolate, max_workers=1):
+    """ Compute cross-correlation delay times. """
+    max_workers = max_workers or 1
+    Logger.info(
+        f"Correlating {master.resource_id.id} with {len(catalog)} events")
     differential_times_dict = dict()
     master_stream = _prepare_stream(
         stream=stream_dict[master.resource_id.id], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
+    Logger.info(f"The channels provided are: {available_seed_ids}")
     master_seed_ids = {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in master.picks if
         pick.phase_hint[0] in "PS" and
         pick.waveform_id.get_seed_string() in available_seed_ids}
+    Logger.info(f"Using channels: {master_seed_ids}")
     # Dictionary of travel-times for master keyed by {station}_{phase_hint}
     master_tts = dict()
     master_origin_time = (master.preferred_origin() or master.origins[0]).time
@@ -269,7 +276,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     used_event_ids.append(event_id)
                     used_matched_streams.append(_matched_stream)
             ccc_out, used_chans = _concatenate_and_correlate(
-                template=_master_stream, streams=used_matched_streams, cores=1)
+                template=_master_stream, streams=used_matched_streams,
+                cores=max_workers)
             # Convert ccc_out to pick-time
             for i, used_event_id in enumerate(used_event_ids):
                 for j, chan in enumerate(used_chans[i]):
@@ -405,12 +413,12 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
-        pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate)
+        pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate,
+        max_workers=max_workers)
     if correlation:
         for arg, name in correlation_kwargs.items():
             assert arg is not None, "{0} is required for correlation".format(
                 name)
-    max_workers = max_workers or cpu_count()
     # Ensure all events have locations and picks.
     event_id_mapper = _generate_event_id_mapper(
         catalog=catalog, event_id_mapper=event_id_mapper)
@@ -423,26 +431,22 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
-        sub_catalogs = [[ev for i, ev in enumerate(catalog)
+        sub_catalogs = ([ev for i, ev in enumerate(catalog)
                          if master_filter[i]]
-                        for master_filter in distance_filter]
-        differential_times = {}
+                        for master_filter in distance_filter)
         additional_args.update(correlation_kwargs)
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            results = [executor.submit(
-                _compute_dt_correlations, sub_catalog, master,
-                **additional_args)
-                for sub_catalog, master in zip(sub_catalogs, catalog)]
-        for master, result in zip(catalog, results):
-            differential_times.update(
-                {master.resource_id.id: result.result()})
+        differential_times = {
+            master.resource_id.id:
+                _compute_dt_correlations(
+                    sub_catalog, master, **additional_args)
+            for sub_catalog, master in zip(sub_catalogs, catalog)}
     else:
         # Reformat catalog to sparse catalog
         sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
 
-        sub_catalogs = [[ev for i, ev in enumerate(sparse_catalog)
+        sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                          if master_filter[i]]
-                        for master_filter in distance_filter]
+                        for master_filter in distance_filter)
         differential_times = {
             master.resource_id: _compute_dt(
                 sub_catalog, master, **additional_args)
@@ -516,7 +520,8 @@ def _filter_stream(event_id, st, lowcut, highcut):
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
                        highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
-                       interpolate=False, max_workers=None, *args, **kwargs):
+                       interpolate=False, max_workers=None,
+                       parallel_process=False, *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -559,6 +564,10 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     :param max_workers:
         Maximum number of workers for parallel processing. If None then all
         threads will be used.
+    :type parallel_process: bool
+    :param parallel_process:
+        Whether to process streams in parallel or not. Experimental, may use
+        too much memory.
 
     :rtype: dict
     :returns: event_id_mapper
@@ -575,17 +584,22 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         Logger.warning("cc_thresh is depreciated, use min_cc instead")
     max_workers = max_workers or cpu_count()
     # Process the streams
-    if not (lowcut is None and highcut is None):
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            func = partial(_meta_filter_stream, stream_dict=stream_dict,
-                           lowcut=lowcut, highcut=highcut)
-            results = executor.map(
-                func, stream_dict.keys(), 
-                chunksize=max(1, len(stream_dict) // max_workers))
-        processed_stream_dict = dict()
-        for result in results:
-            processed_stream_dict.update(result)
-
+    processed_stream_dict = dict()
+    if parallel_process:
+        if not (lowcut is None and highcut is None):
+            with pool_boy(Pool, len(stream_dict), cores=max_workers) as pool:
+                func = partial(
+                    _meta_filter_stream, stream_dict=stream_dict,
+                    lowcut=lowcut, highcut=highcut)
+                results = [pool.apply_async(func, key)
+                           for key in stream_dict.keys()]
+            for result in results:
+                processed_stream_dict.update(result.get())
+    else:
+        for key in stream_dict.keys():
+            processed_stream_dict.update(_meta_filter_stream(
+                stream_dict=stream_dict, lowcut=lowcut, highcut=highcut,
+                event_id=key))
     correlation_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=True, event_id_mapper=event_id_mapper,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,

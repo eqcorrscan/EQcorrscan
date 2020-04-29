@@ -18,11 +18,10 @@ logging.basicConfig(
 
 
 def mktemplates(
-        network_code='GEONET', plot=True,
-        publicIDs=['2016p008122', '2016p008353',
-                   '2016p008155', '2016p008194']):
+        network_code='GEONET', plot=True, publicIDs=None):
     """Functional wrapper to make templates"""
-
+    publicIDs = publicIDs or [
+        '2016p008122', '2016p008353', '2016p008155', '2016p008194']
     client = Client(network_code)
     # We want to download a few events from an earthquake sequence, these are
     # identified by publiID numbers, given as arguments
