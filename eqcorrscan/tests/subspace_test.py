@@ -374,6 +374,7 @@ def get_test_data():
     :return: List of cut templates with no filters applied
     :rtype: list
     """
+    from http.client import IncompleteRead
     from obspy import UTCDateTime
     from eqcorrscan.utils.catalog_utils import filter_picks
     from eqcorrscan.utils.clustering import catalog_cluster
@@ -412,7 +413,12 @@ def get_test_data():
     t2 = UTCDateTime(2016, 5, 11, 20)
     bulk_info = [('NZ', stachan[0], '10', stachan[1][0:2] + '?', t1, t2)
                  for stachan in stachans]
-    st = client.get_waveforms_bulk(bulk_info)
+    st = Stream()
+    for _bulk in bulk_info:
+        try:
+            st += client.get_waveforms(*_bulk)
+        except IncompleteRead:
+            print(f"Could not download {_bulk}")
     st.merge().detrend('simple').trim(starttime=t1, endtime=t2)
     return design_set, st
 

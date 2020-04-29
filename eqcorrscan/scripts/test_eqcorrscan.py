@@ -160,7 +160,7 @@ def check_path_conftest(conftest):
         for line in f:
             line.rstrip("\n")
             if line.startswith("PKG_PATH"):
-                lines_out.append("PKG_PATH = '{0}'".format(PKG_PATH))
+                lines_out.append("PKG_PATH = r'{0}'".format(PKG_PATH))
             else:
                 lines_out.append(line)
     with open(conftest, "w") as f:

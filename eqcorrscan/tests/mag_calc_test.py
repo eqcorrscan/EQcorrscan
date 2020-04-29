@@ -8,14 +8,17 @@ import os
 import glob
 import logging
 
+from typing import Tuple
+from http.client import IncompleteRead
+
 from obspy.core.event import Event, Pick, WaveformStreamID
-from obspy import UTCDateTime, read, Trace
+from obspy import UTCDateTime, read, Trace, read_inventory, Stream
 from obspy.clients.fdsn import Client
 
 from eqcorrscan.utils import mag_calc
 from eqcorrscan.utils.mag_calc import (
     dist_calc, _sim_WA, _max_p2t, _pairwise, svd_moments, amp_pick_event,
-    _snr, relative_amplitude, relative_magnitude)
+    _snr, relative_amplitude, relative_magnitude, PAZ_WA)
 from eqcorrscan.utils.clustering import svd
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
@@ -270,7 +273,6 @@ class TestRelativeAmplitudes(unittest.TestCase):
         self.assertEqual(len(relative_magnitudes), 0)
 
 
-# TODO: None of these actually test for accuracy.
 class TestAmpPickEvent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -287,7 +289,12 @@ class TestAmpPickEvent(unittest.TestCase):
             origin_time - 10, origin_time + 120)
             for p in cls.event.picks]
         cls.inventory = client.get_stations_bulk(bulk, level='response')
-        cls.st = client.get_waveforms_bulk(bulk)
+        cls.st = Stream()
+        for _bulk in bulk:
+            try:
+                cls.st += client.get_waveforms(*_bulk)
+            except IncompleteRead:
+                print(f"Could not download {_bulk}")
         cls.available_stations = len({p.waveform_id.station_code
                                       for p in cls.event.picks})
 
@@ -314,7 +321,7 @@ class TestAmpPickEvent(unittest.TestCase):
             inventory=self.inventory, remove_old=True)
         missed = False
         for warning in self.log_messages['warning']:
-            if 'no station and channel match' in warning:
+            if 'not found in the stream' in warning:
                 missed = True
         self.assertTrue(missed)
         self.assertEqual(len(picked_event.amplitudes),
@@ -369,7 +376,111 @@ class TestAmpPickEvent(unittest.TestCase):
             event=self.event.copy(), st=self.st.copy(),
             inventory=self.inventory, remove_old=True,
             var_wintype=False, pre_filt=False)
-        self.assertEqual(len(picked_event.amplitudes), 4)
+        self.assertEqual(len(picked_event.amplitudes), 5)
+
+
+class TestAmpPickAccuracy(unittest.TestCase):
+    sampling_rate = 100.0  # Sampling-rate in Hz for synthetic
+    length = 60.0  # Length in seconds for synthetic
+    inv = read_inventory().select(
+        station="RJOB", channel="EHZ", starttime=UTCDateTime(2020, 1, 1))
+
+    def simulate_trace(
+        self,
+        max_amplitude: float = 1e-4,
+        width: float = 0.2,
+        noise: bool = False,
+    ) -> Tuple[Trace, Event, float, float]:
+        """ Make a wood-anderson trace and convolve it with a response. """
+        from scipy.signal import ricker
+
+        # Make dummy data in meters on Wood Anderson
+        np.random.seed(42)
+        if noise:
+            data = np.random.randn(int(self.sampling_rate * self.length))
+        else:
+            data = np.zeros(int(self.sampling_rate * self.length))
+        wavelet = ricker(
+            int(self.sampling_rate * self.length),
+            a=(width * self.sampling_rate / 4))
+        wavelet /= wavelet.max()
+        wavelet *= max_amplitude
+        vals = sorted([(val, ind) for ind, val in enumerate(wavelet)],
+                      key=lambda x: x[0])
+        period = abs(vals[0][1] - vals[1][1]) / self.sampling_rate
+        half_max = (wavelet.max() - wavelet.min()) / 2
+
+        data += wavelet
+
+        # Make dummy trace
+        tr = Trace(data=data, header=dict(
+            station=self.inv[0][0].code,
+            network=self.inv[0].code,
+            location=self.inv[0][0][0].location_code,
+            channel=self.inv[0][0][0].code,
+            sampling_rate=self.sampling_rate,
+            starttime=UTCDateTime(2020, 1, 1)))
+        tr = tr.detrend()
+
+        # Remove Wood-Anderson response and simulate seismometer
+        resp = self.inv[0][0][0].response
+        paz = resp.get_paz()
+        paz = {
+            'poles': paz.poles,
+            'zeros': paz.zeros,
+            'gain': paz.normalization_factor,
+            'sensitivity': resp.instrument_sensitivity.value,
+        }
+        tr = tr.simulate(
+            paz_remove=PAZ_WA, paz_simulate=paz)
+
+        # Make an event
+        mid_point = tr.stats.starttime + 0.5 * (
+                tr.stats.endtime - tr.stats.starttime)
+        event = Event(picks=[
+            Pick(phase_hint="P",
+                 time=mid_point - 3.0,
+                 waveform_id=WaveformStreamID(
+                     network_code=tr.stats.network,
+                     station_code=tr.stats.station,
+                     location_code=tr.stats.location,
+                     channel_code=tr.stats.channel)),
+            Pick(phase_hint="S", time=mid_point,
+                 waveform_id=WaveformStreamID(
+                     network_code=tr.stats.network,
+                     station_code=tr.stats.station,
+                     location_code=tr.stats.location,
+                     channel_code=tr.stats.channel))])
+        return tr, event, period, half_max
+
+    def test_no_filter(self):
+        max_amplitude, width = 1e-3, 0.2
+        tr, event, period_at_max, half_max = self.simulate_trace(
+            max_amplitude=max_amplitude, width=width)
+        event_out = amp_pick_event(
+            event=event, st=Stream(tr), inventory=self.inv,
+            pre_filt=False)
+        self.assertLessEqual(
+            abs(event_out.amplitudes[0].period - period_at_max), 0.05)
+        self.assertLessEqual(
+            abs(event_out.amplitudes[0].generic_amplitude - half_max), 1e-5)
+
+    def test_range_of_freqs(self):
+        max_amplitude, width = 1e-3, 0.2
+        tr, event, period_at_max, half_max = self.simulate_trace(
+            max_amplitude=max_amplitude, width=width)
+        for lowcut in range(1, 5, 1):
+            for highcut in range(5, 50, 2):
+                if lowcut >= highcut:
+                    continue
+                event_out = amp_pick_event(
+                    event=event.copy(), st=Stream(tr), inventory=self.inv,
+                    pre_filt=True, lowcut=lowcut, highcut=highcut)
+                self.assertLessEqual(
+                    abs(event_out.amplitudes[0].period - period_at_max), 0.1)
+                self.assertLessEqual(
+                    abs(event_out.amplitudes[0].generic_amplitude - half_max),
+                    1e-3)
 
 
 if __name__ == '__main__':
