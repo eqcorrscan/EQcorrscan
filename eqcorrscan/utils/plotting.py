@@ -1358,8 +1358,6 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
     else:
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
-    #template.sort(['starttime', 'network', 'station', ])
-    
     # Sort the template by epicentral distance
     if event:
         if event.picks:
@@ -1368,6 +1366,10 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
                     continue
                 # sort template  stream list by distance
                 for tr in template:
+                    # Don't change stats.distance if it is set already
+                    if hasattr(tr.stats, 'distance'):
+                        if tr.stats.distance is not None:
+                            continue
                     # In case no arrival for station is found, set distance to
                     # a large value (999 degreese) so it appears last in sort.
                     tr.stats.distance = 999
@@ -1378,12 +1380,10 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
                             if arrival.distance is not None:
                                 tr.stats.distance = arrival.distance
                                 break
-                # Trying the first origin that returns arrivals is enough, 
+                # Trying the first origin that returns arrivals is enough,
                 # break origin-loop here.
                 break
             template.traces.sort(key=lambda tr: tr.stats.distance)
-    
-    
     lengths = []
     lines = []
     labels = []
