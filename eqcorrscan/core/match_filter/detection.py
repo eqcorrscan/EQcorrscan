@@ -301,7 +301,8 @@ class Detection(object):
                     except IndexError:
                         Logger.error("No pick for trace")
                 ev.picks.append(new_pick)
-        if estimate_origin and template is not None and template.event is not None:
+        if estimate_origin and template is not None\
+                and template.event is not None:
             try:
                 template_origin = (template.event.preferred_origin() or
                                    template.event.origins[0])

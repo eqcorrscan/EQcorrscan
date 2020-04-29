@@ -838,7 +838,8 @@ class Party(object):
         """
         process_cores = process_cores or cores
         template_groups = group_templates(
-            [_f.template for _f in self.families])
+            [_f.template for _f in self.families
+             if len(_f) > 0])  # Fix for #341
         catalog = Catalog()
         for template_group in template_groups:
             family = [_f for _f in self.families
@@ -949,10 +950,13 @@ class Party(object):
 
     def min_chans(self, min_chans):
         """
-        Remove detections with fewer channels used than min_chans
+        Remove detections using min_chans or fewer channels.
 
         :type min_chans: int
-        :param min_chans: Minimum number of channels to allow a detection.
+        :param min_chans:
+            Detections using more than this number of channels are maintained.
+            Note that this is a strict `if detection.no_chans > min_chans:`
+            rather than >=. Maintained for backwards compatability.
         :return: Party
 
         .. Note:: Works in place on Party.

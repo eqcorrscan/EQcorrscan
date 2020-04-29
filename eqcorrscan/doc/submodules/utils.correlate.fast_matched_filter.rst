@@ -189,7 +189,7 @@ write a function like:
             chans.append([tr.id for tr in template])
         return cccsums, no_chans, chans
 
-This function can then either be passed to any of the matched_filter_ functions
+This function-name ("fmf") can then either be passed to any of the matched_filter_ functions
 and methods, or set as a default correlation routine as shown in set_correlation_.
 
 .. _matched_filter: core.match_filter.html
