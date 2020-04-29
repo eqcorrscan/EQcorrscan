@@ -1295,7 +1295,9 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
     {plotting_kwargs}
     :type event: obspy.core.event.event.Event
     :param event: Event object containing picks, and optionally information on
-                  the origin and arrivals.
+                  the origin and arrivals. When supplied, function tries to
+                  extract hypocentral distance from origin/arrivals, to sort
+                  the template traces by that hypocentral distance.
 
     :returns: :class:`matplotlib.figure.Figure`
 
