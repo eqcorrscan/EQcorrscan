@@ -1281,8 +1281,8 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def pretty_template_plot(template, background=False, picks=False, event=False,
-                         **kwargs):
+def pretty_template_plot(template, background=False, event=False,
+                         sort_by="distance", **kwargs):
     """
     Plot of a single template, possibly within background data.
 
@@ -1290,14 +1290,16 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
     :param template: Template stream to plot
     :type background: obspy.core.stream.stream
     :param background: Stream to plot the template within.
-    :type picks: list
-    :param picks: List of :class:`obspy.core.event.origin.Pick` picks.
-    {plotting_kwargs}
     :type event: obspy.core.event.event.Event
-    :param event: Event object containing picks, and optionally information on
-                  the origin and arrivals. When supplied, function tries to
-                  extract hypocentral distance from origin/arrivals, to sort
-                  the template traces by that hypocentral distance.
+    :param event:
+        Event object containing picks, and optionally information on the origin
+        and arrivals. When supplied, function tries to extract hypocentral
+        distance from origin/arrivals, to sort the template traces by
+        hypocentral distance.
+    :type sort_by: string
+    :param sort_by: 
+        "distance" (default) or "pick_time" (not relevant if no event supplied)
+    {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
@@ -1325,7 +1327,7 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
     ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     >>> template = template_gen._template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
-    ...                      picks=event.picks) # doctest: +SKIP
+    ...                      event=event) # doctest: +SKIP
 
     .. plot::
 
@@ -1348,10 +1350,17 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         template = template_gen._template_gen(event.picks, st, 2)
-        pretty_template_plot(template, background=st,
-                             picks=event.picks)
+        pretty_template_plot(template, background=st, event=event)
     """
+    from eqcorrscan.utils.catalog_utils import get_ordered_trace_indices
     import matplotlib.pyplot as plt
+    picks = kwargs.get("picks", None)
+    if picks:
+        Logger.warning(
+            "The picks argument is depreciated, please use a full event. "
+            "This argument will be removed in future versions.")
+    elif event:
+        picks = event.picks
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1360,32 +1369,10 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
     else:
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
-    # Sort the template by epicentral distance
-    if event:
-        if event.picks:
-            for origin in event.origins:
-                if not origin.arrivals:
-                    continue
-                # sort template  stream list by distance
-                for tr in template:
-                    # Don't change stats.distance if it is set already
-                    if hasattr(tr.stats, 'distance'):
-                        if tr.stats.distance is not None:
-                            continue
-                    # In case no arrival for station is found, set distance to
-                    # a large value (999 degreese) so it appears last in sort.
-                    tr.stats.distance = 999
-                    # find the arrival that matches the trace
-                    for arrival in origin.arrivals:
-                        pick = arrival.pick_id.get_referred_object()
-                        if tr.stats.station == pick.waveform_id.station_code:
-                            if arrival.distance is not None:
-                                tr.stats.distance = arrival.distance
-                                break
-                # Trying the first origin that returns arrivals is enough,
-                # break origin-loop here.
-                break
-            template.traces.sort(key=lambda tr: tr.stats.distance)
+    trace_indices_ordered = get_ordered_trace_indices(template, event=event,
+                                                      sort_by=sort_by)
+    if trace_indices_ordered is not None:
+        template = Stream([template[j] for j in trace_indices_ordered])
     lengths = []
     lines = []
     labels = []
@@ -1424,11 +1411,6 @@ def pretty_template_plot(template, background=False, picks=False, event=False,
         axis.set_ylabel('.'.join([tr.stats.station, tr.stats.channel]),
                         rotation=0, horizontalalignment='right')
         axis.yaxis.set_ticks([])
-        # If an event is given, but no picks are specifically supplied, then
-        # extract picks from the event.
-        if event:
-            if event.picks:
-                picks = event.picks
         # Plot the picks if they are given
         if picks:
             tr_picks = [pick for pick in picks if

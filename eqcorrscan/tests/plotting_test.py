@@ -89,7 +89,7 @@ class EventPlottingMethods(unittest.TestCase):
     @pytest.mark.mpl_image_compare
     def test_pretty_template_plot(self):
         fig = pretty_template_plot(
-            self.template, background=self.st, picks=self.event.picks,
+            self.template, background=self.st, event=self.event,
             show=False, return_figure=True, title="test template")
         return fig
 
@@ -99,10 +99,19 @@ class EventPlottingMethods(unittest.TestCase):
             self.template, show=False, return_figure=True)
         return fig
 
+    @pytest.mark.mpl_image_compare
     def test_pretty_template_plot_sort(self):
         fig = pretty_template_plot(
             self.template, background=self.st, event=self.event,
             show=False, return_figure=True, title="sorted test template")
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_pretty_template_plot_sort_by_picktime(self):
+        fig = pretty_template_plot(
+            self.template, background=self.st, event=self.event,
+            sort_by="pick_time", show=False, return_figure=True,
+            title="sorted test template")
         return fig
 
     @pytest.mark.mpl_image_compare

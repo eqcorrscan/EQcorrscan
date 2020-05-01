@@ -224,6 +224,76 @@ def _get_origin(event):
         raise IndexError('No origin set, cannot constrain')
     return origin
 
+def get_ordered_trace_indices(stream, event, sort_by="distance"):
+    """
+    Sort the traces of a template by hypocentral distance.
+
+    :type stream: obspy.core.stream.Stream
+    :param stream: Stream to sort
+    :type event: obspy.core.event.event.Event
+    :param event: 
+        Event object. Only if the event contains picks, and an origin and asso-
+        ciated arrivals (for sort_by="distance"), then it can sort the traces.
+    :type sort_by: string
+    :param sort_by: "distance" (default) or "pick_time"
+
+    :return:
+        List of indices ordered according to the traces in the sorted Stream.
+    :rtype: List
+
+    .. note::
+        Indices of traces without associated sortable information will appear
+        last in returned order of indices. If event doesn't contain enough
+        information, None will be returned.
+        For sort_by="pick_time", the earliest pick time at the station is rele-
+        vant, independant of channel. To sort a template-stream by picktime,
+        use stream.sort(['starttime']) instead.
+    """
+    from operator import itemgetter
+    from obspy import UTCDateTime
+    
+    if not event:
+        Logger.warning('No event information found to sort stream.')
+        return None
+    if not event.picks:
+        Logger.warning('No picks found to sort stream.')
+        return None
+    origin = _get_origin(event)
+    value_list = [None for i in range(len(stream))]
+    if sort_by == "distance":
+        for j, tr in enumerate(stream):
+            # Don't change stats.distance if it is set already
+            if hasattr(tr.stats, 'distance'):
+                if tr.stats.distance is not None:
+                    value_list[j] = tr.stats.distance
+                    continue
+            # Set default distance to 999 degrees.
+            #tr.stats.distance = 999
+            value_list[j] = 999
+            # find the arrival that matches the trace
+            for arrival in origin.arrivals:
+                pick = arrival.pick_id.get_referred_object()
+                if tr.stats.station == pick.waveform_id.station_code:
+                    if arrival.distance is not None:
+                        #tr.stats.distance = arrival.distance
+                        value_list[j] = arrival.distance
+                        break
+    elif sort_by == "pick_time":
+        for j, tr in enumerate(stream):
+            value_list[j] = UTCDateTime(9999,12,31,23,59,59)
+            for pick in event.picks:
+                if tr.stats.station == pick.waveform_id.station_code and (tr.\
+                    stats.channel == pick.waveform_id.channel_code or\
+                    (tr.id[-1] in 'NE12' and pick.waveform_id.id in 'NE12' and
+                     tr.id[0:-1] == pick.waveform_id.id[0:-1])):
+                    if pick.time < value_list[j]:
+                        value_list[j] = pick.time
+    else:
+        raise NotImplementedError('Sorting by ' + sort_by + 'not implemented.')
+    trace_indices_ordered, values_sorted = zip(*sorted(enumerate(value_list),
+                                                       key=itemgetter(1)))
+    return trace_indices_ordered
+
 
 if __name__ == "__main__":
     import doctest
