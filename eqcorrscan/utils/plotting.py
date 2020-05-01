@@ -1297,7 +1297,7 @@ def pretty_template_plot(template, background=False, event=False,
         distance from origin/arrivals, to sort the template traces by
         hypocentral distance.
     :type sort_by: string
-    :param sort_by: 
+    :param sort_by:
         "distance" (default) or "pick_time" (not relevant if no event supplied)
     {plotting_kwargs}
 
