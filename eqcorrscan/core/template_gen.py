@@ -320,7 +320,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     starttime = (starttime + min_delta)
                 # Check if this is stupid:
                 if abs(starttime - UTCDateTime(starttime.date)) > 600:
-                    print(abs(starttime - UTCDateTime(starttime.date)))
                     daylong = False
                 starttime = starttime.date
             else:
