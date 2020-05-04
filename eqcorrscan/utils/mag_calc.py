@@ -924,7 +924,8 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                 prefix=f"smi:eqcorrscan{eqcorrscan.__version__}")
             if iaspei_standard:
                 # Remove wood-anderson amplification
-                units, phase_hint = "m", "IAML"
+                units, phase_hint, amplitude_type = (
+                    "m", "IAML", "IAML")
                 # amplitude *= 10 ** 9  # *THIS IS NOT SUPPORTED BY QML*
                 amplitude /= PAZ_WA["sensitivity"]  # Remove WA sensitivity
                 # Set the filter ID to state that sensitivity was removed
@@ -933,9 +934,11 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                     prefix=f"smi:eqcorrscan{eqcorrscan.__version__}")
             else:  # Not IAML, use SI units.
                 if velocity:
-                    units, phase_hint = "m/s", "AML"
+                    units, phase_hint, amplitude_type = (
+                        "m/s", "AML", "AML")
                 else:
-                    units, phase_hint = "m", "AML"
+                    units, phase_hint, amplitude_type = (
+                        "m", "AML", "AML")
             if tr.stats.channel.endswith("Z"):
                 magnitude_hint = "MLv"
                 # MLv is ML picked on the vertical channel
@@ -954,8 +957,9 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
             event.amplitudes.append(Amplitude(
                 generic_amplitude=amplitude, period=period,
                 pick_id=pick.resource_id, waveform_id=pick.waveform_id,
-                unit=units, magnitude_hint=magnitude_hint, type='AML',
-                category='point', method_id=method_id, filter_id=filter_id))
+                unit=units, magnitude_hint=magnitude_hint, 
+                type=amplitude_type, category='point', method_id=method_id,
+                filter_id=filter_id))
     return event
 
 
