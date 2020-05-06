@@ -906,6 +906,11 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                 _, gain = sosfreqz(sos, worN=[1 / period],
                                    fs=tr.stats.sampling_rate)
                 gain = np.abs(gain[0])  # Convert from complex to real.
+                if gain < 1e-2:
+                    Logger.warning(
+                        f"Pick made outside stable pass-band of filter "
+                        f"on {tr.id}, rejecting")
+                    continue
                 amplitude /= gain
                 Logger.debug(f"Removed filter gain: {gain}")
             # Write out the half amplitude, approximately the peak amplitude as
