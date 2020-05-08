@@ -2187,15 +2187,18 @@ def subspace_fc_plot(detector, stachans, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
+def mapplot(catalog=None, locations=None, bgcolor='#909090', method='depth',
+            **kwargs):
     """
     Plot seismicity in a 2D map with two cross section along latitude and
     longitude.
 
-    :type events: list or 'obspy.core.event.catalog.Catalog'
-    :param events:
-        list of one tuple per event of (lat, long, depth(optional)) with
-        down positive or obspy catalog.
+    :type catalog: obspy.core.event.catalog.Catalog
+    :param catalog: Obspy catalog class containing event metadata
+    :type locations: list
+    :param locations:
+        list of one tuple per event of (lat, long, depth, time) with
+        down positive, if location doesn't have time or depth then set to zero.
     :type bgcolor: string
     :param bgcolor: all name or RGB code that acceptable in matplotlib.
     :type method: string
@@ -2213,7 +2216,6 @@ def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    from obspy import Catalog
     # set default parameters of plt.scatter
     default_parameters = {'cmap': 'jet_r', 'marker': ',', 's': 1, 'lw': 1}
     for key in default_parameters.keys():
@@ -2222,25 +2224,31 @@ def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
     # set default parameters of _finalise_figure
     if "size" not in kwargs.keys():
         kwargs.update({"size": (10, 13)})
-    if isinstance(events, list):
-        if len(events[0]) == 4:
-            lat, lon, dep, time = zip(*events)
-            dt = [t-time[0] for t in time]
-        elif len(events[0]) == 3:
-            lat, lon, dep = zip(*events)
-    elif isinstance(events, Catalog):
-        lat, lon, dep, time = [], [], [], []
-        for ev in events:
-            origin = ev.origins[0]
-            lat.append(origin.latitude)
-            lon.append(origin.longitude)
-            dep.append(origin.depth)
-            time.append(origin.time)
-        dt = [t-time[0] for t in time]
+    # making coordinates
+    assert (catalog and locations) or catalog or locations,\
+        "Requires catalog and/or locations"
+    locations = locations or []
+    msg = "An event of the catalog got ignored, because it didn't have origin"
+    if catalog:
+        for event in catalog:
+            try:
+                origin = event.preferred_origin() or event.origins[0]
+            except IndexError:  # No origin found
+                Logger.warning(msg)
+                continue
+            _lat = origin.latitude
+            _lon = origin.longitude
+            _dep = origin.depth / 1000
+            _time = origin.time
+            locations.append((_lat, _lon, _dep, _time))
+    if method in ['time', 'sequence']:
+        locations.sort(key=lambda ind: ind[3])
+    lat, lon, dep, time = zip(*locations)
     if method == 'depth':
         c0, c1, c2 = dep, lon, lat
         label0, label1, label2 = 'Depth (km)', 'Longitude', 'Latitude'
     elif method == 'time':
+        dt = [t - time[0] for t in time]
         c0 = c1 = c2 = dt
         label = 'Origin-time offset from {time[0]} (s)'
     elif method == 'sequence':
@@ -2270,7 +2278,7 @@ def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
     map2 = ax2.scatter(lon, dep, c=c2, **kwargs)
     # location of color bar
     if method == 'depth':
-        # location of colorbar
+        #
         divider0 = make_axes_locatable(ax0)
         cax0 = divider0.append_axes("top", size="4%", pad="2%")
         cbar0 = fig.colorbar(map0, ax=ax0, cax=cax0, orientation="horizontal")
