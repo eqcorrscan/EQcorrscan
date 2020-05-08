@@ -2187,8 +2187,8 @@ def subspace_fc_plot(detector, stachans, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def mapplot(catalog=None, locations=None, bgcolor='#909090', method='depth',
-            **kwargs):
+def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
+                   method='depth', **kwargs):
     """
     Plot seismicity in a 2D map with two cross section along latitude and
     longitude.
