@@ -2260,13 +2260,13 @@ def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
         dt = [t-time[0] for t in time]
     if method == 'depth':
         c0, c1, c2 = dep, lon, lat
-        label0, label1, label2 = 'Depth', 'Longitue', 'Latitude'
+        label0, label1, label2 = 'Depth (km)', 'Longitude', 'Latitude'
     elif method == 'time':
         c0 = c1 = c2 = dt
-        label = 'second from first event'
+        label = 'Origin-time offset from {time[0]} (s)'
     elif method == 'sequence':
         c0 = c1 = c2 = range(len(dep))
-        label = 'sequence of occuring'
+        label = 'Event number'
     fig = plt.figure()
     gs = gridspec.GridSpec(2, 2, width_ratios=[3, 1], height_ratios=[3, 1],
                            wspace=0.01, hspace=0.01)
