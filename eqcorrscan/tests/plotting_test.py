@@ -17,7 +17,7 @@ from eqcorrscan.utils.plotting import (
     detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
     pretty_template_plot, plot_repicked, svd_plot, plot_synth_real,
     freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot,
-    mapplot)
+    twoD_seismplot)
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2
@@ -53,39 +53,45 @@ class SeimicityPlottingMethods(unittest.TestCase):
             cls.nodes.append((Lat, Lon, Dep, time))
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_depth_catalog(self):
-        fig = mapplot(self.catalog, method='depth', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_depth_catalog(self):
+        fig = twoD_seismplot(
+            catalg=self.catalog, method='depth',
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_time_catalog(self):
-        fig = mapplot(self.catalog, method='time', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_time_catalog(self):
+        fig = twoD_seismplot(
+            catalog=self.catalog, method='time',
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_sequence_catalog(self):
-        fig = mapplot(self.catalog, method='sequence', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_sequence_catalog(self):
+        fig = twoD_seismplot(
+            catalog=self.catalog, method='sequence',
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_depth_nodes(self):
-        fig = mapplot(self.nodes, method='depth', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_depth_locations(self):
+        fig = twoD_seismplot(
+            locations=self.nodes, method='depth',
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_time_nodes(self):
-        fig = mapplot(self.nodes, method='time', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_time_locations(self):
+        fig = twoD_seismplot(
+            locations=self.nodes, method='time',
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_mapplot_sequence_nodes(self):
-        fig = mapplot(self.nodes, method='sequence', show=False,
-                      return_figure=True)
+    def test_twoD_seismplot_sequence_nodes(self):
+        fig = twoD_seismplot(
+            locations=self.nodes, method='sequence',
+            show=False, return_figure=True)
         return fig
 
 
