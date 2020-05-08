@@ -2187,8 +2187,7 @@ def subspace_fc_plot(detector, stachans, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def mapplot(events, bgcolor='#909090', method='depth', cpalette='jet_r',
-            s=1, lw=1, marker=',', **kwargs):
+def mapplot(events, bgcolor='#909090', method='depth', **kwargs):
     """
     Plot seismicity in a 2D map with two cross section along latitude and
     longitude.
@@ -2203,22 +2202,6 @@ def mapplot(events, bgcolor='#909090', method='depth', cpalette='jet_r',
     :param method:
         make color pallete according to thrid part of area 'depth' or
         occouring time 'time' or occouring sequence 'sequence'.
-    :type cpalette: string
-    :param cpalette:
-        color palette for drawing events. acceptable with matplotlib.
-    :type s: scalar or array_like, shape (n, ), default: None
-    :param s:
-        The marker size in points**2.
-        Default is rcParams['lines.markersize'] ** 2.
-    :type lw: scalar or array_like, default: None
-    :param lw:
-        The linewidth of the marker edges.
-        If None, defaults to rcParams lines.linewidth.
-    :type marker: string
-    :param marker:
-        The marker style. *marker* can be either an instance of the class
-        or the text shorthand for a particular marker.
-        Defaults to '.'
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -2231,7 +2214,14 @@ def mapplot(events, bgcolor='#909090', method='depth', cpalette='jet_r',
     from matplotlib import gridspec
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     from obspy import Catalog
-    # set parameter
+    # set default parameters of plt.scatter
+    default_parameters = {'cmap': 'jet_r', 'marker': ',', 's': 1, 'lw': 1}
+    for key in default_parameters.keys():
+        if key not in kwargs.keys():
+            kwargs[key] = default_parameters[key]
+    # set default parameters of _finalise_figure
+    if "size" not in kwargs.keys():
+        kwargs.update({"size": (10, 13)})
     if isinstance(events, list):
         if len(events[0]) == 4:
             lat, lon, dep, time = zip(*events)
@@ -2264,23 +2254,20 @@ def mapplot(events, bgcolor='#909090', method='depth', cpalette='jet_r',
     ax0.set_facecolor(bgcolor)
     ax0.set_ylabel('Latitude')
     ax0.set_xticks([])
-    map0 = ax0.scatter(lon, lat, marker=marker, c=c0, cmap=cpalette,
-                       lw=lw, s=s)
+    map0 = ax0.scatter(lon, lat, c=c0, **kwargs)
     # cross section paralel to latitude (lat ,depth)
     ax1 = fig.add_subplot(gs[1])
     ax1.set_facecolor(bgcolor)
     ax1.set_yticks([])
     ax1.set_xlabel('Depth')
     ax1.invert_xaxis()
-    map1 = ax1.scatter(dep, lat, marker=marker, c=c1, cmap=cpalette,
-                       lw=lw, s=s)
+    map1 = ax1.scatter(dep, lat, c=c1, **kwargs)
     # cross section paralel to longitude (lon ,depth)
     ax2 = plt.subplot(gs[2])
     ax2.set_facecolor(bgcolor)
     ax2.set_ylabel('Depth')
     ax2.set_xlabel('Longitude')
-    map2 = ax2.scatter(lon, dep, marker=marker, c=c2, cmap=cpalette,
-                       lw=lw, s=s)
+    map2 = ax2.scatter(lon, dep, c=c2, **kwargs)
     # location of color bar
     if method == 'depth':
         # location of colorbar
