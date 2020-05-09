@@ -744,6 +744,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                                  pick.waveform_id.location_code ==
                                  tr.stats.location]
             else:
+                Logger.warning(
+                    'Not checking full SEED id compatibility between' +
+                    ' picks and waveforms. Checking full net.sta.loc.chan ' +
+                    'compatibility will be default behavior in future release')
                 starttime = {'station': tr.stats.station,
                              'channel': tr.stats.channel, 'picks': []}
                 station_picks = [pick for pick in picks_copy
