@@ -1442,11 +1442,13 @@ def pretty_template_plot(template, background=False, event=False,
     axis.set_xlim([0, max(lengths)])
     if len(template) > 1:
         axis = axes[len(template) - 1]
+        axes[0].legend(lines, labels, loc='upper right', framealpha=1)
+        axes[0].set_zorder(2)
     else:
         axis = axes
+        axis.legend(lines, labels, loc='upper right', framealpha=1)
+        axis.set_zorder(2)
     axis.set_xlabel('Time (s) from start of template')
-    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
-    axes[0].set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:
