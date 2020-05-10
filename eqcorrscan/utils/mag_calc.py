@@ -962,7 +962,7 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
             event.amplitudes.append(Amplitude(
                 generic_amplitude=amplitude, period=period,
                 pick_id=pick.resource_id, waveform_id=pick.waveform_id,
-                unit=units, magnitude_hint=magnitude_hint, 
+                unit=units, magnitude_hint=magnitude_hint,
                 type=amplitude_type, category='point', method_id=method_id,
                 filter_id=filter_id))
     return event
