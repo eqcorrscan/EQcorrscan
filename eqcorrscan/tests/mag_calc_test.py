@@ -482,6 +482,21 @@ class TestAmpPickAccuracy(unittest.TestCase):
                     abs(event_out.amplitudes[0].generic_amplitude - half_max),
                     1e-3)
 
+    def test_iaspei(self):
+        max_amplitude, width = 1e-3, 0.2
+        tr, event, period_at_max, half_max = self.simulate_trace(
+            max_amplitude=max_amplitude, width=width)
+        event_out = amp_pick_event(
+            event=event, st=Stream(tr), inventory=self.inv,
+            pre_filt=False, iaspei_standard=True)
+        self.assertLessEqual(
+            abs((event_out.amplitudes[0].generic_amplitude *
+                 PAZ_WA["sensitivity"]) - half_max), 1e-5)
+
+    def test_velocity(self):
+        # TODO
+        return
+
 
 if __name__ == '__main__':
     unittest.main()
