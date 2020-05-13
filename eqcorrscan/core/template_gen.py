@@ -807,8 +807,15 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     for _starttime in starttimes:
         Logger.info(f"Working on channel {_starttime['station']}."
                     f"{_starttime['channel']}")
-        tr = st.select(
-            station=_starttime['station'], channel=_starttime['channel'])[0]
+        if check_full_seed:
+            tr = st.select(
+                network=_starttime['network'],
+                station=_starttime['station'],
+                location=_starttime['location'],
+                channel=_starttime['channel'])[0]
+        else:
+            tr = st.select(
+                station=_starttime['station'], channel=_starttime['channel'])[0]
         Logger.info(f"Found Trace {tr}")
         used_tr = False
         for pick in _starttime['picks']:
