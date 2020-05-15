@@ -11,6 +11,7 @@ http://quakesearch.geonet.org.nz/services/1.0.0/csv?bbox=175.37956,-40.97912,175
 
 import logging
 
+from http.client import IncompleteRead
 from obspy.clients.fdsn import Client
 from obspy import UTCDateTime, Stream
 
@@ -36,7 +37,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
         minlatitude=-40.98, maxlatitude=-40.85, minlongitude=175.4,
         maxlongitude=175.5, starttime=UTCDateTime(2016, 5, 1),
         endtime=UTCDateTime(2016, 5, 20))
-    print("Downloaded a catalog of %i events" % len(cat))
+    print(f"Downloaded a catalog of {len(cat)} events")
     # This gives us a catalog of events - it takes a while to download all
     # the information, so give it a bit!
     # We will generate a five station, multi-channel detector.
@@ -59,16 +60,19 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
     design_set = []
     st = Stream()
     for event in cluster:
-        print("Downloading for event {0}".format(event.resource_id.id))
+        print(f"Downloading for event {event.resource_id.id}")
         bulk_info = []
         t1 = event.origins[0].time
         t2 = t1 + 25.1  # Have to download extra data, otherwise GeoNet will
         # trim wherever suits.
         t1 -= 0.1
         for station, channel in stachans:
-            bulk_info.append(('NZ', station, '*', channel[0:2] + '?', t1, t2))
-        st += client.get_waveforms_bulk(bulk=bulk_info)
-    print("Downloaded %i channels" % len(st))
+            try:
+                st += client.get_waveforms(
+                    'NZ', station, '*', channel[0:2] + '?', t1, t2)
+            except IncompleteRead:
+                print(f"Could not download for {station} {channel}")
+    print(f"Downloaded {len(st)} channels")
     for event in cluster:
         t1 = event.origins[0].time
         t2 = t1 + 25

@@ -264,7 +264,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             catalog = kwargs.get('meta_file')
         elif kwargs.get('meta_file'):
             catalog = read_events(kwargs.get('meta_file'))
-        elif kwargs.get('catalog'):
+        else:
             catalog = kwargs.get('catalog')
         sub_catalogs = [catalog]
         st = kwargs.get('st', Stream())
@@ -288,6 +288,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     temp_list = []
     process_lengths = []
+    catalog_out = Catalog()
 
     if "P_all" in swin or "S_all" in swin or all_horiz:
         all_channels = True
@@ -326,23 +327,22 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 daylong = False
             # Check if the required amount of data have been downloaded - skip
             # channels if arg set.
-            if skip_short_chans:
-                _st = Stream()
-                for tr in st:
-                    if np.ma.is_masked(tr.data):
-                        _len = np.ma.count(tr.data) * tr.stats.delta
-                    else:
-                        _len = tr.stats.npts * tr.stats.delta
-                    if _len < process_len * .8:
-                        Logger.info(
-                            "Data for {0} are too short, skipping".format(
-                                tr.id))
-                    else:
-                        _st += tr
-                st = _st
-                if len(st) == 0:
-                    Logger.info("No data")
-                    continue
+            for tr in st:
+                if np.ma.is_masked(tr.data):
+                    _len = np.ma.count(tr.data) * tr.stats.delta
+                else:
+                    _len = tr.stats.npts * tr.stats.delta
+                if _len < process_len * .8:
+                    Logger.info(
+                        "Data for {0} are too short, skipping".format(
+                            tr.id))
+                    if skip_short_chans:
+                        continue
+                # Trim to enforce process-len
+                tr.data = tr.data[0:int(process_len * tr.stats.sampling_rate)]
+            if len(st) == 0:
+                Logger.info("No data")
+                continue
             if daylong:
                 st = pre_processing.dayproc(
                     st=st, lowcut=lowcut, highcut=highcut,
@@ -397,6 +397,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
+            catalog_out += event
         if save_progress:
             if not os.path.isdir("eqcorrscan_temporary_templates"):
                 os.makedirs("eqcorrscan_temporary_templates")
@@ -408,7 +409,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     format="MSEED")
         del st
     if return_event:
-        return temp_list, catalog, process_lengths
+        return temp_list, catalog_out, process_lengths
     return temp_list
 
 
@@ -770,11 +771,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     # Cut the data
     st1 = Stream()
     for _starttime in starttimes:
-        Logger.info("Working on channel %s.%s" %
-                    (_starttime['station'], _starttime['channel']))
+        Logger.info(f"Working on channel {_starttime['station']}."
+                    f"{_starttime['channel']}")
         tr = st.select(
             station=_starttime['station'], channel=_starttime['channel'])[0]
-        Logger.info("Found Trace {0}".format(tr))
+        Logger.info(f"Found Trace {tr}")
         used_tr = False
         for pick in _starttime['picks']:
             if not pick.phase_hint:

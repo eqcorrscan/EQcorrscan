@@ -219,7 +219,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
-                full_peaks=full_peaks, peak_cores=process_cores, **kwargs)
+                full_peaks=full_peaks, peak_cores=process_cores,
+                **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
@@ -598,6 +599,7 @@ def match_filter(template_names, template_list, st, threshold,
                     raise MatchFilterError(
                         'Template contains masked array, split first')
     if spike_test:
+        Logger.info("Checking for spikes in data")
         _spike_test(st)
     if cores is not None:
         parallel = True
@@ -610,6 +612,7 @@ def match_filter(template_names, template_list, st, threshold,
     templates = [t.copy() for t in template_list]
     _template_names = template_names.copy()  # This can just be a shallow copy
 
+    Logger.info("Reshaping templates")
     stream, templates, _template_names = _prep_data_for_correlation(
         stream=stream, templates=templates, template_names=_template_names)
     if len(templates) == 0:
