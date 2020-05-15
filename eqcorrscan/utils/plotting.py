@@ -2221,35 +2221,41 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
     :type locations: list
     :param locations:
         list of one tuple per event of (lat, long, depth, time) with
-        down positive, if location doesn't have time or depth then set to zero.
+        down positive.
     :type bgcolor: string
-    :param bgcolor: all name or RGB code that acceptable in matplotlib.
+    :param bgcolor: Background's color of map and sections.
+        all name or RGB code that acceptable in matplotlib.
     :type method: string
     :param method:
-        make color pallete according to thrid part of area 'depth' or
-        occouring time 'time' or occouring sequence 'sequence'.
+        making color palette of locations according to 'depth', 'time' or
+        'sequence'.
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
-    .. image:: ../doc/plots/mapplot_depth.png
-    .. image:: ../doc/plots/mapplot_time.png
-    .. image:: ../doc/plots/mapplot_sequrnce.png
+    .. note::
+        If each location doesn't have time or depth, set them to zero.
+    .. note::
+        kwargs accepts all option that available in
+        `matplotlib.axes.Axes.scatter`.
     """
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    # set default parameters of plt.scatter
+    assert (catalog and locations) or catalog or locations,\
+        "Requires catalog and/or locations"
+    # set default parameters of plt.scatter()
     default_parameters = {'cmap': 'jet_r', 'marker': ',', 's': 1, 'lw': 1}
     for key in default_parameters.keys():
         if key not in kwargs.keys():
             kwargs[key] = default_parameters[key]
-    # set default parameters of _finalise_figure
-    if "size" not in kwargs.keys():
-        kwargs.update({"size": (10, 13)})
+    # get parameters of _finalise_figure
+    _kwargs = {}
+    for key in ['title', 'show', 'save', 'savefile', 'return_fig', 'size']:
+        if key in kwargs.keys():
+            _kwargs[key] = kwargs[key]
+            del kwargs[key]
     # making coordinates
-    assert (catalog and locations) or catalog or locations,\
-        "Requires catalog and/or locations"
     locations = locations or []
     msg = "An event of the catalog got ignored, because it didn't have origin"
     if catalog:
@@ -2264,8 +2270,11 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
             _dep = origin.depth / 1000
             _time = origin.time
             locations.append((_lat, _lon, _dep, _time))
+    # sort location according to method
     if method in ['time', 'sequence']:
         locations.sort(key=lambda ind: ind[3])
+    elif method == 'depth':
+        locations.sort(reverse=False, key=lambda ind: ind[2])
     lat, lon, dep, time = zip(*locations)
     if method == 'depth':
         c0, c1, c2 = dep, lon, lat
@@ -2325,7 +2334,7 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
         cax1 = divider1.append_axes("right", size="4%", pad="2%")
         cbar1 = fig.colorbar(map1, ax=ax1, cax=cax1, orientation="vertical")
         cbar1.set_label(label)
-    fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
+    fig = _finalise_figure(fig=fig, **_kwargs)  # pragma: no cover
     return fig
 
 
