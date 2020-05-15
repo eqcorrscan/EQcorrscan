@@ -11,8 +11,12 @@
     artifacts due to incorrectly padding data gaps).
   - USERS SHOULD BE CAREFUL TO CHECK THEIR DATA IF THEY SEE THESE WARNINGS
 * utils.plotting
-  - Function added (mapplot) for plotting seismicity (#365). 
-
+  - Function added (twoD_seismplot) for plotting seismicity (#365). 
+* utils.mag_calc.amp_pick_event
+  - Added option to output IASPEI standard amplitudes, with static amplification
+    of 1 (rather than 2080 as per Wood Anderson specs).
+  - Added `filter_id` and `method_id` to amplitudes to make these methods more
+    traceable.
 ## 0.4.1
 * core.match_filter
   - BUG-FIX: Empty families are no longer run through lag-calc when using 
