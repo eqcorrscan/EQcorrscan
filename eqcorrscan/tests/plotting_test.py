@@ -27,35 +27,18 @@ from eqcorrscan.core import template_gen, subspace
 class SeimicityPlottingMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        sfiles = glob.glob(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'test_data/REA/TEST_/*.S??????'))
-        cls.catalog = Catalog()
-        for sfile in sfiles:
-            cls.catalog += read_events(sfile)
-        cls.nodes = []
-        data = np.genfromtxt("./catalog.txt")
-        lon = data[:, 0]
-        lat = data[:, 1]
-        dep = data[:, 2] * -1
-        sec = data[:, -1].astype(str)
-        mint = data[:, -2].astype(int).astype(str)
-        hour = data[:, -3].astype(int).astype(str)
-        day = data[:, -4].astype(int).astype(str)
-        month = data[:, -5].astype(int).astype(str)
-        year = data[:, -6].astype(int).astype(str)
-        Date = []
-        for ii in range(len(year)):
-            date = '{}-{}-{}T{}:{}:{}'.format(
-                year[ii], month[ii], day[ii], hour[ii], mint[ii], sec[ii])
-            Date.append(UTCDateTime(date))
-        for Lat, Lon, Dep, time in zip(lat, lon, dep, Date):
-            cls.nodes.append((Lat, Lon, Dep, time))
+        from obspy.clients.fdsn import Client
+        client = Client("IRIS")
+        starttime = UTCDateTime("2000-01-01")
+        endtime = UTCDateTime("2020-05-16")
+        cls.catalog = client.get_events(
+            starttime=starttime, endtime=endtime, latitude=32.5,
+            longitude=47.5, maxradius=0.7)
 
     @pytest.mark.mpl_image_compare
     def test_twoD_seismplot_depth_catalog(self):
         fig = twoD_seismplot(
-            catalg=self.catalog, method='depth',
+            catalog=self.catalog, method='depth',
             show=False, return_figure=True)
         return fig
 
@@ -70,27 +53,6 @@ class SeimicityPlottingMethods(unittest.TestCase):
     def test_twoD_seismplot_sequence_catalog(self):
         fig = twoD_seismplot(
             catalog=self.catalog, method='sequence',
-            show=False, return_figure=True)
-        return fig
-
-    @pytest.mark.mpl_image_compare
-    def test_twoD_seismplot_depth_locations(self):
-        fig = twoD_seismplot(
-            locations=self.nodes, method='depth',
-            show=False, return_figure=True)
-        return fig
-
-    @pytest.mark.mpl_image_compare
-    def test_twoD_seismplot_time_locations(self):
-        fig = twoD_seismplot(
-            locations=self.nodes, method='time',
-            show=False, return_figure=True)
-        return fig
-
-    @pytest.mark.mpl_image_compare
-    def test_twoD_seismplot_sequence_nodes(self):
-        fig = twoD_seismplot(
-            locations=self.nodes, method='sequence',
             show=False, return_figure=True)
         return fig
 

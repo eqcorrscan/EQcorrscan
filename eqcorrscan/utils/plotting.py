@@ -2259,7 +2259,7 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
     elif method == 'time':
         dt = [t - time[0] for t in time]
         c0 = c1 = c2 = dt
-        label = 'Origin-time offset from {time[0]} (s)'
+        label = f'Origin-time offset from {time[0]} (s)'
     elif method == 'sequence':
         c0 = c1 = c2 = range(len(dep))
         label = 'Event number'
