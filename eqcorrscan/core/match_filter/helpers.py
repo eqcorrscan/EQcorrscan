@@ -45,7 +45,8 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     :param multiplier: Multiplier of range to define a spike.
     :type multiplier: float
     """
-
+    from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
+    
     list_ids = []
     for tr in stream:
         if (tr.data > 2 * np.max(np.sort(
@@ -61,10 +62,7 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
                'FFT prior to cross-correlation.\n' +
                'If you think this spike is real please report ' +
                'this as a bug.')
-        print(msg)
-        for ID in list_ids:
-            stream.remove(stream.select(id=ID)[0])
-            print('%s got removed by EQcorrscan because it had spike' % ID)
+        raise MatchFilterError(msg)
 
 
 def _total_microsec(t1, t2):
