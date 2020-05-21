@@ -46,7 +46,7 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     :type multiplier: float
     """
     from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
-    
+
     list_ids = []
     for tr in stream:
         if (tr.data > 2 * np.max(np.sort(
