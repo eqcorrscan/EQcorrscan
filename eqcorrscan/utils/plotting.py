@@ -1145,7 +1145,9 @@ def obspy_3d_plot(inventory, catalog, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def threeD_seismplot(stations, nodes, **kwargs):
+def threeD_seismplot(stations=None,
+                     location_templates=None, catalog_template=None,
+                     location_children=None, catalog_children=None, **kwargs):
     """
     Plot seismicity and stations in a 3D, movable, zoomable space.
 
@@ -1154,10 +1156,19 @@ def threeD_seismplot(stations, nodes, **kwargs):
     :type stations: list
     :param stations:
         list of one tuple per station of (lat, long, elevation), with up
-        positive.
-    :type nodes: list
-    :param nodes:
-        list of one tuple per event of (lat, long, depth) with down positive.
+        positive. (optional)
+    :type location_templates: list
+    :param location_templates:
+        list of one tuple per event of (lat, long, depth) with down negetive.
+        (optional)
+    :type catalog_template: obspy.core.event.Catalog
+    :param catalog_template: Catalog of events. (optional)
+    :type location_children: list
+    :param location_children:
+        list of one tuple per event of (lat, long, depth) with down negetive.
+        (optional)
+    :type catalog_children: obspy.core.event.Catalog
+    :param catalog_children: Catalog of events. (optional)
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -1167,37 +1178,100 @@ def threeD_seismplot(stations, nodes, **kwargs):
     """
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    stalats, stalongs, staelevs = zip(*stations)
-    evlats, evlongs, evdepths = zip(*nodes)
-    # Cope with +/-180 latitudes...
-    _evlongs = []
-    for evlong in evlongs:
-        if evlong < 0:
-            evlong = float(evlong)
-            evlong += 360
-        _evlongs.append(evlong)
-    evlongs = _evlongs
-    _stalongs = []
-    for stalong in stalongs:
-        if stalong < 0:
-            stalong = float(stalong)
-            stalong += 360
-        _stalongs.append(stalong)
-    stalongs = _stalongs
-    evdepths = [-1 * depth for depth in evdepths]
+    # making coordinates of templates
+    location_templates = location_templates or []
+    msg = "An event of the template's catalog got ignored,\
+        because it didn't have origin"
+    if catalog_template:
+        for event in catalog_template:
+            try:
+                origin = event.preferred_origin() or event.origins[0]
+            except IndexError:  # No origin found
+                Logger.info(msg)
+                continue
+            _lat = origin.latitude
+            _lon = origin.longitude
+            _dep = origin.depth / -1000
+            location_templates.append((_lat, _lon, _dep))
+    # making coordinates of children
+    location_children = location_children or []
+    msg = "An event of the children's catalog got ignored,\
+        because it didn't have origin"
+    if catalog_children:
+        for event in catalog_children:
+            try:
+                origin = event.preferred_origin() or event.origins[0]
+            except IndexError:  # No origin found
+                Logger.info(msg)
+                continue
+            _lat = origin.latitude
+            _lon = origin.longitude
+            _dep = origin.depth / -1000
+            location_children.append((_lat, _lon, _dep))
+    if stations:
+        stalats, stalongs, staelevs = zip(*stations)
+    if location_children:
+        evlats, evlongs, evdepths = zip(*location_children)
+    if location_templates:
+        temlats, temlongs, temdepths = zip(*location_templates)
+    # Cope with +/-180 templates' latitudes...
+    if location_templates:
+        _evlongs = []
+        for evlong in temlongs:
+            if evlong < 0:
+                evlong = float(evlong)
+                evlong += 360
+            _evlongs.append(evlong)
+        temlongs = _evlongs
+    # Cope with +/-180 childrens' latitudes...
+    if location_children:
+        _evlongs = []
+        for evlong in evlongs:
+            if evlong < 0:
+                evlong = float(evlong)
+                evlong += 360
+            _evlongs.append(evlong)
+        evlongs = _evlongs
+    # Cope with +/-180 stations' latitudes...
+    if stations:
+        _stalongs = []
+        for stalong in stalongs:
+            if stalong < 0:
+                stalong = float(stalong)
+                stalong += 360
+            _stalongs.append(stalong)
+        stalongs = _stalongs
+        evdepths = [-1 * depth for depth in evdepths]
+    # set default parameters of scatter()
+    default_parameters = {'marker': '.', 's': 2}
+    for key in default_parameters.keys():
+        if key not in kwargs.keys():
+            kwargs[key] = default_parameters[key]
+    # get parameters of _finalise_figure
+    _kwargs = {}
+    for key in ['title', 'show', 'save', 'savefile', 'return_fig', 'size']:
+        if key in kwargs.keys():
+            _kwargs[key] = kwargs[key]
+            del kwargs[key]
+    # 3D-plot
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.scatter(evlats, evlongs, evdepths, marker="x", c="k",
-               label='Hypocenters')
-    ax.scatter(stalats, stalongs, staelevs, marker="v", c="r",
-               label='Stations')
+    if location_children:
+        ax.scatter(evlats, evlongs, evdepths, label='Hypocenters-children',
+                   c="b", **kwargs)
+    if location_templates:
+        ax.scatter(temlats, temlongs, temdepths, label='Hypocenters-templates',
+                   c="r", **kwargs)
+    if stations:
+        ax.scatter(stalats, stalongs, staelevs, label='Stations',
+                   marker="v", c="r")
     ax.set_ylabel("Longitude (deg)")
     ax.set_xlabel("Latitude (deg)")
     ax.set_zlabel("Elevation (km)")
     ax.get_xaxis().get_major_formatter().set_scientific(False)
     ax.get_yaxis().get_major_formatter().set_scientific(False)
     plt.legend()
-    fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
+    fig = _finalise_figure(fig=fig, **_kwargs)  # pragma: no cover
     return fig
 
 
