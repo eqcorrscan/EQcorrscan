@@ -1,4 +1,6 @@
 ## Current
+* threeD_plot supports inventory, catalog and locations with maximume of
+  two groups of seimicity now. All inputs are optional.
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
   - Cross-correlation normalisation errors no-longer raise an error
