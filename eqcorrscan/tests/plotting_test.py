@@ -15,7 +15,7 @@ from obspy.signal import filter
 from eqcorrscan.utils.plotting import (
     chunk_data, xcorr_plot, triple_plot, peaks_plot,
     cumulative_detections, threeD_gridplot, multi_event_singlechan,
-    detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
+    detection_multiplot, interev_mag, threeD_seismplot, noise_plot,
     pretty_template_plot, plot_repicked, svd_plot, plot_synth_real,
     freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot)
 from eqcorrscan.utils.stacking import align_traces
@@ -333,10 +333,10 @@ class NetworkPlottingTests(unittest.TestCase):
         return fig
 
     @pytest.mark.mpl_image_compare
-    def test_obspy_3d_plot(self):
-        fig = obspy_3d_plot(
-            inventory=self.inventory, catalog=self.catalog, show=False,
-            return_figure=True)
+    def test_threeD_seismplot(self):
+        fig = threeD_seismplot(
+            inventory=self.inventory, catalog_template=self.catalog,
+            show=False, return_figure=True)
         return fig
 
     @pytest.mark.mpl_image_compare

@@ -1081,71 +1081,7 @@ def interev_mag(times, mags, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def obspy_3d_plot(inventory, catalog, **kwargs):
-    """
-    Plot obspy Inventory and obspy Catalog classes in three dimensions.
-
-    :type inventory: obspy.core.inventory.inventory.Inventory
-    :param inventory: Obspy inventory class containing station metadata
-    :type catalog: obspy.core.event.catalog.Catalog
-    :param catalog: Obspy catalog class containing event metadata
-    {plotting_kwargs}
-
-    :returns: :class:`matplotlib.figure.Figure`
-
-    .. rubric:: Example:
-
-    >>> from obspy.clients.fdsn import Client
-    >>> from obspy import UTCDateTime
-    >>> from eqcorrscan.utils.plotting import obspy_3d_plot
-    >>> client = Client('IRIS')
-    >>> t1 = UTCDateTime(2012, 3, 26)
-    >>> t2 = t1 + 86400
-    >>> catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
-    ...                             longitude=170, maxradius=5)
-    >>> inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
-    ...                                 longitude=170, maxradius=10)
-    >>> obspy_3d_plot(inventory=inventory, catalog=catalog) # doctest: +SKIP
-
-    .. plot::
-
-        from obspy.clients.fdsn import Client
-        from obspy import UTCDateTime
-        from eqcorrscan.utils.plotting import obspy_3d_plot
-        client = Client('IRIS')
-        t1 = UTCDateTime(2012, 3, 26)
-        t2 = t1 + 86400
-        catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
-                                    longitude=170, maxradius=5)
-        inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
-                                        longitude=170, maxradius=10)
-        obspy_3d_plot(inventory=inventory, catalog=catalog)
-    """
-    nodes = []
-    for ev in catalog:
-        nodes.append((ev.preferred_origin().latitude,
-                      ev.preferred_origin().longitude,
-                      ev.preferred_origin().depth / 1000))
-    # Will plot borehole instruments at elevation - depth if provided
-    all_stas = []
-    for net in inventory:
-        for sta in net:
-            if len(sta.channels) > 0:
-                all_stas.append((sta.latitude, sta.longitude,
-                                 sta.elevation / 1000 -
-                                 sta.channels[0].depth / 1000))
-            else:
-                Logger.warning('No channel information attached, '
-                               'setting elevation without depth')
-                all_stas.append((sta.latitude, sta.longitude,
-                                 sta.elevation / 1000))
-    fig = threeD_seismplot(
-        stations=all_stas, nodes=nodes, **kwargs)
-    return fig
-
-
-@additional_docstring(plotting_kwargs=plotting_kwargs)
-def threeD_seismplot(stations=None,
+def threeD_seismplot(stations=None, inventory=None,
                      location_templates=None, catalog_template=None,
                      location_children=None, catalog_children=None, **kwargs):
     """
@@ -1157,27 +1093,75 @@ def threeD_seismplot(stations=None,
     :param stations:
         list of one tuple per station of (lat, long, elevation), with up
         positive. (optional)
+    :type inventory: obspy.core.inventory.inventory.Inventory
+    :param inventory:
+        Obspy inventory class containing station metadata. (optional)
     :type location_templates: list
     :param location_templates:
         list of one tuple per event of (lat, long, depth) with down negetive.
         (optional)
     :type catalog_template: obspy.core.event.Catalog
-    :param catalog_template: Catalog of events. (optional)
+    :param catalog_template:
+        Obspy catalog class containing event metadata.(optional)
     :type location_children: list
     :param location_children:
         list of one tuple per event of (lat, long, depth) with down negetive.
         (optional)
     :type catalog_children: obspy.core.event.Catalog
-    :param catalog_children: Catalog of events. (optional)
+    :param catalog_children:
+        Obspy catalog class containing event metadata. (optional)
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
 
+    .. rubric:: Example:
+
+    >>> from obspy.clients.fdsn import Client
+    >>> from obspy import UTCDateTime
+    >>> from eqcorrscan.utils.plotting import threeD_seismplot
+    >>> client = Client('IRIS')
+    >>> t1 = UTCDateTime(2012, 3, 26)
+    >>> t2 = t1 + 86400
+    >>> catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+    ...                             longitude=170, maxradius=5)
+    >>> inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+    ...                                 longitude=170, maxradius=10)
+    >>> threeD_seismplot(inventory=inventory,
+    ...                  catalog_template=catalog) # doctest: +SKIP
+
+    .. plot::
+
+        from obspy.clients.fdsn import Client
+        from obspy import UTCDateTime
+        from eqcorrscan.utils.plotting import threeD_seismplot
+        client = Client('IRIS')
+        t1 = UTCDateTime(2012, 3, 26)
+        t2 = t1 + 86400
+        catalog = client.get_events(starttime=t1, endtime=t2, latitude=-43,
+                                    longitude=170, maxradius=5)
+        inventory = client.get_stations(starttime=t1, endtime=t2, latitude=-43,
+                                        longitude=170, maxradius=10)
+        threeD_seismplot(inventory=inventory, catalog_template=catalog)
     .. Note::
         See :func:`eqcorrscan.utils.plotting.obspy_3d_plot` for example output.
     """
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+    # making coordinates of stations
+    # Will plot borehole instruments at elevation - depth if provided
+    stations = stations or []
+    if inventory:
+        for net in inventory:
+            for sta in net:
+                if len(sta.channels) > 0:
+                    stations.append(
+                        (sta.latitude, sta.longitude,
+                         sta.elevation / 1000 - sta.channels[0].depth / 1000))
+                else:
+                    Logger.warning('No channel information attached, '
+                                   'setting elevation without depth')
+                    stations.append(
+                        (sta.latitude, sta.longitude, sta.elevation / 1000))
     # making coordinates of templates
     location_templates = location_templates or []
     msg = "An event of the template's catalog got ignored,\
