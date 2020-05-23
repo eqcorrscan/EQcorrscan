@@ -344,8 +344,8 @@ class NetworkPlottingTests(unittest.TestCase):
         magnitudes = [event.preferred_magnitude().mag
                       for event in self.catalog]
         fig = freq_mag(
-            magnitudes, completeness=3.5, max_mag=7, show=False,
-            return_figure=True)
+            ch_magnitudes=magnitudes, ch_completeness=3.5, ch_max_mag=7,
+            show=False, return_figure=True)
         return fig
 
 

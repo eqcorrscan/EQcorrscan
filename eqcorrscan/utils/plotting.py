@@ -1771,7 +1771,9 @@ def plot_synth_real(real_template, synthetic, channels=False, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
+def freq_mag(ch_magnitudes=None, ch_completeness=None, ch_max_mag=None,
+             tm_magnitudes=None, tm_completeness=None, tm_max_mag=None,
+             binsize=0.2, **kwargs):
     """
     Plot a frequency-magnitude histogram and cumulative density plot.
 
@@ -1779,12 +1781,22 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     B-value is computed by linear fitting to section of curve between
     completeness and max_mag.
 
-    :type magnitudes: list
-    :param magnitudes: list of float of magnitudes
-    :type completeness: float
-    :param completeness: Level to compute the b-value above
-    :type max_mag: float
-    :param max_mag: Maximum magnitude to try and fit a b-value to
+    :type ch_magnitudes: list
+    :param ch_magnitudes: list of float of children magnitudes (optional)
+    :type ch_completeness: float
+    :param ch_completeness: Level to compute the b-value above for children
+        (optional)
+    :type ch_max_mag: float
+    :param ch_max_mag: Maximum magnitude to try and fit a b-value to children
+        (optional)
+    :type tm_magnitudes: list
+    :param tm_magnitudes: list of float of templates magnitudes (optional)
+    :type tm_completeness: float
+    :param tm_completeness: Level to compute the b-value above for templates
+        (optional)
+    :type tm_max_mag: float
+    :param tm_max_mag: Maximum magnitude to try and fit a b-value to templates
+        (optional)
     :type binsize: float
     :param binsize: Width of histogram bins, defaults to 0.2
     {plotting_kwargs}
@@ -1805,8 +1817,9 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     >>> t1 = UTCDateTime('2012-03-26T00:00:00')
     >>> t2 = t1 + (3 * 86400)
     >>> catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
-    >>> magnitudes = [event.preferred_magnitude().mag for event in catalog]
-    >>> freq_mag(magnitudes, completeness=4, max_mag=7) # doctest: +SKIP
+    >>> ch_magnitudes = [event.preferred_magnitude().mag for event in catalog]
+    >>> freq_mag(
+    ...     ch_magnitudes, ch_completeness=4, ch_max_mag=7) # doctest: +SKIP
 
     .. plot::
 
@@ -1817,58 +1830,139 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
         t1 = UTCDateTime('2012-03-26T00:00:00')
         t2 = t1 + (3 * 86400)
         catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=3)
-        magnitudes = [event.preferred_magnitude().mag for event in catalog]
-        freq_mag(magnitudes, completeness=4, max_mag=7)
+        ch_magnitudes = [event.preferred_magnitude().mag for event in catalog]
+        freq_mag(ch_magnitudes, ch_completeness=4, ch_max_mag=7)
     """
     import matplotlib.pyplot as plt
-    # Ensure magnitudes are sorted
-    magnitudes.sort()
+    # Ensure ch_magnitudes are sorted
+    ch_magnitudes.sort()
+    tm_magnitudes.sort()
     # Check that there are no nans or infs
-    if np.isnan(magnitudes).any():
+    # Children
+    if ch_magnitudes and np.isnan(ch_magnitudes).any():
         Logger.warning('Found nan values, removing them')
-        magnitudes = [mag for mag in magnitudes if not np.isnan(mag)]
-    if np.isinf(magnitudes).any():
+        ch_magnitudes = [mag for mag in ch_magnitudes if not np.isnan(mag)]
+    if ch_magnitudes and np.isinf(ch_magnitudes).any():
         Logger.warning('Found inf values, removing them')
-        magnitudes = [mag for mag in magnitudes if not np.isinf(mag)]
+        ch_magnitudes = [mag for mag in ch_magnitudes if not np.isinf(mag)]
+    # Templates
+    if tm_magnitudes and np.isnan(tm_magnitudes).any():
+        Logger.warning('Found nan values, removing them')
+        tm_magnitudes = [mag for mag in tm_magnitudes if not np.isnan(mag)]
+    if tm_magnitudes and np.isinf(tm_magnitudes).any():
+        Logger.warning('Found inf values, removing them')
+        tm_magnitudes = [mag for mag in tm_magnitudes if not np.isinf(mag)]
     fig, ax1 = plt.subplots()
     # Set up the bins, the bin-size could be a variables
-    bins = np.arange(int(min(magnitudes) - 1), int(max(magnitudes) + 1),
-                     binsize)
-    n, bins, patches = ax1.hist(magnitudes, bins, facecolor='Black',
-                                alpha=0.5, label='Magnitudes')
+    # Children
+    if ch_magnitudes:
+        ch_bins = np.arange(int(min(ch_magnitudes) - 1),
+                            int(max(ch_magnitudes) + 1), binsize)
+        ch_n, ch_bins, ch_patches = ax1.hist(
+            ch_magnitudes, ch_bins, facecolor='g', alpha=0.5,
+            label='Children magnitudes')
+    # Templates
+    if tm_magnitudes:
+        tm_bins = np.arange(int(min(tm_magnitudes) - 1),
+                            int(max(tm_magnitudes) + 1), binsize)
+        tm_n, tm_bins, tm_patches = ax1.hist(
+            tm_magnitudes, tm_bins, facecolor='b', alpha=0.5,
+            label='templates magnitudes')
     ax1.set_ylabel('Frequency')
-    ax1.set_ylim([0, max(n) + 0.5 * max(n)])
+    if ch_magnitudes and tm_magnitudes:
+        _max_y = max(max(ch_n), max(tm_n))
+    elif ch_magnitudes:
+        _max_y = max(ch_n)
+    elif tm_magnitudes:
+        _max_y = max(tm_n)
+    ax1.set_ylim([0, _max_y * 1.5])
     plt.xlabel('Magnitude')
     # Now make the cumulative density function
-    counts = Counter(magnitudes)
-    cdf = np.zeros(len(counts))
-    mag_steps = np.zeros(len(counts))
-    for i, magnitude in enumerate(sorted(counts.keys(), reverse=True)):
-        mag_steps[i] = magnitude
-        if i > 0:
-            cdf[i] = cdf[i - 1] + counts[magnitude]
-        else:
-            cdf[i] = counts[magnitude]
+    # Children
+    if ch_magnitudes:
+        ch_counts = Counter(ch_magnitudes)
+        ch_cdf = np.zeros(len(ch_counts))
+        ch_mag_steps = np.zeros(len(ch_counts))
+        for i, magnitude in enumerate(sorted(ch_counts.keys(), reverse=True)):
+            ch_mag_steps[i] = magnitude
+            if i > 0:
+                ch_cdf[i] = ch_cdf[i - 1] + ch_counts[magnitude]
+            else:
+                ch_cdf[i] = ch_counts[magnitude]
+    # Templates
+    if tm_magnitudes:
+        tm_counts = Counter(tm_magnitudes)
+        tm_cdf = np.zeros(len(tm_counts))
+        tm_mag_steps = np.zeros(len(tm_counts))
+        for i, magnitude in enumerate(sorted(tm_counts.keys(), reverse=True)):
+            tm_mag_steps[i] = magnitude
+            if i > 0:
+                tm_cdf[i] = tm_cdf[i - 1] + tm_counts[magnitude]
+            else:
+                tm_cdf[i] = tm_counts[magnitude]
+    # Plot
     ax2 = ax1.twinx()
-    # ax2.scatter(magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
-    ax2.scatter(mag_steps, np.log10(cdf), c='k', marker='+', s=20, lw=2,
-                label='Magnitude cumulative density')
+    # ax2.scatter(ch_magnitudes, np.log10(cdf), c='k', marker='+', s=20, lw=2,
+    # Children
+    if ch_magnitudes:
+        ax2.scatter(
+            ch_mag_steps, np.log10(ch_cdf), c='g', marker='+', s=20, lw=2,
+            label='Magnitude cumulative density of children')
+    # Templates
+    if tm_magnitudes:
+        ax2.scatter(
+            tm_mag_steps, np.log10(tm_cdf), c='b', marker='+', s=20, lw=2,
+            label='Magnitude cumulative density of templates')
     # Now we want to calculate the b-value and plot the fit
-    x = []
-    y = []
-    for i, magnitude in enumerate(mag_steps):
-        if completeness <= magnitude <= max_mag:
-            x.append(magnitude)
-            y.append(cdf[i])
-    fit = np.polyfit(x, np.log10(y), 1)
-    fit_fn = np.poly1d(fit)
-    ax2.plot(magnitudes, fit_fn(magnitudes), '--k',
-             label='GR trend, b-value = ' + str(abs(fit[0]))[0:4] +
-             '\n $M_C$ = ' + str(completeness))
+    # Children
+    if ch_magnitudes:
+        ch_x = []
+        ch_y = []
+        for i, magnitude in enumerate(ch_mag_steps):
+            if ch_completeness <= magnitude <= ch_max_mag:
+                ch_x.append(magnitude)
+                ch_y.append(ch_cdf[i])
+        ch_fit = np.polyfit(ch_x, np.log10(ch_y), 1)
+        ch_fit_fn = np.poly1d(ch_fit)
+    # Templates
+    if tm_magnitudes:
+        tm_x = []
+        tm_y = []
+        for i, magnitude in enumerate(tm_mag_steps):
+            if tm_completeness <= magnitude <= tm_max_mag:
+                tm_x.append(magnitude)
+                tm_y.append(tm_cdf[i])
+        tm_fit = np.polyfit(tm_x, np.log10(tm_y), 1)
+        tm_fit_fn = np.poly1d(tm_fit)
+    # Children
+    if ch_magnitudes:
+        ax2.plot(ch_magnitudes, ch_fit_fn(ch_magnitudes), '--g',
+                 label=f'GR trend, b-value (children) = {abs(ch_fit[0]):.5}' +
+                 f'\n $M_C$ = {ch_completeness}')
+    # Templates
+    if tm_magnitudes:
+        ax2.plot(tm_magnitudes, tm_fit_fn(tm_magnitudes), '--b',
+                 label=f'GR trend, b-value (templates) = {abs(tm_fit[0]):.5}' +
+                 f'\n $M_C$ = {tm_completeness}')
     ax2.set_ylabel('$Log_{10}$ of cumulative density')
-    plt.xlim([min(magnitudes) - 0.1, max(magnitudes) + 0.2])
-    plt.ylim([min(np.log10(cdf)) - 0.5, max(np.log10(cdf)) + 1.0])
-    plt.legend(loc=2)
+    if ch_magnitudes and tm_magnitudes:
+        _min_mags = min(min(ch_magnitudes), min(tm_magnitudes))
+        _max_mags = max(max(ch_magnitudes), max(tm_magnitudes))
+        _min_cdf = min(min(np.log10(ch_cdf)), min(np.log10(tm_cdf)))
+        _max_cdf = max(max(np.log10(ch_cdf)), max(np.log10(tm_cdf)))
+    elif ch_magnitudes:
+        _min_mags = min(ch_magnitudes)
+        _max_mags = max(ch_magnitudes)
+        _min_cdf = min(np.log10(ch_cdf))
+        _max_cdf = max(np.log10(ch_cdf))
+    elif tm_magnitudes:
+        _min_mags = min(tm_magnitudes)
+        _max_mags = max(tm_magnitudes)
+        _min_cdf = min(np.log10(tm_cdf))
+        _max_cdf = max(np.log10(tm_cdf))
+    plt.xlim([_min_mags - 0.1, _max_mags + 0.2])
+    plt.ylim([_min_cdf - 0.5, _max_cdf + 1.0])
+    plt.legend(loc=1)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
 

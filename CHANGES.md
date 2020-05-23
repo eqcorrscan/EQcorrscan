@@ -1,4 +1,6 @@
 ## Current
+* The freq_mag function supports 2 groups of magnitudes as children and
+  templates now to better compare magnitudes before and after detections.
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
   - Cross-correlation normalisation errors no-longer raise an error
