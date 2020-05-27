@@ -337,7 +337,7 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         event_id_1=event_id_mapper[master.resource_id],
         event_id_2=event_id_mapper[sparse_event.resource_id])
     for master_pick in master.picks:
-        if master_pick.phase not in "PS":  # pragma: no cover
+        if master_pick.phase  and master_pick.phase not in "PS":  # pragma: no cover
             continue
         matched_picks = [p for p in sparse_event.picks
                          if p.station == master_pick.station

@@ -26,7 +26,7 @@ To then install EQcorrscan you can simply run:
 
 .. code-block:: bash
 
-    conda install eqcorrscan
+    conda install -c conda-forge eqcorrscan
 
 Installation without conda
 --------------------------
