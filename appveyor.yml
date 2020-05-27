@@ -15,6 +15,9 @@ environment:
     - PYTHON: "C:\\Miniconda35-x64"
       PYTHON_VERSION: "3.7"
       PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Miniconda35-x64"
+      PYTHON_VERSION: "3.8"
+      PYTHON_ARCH: "64"
 
 install:
   - '.\\misc\\appveyor\\trim_path.bat'
