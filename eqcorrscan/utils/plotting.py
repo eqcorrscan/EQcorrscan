@@ -1568,12 +1568,14 @@ def plot_repicked(template, picks, det_stream, **kwargs):
     axis.set_xlim([0, max(lengths)])
     if len(template) > 1:
         axis = axes[len(template) - 1]
+        axis_legend = axes[0]
     else:
         axis = axes
+        axis_legend = axes
     axis.set_xlabel('Time (s) from %s' %
                     mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
-    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
-    axes[0].set_zorder(2)
+    axis_legend.legend(lines, labels, loc='upper right', framealpha=1)
+    axis_legend.set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:
