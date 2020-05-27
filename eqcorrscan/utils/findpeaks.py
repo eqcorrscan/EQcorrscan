@@ -74,9 +74,9 @@ def find_peaks_compiled(arr, thresh, trig_int, full_peaks=False):
         peaks within this window this code will find the highest.
     :type full_peaks: bool
     :param full_peaks:
-        If True, will declustering within data-sections above the threshold,
+        If True, will decluster within data-sections above the threshold,
         rather than just taking the peak within that section. This will take
-        more time. This defaults to True for match_filter.
+        more time. This defaults to False for match_filter.
 
     :return: peaks: Lists of tuples of peak values and locations.
     :rtype: list
@@ -117,9 +117,9 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
         peaks within this window this code will find the highest.
     :type full_peaks: bool
     :param full_peaks:
-        If True, will remove the issue eluded to below, by declustering within
+        If True will by decluster within
         data-sections above the threshold, rather than just taking the peak
-        within that section. This will take more time. This defaults to True
+        within that section. This will take more time. This defaults to False
         for match_filter.
 
     :return: peaks: Lists of tuples of peak values and locations.
@@ -256,7 +256,7 @@ def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks,
     :param full_peaks:
         If True, will decluster within data-sections above the threshold,
         rather than just taking the peak within that section. This will take
-        more time. This defaults to True for match_filter.
+        more time. This defaults to False for match_filter.
     :type cores: int
     :param cores: Number of threads to parallel across
 
