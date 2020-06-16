@@ -195,11 +195,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     else:
         n_groups = 1
     for st_chunk in streams:
+        chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
+                                  max(tr.stats.endtime for tr in st_chunk))
         Logger.info(
-            'Computing detections between %s and %s' %
-            (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime))
-        st_chunk.trim(starttime=st_chunk[0].stats.starttime,
-                      endtime=st_chunk[0].stats.endtime)
+            f'Computing detections between {chunk_start} and {chunk_end}')
+        st_chunk.trim(starttime=chunk_start, endtime=chunk_end)
         for tr in st_chunk:
             if len(tr) > len(st_chunk[0]):
                 tr.data = tr.data[0:len(st_chunk[0])]
@@ -321,7 +321,19 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         _chunk_stream_lengths = [tr.stats.endtime - tr.stats.starttime
                                  for tr in chunk_stream]
         if min(_chunk_stream_lengths) >= .8 * process_length:
-            processed_streams.append(func(st=chunk_stream, **kwargs))
+            _processed_stream = func(st=chunk_stream, **kwargs)
+            # Pre-procesing does additional checks for zeros - we need to check 
+            # again whether we actually have something useful from this.
+            processed_chunk_stream_lengths = [
+                tr.stats.endtime - tr.stats.starttime 
+                for tr in _processed_stream]
+            if min(processed_chunk_stream_lengths) >= .8 * process_length:
+                processed_streams.append(_processed_stream)
+            else:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
         else:
             tr = chunk_stream[_chunk_stream_lengths.index(
                 min(_chunk_stream_lengths))]
