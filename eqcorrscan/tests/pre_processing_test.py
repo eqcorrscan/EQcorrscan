@@ -241,7 +241,7 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_short_data_empty_return(self):
         """
-        Check that we do not include data that is too short even if 
+        Check that we do not include data that is too short even if
         ignore_bad_data is True.
         """
         processed = process(

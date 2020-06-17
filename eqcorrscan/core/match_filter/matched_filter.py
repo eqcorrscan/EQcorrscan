@@ -322,7 +322,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
                                  for tr in chunk_stream]
         if min(_chunk_stream_lengths) >= .8 * process_length:
             _processed_stream = func(st=chunk_stream, **kwargs)
-            # If data have more zeros then pre-processing will return a 
+            # If data have more zeros then pre-processing will return a
             # trace of 0 length
             _processed_stream.traces = [
                 tr for tr in _processed_stream if tr.stats.npts != 0]
