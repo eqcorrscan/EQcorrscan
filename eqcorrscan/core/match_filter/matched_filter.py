@@ -322,13 +322,14 @@ def _group_process(template_group, parallel, cores, stream, daylong,
                                  for tr in chunk_stream]
         if min(_chunk_stream_lengths) >= .8 * process_length:
             _processed_stream = func(st=chunk_stream, **kwargs)
-            # If data have more zeros then pre-processing will return a trace of 0 length
+            # If data have more zeros then pre-processing will return a 
+            # trace of 0 length
             _processed_stream.traces = [
                 tr for tr in _processed_stream if tr.stats.npts != 0]
-            # Pre-procesing does additional checks for zeros - we need to check 
+            # Pre-procesing does additional checks for zeros - we need to check
             # again whether we actually have something useful from this.
             processed_chunk_stream_lengths = [
-                tr.stats.endtime - tr.stats.starttime 
+                tr.stats.endtime - tr.stats.starttime
                 for tr in _processed_stream]
             if min(processed_chunk_stream_lengths) >= .8 * process_length:
                 processed_streams.append(_processed_stream)

@@ -240,7 +240,10 @@ class TestPreProcessing(unittest.TestCase):
         self.assertEqual(processed.stats.npts, 86400)
 
     def test_short_data_empty_return(self):
-        """Check that we do not data that is too short ignore_length is True."""
+        """
+        Check that we do not include data that is too short even if 
+        ignore_bad_data is True.
+        """
         processed = process(
             tr=self.st[0].copy().trim(endtime=self.
                                       st[0].stats.endtime - 28000), lowcut=0.1,
