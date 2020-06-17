@@ -315,6 +315,10 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             _endtime = kwargs['starttime'] + 86400
         chunk_stream = stream.slice(starttime=kwargs['starttime'],
                                     endtime=_endtime).copy()
+        if len(chunk_stream) == 0:
+            Logger.warning(
+                f"No data between {kwargs['starttime']} and {_endtime}")
+            continue
         for tr in chunk_stream:
             tr.data = tr.data[0:int(
                 process_length * tr.stats.sampling_rate)]
