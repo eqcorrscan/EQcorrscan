@@ -330,6 +330,11 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             # trace of 0 length
             _processed_stream.traces = [
                 tr for tr in _processed_stream if tr.stats.npts != 0]
+            if len(_processed_stream) == 0:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
             # Pre-procesing does additional checks for zeros - we need to check
             # again whether we actually have something useful from this.
             processed_chunk_stream_lengths = [
