@@ -175,6 +175,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     elif not isinstance(overlap, float):
         raise NotImplementedError(
             "%s is not a recognised overlap type" % str(overlap))
+    if overlap >= master.process_length:
+        Logger.warning(
+                f"Overlap of {overlap} s is greater than process "
+                f"length ({master.process_length} s), ignoring overlap")
+        overlap = 0
     if not pre_processed:
         if process_cores is None:
             process_cores = cores
@@ -183,6 +188,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             cores=process_cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
             overlap=overlap)
+        for _st in streams:
+            Logger.info(f"Processed stream:\n{_st.__str__(extended=True)}")
     else:
         Logger.warning('Not performing any processing on the continuous data.')
         streams = [stream]
@@ -300,8 +307,10 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
     data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
+    assert overlap < process_length, "Overlap must be less than process length"
     chunk_len_samps = (process_length - overlap) * master.samp_rate
     n_chunks = int(data_len_samps // chunk_len_samps)
+    Logger.info(f"Splitting these data in {n_chunks} chunks")
     if n_chunks == 0:
         Logger.error('Data must be process_length or longer, not computing')
     _endtime = starttime
@@ -315,6 +324,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             _endtime = kwargs['starttime'] + 86400
         chunk_stream = stream.slice(starttime=kwargs['starttime'],
                                     endtime=_endtime).copy()
+        Logger.info(f"Processing chunk {i} between {kwargs['starttime']} and {_endtime}")
         if len(chunk_stream) == 0:
             Logger.warning(
                 f"No data between {kwargs['starttime']} and {_endtime}")
@@ -325,6 +335,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         _chunk_stream_lengths = [tr.stats.endtime - tr.stats.starttime
                                  for tr in chunk_stream]
         if min(_chunk_stream_lengths) >= .8 * process_length:
+            Logger.info(f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
             _processed_stream = func(st=chunk_stream, **kwargs)
             # If data have more zeros then pre-processing will return a
             # trace of 0 length
@@ -351,9 +362,10 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             tr = chunk_stream[_chunk_stream_lengths.index(
                 min(_chunk_stream_lengths))]
             Logger.warning(
-                "Data chunk starting {0} and ending {1} is below 80% of the "
-                "requested length, will not use this.".format(
-                    tr.stats.starttime, tr.stats.endtime))
+                "Data chunk on {0} starting {1} and ending {2} is "
+                "below 80% of the requested length, will not use"
+                " this.".format(
+                    tr.id, tr.stats.starttime, tr.stats.endtime))
     if _endtime < stream[0].stats.endtime:
         Logger.warning(
             "Last bit of data between {0} and {1} will go unused "
