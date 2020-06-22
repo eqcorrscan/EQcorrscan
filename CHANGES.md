@@ -17,6 +17,12 @@
     of 1 (rather than 2080 as per Wood Anderson specs).
   - Added `filter_id` and `method_id` to amplitudes to make these methods more
     traceable.
+* core.match_filter
+  - Bug-fix - cope with data that are too short with `ignore_bad_data=True`.
+    This flag is generally not advised, but when used, may attempt to trim all
+    data to zero length.  The expected behaviour is to remove bad data and run
+    with the remaining data.
+  
 ## 0.4.1
 * core.match_filter
   - BUG-FIX: Empty families are no longer run through lag-calc when using 
