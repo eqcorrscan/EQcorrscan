@@ -683,6 +683,18 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
 
+    def test_tribe_detect_short_data(self):
+        """Test the detect method on Tribe objects"""
+        short_st = self.unproc_st.copy()
+        tribe = self.tribe.copy()
+        for template in tribe:
+            template.process_length = 2400
+        party = tribe.detect(
+            stream=short_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            ignore_bad_data=True)
+        self.assertEqual(len(party), 4)
+
     @pytest.mark.serial
     def test_tribe_detect_parallel_process(self):
         """Test the detect method on Tribe objects"""
