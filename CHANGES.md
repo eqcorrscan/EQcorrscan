@@ -20,6 +20,9 @@
     This flag is generally not advised, but when used, may attempt to trim all
     data to zero length.  The expected behaviour is to remove bad data and run
     with the remaining data.
+* utils.pre_processing
+  - Only templates that need to be reshaped are reshaped now - this can be a lot
+    faster.
   
 ## 0.4.1
 * core.match_filter
