@@ -56,8 +56,9 @@ class TestDeclustering:
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
         ])
-        peaks_out = decluster_distance_time(peaks, index, trig_int, catalog,
-                                            hypocentral_separation, threshold=0)
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
         assert len(peaks) > len(peaks_out)
         assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
                              (65.0, 5000)]
@@ -74,8 +75,9 @@ class TestDeclustering:
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
         ])
-        peaks_out = decluster_distance_time(peaks, index, trig_int, catalog,
-                                            hypocentral_separation, threshold=0)
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
         assert len(peaks) == len(peaks_out)
         assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
                              (65.0, 5000), (20.0, 10)]
@@ -93,8 +95,9 @@ class TestDeclustering:
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
             Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
         ])
-        peaks_out = decluster_distance_time(peaks, index, trig_int, catalog,
-                                            hypocentral_separation, threshold=0)
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
         assert len(peaks) == len(peaks_out)
 
 

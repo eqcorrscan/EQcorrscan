@@ -540,7 +540,8 @@ class Party(object):
                                "hypocentral separation")
                 catalog = None
 
-        assert metric in ('avg_cor', 'cor_sum'), 'metric is not cor_sum or avg_cor'
+        assert metric in ('avg_cor', 'cor_sum'), \
+            'metric is not cor_sum or avg_cor'
         assert timing in ('detect', 'origin'), 'timing is not detect or origin'
         if timing == 'detect':
             if metric == 'avg_cor':
@@ -570,7 +571,8 @@ class Party(object):
                 hypocentral_separation=hypocentral_separation)
         else:
             peaks_out = decluster(
-                peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
+                peaks=detect_vals, index=detect_times,
+                trig_int=trig_int * 10 ** 6)
         # Need to match both the time and the detection value
         declustered_detections = []
         for ind in peaks_out:
