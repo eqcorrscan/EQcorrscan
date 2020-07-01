@@ -32,7 +32,7 @@ from eqcorrscan.core.match_filter.helpers import (
     _total_microsec, temporary_directory, _safemembers, _templates_match)
 
 from eqcorrscan.utils.catalog_utils import _get_origin
-from eqcorrscan.utils.findpeaks import decluster
+from eqcorrscan.utils.findpeaks import decluster, decluster_distance_time
 from eqcorrscan.utils.plotting import cumulative_detections
 
 Logger = logging.getLogger(__name__)
@@ -471,7 +471,8 @@ class Party(object):
             family.detections = rethresh_detections
         return self
 
-    def decluster(self, trig_int, timing='detect', metric='avg_cor'):
+    def decluster(self, trig_int, timing='detect', metric='avg_cor',
+                  hypocentral_separation=None):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -492,6 +493,11 @@ class Party(object):
         :param timing:
             Either 'detect' or 'origin' to decluster based on either the
             detection time or the origin time.
+        :type hypocentral_separation: float
+        :param hypocentral_separation:
+            Maximum inter-event separation in km to decluster events within.
+            If an event happens within this distance of another event, and
+            within the trig_int defined time, then they will be declustered.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -505,41 +511,68 @@ class Party(object):
         >>> declustered = party.decluster(20)
         >>> len(party)
         3
+
+        .. rubric:: Example using epicentral-distance
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> # Calculate the expected origins based on the template origin.
+        >>> for family in party:
+        ...     for detection in family:
+        ...         _ = detection._calculate_event(template=family.template)
+        >>> declustered = party.decluster(20, hypocentral_separation=1)
+        >>> len(party)
+        4
+        >>> declustered = party.decluster(20, hypocentral_separation=100)
+        >>> len(party)
+        3
         """
         if self.__len__() == 0:
             return self
-        all_detections = []
-        for fam in self.families:
-            all_detections.extend(fam.detections)
+        all_detections = [d for fam in self.families for d in fam.detections]
+        catalog = None
+        if hypocentral_separation:
+            catalog = Catalog([d.event for fam in self.families
+                               for d in fam.detections if d.event])
+            if len(catalog) == 0:
+                Logger.warning("Detections do not have events, cannot use "
+                               "hypocentral separation")
+                catalog = None
+
+        assert metric in ('avg_cor', 'cor_sum'), \
+            'metric is not cor_sum or avg_cor'
+        assert timing in ('detect', 'origin'), 'timing is not detect or origin'
         if timing == 'detect':
             if metric == 'avg_cor':
                 detect_info = [(d.detect_time, d.detect_val / d.no_chans)
                                for d in all_detections]
-            elif metric == 'cor_sum':
+            else:
                 detect_info = [(d.detect_time, d.detect_val)
                                for d in all_detections]
-            else:
-                raise MatchFilterError('metric is not cor_sum or avg_cor')
-        elif timing == 'origin':
+        else:
             if metric == 'avg_cor':
                 detect_info = [(_get_origin(d.event).time,
                                 d.detect_val / d.no_chans)
                                for d in all_detections]
-            elif metric == 'cor_sum':
+            else:
                 detect_info = [(_get_origin(d.event).time, d.detect_val)
                                for d in all_detections]
-            else:
-                raise MatchFilterError('metric is not cor_sum or avg_cor')
-        else:
-            raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
         detect_vals = np.array([d[1] for d in detect_info], dtype=np.float32)
         detect_times = np.array([
             _total_microsec(d[0].datetime, min_det.datetime)
             for d in detect_info])
         # Trig_int must be converted from seconds to micro-seconds
-        peaks_out = decluster(
-            peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
+        if hypocentral_separation and catalog:
+            peaks_out = decluster_distance_time(
+                peaks=detect_vals, index=detect_times,
+                trig_int=trig_int * 10 ** 6, catalog=catalog,
+                hypocentral_separation=hypocentral_separation)
+        else:
+            peaks_out = decluster(
+                peaks=detect_vals, index=detect_times,
+                trig_int=trig_int * 10 ** 6)
         # Need to match both the time and the detection value
         declustered_detections = []
         for ind in peaks_out:

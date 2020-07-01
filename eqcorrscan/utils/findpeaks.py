@@ -18,6 +18,7 @@ from future.utils import native_str
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
+from eqcorrscan.utils.clustering import dist_mat_km
 
 
 Logger = logging.getLogger(__name__)
@@ -395,6 +396,83 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     return peaks_out
 
 
+def decluster_distance_time(peaks, index, trig_int, catalog,
+                            hypocentral_separation, threshold=0):
+    """
+    Decluster based on time between peaks, and distance between events.
+
+    Peaks, index and catalog must all be sorted the same way, e.g. peak[i]
+    corresponds to index[i] and catalog[i]. Peaks that are within the time
+    threshold of one-another, but correspond to events separated by more than
+    the hypocentral_separation threshold will not be removed.
+
+    :type peaks: np.array
+    :param peaks: array of peak values
+    :type index: np.ndarray
+    :param index: locations of peaks
+    :type trig_int: int
+    :param trig_int: Minimum trigger interval in samples
+    :type catalog: obspy.core.event.Catalog
+    :param catalog:
+        Catalog of events with origins to use to measure inter-event distances
+    :type hypocentral_separation: float
+    :param hypocentral_separation:
+        Maximum inter-event distance to decluster over in km
+    :type threshold: float
+    :param threshold: Minimum absolute peak value to retain it
+
+    :return: list of tuples of (value, sample)
+    """
+    utilslib = _load_cdll('libutils')
+
+    length = peaks.shape[0]
+    trig_int = int(trig_int)
+
+    for var in [index.max(), trig_int]:
+        if var == ctypes.c_long(var).value:
+            long_type = ctypes.c_long
+            func = utilslib.decluster_dist_time
+        elif var == ctypes.c_longlong(var).value:
+            long_type = ctypes.c_longlong
+            func = utilslib.decluster_dist_time_ll
+        else:
+            raise OverflowError("Maximum index larger than internal long long")
+
+    func.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=long_type, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        np.ctypeslib.ndpointer(dtype=np.float32, shape=(length * length,),
+                               flags=native_str('C_CONTIGUOUS')),
+        long_type, ctypes.c_float, long_type, ctypes.c_float,
+        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
+                               flags=native_str('C_CONTIGUOUS'))]
+    func.restype = ctypes.c_int
+
+    sorted_inds = np.abs(peaks).argsort()
+    # Sort everything in the same way.
+    arr = peaks[sorted_inds[::-1]]
+    inds = index[sorted_inds[::-1]]
+    sorted_events = [catalog[i] for i in sorted_inds[::-1]]
+    distance_matrix = dist_mat_km(catalog=sorted_events)
+
+    arr = np.ascontiguousarray(arr, dtype=np.float32)
+    inds = np.ascontiguousarray(inds, dtype=long_type)
+    distance_matrix = np.ascontiguousarray(
+        distance_matrix.flatten(order="C"), dtype=np.float32)
+    out = np.zeros(len(arr), dtype=np.uint32)
+
+    ret = func(
+        arr, inds, distance_matrix, long_type(length), np.float32(threshold),
+        long_type(trig_int), hypocentral_separation, out)
+    if ret != 0:
+        raise MemoryError("Issue with c-routine, returned %i" % ret)
+
+    peaks_out = list(zip(arr[out.astype(bool)], inds[out.astype(bool)]))
+    return peaks_out
+
+
 def decluster(peaks, index, trig_int, threshold=0):
     """
     Decluster peaks based on an enforced minimum separation.
@@ -405,6 +483,8 @@ def decluster(peaks, index, trig_int, threshold=0):
     :param index: locations of peaks
     :type trig_int: int
     :param trig_int: Minimum trigger interval in samples
+    :type threshold: float
+    :param threshold: Minimum absolute peak value to retain it.
 
     :return: list of tuples of (value, sample)
     """

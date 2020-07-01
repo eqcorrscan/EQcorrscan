@@ -20,6 +20,11 @@
     This flag is generally not advised, but when used, may attempt to trim all
     data to zero length.  The expected behaviour is to remove bad data and run
     with the remaining data.
+  - Party:
+    - decluster now accepts a hypocentral_separation argument. This allows
+      the inclusion of detections that occur close in time, but not in space.
+      This is underwritten by a new findpeaks.decluster_dist_time function
+      based on a new C-function.
 * utils.pre_processing
   - Only templates that need to be reshaped are reshaped now - this can be a lot
     faster.
