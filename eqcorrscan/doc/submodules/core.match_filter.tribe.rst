@@ -21,6 +21,7 @@ core.match_filter.tribe
       detect
       read
       remove
+      select
       sort
       write
 
@@ -32,6 +33,7 @@ core.match_filter.tribe
    .. automethod:: detect
    .. automethod:: read
    .. automethod:: remove
+   .. automethod:: select
    .. automethod:: sort
    .. automethod:: write
 

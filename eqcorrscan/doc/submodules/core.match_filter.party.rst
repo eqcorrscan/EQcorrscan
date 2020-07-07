@@ -21,6 +21,7 @@ core.match_filter.party
       min_chans
       read
       rethreshold
+      select
       sort
       write
 
@@ -34,6 +35,7 @@ core.match_filter.party
    .. automethod:: min_chans
    .. automethod:: read
    .. automethod:: rethreshold
+   .. automethod:: select
    .. automethod:: sort
    .. automethod:: write
 

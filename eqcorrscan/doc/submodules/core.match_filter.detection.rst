@@ -15,10 +15,12 @@ core.match_filter.detection
    .. autosummary::
 
       copy
+      extract_stream
       write
 
    .. automethod:: __init__
    .. automethod:: copy
+   .. automethod:: extract_stream
    .. automethod:: write
 
 Functions

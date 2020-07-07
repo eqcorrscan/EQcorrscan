@@ -16,6 +16,7 @@ core.match_filter.family
 
       append
       copy
+      extract_streams
       lag_calc
       plot
       sort
@@ -24,6 +25,7 @@ core.match_filter.family
    .. automethod:: __init__
    .. automethod:: append
    .. automethod:: copy
+   .. automethod:: extract_streams
    .. automethod:: lag_calc
    .. automethod:: plot
    .. automethod:: sort
