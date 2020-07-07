@@ -147,7 +147,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         overlap = "calculate" will work out the appropriate overlap based
         on the maximum lags within templates.
     :type full_peaks: bool
-    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks_compiled`
     :type process_cores: int
     :param process_cores:
         Number of processes to use for pre-processing (if different to
@@ -451,7 +451,7 @@ def match_filter(template_names, template_list, st, threshold,
         certain of your arguments, then set to False.
     :type full_peaks: bool
     :param full_peaks: See
-        :func: `eqcorrscan.utils.findpeaks.find_peaks2_short`
+        :func: `eqcorrscan.utils.findpeaks.find_peaks_compiled`
     :type peak_cores: int
     :param peak_cores:
         Number of processes to use for parallel peak-finding (if different to
