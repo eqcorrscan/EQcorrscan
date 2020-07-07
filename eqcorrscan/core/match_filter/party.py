@@ -902,65 +902,70 @@ class Party(object):
                     relative_magnitudes=relative_magnitudes, **kwargs)
         return catalog
 
-    def relative_magnitudes(self, stream, pre_processed, process_cores=1,
-                            ignore_bad_data=False, parallel=False, min_cc=0.4,
-                            **kwargs):
-        """
-        Compute relative magnitudes for the detections.
+    @staticmethod
+    def relative_magnitudes(self, *args, **kwargs):
+        print("This function is not functional, please keep an eye out for "
+              "this in future releases.")
 
-        Works in place on events in the Family
-
-        :type stream: obspy.core.stream.Stream
-        :param stream:
-            All the data needed to cut from - can be a gappy Stream.
-        :type pre_processed: bool
-        :param pre_processed:
-            Whether the stream has been pre-processed or not to match the
-            templates. See note below.
-        :param parallel: Turn parallel processing on or off.
-        :type process_cores: int
-        :param process_cores:
-            Number of processes to use for pre-processing (if different to
-            `cores`).
-        :type ignore_bad_data: bool
-        :param ignore_bad_data:
-            If False (default), errors will be raised if data are excessively
-            gappy or are mostly zeros. If True then no error will be raised,
-            but an empty trace will be returned (and not used in detection).
-        :type min_cc: float
-        :param min_cc: Minimum correlation for magnitude to be computed.
-        :param kwargs:
-            Keyword arguments passed to `utils.mag_calc.relative_mags`
-
-        .. Note::
-            Note on pre-processing: You can provide a pre-processed stream,
-            which may be beneficial for detections over large time periods
-            (the stream can have gaps, which reduces memory usage).  However,
-            in this case the processing steps are not checked, so you must
-            ensure that the template in the Family has the same sampling
-            rate and filtering as the stream.
-            If pre-processing has not be done then the data will be processed
-            according to the parameters in the template.
-        """
-        template_groups = group_templates(
-            [_f.template for _f in self.families])
-        for template_group in template_groups:
-            family = [_f for _f in self.families
-                      if _f.template == template_group[0]][0]
-            processed_stream = family._process_streams(
-                stream=stream, pre_processed=pre_processed,
-                process_cores=process_cores, parallel=parallel,
-                ignore_bad_data=ignore_bad_data)
-            for template in template_group:
-                family = [_f for _f in self.families
-                          if _f.template == template][0]
-                family.relative_magnitudes(
-                    stream=processed_stream, pre_processed=True,
-                    min_cc=min_cc, parallel=parallel,
-                    process_cores=process_cores,
-                    ignore_bad_data=ignore_bad_data,
-                    **kwargs)
-        return self.get_catalog()
+    # def relative_magnitudes(self, stream, pre_processed, process_cores=1,
+    #                         ignore_bad_data=False, parallel=False, min_cc=0.4,
+    #                         **kwargs):
+    #     """
+    #     Compute relative magnitudes for the detections.
+    #
+    #     Works in place on events in the Family
+    #
+    #     :type stream: obspy.core.stream.Stream
+    #     :param stream:
+    #         All the data needed to cut from - can be a gappy Stream.
+    #     :type pre_processed: bool
+    #     :param pre_processed:
+    #         Whether the stream has been pre-processed or not to match the
+    #         templates. See note below.
+    #     :param parallel: Turn parallel processing on or off.
+    #     :type process_cores: int
+    #     :param process_cores:
+    #         Number of processes to use for pre-processing (if different to
+    #         `cores`).
+    #     :type ignore_bad_data: bool
+    #     :param ignore_bad_data:
+    #         If False (default), errors will be raised if data are excessively
+    #         gappy or are mostly zeros. If True then no error will be raised,
+    #         but an empty trace will be returned (and not used in detection).
+    #     :type min_cc: float
+    #     :param min_cc: Minimum correlation for magnitude to be computed.
+    #     :param kwargs:
+    #         Keyword arguments passed to `utils.mag_calc.relative_mags`
+    #
+    #     .. Note::
+    #         Note on pre-processing: You can provide a pre-processed stream,
+    #         which may be beneficial for detections over large time periods
+    #         (the stream can have gaps, which reduces memory usage).  However,
+    #         in this case the processing steps are not checked, so you must
+    #         ensure that the template in the Family has the same sampling
+    #         rate and filtering as the stream.
+    #         If pre-processing has not be done then the data will be processed
+    #         according to the parameters in the template.
+    #     """
+    #     template_groups = group_templates(
+    #         [_f.template for _f in self.families])
+    #     for template_group in template_groups:
+    #         family = [_f for _f in self.families
+    #                   if _f.template == template_group[0]][0]
+    #         processed_stream = family._process_streams(
+    #             stream=stream, pre_processed=pre_processed,
+    #             process_cores=process_cores, parallel=parallel,
+    #             ignore_bad_data=ignore_bad_data)
+    #         for template in template_group:
+    #             family = [_f for _f in self.families
+    #                       if _f.template == template][0]
+    #             family.relative_magnitudes(
+    #                 stream=processed_stream, pre_processed=True,
+    #                 min_cc=min_cc, parallel=parallel,
+    #                 process_cores=process_cores,
+    #                 ignore_bad_data=ignore_bad_data,
+    #                 **kwargs)
+    #     return self.get_catalog()
 
     def get_catalog(self):
         """
