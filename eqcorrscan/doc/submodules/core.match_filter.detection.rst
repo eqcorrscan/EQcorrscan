@@ -4,23 +4,29 @@ core.match_filter.detection
 .. currentmodule:: eqcorrscan.core.match_filter.detection
 .. automodule:: eqcorrscan.core.match_filter.detection
 
-    .. comment to end block
+----
 
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
+.. comment to end block
 
-        core.match_filter.detection.Detection
+.. autoclass:: Detection
 
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+   .. rubric:: Methods
 
-       read_detections
-       write_catalog
-       get_catalog
+   .. autosummary::
 
-    .. comment to end block
+      copy
+      write
+
+   .. automethod:: __init__
+   .. automethod:: copy
+   .. automethod:: write
+
+Functions
+----
+
+.. autofunction:: read_detections
+.. autofunction:: write_catalog
+.. autofunction:: get_catalog
+
+
+.. comment to end block

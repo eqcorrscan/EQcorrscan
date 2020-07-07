@@ -1,5 +1,5 @@
 subspace
---------
+========
 
 .. currentmodule:: eqcorrscan.core.subspace
 .. automodule:: eqcorrscan.core.subspace
@@ -15,23 +15,40 @@ in the clustering_ module.
 .. _Harris: https://e-reports-ext.llnl.gov/pdf/335299.pdf
 .. _clustering: utils.clustering.html
 
-    .. comment to end block
+.. comment to end block
 
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
+Classes
+-------
 
-        core.subspace.Detector
+.. autoclass:: Detector
 
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+   .. rubric:: Methods
 
-       read_detector
-       multi
-       subspace_detect
+   .. autosummary::
 
-    .. comment to end block
+      construct
+      detect
+      energy_capture
+      partition
+      plot
+      read
+      write
+
+
+   .. automethod:: __init__
+   .. automethod:: construct
+   .. automethod:: detect
+   .. automethod:: energy_capture
+   .. automethod:: partition
+   .. automethod:: plot
+   .. automethod:: read
+   .. automethod:: write
+
+Functions
+---------
+
+.. autofunction:: read_detector
+.. autofunction:: multi
+.. autofunction:: subspace_detect
+
+.. comment to end block

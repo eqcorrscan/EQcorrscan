@@ -62,5 +62,4 @@ Contents:
    installation
    updates
    tutorial
-   core
-   utils
+   api

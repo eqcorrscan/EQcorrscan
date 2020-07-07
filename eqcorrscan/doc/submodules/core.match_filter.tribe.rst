@@ -1,24 +1,43 @@
 core.match_filter.tribe
------------------------
+---------------------------
 
 .. currentmodule:: eqcorrscan.core.match_filter.tribe
 .. automodule:: eqcorrscan.core.match_filter.tribe
 
-    .. comment to end block
+----
 
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
+.. comment to end block
 
-        core.match_filter.tribe.Tribe
+.. autoclass:: Tribe
 
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+   .. rubric:: Methods
 
-       read_tribe
+   .. autosummary::
 
-    .. comment to end block
+      client_detect
+      cluster
+      construct
+      copy
+      detect
+      read
+      remove
+      sort
+      write
+
+   .. automethod:: __init__
+   .. automethod:: client_detect
+   .. automethod:: cluster
+   .. automethod:: construct
+   .. automethod:: copy
+   .. automethod:: detect
+   .. automethod:: read
+   .. automethod:: remove
+   .. automethod:: sort
+   .. automethod:: write
+
+Functions
+----
+
+.. autofunction:: read_tribe
+
+.. comment to end block
