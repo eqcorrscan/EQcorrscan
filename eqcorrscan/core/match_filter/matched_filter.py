@@ -92,9 +92,9 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         av_chan_corr.  See Note on thresholding below.
     :type trig_int: float
     :param trig_int:
-        Minimum gap between detections in seconds. If multiple detections
-        occur within trig_int of one-another, the one with the highest
-        cross-correlation sum will be selected.
+        Minimum gap between detections from one template in seconds.
+        If multiple detections occur within trig_int of one-another, the one
+        with the highest cross-correlation sum will be selected.
     :type plot: bool
     :param plot:
         Turn plotting on or off.
@@ -410,7 +410,10 @@ def match_filter(template_names, template_list, st, threshold,
         The type of threshold to be used, can be MAD, absolute or av_chan_corr.
         See Note on thresholding below.
     :type trig_int: float
-    :param trig_int: Minimum gap between detections in seconds.
+    :param trig_int:
+        Minimum gap between detections from one template in seconds.
+        If multiple detections occur within trig_int of one-another, the one
+        with the highest cross-correlation sum will be selected.
     :type plot: bool
     :param plot: Turn plotting on or off
     :type plotdir: str
