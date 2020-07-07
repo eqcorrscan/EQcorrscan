@@ -4,8 +4,8 @@ Welcome to EQcorrscan - this package is designed to compute earthquake detection
 using a paralleled matched-filter network cross-correlation routine, and analyse the
 results.
 
-As you will see, this package is divided into two main sub-modules, the
-:doc:`core </core>` and :doc:`utils </utils>` sub-modules.
+EQcorrscan is divided into two main sub-modules, the
+**core** and **utils** sub-modules.
 The core sub-module contains the main, high-level functions:
 
 :template_gen:
@@ -22,7 +22,7 @@ The core sub-module contains the main, high-level functions:
         by the match-filter routine, these lags can then be used to define new picks
         for high accuracy re-locations.
 
-Some other high-level functions are included in the :doc:`utils </utils>` sub-module
+Some other high-level functions are included in the :doc:`utils </api>` sub-module
 and are documented here with tutorials:
 
 :mag_calc:
@@ -32,7 +32,7 @@ and are documented here with tutorials:
         Routines for clustering earthquakes based on a range of metircs using
         agglomorative clustering methods.
 
-The :doc:`utils </utils>` sub-module contains useful, but small functions.
+The **utils** sub-module contains useful, but small functions.
 These functions are rarely cpu intensive, but perform vital operations, such
 as finding peaks in noisy data (:doc:`findpeaks </submodules/utils.findpeaks>`),
 converting a database to hypoDD formatted files and computing cross-correlations between
