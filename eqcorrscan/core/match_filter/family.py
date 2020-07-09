@@ -609,116 +609,121 @@ class Family(object):
                 **kwargs)
         return self.catalog
 
-    def relative_magnitudes(self, stream, pre_processed, process_cores=1,
-                            ignore_bad_data=False, parallel=False, min_cc=0.4,
-                            **kwargs):
-        """
-        Compute relative magnitudes for the detections.
+    @staticmethod
+    def relative_magnitudes(self, *args, **kwargs):
+        print("This function is not functional, please keep an eye out for "
+              "this in future releases.")
 
-        Works in place on events in the Family
-
-        :type stream: obspy.core.stream.Stream
-        :param stream:
-            All the data needed to cut from - can be a gappy Stream.
-        :type pre_processed: bool
-        :param pre_processed:
-            Whether the stream has been pre-processed or not to match the
-            templates. See note below.
-        :param parallel: Turn parallel processing on or off.
-        :type process_cores: int
-        :param process_cores:
-            Number of processes to use for pre-processing (if different to
-            `cores`).
-        :type ignore_bad_data: bool
-        :param ignore_bad_data:
-            If False (default), errors will be raised if data are excessively
-            gappy or are mostly zeros. If True then no error will be raised,
-            but an empty trace will be returned (and not used in detection).
-        :type min_cc: float
-        :param min_cc: Minimum correlation for magnitude to be computed.
-        :param kwargs:
-            Keyword arguments passed to `utils.mag_calc.relative_mags`
-
-        .. Note::
-            Note on pre-processing: You can provide a pre-processed stream,
-            which may be beneficial for detections over large time periods
-            (the stream can have gaps, which reduces memory usage).  However,
-            in this case the processing steps are not checked, so you must
-            ensure that the template in the Family has the same sampling
-            rate and filtering as the stream.
-            If pre-processing has not be done then the data will be processed
-            according to the parameters in the template.
-        """
-        processed_stream = self._process_streams(
-            stream=stream, pre_processed=pre_processed,
-            process_cores=process_cores, parallel=parallel,
-            ignore_bad_data=ignore_bad_data)
-        for detection in self.detections:
-            event = detection.event
-            if event is None:
-                continue
-            corr_dict = {}
-            for pick in event.picks:
-                if len(pick.comments) == 0:
-                    continue
-                try:
-                    corr = float(pick.comments[0].text.split("=")[-1])
-                except IndexError:
-                    continue
-                corr_dict.update({pick.waveform_id.get_seed_string(): corr})
-            if len(corr_dict) == 0:
-                Logger.info("Correlations not run for {0}".format(
-                    detection.id))
-                continue
-            template = self.template
-            try:
-                t_mag = (
-                        template.event.preferred_magnitude() or
-                        template.event.magnitudes[0])
-            except IndexError:
-                Logger.info(
-                    "No template magnitude, relative magnitudes cannot"
-                    " be computed for {0}".format(event.resource_id))
-                continue
-            # Set the signal-window to be the template length
-            signal_window = (-template.prepick,
-                             min([tr.stats.npts * tr.stats.delta
-                                  for tr in template.st]) - template.prepick)
-            delta_mag = relative_magnitude(
-                st1=template.st, st2=processed_stream,
-                event1=template.event, event2=event,
-                correlations=corr_dict, min_cc=min_cc,
-                signal_window=signal_window, **kwargs)
-            # Add station magnitudes
-            sta_contrib = []
-            av_mag = 0.0
-            for seed_id, _delta_mag in delta_mag.items():
-                sta_mag = StationMagnitude(
-                    mag=t_mag.mag + _delta_mag,
-                    magnitude_type=t_mag.magnitude_type,
-                    method_id=ResourceIdentifier("relative"),
-                    waveform_id=WaveformStreamID(seed_string=seed_id),
-                    creation_info=CreationInfo(
-                        author="EQcorrscan",
-                        creation_time=UTCDateTime()))
-                event.station_magnitudes.append(sta_mag)
-                sta_contrib.append(StationMagnitudeContribution(
-                    station_magnitude_id=sta_mag.resource_id,
-                    weight=1.))
-                av_mag += sta_mag.mag
-            if len(delta_mag) > 0:
-                av_mag /= len(delta_mag)
-                # Compute average magnitude
-                event.magnitudes.append(Magnitude(
-                    mag=av_mag, magnitude_type=t_mag.magnitude_type,
-                    method_id=ResourceIdentifier("relative"),
-                    station_count=len(delta_mag),
-                    evaluation_mode="manual",
-                    station_magnitude_contributions=sta_contrib,
-                    creation_info=CreationInfo(
-                        author="EQcorrscan",
-                        creation_time=UTCDateTime())))
-        return self.catalog
+    # def relative_magnitudes(self, stream, pre_processed, process_cores=1,
+    #                         ignore_bad_data=False, parallel=False, min_cc=0.4,
+    #                         **kwargs):
+    #     """
+    #     Compute relative magnitudes for the detections.
+    #
+    #     Works in place on events in the Family
+    #
+    #     :type stream: obspy.core.stream.Stream
+    #     :param stream:
+    #         All the data needed to cut from - can be a gappy Stream.
+    #     :type pre_processed: bool
+    #     :param pre_processed:
+    #         Whether the stream has been pre-processed or not to match the
+    #         templates. See note below.
+    #     :param parallel: Turn parallel processing on or off.
+    #     :type process_cores: int
+    #     :param process_cores:
+    #         Number of processes to use for pre-processing (if different to
+    #         `cores`).
+    #     :type ignore_bad_data: bool
+    #     :param ignore_bad_data:
+    #         If False (default), errors will be raised if data are excessively
+    #         gappy or are mostly zeros. If True then no error will be raised,
+    #         but an empty trace will be returned (and not used in detection).
+    #     :type min_cc: float
+    #     :param min_cc: Minimum correlation for magnitude to be computed.
+    #     :param kwargs:
+    #         Keyword arguments passed to `utils.mag_calc.relative_mags`
+    #
+    #     .. Note::
+    #         Note on pre-processing: You can provide a pre-processed stream,
+    #         which may be beneficial for detections over large time periods
+    #         (the stream can have gaps, which reduces memory usage).  However,
+    #         in this case the processing steps are not checked, so you must
+    #         ensure that the template in the Family has the same sampling
+    #         rate and filtering as the stream.
+    #         If pre-processing has not be done then the data will be processed
+    #         according to the parameters in the template.
+    #     """
+    #     processed_stream = self._process_streams(
+    #         stream=stream, pre_processed=pre_processed,
+    #         process_cores=process_cores, parallel=parallel,
+    #         ignore_bad_data=ignore_bad_data)
+    #     for detection in self.detections:
+    #         event = detection.event
+    #         if event is None:
+    #             continue
+    #         corr_dict = {}
+    #         for pick in event.picks:
+    #             if len(pick.comments) == 0:
+    #                 continue
+    #             try:
+    #                 corr = float(pick.comments[0].text.split("=")[-1])
+    #             except IndexError:
+    #                 continue
+    #             corr_dict.update({pick.waveform_id.get_seed_string(): corr})
+    #         if len(corr_dict) == 0:
+    #             Logger.info("Correlations not run for {0}".format(
+    #                 detection.id))
+    #             continue
+    #         template = self.template
+    #         try:
+    #             t_mag = (
+    #                     template.event.preferred_magnitude() or
+    #                     template.event.magnitudes[0])
+    #         except IndexError:
+    #             Logger.info(
+    #                 "No template magnitude, relative magnitudes cannot"
+    #                 " be computed for {0}".format(event.resource_id))
+    #             continue
+    #         # Set the signal-window to be the template length
+    #         signal_window = (-template.prepick,
+    #                          min([tr.stats.npts * tr.stats.delta
+    #                               for tr in template.st]) - template.prepick)
+    #         delta_mag = relative_magnitude(
+    #             st1=template.st, st2=processed_stream,
+    #             event1=template.event, event2=event,
+    #             correlations=corr_dict, min_cc=min_cc,
+    #             signal_window=signal_window, **kwargs)
+    #         # Add station magnitudes
+    #         sta_contrib = []
+    #         av_mag = 0.0
+    #         for seed_id, _delta_mag in delta_mag.items():
+    #             sta_mag = StationMagnitude(
+    #                 mag=t_mag.mag + _delta_mag,
+    #                 magnitude_type=t_mag.magnitude_type,
+    #                 method_id=ResourceIdentifier("relative"),
+    #                 waveform_id=WaveformStreamID(seed_string=seed_id),
+    #                 creation_info=CreationInfo(
+    #                     author="EQcorrscan",
+    #                     creation_time=UTCDateTime()))
+    #             event.station_magnitudes.append(sta_mag)
+    #             sta_contrib.append(StationMagnitudeContribution(
+    #                 station_magnitude_id=sta_mag.resource_id,
+    #                 weight=1.))
+    #             av_mag += sta_mag.mag
+    #         if len(delta_mag) > 0:
+    #             av_mag /= len(delta_mag)
+    #             # Compute average magnitude
+    #             event.magnitudes.append(Magnitude(
+    #                 mag=av_mag, magnitude_type=t_mag.magnitude_type,
+    #                 method_id=ResourceIdentifier("relative"),
+    #                 station_count=len(delta_mag),
+    #                 evaluation_mode="manual",
+    #                 station_magnitude_contributions=sta_contrib,
+    #                 creation_info=CreationInfo(
+    #                     author="EQcorrscan",
+    #                     creation_time=UTCDateTime())))
+    #     return self.catalog
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
                          parallel=False, ignore_bad_data=False,
