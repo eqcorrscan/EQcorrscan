@@ -21,6 +21,7 @@ from obspy import read, UTCDateTime, Stream
 from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.seishub import Client as SeishubClient
 from obspy.clients.fdsn import Client as FDSNClient
+from obspy.clients.filesystem.sds import Client as SDSClient
 
 
 Logger = logging.getLogger(__name__)
@@ -128,6 +129,12 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                 Logger.warning('No data on server despite station being ' +
                                'available...')
                 continue
+        elif arc_type.upper() == "SDS":
+            client = SDSClient(archive)
+            st += client.get_waveforms(
+                    network='*', station=station_map[0], location='*',
+                    channel=station_map[1], starttime=UTCDateTime(day),
+                    endtime=UTCDateTime(day) + length)
         elif arc_type.lower() == 'day_vols':
             wavfiles = _get_station_file(os.path.join(
                 archive, day.strftime('Y%Y' + os.sep + 'R%j.01')),
