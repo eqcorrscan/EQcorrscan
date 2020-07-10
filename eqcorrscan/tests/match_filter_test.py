@@ -842,6 +842,17 @@ class TestMatchObjectHeavy(unittest.TestCase):
         catalog = party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
+    def test_party_lag_calc_missing_data(self):
+        """Check that if data are insufficient, then no events are returned """
+        party = self.party.copy()
+        st = self.unproc_st.copy()
+        st = st.trim(st[0].stats.starttime,
+                     st[0].stats.starttime + (
+                         0.75 * party[0].template.process_length))
+        print(st)
+        catalog = party.lag_calc(stream=st, pre_processed=False)
+        self.assertEqual(len(catalog), 0)
+
     def test_party_mag_calc_unpreprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.copy().lag_calc(

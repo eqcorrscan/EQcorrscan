@@ -223,7 +223,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :param plotdir:
         Path to plotting folder, plots will be output here.
 
-    :return: Catalog of events.
+    :return: Dictionary of picked events keyed by detection id.
     """
     picked_dict = {}
     delta = family.template.st[0].stats.delta

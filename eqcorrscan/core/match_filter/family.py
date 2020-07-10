@@ -17,7 +17,7 @@ import os
 import shutil
 import logging
 
-from obspy import UTCDateTime, Stream
+from obspy import UTCDateTime, Stream, Catalog
 from obspy.core.event import (
     StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
     CreationInfo, StationMagnitudeContribution)
@@ -598,6 +598,7 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir)
+        catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
                 pick.time += self.template.prepick
@@ -607,7 +608,8 @@ class Family(object):
             self.relative_magnitudes(
                 stream=processed_stream, pre_processed=True, min_cc=min_cc,
                 **kwargs)
-        return self.catalog
+            return self.catalog
+        return catalog_out
 
     @staticmethod
     def relative_magnitudes(self, *args, **kwargs):
