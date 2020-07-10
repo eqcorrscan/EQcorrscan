@@ -903,7 +903,7 @@ class Party(object):
         return catalog
 
     @staticmethod
-    def relative_magnitudes(self, *args, **kwargs):
+    def relative_magnitudes(*args, **kwargs):
         print("This function is not functional, please keep an eye out for "
               "this in future releases.")
 

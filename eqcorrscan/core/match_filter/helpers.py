@@ -34,6 +34,29 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
+def get_waveform_client(waveform_client):
+    """
+    Bind a `get_waveforms_bulk` method to client if it doesn't already have one
+
+    :param waveform_client: Obspy client with a `get_waveforms` method
+
+    :returns: waveform_client with `get_waveforms_bulk`.
+    """
+    def _get_waveforms_bulk_naive(self, bulk_arg):
+        """ naive implementation of get_waveforms_bulk that uses iteration. """
+        st = Stream()
+        for arg in bulk_arg:
+            st += self.get_waveforms(*arg)
+        return st
+
+    # add waveform_bulk method dynamically if it doesn't exist already
+    if not hasattr(waveform_client, "get_waveforms_bulk"):
+        bound_method = _get_waveforms_bulk_naive.__get__(waveform_client)
+        setattr(waveform_client, "get_waveforms_bulk", bound_method)
+
+    return waveform_client
+
+
 def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
