@@ -578,7 +578,7 @@ class Party(object):
         return copy.deepcopy(self)
 
     def write(self, filename, format='tar', write_detection_catalog=True,
-              catalog_format="QUAKEML"):
+              catalog_format="QUAKEML", overwrite=False):
         """
         Write Family out, select output format.
 
@@ -599,6 +599,10 @@ class Party(object):
             SC3ML, QUAKEML are supported. Note that not all information is
             written for all formats (QUAKEML is the most complete, but is
             slow for IO).
+        :type overwrite: boolean
+        :param overwrite:
+            Specifies whether detection-files are overwritten if they exist
+            already. By default, no files are overwritten.
 
         .. NOTE::
             csv format will write out detection objects, all other
@@ -629,14 +633,17 @@ class Party(object):
         if catalog_format not in CAT_EXT_MAP.keys():
             raise TypeError("{0} is not supported".format(catalog_format))
         if format.lower() == 'csv':
-            if os.path.isfile(filename):
-                raise MatchFilterError(
-                    'Will not overwrite existing file: %s' % filename)
+            if os.path.isfile(filename) and not overwrite:
+                raise IOError('Will not overwrite existing file: %s'
+                              % filename)
             for family in self.families:
+                if os.path.isfile(filename) and overwrite:
+                    os.remove(filename)
                 write_detections(fname=filename, detections=family.detections,
                                  mode="a")
         elif format.lower() == 'tar':
-            if os.path.exists(filename):
+            if (os.path.exists(filename) or os.path.exists(filename + ".tgz"))\
+                    and not overwrite:
                 raise IOError('Will not overwrite existing file: %s'
                               % filename)
             # os.makedirs(filename)
