@@ -361,6 +361,7 @@ def _prepare_data(family, detect_data, shift_len):
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
     for key, detect_stream in detect_streams_dict.items():
+        # Split to remove trailing or leading masks
         for i in range(len(detect_stream) - 1, -1, -1):
             trace = detect_stream[i]
             if np.ma.is_masked(trace.data):

@@ -782,8 +782,8 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
-                 parallel=True, process_cores=None, ignore_bad_data=False,
-                 relative_magnitudes=False, **kwargs):
+                 parallel=True, process_cores=None, ignore_length=False,
+                 ignore_bad_data=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -832,13 +832,12 @@ class Party(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
-        :type relative_magnitudes: bool
-        :param relative_magnitudes:
-            Whether to calculate relative magnitudes or not. See
-            :func:`eqcorrscan.utils.mag_calc.relative_magnitude` for more
-            information. Keyword arguments `noise_window`, `signal_window` and
-            `min_snr` can be passed as additional keyword arguments to pass
-            through to `eqcorrscan.utils.mag_calc.relative_magnitude`.
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
         :param ignore_bad_data:
             If False (default), errors will be raised if data are excessively
@@ -884,10 +883,12 @@ class Party(object):
                 net, sta, loc, chan = seed_id.split('.')
                 template_stream += stream.select(
                     network=net, station=sta, location=loc, channel=chan)
+            # Process once and only once for each group.
             processed_stream = family._process_streams(
                 stream=template_stream, pre_processed=pre_processed,
                 process_cores=process_cores, parallel=parallel,
-                ignore_bad_data=ignore_bad_data, select_used_chans=False)
+                ignore_bad_data=ignore_bad_data, ignore_length=ignore_length,
+                select_used_chans=False)
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
@@ -899,7 +900,7 @@ class Party(object):
                     interpolate=interpolate, plot=plot, plotdir=plotdir,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
-                    relative_magnitudes=relative_magnitudes, **kwargs)
+                    ignore_length=ignore_length, **kwargs)
         return catalog
 
     @staticmethod

@@ -503,8 +503,8 @@ class Family(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
-                 parallel=True, process_cores=None, ignore_bad_data=False,
-                 relative_magnitudes=False, **kwargs):
+                 parallel=True, process_cores=None, ignore_length=False,
+                 ignore_bad_data=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -553,18 +553,17 @@ class Family(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
         :param ignore_bad_data:
             If False (default), errors will be raised if data are excessively
             gappy or are mostly zeros. If True then no error will be raised,
             but an empty trace will be returned (and not used in detection).
-        :type relative_magnitudes: bool
-        :param relative_magnitudes:
-            Whether to calculate relative magnitudes or not. See
-            :func:`eqcorrscan.utils.mag_calc.relative_magnitude` for more
-            information. Keyword arguments `noise_window`, `signal_window` and
-            `min_snr` can be passed as additional keyword arguments to pass
-            through to `eqcorrscan.utils.mag_calc.relative_magnitude`.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -592,7 +591,7 @@ class Family(object):
         processed_stream = self._process_streams(
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,
-            ignore_bad_data=ignore_bad_data)
+            ignore_bad_data=ignore_bad_data, ignore_length=ignore_length)
         picked_dict = xcorr_pick_family(
             family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
@@ -604,11 +603,12 @@ class Family(object):
                 pick.time += self.template.prepick
             d = [d for d in self.detections if d.id == detection_id][0]
             d.event.picks = event.picks
-        if relative_magnitudes:
-            self.relative_magnitudes(
-                stream=processed_stream, pre_processed=True, min_cc=min_cc,
-                **kwargs)
-            return self.catalog
+        # TODO: reinstate this is relative magnitudes becomes viable.
+        # if relative_magnitudes:
+        #     self.relative_magnitudes(
+        #         stream=processed_stream, pre_processed=True, min_cc=min_cc,
+        #         **kwargs)
+        #     return self.catalog
         return catalog_out
 
     @staticmethod
@@ -729,7 +729,7 @@ class Family(object):
 
     def _process_streams(self, stream, pre_processed, process_cores=1,
                          parallel=False, ignore_bad_data=False,
-                         select_used_chans=True):
+                         ignore_length=False, select_used_chans=True):
         """
         Process a stream based on the template parameters.
         """
@@ -744,8 +744,8 @@ class Family(object):
         if not pre_processed:
             processed_streams = _group_process(
                 template_group=[self.template], cores=process_cores,
-                parallel=parallel, stream=template_stream.copy(),
-                daylong=False, ignore_length=False, overlap=0.0,
+                parallel=parallel, stream=template_stream.merge().copy(),
+                daylong=False, ignore_length=ignore_length, overlap=0.0,
                 ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
             for p in processed_streams:
@@ -754,7 +754,7 @@ class Family(object):
             Logger.debug(processed_stream)
         else:
             processed_stream = stream.merge()
-        return processed_stream
+        return processed_stream.split()
 
     def extract_streams(self, stream, length, prepick):
         """
@@ -772,8 +772,9 @@ class Family(object):
         :rtype: dict
         :returns: Dictionary of cut streams keyed by detection id.
         """
+        # Splitting and merging to remove trailing and leading masks
         return {d.id: d.extract_stream(
-            stream=stream, length=length, prepick=prepick)
+            stream=stream, length=length, prepick=prepick).split().merge()
             for d in self.detections}
 
 

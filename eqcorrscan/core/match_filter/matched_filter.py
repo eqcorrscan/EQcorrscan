@@ -324,7 +324,8 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             _endtime = kwargs['starttime'] + 86400
         chunk_stream = stream.slice(starttime=kwargs['starttime'],
                                     endtime=_endtime).copy()
-        Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} and {_endtime}")
+        Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
+                     f"and {_endtime}")
         if len(chunk_stream) == 0:
             Logger.warning(
                 f"No data between {kwargs['starttime']} and {_endtime}")
@@ -332,10 +333,22 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         for tr in chunk_stream:
             tr.data = tr.data[0:int(
                 process_length * tr.stats.sampling_rate)]
-        _chunk_stream_lengths = [tr.stats.endtime - tr.stats.starttime
-                                 for tr in chunk_stream]
-        if min(_chunk_stream_lengths) >= .8 * process_length:
-            Logger.debug(f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
+        _chunk_stream_lengths = {
+            tr.id: tr.stats.endtime - tr.stats.starttime
+            for tr in chunk_stream}
+        for tr_id, chunk_length in _chunk_stream_lengths.items():
+            # Remove traces that are too short.
+            if not ignore_length and chunk_length <= .8 * process_length:
+                tr = chunk_stream.select(id=tr_id)[0]
+                chunk_stream.remove(tr)
+                Logger.warning(
+                    "Data chunk on {0} starting {1} and ending {2} is "
+                    "below 80% of the requested length, will not use"
+                    " this.".format(
+                        tr.id, tr.stats.starttime, tr.stats.endtime))
+        if len(chunk_stream) > 0:
+            Logger.debug(
+                f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
             _processed_stream = func(st=chunk_stream, **kwargs)
             # If data have more zeros then pre-processing will return a
             # trace of 0 length
@@ -358,14 +371,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
                     f"Data quality insufficient between {kwargs['starttime']}"
                     f" and {_endtime}")
                 continue
-        else:
-            tr = chunk_stream[_chunk_stream_lengths.index(
-                min(_chunk_stream_lengths))]
-            Logger.warning(
-                "Data chunk on {0} starting {1} and ending {2} is "
-                "below 80% of the requested length, will not use"
-                " this.".format(
-                    tr.id, tr.stats.starttime, tr.stats.endtime))
+
     if _endtime < stream[0].stats.endtime:
         Logger.warning(
             "Last bit of data between {0} and {1} will go unused "

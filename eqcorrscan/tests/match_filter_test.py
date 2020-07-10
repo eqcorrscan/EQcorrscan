@@ -825,8 +825,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
                 assert np.allclose(
-                    float(ev.comments[1].text.split("=")[-1]),
-                    float(chained_ev.comments[1].text.split("=")[-1]),
+                    float(ev.comments[0].text.split("=")[-1]),
+                    float(chained_ev.comments[0].text.split("=")[-1]),
                     atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
@@ -843,15 +843,27 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(catalog), 3)
 
     def test_party_lag_calc_missing_data(self):
-        """Check that if data are insufficient, then no events are returned """
+        """Check that if data are short, then no events are returned. #406 """
         party = self.party.copy()
         st = self.unproc_st.copy()
         st = st.trim(st[0].stats.starttime,
                      st[0].stats.starttime + (
                          0.75 * party[0].template.process_length))
-        print(st)
         catalog = party.lag_calc(stream=st, pre_processed=False)
         self.assertEqual(len(catalog), 0)
+
+    def test_party_lag_calc_short_data(self):
+        """ Check that insufficient data with ignore_length are run. #406 """
+        party = self.party.copy()
+        st = self.unproc_st.copy()
+        cut_start = st[0].stats.starttime + (
+                0.5 * party[0].template.process_length)
+        cut_end = st[0].stats.starttime + (
+                0.8 * party[0].template.process_length)
+        st = st.cutout(cut_start, cut_end)
+        catalog = party.lag_calc(stream=st, pre_processed=False,
+                                 ignore_length=True, ignore_bad_data=True)
+        self.assertEqual(len(catalog), 4)
 
     def test_party_mag_calc_unpreprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
