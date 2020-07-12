@@ -26,11 +26,13 @@ jobs:
       - name: MacOS specific setup
         shell: bash -l {0}
         if: matrix.os == 'macos-latest'
-          run: conda install clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
-      - name: Windows specific setup
-        shell: bash -l {0}
-        if: matrix.os == 'windows-latest'
-          run: cp misc/appveyor/fftw3.h eqcorrscan/utils/src/fftw3.h
+          run: |
+            conda install clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
+#      - name: Windows specific setup
+#        shell: bash -l {0}
+#        if: matrix.os == 'windows-latest'
+#          run: |
+#            cp misc/appveyor/fftw3.h eqcorrscan/utils/src/fftw3.h
 
 
       - name: install eqcorrscan
