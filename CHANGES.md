@@ -25,6 +25,9 @@
       the inclusion of detections that occur close in time, but not in space.
       This is underwritten by a new findpeaks.decluster_dist_time function
       based on a new C-function.
+  - Tribe:
+    - Add monkey-patching for clients that do not have a `get_waveforms_bulk`
+      method for use in `.client_detect`. See issue #394.
 * utils.pre_processing
   - Only templates that need to be reshaped are reshaped now - this can be a lot
     faster.
