@@ -1,0 +1,24 @@
+name: eqcorrscan-test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy>=1.12
+  - matplotlib>=1.3.0
+  - scipy>=0.18
+  - mock
+  - obspy>=1.0.3
+  - h5py
+  - pyyaml
+  - bottleneck
+  - mkl
+  - mkl-include
+  - pyfftw>=0.12.0
+  - pyproj<2
+  - pytest>=2.0.0
+  - pytest-cov
+  - pytest-pep8
+  - pytest-xdist
+  - pytest-rerunfailures
+  - pytest-mpl
+  - codecov
