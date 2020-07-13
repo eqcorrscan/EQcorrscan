@@ -48,9 +48,6 @@ jobs:
           export OMP_NUM_THREADS=2
           py.test -m "serial and not network" --cov-report=xml --cov-append
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v2
-
       - name: upload coverage
         uses: codecov/codecov-action@v1
         with:
