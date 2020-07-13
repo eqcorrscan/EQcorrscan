@@ -103,16 +103,15 @@ class TestTutorialScripts(unittest.TestCase):
                 self.assertTrue(abs(re_picked_delay) < shift_len)
 
     @pytest.mark.superslow
-    @pytest.mark.flaky(reruns=2)
     def test_subspace(self):
         """Test the subspace tutorial."""
         print("Running subspace")
         detections = subspace.run_tutorial(plot=False, cores=1, verbose=True)
         print("Subspace ran")
-        if not len(detections) == 11:
+        if not len(detections) == 4:
             for detection in detections:
                 print(detection)
-        self.assertEqual(len(detections), 11)
+        self.assertEqual(len(detections), 4)
 
 
 if __name__ == '__main__':
