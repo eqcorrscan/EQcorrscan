@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v2
 
       - name: Setup conda
         uses: goanpeca/setup-miniconda@v1
