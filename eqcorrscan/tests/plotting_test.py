@@ -288,7 +288,7 @@ class MultiStreamPlottingMethods(unittest.TestCase):
     def setUpClass(cls):
         wavefiles = glob.glob(os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'test_data', 'WAV',
-            'TEST_', '*'))
+            'TEST_', '2013-*'))
         streams = [read(w) for w in wavefiles[1:10]]
         cls.stream_list = []
         for st in streams:
