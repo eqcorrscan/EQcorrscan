@@ -1596,7 +1596,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
     >>> import glob
     >>> from eqcorrscan.utils.plotting import svd_plot
     >>> from eqcorrscan.utils.clustering import svd, svd_to_stream
-    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
+    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/2013-*')
     >>> streams = [read(w) for w in wavefiles[1:10]]
     >>> stream_list = []
     >>> for st in streams:
