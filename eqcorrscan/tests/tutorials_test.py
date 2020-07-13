@@ -108,10 +108,10 @@ class TestTutorialScripts(unittest.TestCase):
         print("Running subspace")
         detections = subspace.run_tutorial(plot=False, cores=1, verbose=True)
         print("Subspace ran")
-        if not len(detections) == 4:
+        if not len(detections) == 8:
             for detection in detections:
                 print(detection)
-        self.assertEqual(len(detections), 4)
+        self.assertEqual(len(detections), 8)
 
 
 if __name__ == '__main__':
