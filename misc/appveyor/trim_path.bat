@@ -1,0 +1,3 @@
+@echo off
+
+if "%PLATFORM%" == "X64" ( set "PATH=C:\windows\system32;C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\BIN\amd64;C:\Program Files (x86)\Windows Kits\8.1\bin\x64;C:\Program Files (x86)\Windows Kits\8.1\bin\x86;C:\windows;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files\AppVeyor\BuildAgent\;C:\ProgramData\chocolatey\bin" ) ELSE ( set "PATH=C:\windows\system32;C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\BIN;C:\Program Files (x86)\Windows Kits\8.1\bin\x86;C:\windows;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files\AppVeyor\BuildAgent\;C:\ProgramData\chocolatey\bin" )
