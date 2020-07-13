@@ -28,7 +28,7 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             export INCLUDE="$LIBRARY_INC;$INCLUDE"
-            export LIB=$LIBRARY_LIB;$LIB"
+            export LIB="$LIBRARY_LIB;$LIB"
             echo $LIB
             echo $INCLUDE
             echo $LIBRARY_LIB
