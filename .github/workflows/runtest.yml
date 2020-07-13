@@ -28,7 +28,7 @@ jobs:
         shell: bash -l {0}
         run: |
           if [ "$RUNNER_OS" == "macOS" ]; then
-            conda install -y -c conda-forge/label/cf202003 fftw
+            conda install -c conda-forge/label/cf202003 fftw -y
             conda install -y clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
           fi
 
