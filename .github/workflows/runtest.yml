@@ -1,4 +1,4 @@
-name: test
+name: test-eqcorrscan
 on: [pull_request]  #, push]
 
 jobs:
