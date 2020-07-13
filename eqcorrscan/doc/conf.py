@@ -19,11 +19,12 @@ sys.path.insert(0, os.path.abspath('../..'))
 import matplotlib
 import eqcorrscan
 
-READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 import sphinx_bootstrap_theme
 # Use mock to allow for autodoc compilation without needing C based modules
 import mock
 import glob
+
+READ_THE_DOCS = os.environ.get('READTHEDOCS', None) == 'True'
 MOCK_MODULES = ['cv2', 'h5py', 'eqcorrscan.utils.libnames']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
@@ -150,10 +151,10 @@ latex_elements = {
     'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
