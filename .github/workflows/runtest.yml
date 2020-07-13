@@ -1,5 +1,5 @@
 name: test
-on: [push, pull_request]
+on: [pull_request]  #, push]
 
 jobs:
   # Runs the tests on combinations of the supported python/os matrix.
@@ -27,6 +27,7 @@ jobs:
         shell: bash -l {0}
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
+            call misc/appveyor/setup_fftw_dlls.cmd
             cp misc/appveyor/fftw3.h eqcorrscan/utils/src/fftw3.h
           elif [ "$RUNNER_OS" == "macOS" ]; then
             conda install -y clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
