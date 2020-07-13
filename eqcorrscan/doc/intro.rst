@@ -9,7 +9,7 @@ We support Linux, OSX and Windows environments running Python 3.x.
 Functionality
 -------------
 
-Within :doc:`core </core>` you will find the core routines to generate templates
+Within EQcorrscan you will find the core routines to generate templates
 (:doc:`template_gen </submodules/core.template_gen>`),
 compute cross-channel correlations from these templates
 (:doc:`match_filter </submodules/core.match_filter>`), generate cross-correlation

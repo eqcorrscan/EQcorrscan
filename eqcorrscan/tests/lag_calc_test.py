@@ -94,13 +94,6 @@ class SyntheticTests(unittest.TestCase):
             family=self.party[0], detect_data=data, shift_len=shift_len)
         self.assertEqual(len(detect_stream_dict), 1)
 
-    def test_prepare_data_duplicate_channels(self):
-        data = self.data.copy()
-        data += data[0].copy()
-        with self.assertRaises(LagCalcError):
-            _prepare_data(
-                family=self.party[0], detect_data=data, shift_len=0.2)
-
     def test_prepare_data_masked(self):
         data = self.data.copy()
         data.cutout(self.party[0][0].detect_time,

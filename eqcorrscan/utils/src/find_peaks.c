@@ -19,6 +19,70 @@
  */
 #include <libutils.h>
 
+// Decluster in distance and time
+int decluster_dist_time(float *arr, long *indexes, float *distances,
+                        long len, float thresh, long trig_int,
+                        float dist_thresh, unsigned int *out){
+    // Takes a sorted array, with indexes as the time between events, and the
+    // distances as a distance matrix sorted in the same way.
+    long i, j, step;
+    int keep, distance_index;
+
+    if (fabs(arr[0]) < thresh){return 0;}
+
+    // Take first (highest) peak
+    out[0] = 1;
+    for (i = 1; i < len; ++i){
+        keep = 1;
+        // Threshold is for absolute values
+        if (fabs(arr[i]) < thresh){
+            break;
+        }
+        for (j = 0; j < i; ++j){
+            distance_index = (i * len) + j;
+            step = labs(indexes[i] - indexes[j]);
+
+            if (trig_int >= step && out[j] == 1 && distances[distance_index] < dist_thresh){
+                keep = 0;
+                break;
+            }
+        }
+        out[i] = keep;
+    }
+    return 0;
+}
+
+int decluster_dist_time_ll(float *arr, long long *indexes, float *distances,
+                           long long len, float thresh, long long trig_int,
+                           float dist_thresh, unsigned int *out){
+    // Takes a sorted array, with indexes as the time between events, and the
+    // distances as a distance matrix sorted in the same way.
+    long long i, j, step;
+    int keep, distance_index;
+
+    if (fabs(arr[0]) < thresh){return 0;}
+
+    // Take first (highest) peak
+    out[0] = 1;
+    for (i = 1; i < len; ++i){
+        keep = 1;
+        // Threshold is for absolute values
+        if (fabs(arr[i]) < thresh){
+            break;
+        }
+        for (j = 0; j < i; ++j){
+            distance_index = (i * len) + j;
+            step = llabs(indexes[i] - indexes[j]);
+            if (trig_int >= step && out[j] == 1 && distances[distance_index] < dist_thresh){
+                keep = 0;
+                break;
+            }
+        }
+        out[i] = keep;
+    }
+    return 0;
+}
+
 
 // Functions for long longs
 int decluster_ll(float *arr, long long *indexes, long long len,

@@ -92,9 +92,9 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         av_chan_corr.  See Note on thresholding below.
     :type trig_int: float
     :param trig_int:
-        Minimum gap between detections in seconds. If multiple detections
-        occur within trig_int of one-another, the one with the highest
-        cross-correlation sum will be selected.
+        Minimum gap between detections from one template in seconds.
+        If multiple detections occur within trig_int of one-another, the one
+        with the highest cross-correlation sum will be selected.
     :type plot: bool
     :param plot:
         Turn plotting on or off.
@@ -147,7 +147,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         overlap = "calculate" will work out the appropriate overlap based
         on the maximum lags within templates.
     :type full_peaks: bool
-    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
+    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks_compiled`
     :type process_cores: int
     :param process_cores:
         Number of processes to use for pre-processing (if different to
@@ -175,6 +175,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     elif not isinstance(overlap, float):
         raise NotImplementedError(
             "%s is not a recognised overlap type" % str(overlap))
+    if overlap >= master.process_length:
+        Logger.warning(
+                f"Overlap of {overlap} s is greater than process "
+                f"length ({master.process_length} s), ignoring overlap")
+        overlap = 0
     if not pre_processed:
         if process_cores is None:
             process_cores = cores
@@ -183,6 +188,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             cores=process_cores, stream=stream, daylong=daylong,
             ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
             overlap=overlap)
+        for _st in streams:
+            Logger.debug(f"Processed stream:\n{_st.__str__(extended=True)}")
     else:
         Logger.warning('Not performing any processing on the continuous data.')
         streams = [stream]
@@ -195,11 +202,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     else:
         n_groups = 1
     for st_chunk in streams:
+        chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
+                                  max(tr.stats.endtime for tr in st_chunk))
         Logger.info(
-            'Computing detections between %s and %s' %
-            (st_chunk[0].stats.starttime, st_chunk[0].stats.endtime))
-        st_chunk.trim(starttime=st_chunk[0].stats.starttime,
-                      endtime=st_chunk[0].stats.endtime)
+            f'Computing detections between {chunk_start} and {chunk_end}')
+        st_chunk.trim(starttime=chunk_start, endtime=chunk_end)
         for tr in st_chunk:
             if len(tr) > len(st_chunk[0]):
                 tr.data = tr.data[0:len(st_chunk[0])]
@@ -300,8 +307,10 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
     data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
+    assert overlap < process_length, "Overlap must be less than process length"
     chunk_len_samps = (process_length - overlap) * master.samp_rate
     n_chunks = int(data_len_samps // chunk_len_samps)
+    Logger.info(f"Splitting these data in {n_chunks} chunks")
     if n_chunks == 0:
         Logger.error('Data must be process_length or longer, not computing')
     _endtime = starttime
@@ -315,20 +324,54 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             _endtime = kwargs['starttime'] + 86400
         chunk_stream = stream.slice(starttime=kwargs['starttime'],
                                     endtime=_endtime).copy()
+        Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
+                     f"and {_endtime}")
+        if len(chunk_stream) == 0:
+            Logger.warning(
+                f"No data between {kwargs['starttime']} and {_endtime}")
+            continue
         for tr in chunk_stream:
             tr.data = tr.data[0:int(
                 process_length * tr.stats.sampling_rate)]
-        _chunk_stream_lengths = [tr.stats.endtime - tr.stats.starttime
-                                 for tr in chunk_stream]
-        if min(_chunk_stream_lengths) >= .8 * process_length:
-            processed_streams.append(func(st=chunk_stream, **kwargs))
-        else:
-            tr = chunk_stream[_chunk_stream_lengths.index(
-                min(_chunk_stream_lengths))]
-            Logger.warning(
-                "Data chunk starting {0} and ending {1} is below 80% of the "
-                "requested length, will not use this.".format(
-                    tr.stats.starttime, tr.stats.endtime))
+        _chunk_stream_lengths = {
+            tr.id: tr.stats.endtime - tr.stats.starttime
+            for tr in chunk_stream}
+        for tr_id, chunk_length in _chunk_stream_lengths.items():
+            # Remove traces that are too short.
+            if not ignore_length and chunk_length <= .8 * process_length:
+                tr = chunk_stream.select(id=tr_id)[0]
+                chunk_stream.remove(tr)
+                Logger.warning(
+                    "Data chunk on {0} starting {1} and ending {2} is "
+                    "below 80% of the requested length, will not use"
+                    " this.".format(
+                        tr.id, tr.stats.starttime, tr.stats.endtime))
+        if len(chunk_stream) > 0:
+            Logger.debug(
+                f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
+            _processed_stream = func(st=chunk_stream, **kwargs)
+            # If data have more zeros then pre-processing will return a
+            # trace of 0 length
+            _processed_stream.traces = [
+                tr for tr in _processed_stream if tr.stats.npts != 0]
+            if len(_processed_stream) == 0:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
+            # Pre-procesing does additional checks for zeros - we need to check
+            # again whether we actually have something useful from this.
+            processed_chunk_stream_lengths = [
+                tr.stats.endtime - tr.stats.starttime
+                for tr in _processed_stream]
+            if min(processed_chunk_stream_lengths) >= .8 * process_length:
+                processed_streams.append(_processed_stream)
+            else:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
+
     if _endtime < stream[0].stats.endtime:
         Logger.warning(
             "Last bit of data between {0} and {1} will go unused "
@@ -373,7 +416,10 @@ def match_filter(template_names, template_list, st, threshold,
         The type of threshold to be used, can be MAD, absolute or av_chan_corr.
         See Note on thresholding below.
     :type trig_int: float
-    :param trig_int: Minimum gap between detections in seconds.
+    :param trig_int:
+        Minimum gap between detections from one template in seconds.
+        If multiple detections occur within trig_int of one-another, the one
+        with the highest cross-correlation sum will be selected.
     :type plot: bool
     :param plot: Turn plotting on or off
     :type plotdir: str
@@ -414,7 +460,7 @@ def match_filter(template_names, template_list, st, threshold,
         certain of your arguments, then set to False.
     :type full_peaks: bool
     :param full_peaks: See
-        :func: `eqcorrscan.utils.findpeaks.find_peaks2_short`
+        :func: `eqcorrscan.utils.findpeaks.find_peaks_compiled`
     :type peak_cores: int
     :param peak_cores:
         Number of processes to use for parallel peak-finding (if different to
@@ -608,6 +654,7 @@ def match_filter(template_names, template_list, st, threshold,
     if peak_cores is None:
         peak_cores = cores
     # Copy the stream here because we will muck about with it
+    Logger.info("Copying data to keep your input safe")
     stream = st.copy()
     templates = [t.copy() for t in template_list]
     _template_names = template_names.copy()  # This can just be a shallow copy

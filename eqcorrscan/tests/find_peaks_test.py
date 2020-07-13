@@ -6,10 +6,99 @@ from os.path import join
 import numpy as np
 import pytest
 
+from obspy.core.event import Catalog, Event, Origin
+
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
-    _multi_find_peaks_c, _find_peaks_c)
+    _multi_find_peaks_c, _find_peaks_c, decluster, decluster_distance_time)
 from eqcorrscan.utils.timer import time_func
+
+
+class TestDeclustering:
+    def test_unclustered_time(self):
+        """ Check that nothing is lost if there aren't any clustered events."""
+        peaks = np.array([100, 65, 20, 120, 300])
+        index = np.array([2000, 5000, 10, 70, 500])
+        trig_int = 30
+        peaks_out = decluster(peaks, index, trig_int, threshold=0)
+        assert len(peaks) == len(peaks_out)
+        assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
+                             (65.0, 5000), (20.0, 10)]
+
+    def test_clustered_time(self):
+        """ Check that the smallest is removed. """
+        peaks = np.array([100, 65, 20, 120, 300])
+        index = np.array([2000, 5000, 10, 70, 500])
+        trig_int = 100
+        peaks_out = decluster(peaks, index, trig_int, threshold=0)
+        assert len(peaks) > len(peaks_out)
+        assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
+                             (65.0, 5000)]
+
+    def test_clustered_time_longlong(self):
+        """ Check that the smallest is removed when longlong func is used. """
+        peaks = np.array([100, 65, 20, 120, 300], dtype=np.float32)
+        index = np.array([2000, 5000, 10, 70, 500])
+        index = index * int(1e10)
+        trig_int = 100 * int(1e10)
+        peaks_out = decluster(peaks, index, trig_int, threshold=0)
+        assert len(peaks) > len(peaks_out)
+
+    def test_clustered_dist_time(self):
+        peaks = np.array([100, 65, 20, 120, 300])
+        index = np.array([2000, 5000, 10, 70, 500])
+        trig_int = 100
+        hypocentral_separation = 10.0
+        catalog = Catalog([
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+        ])
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
+        assert len(peaks) > len(peaks_out)
+        assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
+                             (65.0, 5000)]
+
+    def test_separated_dist(self):
+        peaks = np.array([100, 65, 20, 120, 300])
+        index = np.array([2000, 5000, 10, 70, 500])
+        trig_int = 100
+        hypocentral_separation = 10.0
+        catalog = Catalog([
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=80.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+        ])
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
+        assert len(peaks) == len(peaks_out)
+        assert peaks_out == [(300.0, 500), (120.0, 70), (100.0, 2000),
+                             (65.0, 5000), (20.0, 10)]
+
+    def test_separated_dist_longlong(self):
+        peaks = np.array([100, 65, 20, 120, 300])
+        index = np.array([2000, 5000, 10, 70, 500])
+        index = index * int(1e10)
+        trig_int = 100 * int(1e10)
+        hypocentral_separation = 10.0
+        catalog = Catalog([
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=80.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+            Event(origins=[Origin(latitude=0.0, longitude=90.0, depth=1000.)]),
+        ])
+        peaks_out = decluster_distance_time(
+            peaks, index, trig_int, catalog, hypocentral_separation,
+            threshold=0)
+        assert len(peaks) == len(peaks_out)
 
 
 class TestStandardPeakFinding:

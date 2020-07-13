@@ -276,15 +276,20 @@ int normxcorr_fftw_main(
     num_threads:    Number of threads to parallel internal calculations over
     variance_warning: Pointer to array to store warnings for variance issues
     missed_corr:    Pointer to array to store warnings for unused correlations
-    stack_option:   Whether to stacked correlograms (1) or leave as individual channels (0),
+    stack_option:   Whether to stack correlograms (1) or leave as individual channels (0),
   */
     long i, t, chunk, n_chunks, chunk_len, startind, step_len;
     int status = 0;
     float * norm_sums = (float *) calloc(n_templates, sizeof(float));
 
     if (norm_sums == NULL) {
-        printf("Error allocating norm_sums in normxcorr_fftw_main\n");
-        return 1;
+        printf("ERROR: Error allocating norm_sums in normxcorr_fftw_main\n");
+        return -1;
+    }
+
+    if (stack_option > 1) {
+        printf("ERROR: stack_option %i is not known\n", stack_option);
+        return -1;
     }
 
     // zero padding - and flip template
@@ -399,13 +404,13 @@ int normxcorr_fftw_internal(
     // Allocate mean and var arrays
     mean = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     if (mean == NULL) {
-        printf("Error allocating mean in normxcorr_fftw_internal\n");
+        printf("ERROR: Error allocating mean in normxcorr_fftw_internal\n");
         free(norm_sums);
         return 1;
     }
     var = (double*) malloc((image_len - template_len + 1) * sizeof(double));
     if (var == NULL) {
-        printf("Error allocating var in normxcorr_fftw_internal\n");
+        printf("ERROR: Error allocating var in normxcorr_fftw_internal\n");
         free(norm_sums);
         free(mean);
         return 1;
@@ -508,9 +513,10 @@ static inline int set_ncc(
             value = 0.0;
         }
         else if (fabsf(value) > 1.01) {
-            // this will raise an exception when we return to Python
-//            printf("Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tindex: %ld\n\tvalue: %f\n",
-//                   ncc_index, t, i, value);
+            // this will raise a warning when we return to Python
+            printf("WARNING: Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tchannel: %i\n\tindex: %ld\n\tvalue: %f\nSETTING TO ZERO.",
+                   ncc_index, t, chan, i, value);
+            value = 0.0;
             status = 1;
         }
         else if (value > 1.0) {
@@ -522,9 +528,7 @@ static inline int set_ncc(
         if (stack_option == 1){
             #pragma omp atomic
             ncc[ncc_index] += value;
-        } else if (stack_option == 0){
-            ncc[ncc_index] = value;
-        } else {status = 2;}
+        } else if (stack_option == 0){ncc[ncc_index] = value;}
     }
     return status;
 }
@@ -613,13 +617,19 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
 
     /* warn if the total number of threads is higher than the number of cores */
     if (num_threads_outer * num_threads_inner > N_THREADS) {
-        printf("Warning: requesting more threads than available - this could negatively impact performance\n");
+        printf("WARNING: requesting more threads than available - this could negatively impact performance\n");
     }
     #else
     /* threading/OpenMP is disabled */
     num_threads_outer = 1;
     num_threads_inner = 1;
     #endif
+
+    /* Check that stack-type is within range (0-1) */
+    if (stack_option > 1) {
+        printf("ERROR: stack_option %i is not supported\n", stack_option);
+        return -1;
+    }
 
     /* allocate memory for all threads here */
     template_ext = (float**) malloc(num_threads_outer * sizeof(float*));
@@ -751,7 +761,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
                                  &missed_corr[i], stack_option);
         if (results[i] != 0){
-            printf("Some error on channel %i, status: %i\n", i, results[i]);
+            printf("WARNING: %i out-of-range correlations on channel %i\n", results[i], i);
         }
     }
 

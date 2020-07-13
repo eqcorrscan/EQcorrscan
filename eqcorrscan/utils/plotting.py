@@ -1281,7 +1281,8 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def pretty_template_plot(template, background=False, picks=False, **kwargs):
+def pretty_template_plot(template, background=False, event=False,
+                         sort_by="distance", **kwargs):
     """
     Plot of a single template, possibly within background data.
 
@@ -1289,8 +1290,15 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     :param template: Template stream to plot
     :type background: obspy.core.stream.stream
     :param background: Stream to plot the template within.
-    :type picks: list
-    :param picks: List of :class:`obspy.core.event.origin.Pick` picks.
+    :type event: obspy.core.event.event.Event
+    :param event:
+        Event object containing picks, and optionally information on the origin
+        and arrivals. When supplied, function tries to extract hypocentral
+        distance from origin/arrivals, to sort the template traces by
+        hypocentral distance.
+    :type sort_by: string
+    :param sort_by:
+        "distance" (default) or "pick_time" (not relevant if no event supplied)
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -1319,7 +1327,7 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     >>> template = template_gen._template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
-    ...                      picks=event.picks) # doctest: +SKIP
+    ...                      event=event) # doctest: +SKIP
 
     .. plot::
 
@@ -1342,10 +1350,17 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         template = template_gen._template_gen(event.picks, st, 2)
-        pretty_template_plot(template, background=st,
-                             picks=event.picks)
+        pretty_template_plot(template, background=st, event=event)
     """
+    from eqcorrscan.utils.catalog_utils import get_ordered_trace_indices
     import matplotlib.pyplot as plt
+    picks = kwargs.get("picks", None)
+    if picks:
+        Logger.warning(
+            "The picks argument is depreciated, please use a full event. "
+            "This argument will be removed in future versions.")
+    elif event:
+        picks = event.picks
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1354,6 +1369,10 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     else:
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
+    trace_indices_ordered = get_ordered_trace_indices(template, event=event,
+                                                      sort_by=sort_by)
+    if trace_indices_ordered is not None:
+        template = Stream([template[j] for j in trace_indices_ordered])
     lengths = []
     lines = []
     labels = []
@@ -1549,12 +1568,14 @@ def plot_repicked(template, picks, det_stream, **kwargs):
     axis.set_xlim([0, max(lengths)])
     if len(template) > 1:
         axis = axes[len(template) - 1]
+        axis_legend = axes[0]
     else:
         axis = axes
+        axis_legend = axes
     axis.set_xlabel('Time (s) from %s' %
                     mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
-    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
-    axes[0].set_zorder(2)
+    axis_legend.legend(lines, labels, loc='upper right', framealpha=1)
+    axis_legend.set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:

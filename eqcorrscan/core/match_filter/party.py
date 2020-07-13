@@ -32,7 +32,7 @@ from eqcorrscan.core.match_filter.helpers import (
     _total_microsec, temporary_directory, _safemembers, _templates_match)
 
 from eqcorrscan.utils.catalog_utils import _get_origin
-from eqcorrscan.utils.findpeaks import decluster
+from eqcorrscan.utils.findpeaks import decluster, decluster_distance_time
 from eqcorrscan.utils.plotting import cumulative_detections
 
 Logger = logging.getLogger(__name__)
@@ -471,7 +471,8 @@ class Party(object):
             family.detections = rethresh_detections
         return self
 
-    def decluster(self, trig_int, timing='detect', metric='avg_cor'):
+    def decluster(self, trig_int, timing='detect', metric='avg_cor',
+                  hypocentral_separation=None):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -492,6 +493,11 @@ class Party(object):
         :param timing:
             Either 'detect' or 'origin' to decluster based on either the
             detection time or the origin time.
+        :type hypocentral_separation: float
+        :param hypocentral_separation:
+            Maximum inter-event separation in km to decluster events within.
+            If an event happens within this distance of another event, and
+            within the trig_int defined time, then they will be declustered.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -505,41 +511,68 @@ class Party(object):
         >>> declustered = party.decluster(20)
         >>> len(party)
         3
+
+        .. rubric:: Example using epicentral-distance
+
+        >>> party = Party().read()
+        >>> len(party)
+        4
+        >>> # Calculate the expected origins based on the template origin.
+        >>> for family in party:
+        ...     for detection in family:
+        ...         _ = detection._calculate_event(template=family.template)
+        >>> declustered = party.decluster(20, hypocentral_separation=1)
+        >>> len(party)
+        4
+        >>> declustered = party.decluster(20, hypocentral_separation=100)
+        >>> len(party)
+        3
         """
         if self.__len__() == 0:
             return self
-        all_detections = []
-        for fam in self.families:
-            all_detections.extend(fam.detections)
+        all_detections = [d for fam in self.families for d in fam.detections]
+        catalog = None
+        if hypocentral_separation:
+            catalog = Catalog([d.event for fam in self.families
+                               for d in fam.detections if d.event])
+            if len(catalog) == 0:
+                Logger.warning("Detections do not have events, cannot use "
+                               "hypocentral separation")
+                catalog = None
+
+        assert metric in ('avg_cor', 'cor_sum'), \
+            'metric is not cor_sum or avg_cor'
+        assert timing in ('detect', 'origin'), 'timing is not detect or origin'
         if timing == 'detect':
             if metric == 'avg_cor':
                 detect_info = [(d.detect_time, d.detect_val / d.no_chans)
                                for d in all_detections]
-            elif metric == 'cor_sum':
+            else:
                 detect_info = [(d.detect_time, d.detect_val)
                                for d in all_detections]
-            else:
-                raise MatchFilterError('metric is not cor_sum or avg_cor')
-        elif timing == 'origin':
+        else:
             if metric == 'avg_cor':
                 detect_info = [(_get_origin(d.event).time,
                                 d.detect_val / d.no_chans)
                                for d in all_detections]
-            elif metric == 'cor_sum':
+            else:
                 detect_info = [(_get_origin(d.event).time, d.detect_val)
                                for d in all_detections]
-            else:
-                raise MatchFilterError('metric is not cor_sum or avg_cor')
-        else:
-            raise MatchFilterError('timing is not detect or origin')
         min_det = sorted([d[0] for d in detect_info])[0]
         detect_vals = np.array([d[1] for d in detect_info], dtype=np.float32)
         detect_times = np.array([
             _total_microsec(d[0].datetime, min_det.datetime)
             for d in detect_info])
         # Trig_int must be converted from seconds to micro-seconds
-        peaks_out = decluster(
-            peaks=detect_vals, index=detect_times, trig_int=trig_int * 10 ** 6)
+        if hypocentral_separation and catalog:
+            peaks_out = decluster_distance_time(
+                peaks=detect_vals, index=detect_times,
+                trig_int=trig_int * 10 ** 6, catalog=catalog,
+                hypocentral_separation=hypocentral_separation)
+        else:
+            peaks_out = decluster(
+                peaks=detect_vals, index=detect_times,
+                trig_int=trig_int * 10 ** 6)
         # Need to match both the time and the detection value
         declustered_detections = []
         for ind in peaks_out:
@@ -749,8 +782,8 @@ class Party(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
-                 parallel=True, process_cores=None, ignore_bad_data=False,
-                 relative_magnitudes=False, **kwargs):
+                 parallel=True, process_cores=None, ignore_length=False,
+                 ignore_bad_data=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -799,13 +832,12 @@ class Party(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
-        :type relative_magnitudes: bool
-        :param relative_magnitudes:
-            Whether to calculate relative magnitudes or not. See
-            :func:`eqcorrscan.utils.mag_calc.relative_magnitude` for more
-            information. Keyword arguments `noise_window`, `signal_window` and
-            `min_snr` can be passed as additional keyword arguments to pass
-            through to `eqcorrscan.utils.mag_calc.relative_magnitude`.
+        :type ignore_length: bool
+        :param ignore_length:
+            If using daylong=True, then dayproc will try check that the data
+            are there for at least 80% of the day, if you don't want this check
+            (which will raise an error if too much data are missing) then set
+            ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
         :param ignore_bad_data:
             If False (default), errors will be raised if data are excessively
@@ -851,10 +883,12 @@ class Party(object):
                 net, sta, loc, chan = seed_id.split('.')
                 template_stream += stream.select(
                     network=net, station=sta, location=loc, channel=chan)
+            # Process once and only once for each group.
             processed_stream = family._process_streams(
                 stream=template_stream, pre_processed=pre_processed,
                 process_cores=process_cores, parallel=parallel,
-                ignore_bad_data=ignore_bad_data, select_used_chans=False)
+                ignore_bad_data=ignore_bad_data, ignore_length=ignore_length,
+                select_used_chans=False)
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
@@ -866,68 +900,73 @@ class Party(object):
                     interpolate=interpolate, plot=plot, plotdir=plotdir,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
-                    relative_magnitudes=relative_magnitudes, **kwargs)
+                    ignore_length=ignore_length, **kwargs)
         return catalog
 
-    def relative_magnitudes(self, stream, pre_processed, process_cores=1,
-                            ignore_bad_data=False, parallel=False, min_cc=0.4,
-                            **kwargs):
-        """
-        Compute relative magnitudes for the detections.
+    @staticmethod
+    def relative_magnitudes(*args, **kwargs):
+        print("This function is not functional, please keep an eye out for "
+              "this in future releases.")
 
-        Works in place on events in the Family
-
-        :type stream: obspy.core.stream.Stream
-        :param stream:
-            All the data needed to cut from - can be a gappy Stream.
-        :type pre_processed: bool
-        :param pre_processed:
-            Whether the stream has been pre-processed or not to match the
-            templates. See note below.
-        :param parallel: Turn parallel processing on or off.
-        :type process_cores: int
-        :param process_cores:
-            Number of processes to use for pre-processing (if different to
-            `cores`).
-        :type ignore_bad_data: bool
-        :param ignore_bad_data:
-            If False (default), errors will be raised if data are excessively
-            gappy or are mostly zeros. If True then no error will be raised,
-            but an empty trace will be returned (and not used in detection).
-        :type min_cc: float
-        :param min_cc: Minimum correlation for magnitude to be computed.
-        :param kwargs:
-            Keyword arguments passed to `utils.mag_calc.relative_mags`
-
-        .. Note::
-            Note on pre-processing: You can provide a pre-processed stream,
-            which may be beneficial for detections over large time periods
-            (the stream can have gaps, which reduces memory usage).  However,
-            in this case the processing steps are not checked, so you must
-            ensure that the template in the Family has the same sampling
-            rate and filtering as the stream.
-            If pre-processing has not be done then the data will be processed
-            according to the parameters in the template.
-        """
-        template_groups = group_templates(
-            [_f.template for _f in self.families])
-        for template_group in template_groups:
-            family = [_f for _f in self.families
-                      if _f.template == template_group[0]][0]
-            processed_stream = family._process_streams(
-                stream=stream, pre_processed=pre_processed,
-                process_cores=process_cores, parallel=parallel,
-                ignore_bad_data=ignore_bad_data)
-            for template in template_group:
-                family = [_f for _f in self.families
-                          if _f.template == template][0]
-                family.relative_magnitudes(
-                    stream=processed_stream, pre_processed=True,
-                    min_cc=min_cc, parallel=parallel,
-                    process_cores=process_cores,
-                    ignore_bad_data=ignore_bad_data,
-                    **kwargs)
-        return self.get_catalog()
+    # def relative_magnitudes(self, stream, pre_processed, process_cores=1,
+    #                         ignore_bad_data=False, parallel=False,
+    #                         min_cc=0.4, **kwargs):
+    #     """
+    #     Compute relative magnitudes for the detections.
+    #
+    #     Works in place on events in the Family
+    #
+    #     :type stream: obspy.core.stream.Stream
+    #     :param stream:
+    #         All the data needed to cut from - can be a gappy Stream.
+    #     :type pre_processed: bool
+    #     :param pre_processed:
+    #         Whether the stream has been pre-processed or not to match the
+    #         templates. See note below.
+    #     :param parallel: Turn parallel processing on or off.
+    #     :type process_cores: int
+    #     :param process_cores:
+    #         Number of processes to use for pre-processing (if different to
+    #         `cores`).
+    #     :type ignore_bad_data: bool
+    #     :param ignore_bad_data:
+    #         If False (default), errors will be raised if data are excessively
+    #         gappy or are mostly zeros. If True then no error will be raised,
+    #         but an empty trace will be returned (and not used in detection).
+    #     :type min_cc: float
+    #     :param min_cc: Minimum correlation for magnitude to be computed.
+    #     :param kwargs:
+    #         Keyword arguments passed to `utils.mag_calc.relative_mags`
+    #
+    #     .. Note::
+    #         Note on pre-processing: You can provide a pre-processed stream,
+    #         which may be beneficial for detections over large time periods
+    #         (the stream can have gaps, which reduces memory usage).  However,
+    #         in this case the processing steps are not checked, so you must
+    #         ensure that the template in the Family has the same sampling
+    #         rate and filtering as the stream.
+    #         If pre-processing has not be done then the data will be processed
+    #         according to the parameters in the template.
+    #     """
+    #     template_groups = group_templates(
+    #         [_f.template for _f in self.families])
+    #     for template_group in template_groups:
+    #         family = [_f for _f in self.families
+    #                   if _f.template == template_group[0]][0]
+    #         processed_stream = family._process_streams(
+    #             stream=stream, pre_processed=pre_processed,
+    #             process_cores=process_cores, parallel=parallel,
+    #             ignore_bad_data=ignore_bad_data)
+    #         for template in template_group:
+    #             family = [_f for _f in self.families
+    #                       if _f.template == template][0]
+    #             family.relative_magnitudes(
+    #                 stream=processed_stream, pre_processed=True,
+    #                 min_cc=min_cc, parallel=parallel,
+    #                 process_cores=process_cores,
+    #                 ignore_bad_data=ignore_bad_data,
+    #                 **kwargs)
+    #     return self.get_catalog()
 
     def get_catalog(self):
         """
