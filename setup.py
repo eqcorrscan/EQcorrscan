@@ -300,6 +300,10 @@ class CustomBuildExt(build_ext):
                 print("Editted {0}:".format(key))
                 print(cfg_vars[key])
 
+        # Try to make MKL FFT routines not shadow FFTW
+        if compiler != "msvc":
+            cfg_vars["CFLAGS"] = cfg_vars["CFLAGS"] + " -Wl,Bsymbolic"
+
         if compiler == 'msvc':
             # Add msvc specific hacks
 
