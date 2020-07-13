@@ -23,17 +23,14 @@ jobs:
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
 
-#      - name: MacOS specific setup
-#        shell: bash -l {0}
-#        if: matrix.os == 'macos-latest'
-#          run: |
-#            conda install clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
-      - name: Windows specific setup
+      - name: OS specific setup
         shell: bash -l {0}
-        if: ${{ matrix.os == 'windows-latest' }}
-          run: |
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
             cp misc/appveyor/fftw3.h eqcorrscan/utils/src/fftw3.h
-
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            conda install -y clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
+          fi
 
       - name: install eqcorrscan
         shell: bash -l {0}
