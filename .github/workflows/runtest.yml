@@ -3,11 +3,68 @@ on: [pull_request]  #, push]
 
 jobs:
   # Runs the tests on combinations of the supported python/os matrix.
-  test_code:
-    runs-on: ${{ matrix.os }}
+  test-code-macOS:
+    runs-on: "macos-latest"
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest] #, windows-latest]
+        python-version: [3.7, 3.8]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Setup conda
+        uses: goanpeca/setup-miniconda@v1
+        with:
+          miniconda-version: 'latest'
+          python-version: ${{ matrix.python-version }}
+          activate-environment: eqcorrscan-test
+          environment-file: .github/test_conda_env_macOS.yml
+          condarc-file: .github/test_condarc.yml
+
+      - name: install eqcorrscan
+        shell: bash -l {0}
+        run: |
+          pip install -e .
+
+      - name: print package info
+        shell: bash -l {0}
+        run: |
+          conda info -a
+          conda list
+
+      - name: run main test suite
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
+      - name: run slow tests
+        shell: bash -l {0}
+        run: |
+          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
+      - name: run serial test
+        shell: bash -l {0}
+        run: |
+          export OMP_NUM_THREADS=2
+          py.test -m "serial and not network" --cov-report=xml --cov-append
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v2
+
+      - name: upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          yml: ./codecov.yml
+          fail_ci_if_error: true
+
+  test-code-ubuntu:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
         python-version: [3.7, 3.8]
       fail-fast: false
 
@@ -23,30 +80,11 @@ jobs:
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
 
-
-      - name: OS specific setup
-        shell: bash -l {0}
-        run: |
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            conda install -y clangdev>=4 openmp>=4 libcxx>=4 cctools clang clang_osx-64 compiler-rt libcxx llvm-openmp>=4.0.1
-          fi
-
-      - name: Try older fftw
-        shell: bash -l {0}
-        run: |
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            conda install -c conda-forge/label/cf202003 fftw -y
-          fi
-
-      - name: debug build
-        shell: bash -l {0}
-        run: |
-          python setup.py build_ext --inplace
-
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
           pip install -e .
+
       - name: print package info
         shell: bash -l {0}
         run: |
@@ -55,21 +93,17 @@ jobs:
 
       - name: run main test suite
         shell: bash -l {0}
-        continue-on-error: true
         run: |
           py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-#      - name: run slow tests
-#        shell: bash -l {0}
-#        run: |
-#          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
-#      - name: run serial test
-#        shell: bash -l {0}
-#        run: |
-#          export OMP_NUM_THREADS=2
-#          py.test -m "serial and not network" --cov-report=xml --cov-append
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v2
+      - name: run slow tests
+        shell: bash -l {0}
+        run: |
+          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
+      - name: run serial test
+        shell: bash -l {0}
+        run: |
+          export OMP_NUM_THREADS=2
+          py.test -m "serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
         uses: codecov/codecov-action@v1
@@ -80,6 +114,7 @@ jobs:
           name: codecov-umbrella
           yml: ./codecov.yml
           fail_ci_if_error: true
+
 # This is a very useful step for debugging, it allows you to ssh into the CI
 # machine (https://github.com/marketplace/actions/debugging-with-tmate).
 # Make sure to open the log before the job starts else you cant see the tmate
