@@ -909,8 +909,8 @@ class Party(object):
               "this in future releases.")
 
     # def relative_magnitudes(self, stream, pre_processed, process_cores=1,
-    #                         ignore_bad_data=False, parallel=False, min_cc=0.4,
-    #                         **kwargs):
+    #                         ignore_bad_data=False, parallel=False,
+    #                         min_cc=0.4, **kwargs):
     #     """
     #     Compute relative magnitudes for the detections.
     #
