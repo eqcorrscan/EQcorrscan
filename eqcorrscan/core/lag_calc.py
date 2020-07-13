@@ -223,7 +223,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :param plotdir:
         Path to plotting folder, plots will be output here.
 
-    :return: Catalog of events.
+    :return: Dictionary of picked events keyed by detection id.
     """
     picked_dict = {}
     delta = family.template.st[0].stats.delta
@@ -361,6 +361,7 @@ def _prepare_data(family, detect_data, shift_len):
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
     for key, detect_stream in detect_streams_dict.items():
+        # Split to remove trailing or leading masks
         for i in range(len(detect_stream) - 1, -1, -1):
             trace = detect_stream[i]
             if np.ma.is_masked(trace.data):
