@@ -1,4 +1,6 @@
 ## Current
+
+## 0.4.2
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
   - Cross-correlation normalisation errors no-longer raise an error
