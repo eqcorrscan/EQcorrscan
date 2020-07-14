@@ -115,7 +115,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                     and fnmatch.fnmatch(av_station[1], station[1]):
                 stachan_in_station_map = True
                 break
-        #if station_map not in available_stations_map:
         if not stachan_in_station_map:
             msg = ' '.join([station[0], station_map[1], 'is not available for',
                             day.strftime('%Y/%m/%d')])
