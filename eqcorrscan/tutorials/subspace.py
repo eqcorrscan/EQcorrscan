@@ -104,7 +104,7 @@ def run_tutorial(plot=False, multiplex=True, return_streams=False, cores=4,
     # two real detections.
     print("Computing detections")
     detections, det_streams = detector.detect(
-        st=st, threshold=0.3, trig_int=2, extract_detections=True,
+        st=st, threshold=0.4, trig_int=2, extract_detections=True,
         cores=cores)
     if return_streams:
         return detections, det_streams

@@ -21,6 +21,7 @@ import eqcorrscan
 import copy
 import scipy
 
+from timeit import default_timer
 from obspy import Trace, UTCDateTime, Stream
 from obspy.core.event import (
     Event, CreationInfo, ResourceIdentifier, Comment, WaveformStreamID, Pick)
@@ -487,7 +488,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                 raise ValueError('Sampling rates do not match.')
         stream = [st]
         stachans = detector.stachans
-    outtic = time.clock()
+    outtic = default_timer()
     # If multiplexed, how many samples do we increment by?
     if detector.multiplex:
         Nc = len(detector.stachans)
@@ -554,7 +555,7 @@ def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
                           threshold=threshold, typeofdet='subspace',
                           threshold_type='abs', threshold_input=threshold,
                           chans=detector.stachans, event=ev))
-    outtoc = time.clock()
+    outtoc = default_timer()
     Logger.info('Detection took %s seconds' % str(outtoc - outtic))
     if extract_detections:
         detection_streams = extract_from_stream(st, detections)

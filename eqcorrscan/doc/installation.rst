@@ -5,11 +5,12 @@ EQcorrscan is a Python package with C extensions. The C extensions in EQcorrscan
 have their own dependencies on compiled libraries. We heavily recommend installing
 EQcorrscan using conda because this will:
 
- * make your life easier;
- * separate your EQcorrscan install from your system Python, meaning you can
-   experiment to your hearts-content without breaking your operating system (yay);
- * ensure that compiled modules are compiled using the correct C-compiler against
-   the correct libraries
+* make your life easier;
+* separate your EQcorrscan install from your system Python, meaning you can
+  experiment to your hearts-content without breaking your operating system (yay);
+* ensure that compiled modules are compiled using the correct C-compiler against
+  the correct libraries
+
 
 If you do not have either a miniconda or anaconda installation you can follow
 the |conda-install| instructions.
@@ -26,15 +27,16 @@ To then install EQcorrscan you can simply run:
 
 .. code-block:: bash
 
-    conda install eqcorrscan
+    conda install -c conda-forge eqcorrscan
 
 Installation without conda
 --------------------------
 
 Installing EQcorrscan without conda involves two steps:
 
- 1. Installing fftw3 libraries;
- 2. Installing python dependancies and EQcorrscan.
+1. Installing fftw3 libraries;
+2. Installing python dependancies and EQcorrscan.
+
 
 How you undertake the first step depends on your operating system and system
 package manager.
@@ -59,7 +61,8 @@ Non-Python dependencies--OSX:
 For MacOS/OS-X systems we have tested using homebrew and macports (fink options
 are available, but we haven't tested them).
 
-**Homebrew**
+Homebrew
+........
 
 You will need a recent version of gcc (the homebrew gcc-4.9 port has issues with openMP).
 We have tested the following and found it to work (note that you may need to prepend
@@ -78,7 +81,8 @@ install using clang, but you will need additional libraries for openmp support):
     CC=gcc pip install eqcorrscan
 
 
-**MacPorts**
+MacPorts
+........
 
 The following has been tested and found to work (note that you may need to prepend
 sudo depending on your configuration):
@@ -105,18 +109,18 @@ sudo depending on your configuration):
     # optional, select pip35 as default pip
     port select --set pip pip35
 
-4. Install fftw3 from source, use `--enable-threads and --enable-float` (fftw-3 and fftw-3-single from macports also available, but not tested)
+4. Install fftw3 from source:
 
-	a. |fftw-3.3.7| - link to fftw 3.3.7, most recent as of 10/01/2018
-	b. unzip/untar
+    a. |fftw-3.3.7| - link to fftw 3.3.7, most recent as of 10/01/2018
+    b. unzip/untar
     c. Run the following from within the expanded directory:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    ./configure --enable-threads --enable-float && make
-    make install
-    ./configure --enable-threads && make # Need both double and float precision files
-    make install
+        ./configure --enable-threads --enable-float && make
+        make install
+        ./configure --enable-threads && make # Need both double and float precision files
+        make install
 
 5. Run: (if you didn't run the `port select --set pip pip35` command you will need to replace `pip` with `pip35`)
 
