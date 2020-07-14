@@ -634,16 +634,17 @@ class Party(object):
             raise TypeError("{0} is not supported".format(catalog_format))
         if format.lower() == 'csv':
             if os.path.isfile(filename) and not overwrite:
-                raise IOError('Will not overwrite existing file: %s'
-                              % filename)
+                raise MatchFilterError(
+                    'Will not overwrite existing file: %s' % filename)
             for family in self.families:
                 if os.path.isfile(filename) and overwrite:
                     os.remove(filename)
                 write_detections(fname=filename, detections=family.detections,
                                  mode="a")
         elif format.lower() == 'tar':
-            if (os.path.exists(filename) or os.path.exists(filename + ".tgz"))\
-                    and not overwrite:
+            if not filename.endswith('.tgz'):
+                filename = filename + ".tgz"
+            if os.path.exists(filename) and not overwrite:
                 raise IOError('Will not overwrite existing file: %s'
                               % filename)
             # os.makedirs(filename)
@@ -665,8 +666,6 @@ class Party(object):
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
-                if not filename.endswith('.tgz'):
-                    filename = filename + ".tgz"
                 with tarfile.open(filename, "w:gz") as tar:
                     tar.add(temp_dir, arcname=os.path.basename(filename))
         else:
