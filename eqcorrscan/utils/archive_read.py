@@ -231,7 +231,7 @@ def _check_available_data(archive, arc_type, day):
                 for channel in station:
                     available_stations.append((station.code,
                                                channel.code))
-    elif arc_type.lower() == 'sds':
+    elif arc_type.upper() == "SDS":
         client = SDSClient(archive)
         nslc = client.get_all_nslc(sds_type=None, datetime=UTCDateTime(day))
         for item in nslc:

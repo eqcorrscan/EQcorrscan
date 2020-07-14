@@ -632,7 +632,7 @@ class Party(object):
             SC3ML, QUAKEML are supported. Note that not all information is
             written for all formats (QUAKEML is the most complete, but is
             slow for IO).
-        :type overwrite: boolean
+        :type overwrite: bool
         :param overwrite:
             Specifies whether detection-files are overwritten if they exist
             already. By default, no files are overwritten.
