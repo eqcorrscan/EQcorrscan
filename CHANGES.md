@@ -1,4 +1,16 @@
 ## Current
+* core.party.write
+  - BUG-FIX: When `format='tar'` is selected, added a check for .tgz-file
+    suffix before checking the filename against an existing file. Previously,
+    when a filename without '.tgz'-suffix was supplied, then the file was
+    overwritten against the function's intention.
+  - Add option `overwrite=True` to allow overwriting of existing files.
+* utils/archive_read.py
+  - Add support for wildcard-comparisons in the list of requested stations and
+    channels.
+  - New option `arctype='SDS'` to read from a SeisComp Data Structure (SDS).
+    This option is also available in `utils.clustering.extract_detections` and
+    in `utils.archive_read._check_available_data`.
 
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
