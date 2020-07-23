@@ -1,4 +1,8 @@
 ## Current
+* core.match_filter
+ - match_filter:
+   - Provide option of exporting the cross-correlation sums for additional later
+     analysis.
 
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
