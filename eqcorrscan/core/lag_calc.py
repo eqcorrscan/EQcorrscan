@@ -165,8 +165,13 @@ def _concatenate_and_correlate(streams, template, cores):
         cores=cores)
     # Re-order used_chans
     chan_order = chan_order[0]
-    for _used_chans in used_chans:
+    for i in range(len(used_chans)):
+        _used_chans = used_chans[i]
+        # Remove any channels that ended up not being used.
+        _used_chans = [c for c in _used_chans if c.channel in chan_order]
+        # Order the channels in the same way that they were correlated
         _used_chans.sort(key=lambda chan: chan_order.index(chan.channel))
+        used_chans[i] = _used_chans  # Put back in.
 
     # Reshape ccc output
     ccc_out = np.zeros((len(streams), len(chans),
