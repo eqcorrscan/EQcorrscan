@@ -503,8 +503,8 @@ class Family(object):
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
-                 parallel=True, process_cores=None, ignore_length=False,
-                 ignore_bad_data=False, **kwargs):
+                 npy=False, npydir=None, parallel=True, process_cores=None,
+                 ignore_length=False, ignore_bad_data=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -547,6 +547,13 @@ class Family(object):
         :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
+        :type npy: bool
+        :param npy:
+            To generate a binary file in NumPy for every detection or not,
+            defaults to False
+        :type npydir: str
+        :param npydir:
+            Path to saving folder, NumPy files will be output here.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -596,7 +603,8 @@ class Family(object):
             family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
-            interpolate=interpolate, plot=plot, plotdir=plotdir)
+            interpolate=interpolate, plot=plot, plotdir=plotdir,
+            npy=npy, npydir=npydir)
         catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:

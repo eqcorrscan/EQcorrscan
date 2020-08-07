@@ -112,7 +112,8 @@ class SyntheticTests(unittest.TestCase):
 
     def test_family_picking(self):
         catalog_dict = xcorr_pick_family(
-            family=self.party[0], stream=self.data, shift_len=0.2, plot=False)
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
+            npy=False)
         for event in catalog_dict.values():
             self.assertEqual(len(event.picks), len(self.data))
             for pick in event.picks:
@@ -134,7 +135,8 @@ class SyntheticTests(unittest.TestCase):
         gappy_data[0].data = np.ma.masked_array(
             data=gappy_data[0].data, mask=mask)
         catalog_dict = xcorr_pick_family(
-            family=self.party[0], stream=gappy_data, shift_len=0.2, plot=False)
+            family=self.party[0], stream=gappy_data, shift_len=0.2, plot=False,
+            npy=False)
         gap = gappy_data.split().get_gaps()
         for event in catalog_dict.values():
             if len(event.picks) != len(self.data):
@@ -153,7 +155,7 @@ class SyntheticTests(unittest.TestCase):
     def test_family_picking_with_interpolation(self):
         catalog_dict = xcorr_pick_family(
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
-            interpolate=True)
+            interpolate=True, npy=False)
         for event in catalog_dict.values():
             for pick in event.picks:
                 self.assertTrue("cc_max=" in pick.comments[0].text)
@@ -168,7 +170,7 @@ class SyntheticTests(unittest.TestCase):
             detections, self.data, template_names, templates,
             shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
             vertical_chans=['Z'], cores=1, interpolate=False,
-            plot=False)
+            plot=False, npy=False)
         self.assertEqual(len(output_cat), len(detections))
         for event in output_cat:
             self.assertEqual(len(event.picks), len(self.data))
