@@ -1,4 +1,5 @@
 ## Current
+* Added the ability of saving correlation data of the lag_calc.
 * utils.mag_calc.calc_b_value:
   - Added useful information to doc-string regarding method and meaning of
     residuals
