@@ -258,6 +258,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         detection = [d for d in family.detections if d.id == detection_id][0]
         correlations = ccc[i]
         if npy:
+            os.makedirs(npydir, exist_ok=True)
             np.save(os.path.join(npydir, detection_id+'.npy'), correlations)
         picked_chans = chans[i]
         detect_stream = detect_streams_dict[detection_id]
