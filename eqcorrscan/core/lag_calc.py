@@ -512,7 +512,7 @@ def lag_calc(detections, detect_data, template_names, templates,
         if the output[m] is for the same event as detections[n].
 
     .. note::
-        The correlation data that is saved to the binary files can be usefull
+        The correlation data that is saved to the binary files can be useful
         for exploration on selecting proper threshold according to your data.
     """
     # First check that sample rates are equal for everything
