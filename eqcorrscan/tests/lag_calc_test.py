@@ -1,6 +1,8 @@
 """
 A series of test functions for the core functions in EQcorrscan.
 """
+import glob
+import os
 import unittest
 import numpy as np
 import logging
@@ -174,6 +176,15 @@ class SyntheticTests(unittest.TestCase):
         self.assertEqual(len(output_cat), len(detections))
         for event in output_cat:
             self.assertEqual(len(event.picks), len(self.data))
+
+    def test_xcorr_pick_family_export_cc(self):
+        cc_dir = 'cc_exported'
+        xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
+            interpolate=False, export_cc=True, cc_dir=cc_dir)
+        cc_files = glob.glob(os.path.join(cc_dir, '*.npy'))
+        for fcc in cc_files:
+            np.load(fcc)
 
 
 class SimpleRealDataTests(unittest.TestCase):
