@@ -145,7 +145,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     >>> # We can set a maximum magnitude:
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
