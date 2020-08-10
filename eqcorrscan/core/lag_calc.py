@@ -259,7 +259,9 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         correlations = ccc[i]
         if export_cc:
             os.makedirs(cc_dir, exist_ok=True)
-            np.save(os.path.join(cc_dir, f'{detection_id}.npy'), correlations)
+            fname = f"{detection_id}-cc.npy"
+            np.save(os.path.join(cc_dir, f'{fname}'), correlations)
+            Logger.info(f"Saved correlation statistic to {fname} (phase-picking)")
         picked_chans = chans[i]
         detect_stream = detect_streams_dict[detection_id]
         checksum, cccsum, used_chans = 0.0, 0.0, 0
