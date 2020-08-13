@@ -262,12 +262,19 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     master.resource_id.id, phase_hint))
                 continue
             # Check lengths
-            master_length = Counter(
-                (tr.stats.npts for tr in _master_stream)).most_common(1)[0][0]
+            master_length = [tr.stats.npts for tr in _master_stream]
+            if len(set(master_length)) > 1:
+                Logger.warning("Multiple lengths found - check that you "
+                               "are providing sufficient data")
+            master_length = Counter(master_length).most_common(1)[0][0]
             _master_stream = _master_stream.select(npts=master_length)
-            matched_length = Counter(
-                (tr.stats.npts for st in _matched_streams.values()
-                 for tr in st)).most_common(1)[0][0]
+            
+            matched_length = [tr.stats.npts for st in _matched_streams.values() for tr in st]
+            if len(set(matched_length)) > 1:
+                Logger.warning(
+                    "Multiple lengths found in matched data - check that you "
+                    "are providing sufficient data")
+            matched_length = Counter(matched_length).most_common(1)[0][0]
             # Remove empty streams and generate an ordered list of event_ids
             used_event_ids, used_matched_streams = [], []
             for event_id, _matched_stream in _matched_streams.items():
@@ -275,6 +282,15 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                 if len(_matched_stream) > 0:
                     used_event_ids.append(event_id)
                     used_matched_streams.append(_matched_stream)
+            # Check that there are matching seed ids.
+            master_seed_ids = set(tr.id for tr in _master_stream)
+            matched_seed_ids = set(tr.id for st in used_matched_streams for tr in st)
+            if master_seed_ids not in matched_seed_ids:
+                Logger.warning(
+                    "After checking length there are no matched traces: "
+                    f"master: {master_seed_ids}, matched: {matched_seed_ids}")
+                continue
+            # Do the correlations
             ccc_out, used_chans = _concatenate_and_correlate(
                 template=_master_stream, streams=used_matched_streams,
                 cores=max_workers)
@@ -293,7 +309,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         continue
                     shift -= shift_len
                     pick = [p for p in event_dict[used_event_id].picks
-                            if p.phase_hint == phase_hint
+                            if p.phase_hint[0] == phase_hint
                             and p.waveform_id.station_code == chan.channel[0]
                             and p.waveform_id.channel_code == chan.channel[1]]
                     pick = sorted(pick, key=lambda p: p.time)[0]
@@ -311,7 +327,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint))
+                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
     differential_times = [dt for dt in differential_times_dict.values()
