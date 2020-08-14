@@ -239,6 +239,19 @@ class TestPreProcessing(unittest.TestCase):
             seisan_chan_names=True, ignore_length=True)
         self.assertEqual(processed.stats.npts, 86400)
 
+    def test_short_data_empty_return(self):
+        """
+        Check that we do not include data that is too short even if
+        ignore_bad_data is True.
+        """
+        processed = process(
+            tr=self.st[0].copy().trim(endtime=self.
+                                      st[0].stats.endtime - 28000), lowcut=0.1,
+            highcut=0.4, filt_order=3, samp_rate=1,
+            starttime=self.day_start, clip=True, length=86400,
+            seisan_chan_names=True, ignore_bad_data=True)
+        self.assertEqual(processed.stats.npts, 0)
+
     def test_highcut_debug(self):
         """Test a basic process implementation with just a highcut"""
         processed = process(tr=self.st[0].copy(), lowcut=None, highcut=0.4,

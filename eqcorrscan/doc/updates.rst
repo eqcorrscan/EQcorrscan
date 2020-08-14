@@ -1,6 +1,61 @@
 What's new
 ==========
 
+Version 0.4.2
+-------------
+* Add seed-ids to the _spike_test's message.
+* utils.correlation
+  - Cross-correlation normalisation errors no-longer raise an error
+  - When "out-of-range" correlations occur a warning is given by the C-function
+    with details of what channel, what template and where in the data vector
+    the issue occurred for the user to check their data.
+  - Out-of-range correlations are set to 0.0
+  - After extensive testing these errors have always been related to data issues
+    within regions where correlations should not be computed (spikes, step
+    artifacts due to incorrectly padding data gaps).
+  - USERS SHOULD BE CAREFUL TO CHECK THEIR DATA IF THEY SEE THESE WARNINGS
+* utils.mag_calc.amp_pick_event
+  - Added option to output IASPEI standard amplitudes, with static amplification
+    of 1 (rather than 2080 as per Wood Anderson specs).
+  - Added `filter_id` and `method_id` to amplitudes to make these methods more
+    traceable.
+* core.match_filter
+  - Bug-fix - cope with data that are too short with `ignore_bad_data=True`.
+    This flag is generally not advised, but when used, may attempt to trim all
+    data to zero length.  The expected behaviour is to remove bad data and run
+    with the remaining data.
+  - Party:
+    - decluster now accepts a hypocentral_separation argument. This allows
+      the inclusion of detections that occur close in time, but not in space.
+      This is underwritten by a new findpeaks.decluster_dist_time function
+      based on a new C-function.
+  - Tribe:
+    - Add monkey-patching for clients that do not have a `get_waveforms_bulk`
+      method for use in `.client_detect`. See issue #394.
+* utils.pre_processing
+  - Only templates that need to be reshaped are reshaped now - this can be a lot
+    faster.
+
+Version 0.4.1
+-------------
+* core.match_filter
+  - BUG-FIX: Empty families are no longer run through lag-calc when using Party.lag_calc().  Previously this resulted in a "No matching data" error, see #341.
+* core.template_gen
+  - BUG-FIX: Fix bug where events were incorrectly associated with templates in `Tribe().construct()` if the given catalog contained events outside of the time-range of the stream. See issue #381 and PR #382.
+* utils.catalog_to_dd
+  - Added ability to turn off parallel processing (this is turned off by default now) for `write_correlations` - parallel processing for moderate to large datasets was copying far too much data and using lots of memory. This is a short-term fix - ideally we will move filtering and resampling to C functions with shared-memory parallelism and GIL releasing. See PR #374.
+  - Moved parallelism for `_compute_dt_correlations` to the C functions to reduce memory overhead. Using a generator to construct sub-catalogs rather than making a list of lists in memory. See issue #361.
+* utils.mag_calc:
+  - `amp_pick_event` now works on a copy of the data by default
+  - `amp_pick_event` uses the appropriate digital filter gain to correct the applied filter. See issue #376.
+  - `amp_pick_event` rewritten for simplicity.
+  - `amp_pick_event` now has simple synthetic tests for accuracy.
+  - `_sim_wa` uses the full response information to correct to velocity this includes FIR filters (previously not used), and ensures that the wood-anderson poles (with a single zero) are correctly applied to velocity waveforms.
+  - `calc_max_curv` is now computed using the non-cumulative distribution.
+* Some problem solved in _match_filter_plot. Now it shows all new detections.
+* Add plotdir to eqcorrscan.core.lag_calc.lag_calc function to save the images.
+
+
 Version 0.4.0
 -------------
 * Change resampling to use pyFFTW backend for FFT's.  This is an attempt to
@@ -102,8 +157,13 @@ Version 0.4.0
 * Removed depreciated `template_gen` functions and `bright_lights` and
   `seismo_logs`. See #315
 
+---
+
+Older Versions
+--------------
+
 Version 0.3.3
--------------
+.............
 * Make test-script more stable - use the installed script for testing.
 * Fix bug where `set_xcorr` as context manager did not correctly reset
   stream_xcorr methods.
@@ -119,7 +179,7 @@ Version 0.3.3
 * `Family.catalog` is now an immutable property.
 
 Version 0.3.2
--------------
+.............
 * Implement reading Party objects from multiple files, including wildcard
   expansion. This will only read template information if it was not
   previously read in (which is a little more efficient).
@@ -186,7 +246,7 @@ Version 0.3.2
   EQcorrscan to run tests!
 
 Version 0.3.1
--------------
+.............
 * Cleaned imports in utils modules
 * Removed parallel checking loop in archive_read.
 * Add better checks for timing in lag-calc functions (#207)
@@ -211,7 +271,7 @@ Version 0.3.1
 
 
 Version 0.3.0
--------------
+.............
 * Compiled peak-finding routine written to speed-up peak-finding.
 * Change default match-filter plotting to not decimate unless it has to.
 * BUG-FIX: changed minimum variance for fftw correlation backend.
@@ -250,13 +310,13 @@ Version 0.3.0
   and Party objects.
 
 Version 0.2.7
--------------
+.............
 * Patch multi_corr.c to work with more versions of MSVC;
 * Revert to using single-precision floats for correlations (as in previous,
   < 0.2.x versions) for memory efficiency.
 
 Version 0.2.6
--------------
+.............
 * Added the ability to change the correlation functions used in detection
   methods through the parameter xcorr_func of match_filter, Template.detect
   and Tribe.detect, or using the set_xcorr context manager in
@@ -291,7 +351,7 @@ Version 0.2.6
 
 
 Version 0.2.5
--------------
+.............
 * Fix bug with \_group_process that resulted in stalled processes.
 * Force NumPy version
 * Support indexing of Tribe and Party objects by template-name.
@@ -303,7 +363,7 @@ Version 0.2.5
   length count was one sample too short.
 
 Version 0.2.4
--------------
+.............
 * Increase test coverage (edge-cases) in template_gen;
 * Fix bug in template_gen.extract_from_stack for duplicate channels in
   template;
@@ -352,12 +412,12 @@ Version 0.2.4
   * It is worth noting that we tried re-writing using SciPy internals which led to a significant speed-up, but with high memory costs, we ended up going with this option, which was the more difficult option, because it allows effective use on SLURM managed systems where python multiprocessing results in un-real memory spikes (issue #88).
 
 Version 0.2.0-0.2.3
--------------------
+...................
 * See 0.2.4: these versions were not fully released while trying to get
   anaconda packages to build properly.
 
 Version 0.1.6
--------------
+.............
 * Fix bug introduced in version 0.1.5 for match_filter where looping
   through multiple templates did not correctly match image and template
   data: 0.1.5 fix did not work;
@@ -368,14 +428,14 @@ Version 0.1.6
   list of template_names internally and does not change the external list.
 
 Version 0.1.5
--------------
+.............
 * Migrate coverage to codecov;
 * Fix bug introduced in version 0.1.5 for match_filter where looping
   through multiple templates did not correctly match image and template
   data.
 
 Version 0.1.4
--------------
+.............
 * Bug-fix in plot_repicked removed where data were not normalized properly;
 * Bug-fix in lag_calc where data were missing in the continuous data fixed (this led to incorrect picks, **major bug!**);
 * Output cross-channel correlation sum in lag-calc output;
@@ -393,7 +453,7 @@ Version 0.1.4
 
 
 Version 0.1.3
--------------
+.............
 * Now testing on OSX (python 2.7 and 3.5) - also added linux python 3.4;
 * Add lag-calculation and tests for it;
 * Change how lag-calc does the trace splitting to reduce memory usage;
@@ -406,8 +466,7 @@ Version 0.1.3
 
 
 Version 0.1.2
--------------
-
+.............
 * Add handling for empty location information in sfiles;
 * Added project setup script which creates a useful directory structure and copies a default match-filter script to the directory;
 * Add archive reader helper for default script, and parameter classes and definitions for default script;
@@ -430,8 +489,7 @@ Version 0.1.2
 * Added magnitude of completeness and b-value calculators to utils.mag_calc
 
 Version 0.1.1
--------------
-
+.............
 * Cope with events not always having time_errors in them in eventtoSfile;
 * Convert Quakeml depths from m to km;
 * Multiple little fixes to make Sfile conversion play well with GeoNet QuakeML files;

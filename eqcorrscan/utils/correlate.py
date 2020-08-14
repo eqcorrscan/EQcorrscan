@@ -832,8 +832,8 @@ def fftw_multi_normxcorr(
         fft_len = min(2 ** 17, next_fast_len(template_len + image_len - 1))
     if fft_len < template_len:
         Logger.warning(
-            "FFT length of {0} is shorter than the template, setting to "
-            "{1}".format(fft_len, next_fast_len(template_len + image_len - 1)))
+            f"FFT length of {fft_len} is shorter than the template, setting to"
+            f" {next_fast_len(template_len + image_len - 1)}")
         fft_len = next_fast_len(template_len + image_len - 1)
     template_array = np.ascontiguousarray(
         [template_array[x] for x in seed_ids], dtype=np.float32)
@@ -843,8 +843,8 @@ def fftw_multi_normxcorr(
         if not np.all(stream_array[x] == 0) and np.var(stream_array[x]) < 1e-8:
             # Apply gain
             stream_array[x] *= MULTIPLIER
-            Logger.warning("Low variance found for {0}, applying gain "
-                           "to stabilise correlations".format(x))
+            Logger.warning(f"Low variance found for {x}, applying gain "
+                           "to stabilise correlations")
             multipliers.update({x: MULTIPLIER})
         else:
             multipliers.update({x: 1})
@@ -874,27 +874,22 @@ def fftw_multi_normxcorr(
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret > 0:
-        Logger.critical('Error in C code (possible normalisation error)')
         Logger.critical(
-            'Maximum cccs %f at %s' %
-            (cccs.max(), np.unravel_index(cccs.argmax(), cccs.shape)))
-        Logger.critical(
-            'Minimum cccs %f at %s' %
-            (cccs.min(), np.unravel_index(cccs.argmin(), cccs.shape)))
-        Logger.critical('Recommend checking your data for spikes, clipping '
-                        'or artefacts')
+            'Out-of-range correlation in C-code, see WARNING from C-code.'
+            'You are STRONGLY RECOMMENDED to check your data for spikes, '
+            'clipping or non-physical artifacts')
         # raise CorrelationError("Internal correlation error")
     for i, missed_corr in enumerate(missed_correlations):
         if missed_corr:
             Logger.debug(
-                "{0} correlations not computed on {1}, are there gaps in the "
-                "data? If not, consider increasing gain".format(
-                    missed_corr, seed_ids[i]))
+                f"{missed_corr} correlations not computed on {seed_ids[i]}, "
+                f"are there gaps in the data? If not, consider "
+                "increasing gain")
     for i, variance_warning in enumerate(variance_warnings):
         if variance_warning and variance_warning > template_len:
             Logger.warning(
-                "Low variance found in {0} places for {1}, check "
-                "result.".format(variance_warning, seed_ids[i]))
+                f"Low variance found in {variance_warning} places for "
+                f"{seed_ids[i]}, check result.")
     # Remove gain
     for i, x in enumerate(seed_ids):
         stream_array[i] *= multipliers[x]

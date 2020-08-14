@@ -81,14 +81,10 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 
 | Service tests | Badge |
 |---------------|-------|
-| OSX & Linux | [![TravisCIStatus](https://travis-ci.org/eqcorrscan/EQcorrscan.svg?branch=master)](https://travis-ci.org/eqcorrscan/EQcorrscan)
+| MacOS & Linux | ![test](https://github.com/eqcorrscan/EQcorrscan/workflows/test/badge.svg)
 | Windows | [![Build status](https://ci.appveyor.com/api/projects/status/6pp6jdop14hj4e63/branch/master?svg=true)](https://ci.appveyor.com/project/EQcorrscan/eqcorrscan/branch/master)
-| Code coverage | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan)
-| Documentation | [![DocumentationStatus](http://readthedocs.org/projects/eqcorrscan/badge/?version=latest)](http://eqcorrscan.readthedocs.org/en/latest/?badge=latest)
-| Dependency status | [![Dependency Status](https://dependencyci.com/github/eqcorrscan/EQcorrscan/badge)](https://dependencyci.com/github/eqcorrscan/EQcorrscan)
+| Code coverage | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan) 
 | Network tests | [![CircleCI](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master.svg?style=svg)](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master)
-| Issues ready | [![Stories in Ready](https://badge.waffle.io/eqcorrscan/EQcorrscan.png?label=ready&title=Ready)](http://waffle.io/eqcorrscan/EQcorrscan)
-| Chat on gitter | [![Join the chat at https://gitter.im/eqcorrscan/EQcorrscan](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/eqcorrscan/EQcorrscan?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Licence
 

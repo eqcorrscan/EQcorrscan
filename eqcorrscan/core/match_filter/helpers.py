@@ -34,6 +34,29 @@ def temporary_directory():
         shutil.rmtree(dir_name)
 
 
+def get_waveform_client(waveform_client):
+    """
+    Bind a `get_waveforms_bulk` method to client if it doesn't already have one
+
+    :param waveform_client: Obspy client with a `get_waveforms` method
+
+    :returns: waveform_client with `get_waveforms_bulk`.
+    """
+    def _get_waveforms_bulk_naive(self, bulk_arg):
+        """ naive implementation of get_waveforms_bulk that uses iteration. """
+        st = Stream()
+        for arg in bulk_arg:
+            st += self.get_waveforms(*arg)
+        return st
+
+    # add waveform_bulk method dynamically if it doesn't exist already
+    if not hasattr(waveform_client, "get_waveforms_bulk"):
+        bound_method = _get_waveforms_bulk_naive.__get__(waveform_client)
+        setattr(waveform_client, "get_waveforms_bulk", bound_method)
+
+    return waveform_client
+
+
 def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
@@ -47,18 +70,22 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
+    list_ids = []
     for tr in stream:
         if (tr.data > 2 * np.max(np.sort(
                 np.abs(tr.data))[0:int(percent * len(tr.data))]
                                  ) * multiplier).sum() > 0:
-            msg = ('Spikes above ' + str(multiplier) +
-                   ' of the range of ' + str(percent) +
-                   ' of the data present, check. \n ' +
-                   'This would otherwise likely result in an issue during ' +
-                   'FFT prior to cross-correlation.\n' +
-                   'If you think this spike is real please report ' +
-                   'this as a bug.')
-            raise MatchFilterError(msg)
+            list_ids.append(tr.id)
+    if list_ids != []:
+        ids = ', '.join(list_ids)
+        msg = ('Spikes above ' + str(multiplier) +
+               ' of the range of ' + str(percent) +
+               ' of the data present, check:\n' + ids + '.\n'
+               'This would otherwise likely result in an issue during ' +
+               'FFT prior to cross-correlation.\n' +
+               'If you think this spike is real please report ' +
+               'this as a bug.')
+        raise MatchFilterError(msg)
 
 
 def _total_microsec(t1, t2):

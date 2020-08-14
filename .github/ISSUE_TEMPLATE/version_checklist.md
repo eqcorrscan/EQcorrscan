@@ -21,6 +21,6 @@ assignees: ''
 If release candidate works on conda-forge then:
 - [ ] Generate full release on github;
 - [ ] Get DOI of new version from zenodo and update master README.md
-- [ ] Release on PyPi;
+- [ ] Release on PyPi (`python setup.py sdist; python -m twine upload dist/*`);
 - [ ] Generate PR for eqcorrscan-feedstock from PyPi release;
 - [ ] Email google-groups email list.

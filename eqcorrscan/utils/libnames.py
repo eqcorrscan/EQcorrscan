@@ -63,7 +63,7 @@ def _load_cdll(name):
     except Exception:
         pass
     try:
-        cdll = ctypes.CDLL(str(libpath))
+        cdll = ctypes.CDLL(str(libpath), mode=ctypes.RTLD_LOCAL)
     except Exception as e:
         msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
         raise ImportError(msg)

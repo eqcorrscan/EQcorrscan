@@ -34,7 +34,5 @@ mag_calc
        _sim_WA
        _pairwise
        _max_p2t
-       _find_resp
-       _GSE2_PAZ_read
 
     .. comment to end block

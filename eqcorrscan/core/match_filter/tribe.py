@@ -27,7 +27,8 @@ from obspy.core.event import Comment, CreationInfo
 
 from eqcorrscan.core.match_filter.template import Template, group_templates
 from eqcorrscan.core.match_filter.party import Party
-from eqcorrscan.core.match_filter.helpers import _safemembers, _par_read
+from eqcorrscan.core.match_filter.helpers import (
+    _safemembers, _par_read, get_waveform_client)
 from eqcorrscan.core.match_filter.matched_filter import (
     _group_detect, MatchFilterError)
 from eqcorrscan.core import template_gen
@@ -445,9 +446,9 @@ class Tribe(object):
             av_chan_corr.  See Note on thresholding below.
         :type trig_int: float
         :param trig_int:
-            Minimum gap between detections in seconds. If multiple detections
-            occur within trig_int of one-another, the one with the highest
-            cross-correlation sum will be selected.
+            Minimum gap between detections from one template in seconds.
+            If multiple detections occur within trig_int of one-another, the
+            one with the highest cross-correlation sum will be selected.
         :type plot: bool
         :param plot: Turn plotting on or off.
         :type plotdir: str
@@ -629,9 +630,9 @@ class Tribe(object):
             av_chan_corr.  See Note on thresholding below.
         :type trig_int: float
         :param trig_int:
-            Minimum gap between detections in seconds. If multiple detections
-            occur within trig_int of one-another, the one with the highest
-            cross-correlation sum will be selected.
+            Minimum gap between detections from one template in seconds.
+            If multiple detections occur within trig_int of one-another, the
+            one with the highest cross-correlation sum will be selected.
         :type plot: bool
         :param plot: Turn plotting on or off.
         :type plotdir: str
@@ -750,6 +751,15 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         from obspy.clients.fdsn.client import FDSNException
+
+        # This uses get_waveforms_bulk to get data - not all client types have
+        # this, so we check and monkey patch here.
+        if not hasattr(client, "get_waveforms_bulk"):
+            assert hasattr(client, "get_waveforms"), (
+                f"client {client} must have at least a get_waveforms method")
+            Logger.info(f"Client {client} does not have a get_waveforms_bulk "
+                        "method, monkey-patching this")
+            client = get_waveform_client(client)
 
         party = Party()
         buff = 300
