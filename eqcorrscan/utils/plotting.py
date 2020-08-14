@@ -2243,7 +2243,7 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
     assert (catalog and locations) or catalog or locations,\
         "Requires catalog and/or locations"
     # set default parameters of plt.scatter()
-    default_parameters = {'cmap': 'jet_r', 'marker': ',', 's': 1, 'lw': 1}
+    default_parameters = {'cmap': 'viridis_r', 'marker': ',', 's': 1, 'lw': 1}
     for key in default_parameters.keys():
         if key not in kwargs.keys():
             kwargs[key] = default_parameters[key]
@@ -2297,13 +2297,13 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
     ax1 = fig.add_subplot(gs[1])
     ax1.set_facecolor(bgcolor)
     ax1.set_yticks([])
-    ax1.set_xlabel('Depth')
+    ax1.set_xlabel('Depth (km)')
     map1 = ax1.scatter(dep, lat, c=c1, **kwargs)
     # cross section parallel to longitude (lon ,depth)
     ax2 = plt.subplot(gs[2])
     ax2.set_facecolor(bgcolor)
     ax2.invert_yaxis()
-    ax2.set_ylabel('Depth')
+    ax2.set_ylabel('Depth (km)')
     ax2.set_xlabel('Longitude')
     map2 = ax2.scatter(lon, dep, c=c2, **kwargs)
     # location of color bar
