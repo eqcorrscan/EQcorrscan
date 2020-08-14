@@ -3,6 +3,9 @@
   - Added useful information to doc-string regarding method and meaning of
     residuals
   - Changed the number of magnitudes used to an int (from a string!?)
+* utils.plotting
+  - Function added (twoD_seismplot) for plotting seismicity (#365).
+
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
@@ -15,8 +18,6 @@
     within regions where correlations should not be computed (spikes, step
     artifacts due to incorrectly padding data gaps).
   - USERS SHOULD BE CAREFUL TO CHECK THEIR DATA IF THEY SEE THESE WARNINGS
-* utils.plotting
-  - Function added (twoD_seismplot) for plotting seismicity (#365). 
 * utils.mag_calc.amp_pick_event
   - Added option to output IASPEI standard amplitudes, with static amplification
     of 1 (rather than 2080 as per Wood Anderson specs).
