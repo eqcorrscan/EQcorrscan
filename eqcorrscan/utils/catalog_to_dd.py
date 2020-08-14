@@ -413,8 +413,8 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
                 master_pick.phase_hint not in "PS":  # pragma: no cover
             continue
         matched_picks = [p for p in sparse_event.picks
-                         if p.station == master_pick.station
-                         and p.phase_hint == master_pick.phase_hint]
+                         if p.seed_id == master_pick.seed_id
+                         and p.phase == master_pick.phase]
         for matched_pick in matched_picks:
             differential_times.obs.append(
                 _DTObs(station=master_pick.station,
