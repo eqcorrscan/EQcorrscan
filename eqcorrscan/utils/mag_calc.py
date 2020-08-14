@@ -123,8 +123,15 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :param plotvar: Turn plotting on or off.
 
     :rtype: list
-    :return: List of tuples of (completeness, b-value, residual,\
-        number of magnitudes used)
+    :return:
+        List of tuples of (completeness, b-value, residual, number of
+        magnitudes used)
+
+    .. Note::
+        High "residuals" indicate better fit. Residuals are calculated
+        according to the Wiemer & Wyss 2000, Minimum Magnitude of Completeness
+        in Earthquake Catalogs: Examples from Alaska, the Western United
+        States, and Japan, BSSA.
 
     .. rubric:: Example
 
@@ -138,12 +145,12 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     >>> # We can set a maximum magnitude:
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False, max_mag=5)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     """
     b_values = []
@@ -182,7 +189,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
                            for i in range(len(complete_freq))]) * 100) /
                    np.sum(complete_freq))
-        b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
+        b_values.append((m_c, abs(fit[0][0]), r, len(complete_mags)))
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],

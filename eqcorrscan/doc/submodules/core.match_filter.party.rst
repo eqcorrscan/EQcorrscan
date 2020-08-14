@@ -4,21 +4,46 @@ core.match_filter.party
 .. currentmodule:: eqcorrscan.core.match_filter.party
 .. automodule:: eqcorrscan.core.match_filter.party
 
-    .. comment to end block
+----
 
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
+.. autoclass:: Party
 
-        core.match_filter.party.Party
+   .. rubric:: Methods
 
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+   .. autosummary::
 
-       read_party
+      copy
+      filter
+      plot
+      decluster
+      get_catalog
+      lag_calc
+      min_chans
+      read
+      rethreshold
+      select
+      sort
+      write
 
-    .. comment to end block
+   .. automethod:: __init__
+   .. automethod:: copy
+   .. automethod:: filter
+   .. automethod:: plot
+   .. automethod:: decluster
+   .. automethod:: get_catalog
+   .. automethod:: lag_calc
+   .. automethod:: min_chans
+   .. automethod:: read
+   .. automethod:: rethreshold
+   .. automethod:: select
+   .. automethod:: sort
+   .. automethod:: write
+
+Functions
+----
+
+.. autosummary::
+   :toctree: autogen
+   :nosignatures:
+
+   read_party

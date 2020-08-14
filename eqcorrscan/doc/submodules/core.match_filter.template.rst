@@ -1,24 +1,37 @@
 core.match_filter.template
---------------------------
+---------------------------
 
 .. currentmodule:: eqcorrscan.core.match_filter.template
 .. automodule:: eqcorrscan.core.match_filter.template
 
-    .. comment to end block
+----
 
-    Classes
-    -------
-    .. toctree::
-        :maxdepth: 1
+.. comment to end block
 
-        core.match_filter.template.Template
+.. autoclass:: Template
 
-    Functions
-    ---------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+   .. rubric:: Methods
 
-       read_template
+   .. autosummary::
 
-    .. comment to end block
+      construct
+      copy
+      detect
+      read
+      same_processing
+      write
+
+   .. automethod:: __init__
+   .. automethod:: construct
+   .. automethod:: copy
+   .. automethod:: detect
+   .. automethod:: read
+   .. automethod:: same_processing
+   .. automethod:: write
+
+Functions
+----
+
+.. autofunction:: read_template
+
+.. comment to end block
