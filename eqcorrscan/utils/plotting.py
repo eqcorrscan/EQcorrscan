@@ -2251,7 +2251,7 @@ def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
             kwargs[key] = default_parameters[key]
     # get parameters of _finalise_figure
     _kwargs = {}
-    for key in ['title', 'show', 'save', 'savefile', 'return_fig', 'size']:
+    for key in ['title', 'show', 'save', 'savefile', 'return_figure', 'size']:
         if key in kwargs.keys():
             _kwargs[key] = kwargs[key]
             del kwargs[key]
