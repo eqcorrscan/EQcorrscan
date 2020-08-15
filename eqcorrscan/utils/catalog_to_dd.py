@@ -269,7 +269,9 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             master_length = Counter(master_length).most_common(1)[0][0]
             _master_stream = _master_stream.select(npts=master_length)
             
-            matched_length = [tr.stats.npts for st in _matched_streams.values() for tr in st]
+            matched_length = [
+                tr.stats.npts for st in _matched_streams.values() 
+                for tr in st]
             if len(set(matched_length)) > 1:
                 Logger.warning(
                     "Multiple lengths found in matched data - check that you "
@@ -284,7 +286,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     used_matched_streams.append(_matched_stream)
             # Check that there are matching seed ids.
             master_seed_ids = set(tr.id for tr in _master_stream)
-            matched_seed_ids = set(tr.id for st in used_matched_streams for tr in st)
+            matched_seed_ids = set(
+                tr.id for st in used_matched_streams for tr in st)
             if master_seed_ids not in matched_seed_ids:
                 Logger.warning(
                     "After checking length there are no matched traces: "
@@ -327,7 +330,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint[0]))
+                               tt2=tt2, weight=cc_max ** 2, 
+                               phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
     differential_times = [dt for dt in differential_times_dict.values()
