@@ -183,6 +183,7 @@ class SyntheticTests(unittest.TestCase):
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
             interpolate=False, export_cc=True, cc_dir=cc_dir)
         cc_files = glob.glob(os.path.join(cc_dir, '*.npy'))
+        assert len(cc_files) == len(self.party[0])
         for fcc in cc_files:
             np.load(fcc)
 
