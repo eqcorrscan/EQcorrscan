@@ -270,7 +270,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             _master_stream = _master_stream.select(npts=master_length)
             
             matched_length = [
-                tr.stats.npts for st in _matched_streams.values() 
+                tr.stats.npts for st in _matched_streams.values()
                 for tr in st]
             if len(set(matched_length)) > 1:
                 Logger.warning(
@@ -330,7 +330,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2, 
+                               tt2=tt2, weight=cc_max ** 2,
                                phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
