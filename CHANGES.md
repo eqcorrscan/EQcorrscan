@@ -4,6 +4,9 @@
   - Added useful information to doc-string regarding method and meaning of
     residuals
   - Changed the number of magnitudes used to an int (from a string!?)
+* utils.plotting
+  - Function added (twoD_seismplot) for plotting seismicity (#365).
+
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
