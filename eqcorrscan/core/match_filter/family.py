@@ -505,7 +505,7 @@ class Family(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 float_cc=0, **kwargs):
+                 float_cc=None, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -575,8 +575,8 @@ class Family(object):
         :type float_cc: float
         :param float_cc:
             It provides the ability of detecting phases with low correlation
-            coefficeint but clear pick. It must set between 0 to 100 as
-            Percentage of maximume of correlation array. defualts to 0.
+        coefficeint but clear pick. It must set between 1 to 99 as Percentage
+        of maximume of correlation array. defualts to None(disable).
 
         :returns:
             Catalog of events with picks.  No origin information is included.

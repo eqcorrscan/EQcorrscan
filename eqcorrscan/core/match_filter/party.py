@@ -784,7 +784,7 @@ class Party(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 float_cc=0, **kwargs):
+                 float_cc=None, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -854,8 +854,8 @@ class Party(object):
         :type float_cc: float
         :param float_cc:
             It provides the ability of detecting phases with low correlation
-            coefficeint but clear pick. It must set between 0 to 100 as
-            Percentage of maximume of correlation array. defualts to 0.
+        coefficeint but clear pick. It must set between 1 to 99 as Percentage
+        of maximume of correlation array. defualts to None(disable).
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -886,19 +886,22 @@ class Party(object):
             number shows the threshold as percentage of maximume correlation
             coefficient of each data.
             If it is set to 50, it means that if there was no other picks in
-            area between maximume_cc and 50% of maximume_cc, there is a unique
-            pick and can be considered as a phase.
+            area between maximume_cc and 50% of maximume_cc(value of maximume
+            is two times of other parts), there is a unique pick and can be
+            considered as a phase.
             But if there is any picks in this area, it's not cibsuder as a
             phase.
             The lower it gets, the more stringent the phase picking gets and
             vice versa.
-            If it is set to 0, then It doesn't any effect and select phases
+            If it is set to None, then It doesn't any effect and select phases
             done only according to min_cc threshold.
 
         .. warning::
             There must be enough correlation signal in order to use float_cc,
             so you need to set proper value for shift_len. Because there must
             be enough oscillation to have a correct comparsion.
+            If set float_cc to 0 and shift_len be too short that there is only
+            one pick in it, it makes wrong phase.
         """
         process_cores = process_cores or cores
         template_groups = group_templates(

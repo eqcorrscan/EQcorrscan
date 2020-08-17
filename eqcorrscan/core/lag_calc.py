@@ -192,7 +192,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
                       plot=False, plotdir=None, export_cc=False, cc_dir=None,
-                      float_cc=0):
+                      float_cc=None):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -239,8 +239,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type float_cc: float
     :param float_cc:
         It provides the ability of detecting phases with low correlation
-        coefficeint but clear pick. It must set between 0 to 100 as Percentage
-        of maximume of correlation array. defualts to 0.
+        coefficeint but clear pick. It must set between 1 to 99 as Percentage
+        of maximume of correlation array. defualts to None(disable).
 
     :return: Dictionary of picked events keyed by detection id.
     """
@@ -292,7 +292,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             used_chans += 1
             if cc_max > min_cc:
                 skip_phase = False
-            elif cc_max < min_cc:
+            elif cc_max < min_cc and float_cc:
                 num_of_peaks = len(
                     find_peaks(correlation, height=(float_cc/100)*cc_max)[0])
                 if num_of_peaks == 1 and cc_max > 0.2:
@@ -424,7 +424,7 @@ def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
              plot=False, plotdir=None, export_cc=False, cc_dir=None,
-             float_cc=0):
+             float_cc=None):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -484,8 +484,8 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type float_cc: float
     :param float_cc:
         It provides the ability of detecting phases with low correlation
-        coefficeint but clear pick. It must set between 0 to 100 as Percentage
-        of maximume of correlation array. defualts to 0.
+        coefficeint but clear pick. It must set between 1 to 99 as Percentage
+        of maximume of correlation array. defualts to None(disable).
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -547,18 +547,21 @@ def lag_calc(detections, detect_data, template_names, templates,
         shows the threshold as percentage of maximume correlation coefficient
         of each data.
         If it is set to 50, it means that if there was no other picks in area
-        between maximume_cc and 50% of maximume_cc, there is a unique pick and
-        can be considered as a phase.
+        between maximume_cc and 50% of maximume_cc(value of maximumeis two
+        times of other parts), there is a unique pick and can be considered
+        as a phase.
         But if there is any picks in this area, it's not cibsuder as a phase.
         The lower it gets, the more stringent the phase picking gets and vice
         versa.
-        If it is set to 0, then It doesn't any effect and select phases done
+        If it is set to None, then It doesn't any effect and select phases done
         only according to min_cc threshold.
 
     .. warning::
         There must be enough correlation signal in order to use float_cc,
         so you need to set proper value for shift_len.
         Because there must be enough oscillation to have a correct comparsion.
+        If set float_cc to 0 and shift_len be too short that there is only one
+        pick in it, it makes wrong phase.
     """
     # First check that sample rates are equal for everything
     for tr in detect_data:
