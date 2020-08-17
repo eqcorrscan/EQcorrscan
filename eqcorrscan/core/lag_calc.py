@@ -294,7 +294,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                 skip_phase = False
             elif cc_max < min_cc:
                 num_of_peaks = len(
-                    find_peaks(correlation, height=float_cc*cc_max)[0])
+                    find_peaks(correlation, height=(float_cc/100)*cc_max)[0])
                 if num_of_peaks == 1 and cc_max > 0.2:
                     skip_phase = False
                 else:
