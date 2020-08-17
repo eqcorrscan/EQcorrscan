@@ -10,6 +10,7 @@ Functions to generate pick-corrections for events detected by correlation.
 """
 import numpy as np
 import scipy
+from scipy.signal import find_peaks
 import logging
 import os
 
@@ -190,7 +191,8 @@ def _concatenate_and_correlate(streams, template, cores):
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False, plotdir=None, export_cc=False, cc_dir=None):
+                      plot=False, plotdir=None, export_cc=False, cc_dir=None,
+                      float_cc=0):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -234,6 +236,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type cc_dir: str
     :param cc_dir:
         Path to saving folder, NumPy files will be output here.
+    :type float_cc: float
+    :param float_cc:
+        It provides the ability of detecting phases with low correlation
+        coefficeint but clear pick. It must set between 0 to 100 as Percentage
+        of maximume of correlation array. defualts to 0.
 
     :return: Dictionary of picked events keyed by detection id.
     """
@@ -283,7 +290,18 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             picktime = tr.stats.starttime + shift
             checksum += cc_max
             used_chans += 1
-            if cc_max < min_cc:
+            if cc_max > min_cc:
+                skip_phase = False
+            elif cc_max < min_cc:
+                num_of_peaks = len(
+                    find_peaks(correlation, height=float_cc*cc_max)[0])
+                if num_of_peaks == 1 and cc_max > 0.2:
+                    skip_phase = False
+                else:
+                    skip_phase = True
+            else:
+                skip_phase = True
+            if skip_phase:
                 Logger.debug('Correlation of {0} is below threshold, not '
                              'using'.format(cc_max))
                 continue
@@ -405,7 +423,8 @@ def _prepare_data(family, detect_data, shift_len):
 def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False, plotdir=None, export_cc=False, cc_dir=None):
+             plot=False, plotdir=None, export_cc=False, cc_dir=None,
+             float_cc=0):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -462,6 +481,11 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type cc_dir: str
     :param cc_dir:
         Path to saving folder, NumPy files will be output here.
+    :type float_cc: float
+    :param float_cc:
+        It provides the ability of detecting phases with low correlation
+        coefficeint but clear pick. It must set between 0 to 100 as Percentage
+        of maximume of correlation array. defualts to 0.
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -517,6 +541,24 @@ def lag_calc(detections, detect_data, template_names, templates,
     .. note::
         The correlation data that are saved to the binary files can be useful
         to select an appropriate threshold for your data.
+
+    .. note::
+        float_cc is a float threshold for correlation coefficient. This number
+        shows the threshold as percentage of maximume correlation coefficient
+        of each data.
+        If it is set to 50, it means that if there was no other picks in area
+        between maximume_cc and 50% of maximume_cc, there is a unique pick and
+        can be considered as a phase.
+        But if there is any picks in this area, it's not cibsuder as a phase.
+        The lower it gets, the more stringent the phase picking gets and vice
+        versa.
+        If it is set to 0, then It doesn't any effect and select phases done
+        only according to min_cc threshold.
+
+    .. warning::
+        There must be enough correlation signal in order to use float_cc,
+        so you need to set proper value for shift_len.
+        Because there must be enough oscillation to have a correct comparsion.
     """
     # First check that sample rates are equal for everything
     for tr in detect_data:
@@ -546,7 +588,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                 min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
-                export_cc=export_cc, cc_dir=cc_dir)
+                export_cc=export_cc, cc_dir=cc_dir, float_cc=float_cc)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()
