@@ -505,7 +505,7 @@ class Family(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 **kwargs):
+                 float_cc=0, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -572,6 +572,11 @@ class Family(object):
         :type cc_dir: str
         :param cc_dir:
             Path to saving folder, NumPy files will be output here.
+        :type float_cc: float
+        :param float_cc:
+            It provides the ability of detecting phases with low correlation
+            coefficeint but clear pick. It must set between 0 to 100 as
+            Percentage of maximume of correlation array. defualts to 0.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -605,7 +610,7 @@ class Family(object):
             min_cc=min_cc, horizontal_chans=horizontal_chans,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir,
-            export_cc=export_cc, cc_dir=cc_dir)
+            export_cc=export_cc, cc_dir=cc_dir, float_cc=float_cc)
         catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
