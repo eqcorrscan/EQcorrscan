@@ -288,7 +288,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             master_seed_ids = set(tr.id for tr in _master_stream)
             matched_seed_ids = set(
                 tr.id for st in used_matched_streams for tr in st)
-            if master_seed_ids not in matched_seed_ids:
+            if not matched_seed_ids.issubset(master_seed_ids):
                 Logger.warning(
                     "After checking length there are no matched traces: "
                     f"master: {master_seed_ids}, matched: {matched_seed_ids}")
@@ -872,15 +872,24 @@ def write_event(catalog, event_id_mapper=None):
 
 # Station.dat functions
 
-def write_station(inventory):
+def write_station(inventory, use_elevation=False):
     station_strings = []
     for network in inventory:
         for station in network:
-            station_strings.append(
-                "{station:<7s} {latitude:6.3f} {longitude:6.3f}".format(
-                    station=station.code,
-                    latitude=station.latitude,
-                    longitude=station.longitude))
+            if use_elevation:
+                station_strings.append(
+                    """{station:<7s} {latitude:6.3f} {longitude:6.3f}
+                    {elevation:5.0f}""".format(
+                        station=station.code,
+                        latitude=station.latitude,
+                        longitude=station.longitude,
+                        elevation=station.elevation - station[0].depth))
+            else:
+                station_strings.append(
+                    "{station:<7s} {latitude:6.3f} {longitude:6.3f}".format(
+                        station=station.code,
+                        latitude=station.latitude,
+                        longitude=station.longitude))
     with open("station.dat", "w") as f:
         f.write("\n".join(station_strings))
 
