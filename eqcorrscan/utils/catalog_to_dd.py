@@ -401,7 +401,8 @@ def _compute_dt(sparse_catalog, master, min_link, event_id_mapper):
         min_link=min_link) for event in sparse_catalog]
 
 
-def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
+def _make_event_pair(sparse_event, master, event_id_mapper, min_link,
+                     check_full_seed=False):
     """
     Make an event pair for a given event and master event.
     """
@@ -412,9 +413,14 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         if master_pick.phase_hint and \
                 master_pick.phase_hint not in "PS":  # pragma: no cover
             continue
-        matched_picks = [p for p in sparse_event.picks
-                         if p.seed_id == master_pick.seed_id
-                         and p.phase == master_pick.phase]
+        if check_full_seed:
+            matched_picks = [p for p in sparse_event.picks
+                             if p.seed_id == master_pick.seed_id
+                             and p.phase == master_pick.phase]
+        else:
+            matched_picks = [p for p in sparse_event.picks
+                             if p.station == master_pick.station
+                             and p.phase == master_pick.phase]
         for matched_pick in matched_picks:
             differential_times.obs.append(
                 _DTObs(station=master_pick.station,
