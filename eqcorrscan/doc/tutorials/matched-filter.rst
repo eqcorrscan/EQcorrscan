@@ -11,41 +11,41 @@ Match-filter objects
 
 The match-filter module contains five objects:
 
- - :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>`
- - :doc:`Template </submodules/core.match_filter.template.Template>`
- - :doc:`Party </submodules/core.match_filter.party.Party>`
- - :doc:`Family </submodules/core.match_filter.family.Family>`
- - :doc:`Detection </submodules/core.match_filter.detection.Detection>`
+ - :doc:`Tribe </submodules/core.match_filter.tribe>`
+ - :doc:`Template </submodules/core.match_filter.template>`
+ - :doc:`Party </submodules/core.match_filter.party>`
+ - :doc:`Family </submodules/core.match_filter.family>`
+ - :doc:`Detection </submodules/core.match_filter.detection>`
 
-The :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>` object is a container for
-multiple :doc:`Template </submodules/core.match_filter.template.Template>` objects.
-:doc:`Templates </submodules/core.match_filter.template.Template>` contain the waveforms
+The :doc:`Tribe </submodules/core.match_filter.tribe>` object is a container for
+multiple :doc:`Template </submodules/core.match_filter.template>` objects.
+:doc:`Templates </submodules/core.match_filter.template>` contain the waveforms
 of the template alongside the metadata used to generate the template.  Both
-:doc:`Templates </submodules/core.match_filter.template.Template>` and
-:doc:`Tribes </submodules/core.match_filter.tribe.Tribe>` can be written to disk as
+:doc:`Templates </submodules/core.match_filter.template>` and
+:doc:`Tribes </submodules/core.match_filter.tribe>` can be written to disk as
 tar archives containing the waveform data in miniseed format, event catalogues
-associated with the :doc:`Templates </submodules/core.match_filter.template.Template>`
+associated with the :doc:`Templates </submodules/core.match_filter.template>`
 (if provided) in quakeml format and meta-data in a csv file.  This archives
 can be read back in or transferred between machines.
 
-The :doc:`Detection </submodules/core.match_filter.detection.Detection>`,
-:doc:`Family </submodules/core.match_filter.family.Family>` and
-:doc:`Party </submodules/core.match_filter.party.Party>` objects are heirachical,
-a single :doc:`Detection </submodules/core.match_filter.detection.Detection>` object
+The :doc:`Detection </submodules/core.match_filter.detection>`,
+:doc:`Family </submodules/core.match_filter.family>` and
+:doc:`Party </submodules/core.match_filter.party>` objects are heirachical,
+a single :doc:`Detection </submodules/core.match_filter.detection>` object
 describes a single event detection, and contains information regarding how
 the detection was made, what time it was made at alongside other useful
 information, it does not store the
-:doc:`Template </submodules/core.match_filter.template.Template>` object used for the
+:doc:`Template </submodules/core.match_filter.template>` object used for the
 detection, but does store a reference to the name of the
-:doc:`Template </submodules/core.match_filter.template.Template>`.
-:doc:`Family </submodules/core.match_filter.family.Family>` objects are containers
-for multiple :doc:`Detections </submodules/core.match_filter.detection.Detection>` made
-using a single :doc:`Template </submodules/core.match_filter.template.Template>`
+:doc:`Template </submodules/core.match_filter.template>`.
+:doc:`Family </submodules/core.match_filter.family>` objects are containers
+for multiple :doc:`Detections </submodules/core.match_filter.detection>` made
+using a single :doc:`Template </submodules/core.match_filter.template>`
 (name chosen to match the literature).  These objects do contain the
-:doc:`Template </submodules/core.match_filter.template.Template>` used for the detections,
+:doc:`Template </submodules/core.match_filter.template>` used for the detections,
 and as such can be used to re-create the list of detections is necessary.
-:doc:`Party </submodules/core.match_filter.party.Party>` objects are containers for
-multiple :doc:`Family </submodules/core.match_filter.family.Family>` objects.  All
+:doc:`Party </submodules/core.match_filter.party>` objects are containers for
+multiple :doc:`Family </submodules/core.match_filter.family>` objects.  All
 objects in the detection heirachy have read and write methods - we recommend
 writing to tar archives (default) for Party and Family objects, as this will
 store all metadata used in detection, which should allow for straightforward
@@ -54,7 +54,7 @@ reproduction of results.
 Template creation
 -----------------
 
-:doc:`Templates </submodules/core.match_filter.template.Template>` have a construct
+:doc:`Templates </submodules/core.match_filter.template>` have a construct
 method which accesses the functions in
 :doc:`template_gen </submodules/core.template_gen>`.  Template.construct
 only has access to methods that work on individual events, and not catalogs; for
@@ -232,8 +232,8 @@ to ensure stable correlations.
 If you provide data with filled gaps (e.g. you used `st = st.merge(fill_value=0)` to
 either:
 
-* The `detect` method of :doc:`Tribe </submodules/core.match_filter.tribe.Tribe>`,
-* The `detect` method of :doc:`Template </submodules/core.match_filter.template.Template>`,
+* The `detect` method of :doc:`Tribe </submodules/core.match_filter.tribe>`,
+* The `detect` method of :doc:`Template </submodules/core.match_filter.template>`,
 * :doc:`shortproc </submodules/autogen/eqcorrscan.utils.pre_processing.shortproc>`,
 * :doc:`dayproc </submodules/autogen/eqcorrscan.utils.pre_processing.dayproc>`,
 

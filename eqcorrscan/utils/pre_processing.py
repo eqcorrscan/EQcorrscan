@@ -857,8 +857,13 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     if len(_out) != len(templates):
         Logger.debug("Some templates not used due to no matching channels")
 
+    incomplete_templates = {
+        template_name for template_name, template in _out.items() if
+        sorted([tr.id for tr in template]) != [tr.id for tr in nan_template]}
+
     # Fill out the templates with nan channels
-    for template_name, template in _out.items():
+    for template_name in incomplete_templates:
+        template = _out[template_name]
         template_starttime = min(tr.stats.starttime for tr in template)
         out_template = nan_template.copy()
         for channel_number, _seed_id in enumerate(seed_ids):

@@ -1,5 +1,5 @@
 lag_calc
---------
+========
 
 .. currentmodule:: eqcorrscan.core.lag_calc
 .. automodule:: eqcorrscan.core.lag_calc
@@ -11,28 +11,20 @@ however you can use any well correlated events.  Based on the method of
 
 .. _Shelly and Hardebeck (2010): http://onlinelibrary.wiley.com/doi/10.1029/2010GL043672/full
 
-    .. comment to end block
+.. comment to end block
 
-    Classes & Functions
-    -------------------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+Functions
+---------
+.. autofunction:: lag_calc
+.. autofunction:: xcorr_pick_family
 
-       lag_calc
-       xcorr_pick_family
+.. comment to end block
 
-    .. comment to end block
+Private Functions
+-----------------
+Note that these functions are not designed for public use and may change
+at any point.
 
-    Private Functions
-    -----------------
-    Note that these functions are not designed for public use and may change
-    at any point.
-
-    .. autosummary::
-      :toctree: autogen
-      :nosignatures:
-
-      _concatenate_and_correlate
-      _prepare_data
-      _xcorr_interp
+.. autofunction::  _concatenate_and_correlate
+.. autofunction:: _prepare_data
+.. autofunction:: _xcorr_interp

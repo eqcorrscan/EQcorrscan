@@ -1,6 +1,5 @@
-"""Functions to calculate local magnitudes automatically, and to calcualte \
-relative moments for near-repeating earthquakes using singular-value \
-decomposition techniques.
+"""
+Functions to aid magnitude estimation.
 
 :copyright:
     EQcorrscan developers.
@@ -11,6 +10,7 @@ decomposition techniques.
 """
 import numpy as np
 import logging
+import eqcorrscan  # Used to get version number
 import os
 import glob
 import matplotlib.pyplot as plt
@@ -20,11 +20,13 @@ import random
 import pickle
 import math
 
+from inspect import currentframe
 from scipy.signal import iirfilter, sosfreqz
 from collections import Counter
 from obspy import Trace
 from obspy.signal.invsim import simulate_seismometer as seis_sim
-from obspy.core.event import Amplitude, Pick, WaveformStreamID, Origin
+from obspy.core.event import (
+    Amplitude, Pick, WaveformStreamID, Origin, ResourceIdentifier)
 from obspy.geodetics import degrees2kilometers
 
 
@@ -121,8 +123,15 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :param plotvar: Turn plotting on or off.
 
     :rtype: list
-    :return: List of tuples of (completeness, b-value, residual,\
-        number of magnitudes used)
+    :return:
+        List of tuples of (completeness, b-value, residual, number of
+        magnitudes used)
+
+    .. Note::
+        High "residuals" indicate better fit. Residuals are calculated
+        according to the Wiemer & Wyss 2000, Minimum Magnitude of Completeness
+        in Earthquake Catalogs: Examples from Alaska, the Western United
+        States, and Japan, BSSA.
 
     .. rubric:: Example
 
@@ -136,12 +145,12 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     >>> # We can set a maximum magnitude:
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False, max_mag=5)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     """
     b_values = []
@@ -180,7 +189,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
                            for i in range(len(complete_freq))]) * 100) /
                    np.sum(complete_freq))
-        b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
+        b_values.append((m_c, abs(fit[0][0]), r, len(complete_mags)))
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],
@@ -262,7 +271,7 @@ def _sim_WA(trace, inventory, water_level, velocity=False):
     :type inventory: obspy.core.inventory.Inventory
     :param inventory:
         Inventory containing response information for the stations in st.
-    :type water_level: int
+    :type water_level: float
     :param water_level: Water level for the simulation.
     :type velocity: bool
     :param velocity:
@@ -640,11 +649,11 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     return relative_magnitudes
 
 
-def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
+def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
                    remove_old=False, ps_multiplier=0.34, velocity=False,
-                   water_level=0):
+                   water_level=0, iaspei_standard=False):
     """
     Pick amplitudes for local magnitude for a single event.
 
@@ -662,17 +671,10 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
         2. Picks the peak-to-trough amplitude, but records half of this to
         cope with possible DC offsets.
 
-        3. Despite the original definition of local magnitude requiring the
-        use of a horizontal channel, more recent work has shown that the
-        vertical channels give more consistent magnitude estimations between
-        stations, due to a reduction in site-amplification effects, we
-        therefore use the vertical channels by default, but allow the user
-        to chose which channels they deem appropriate;
-
-        4. The maximum amplitude within the given window is picked. Care must
+        3. The maximum amplitude within the given window is picked. Care must
         be taken to avoid including surface waves in the window;
 
-        6. A variable window-length is used by default that takes into account
+        4. A variable window-length is used by default that takes into account
         P-S times if available, this is in an effort to include only the
         body waves.  When P-S times are not available the ps_multiplier
         variable is used, which defaults to 0.34 x hypocentral distance.
@@ -684,10 +686,9 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
     :type inventory: obspy.core.inventory.Inventory
     :param inventory:
         Inventory containing response information for the stations in st.
-    :type chans: list
+    :type chans: tuple
     :param chans:
-        List of the channels to pick on, defaults to ['Z'] - should just be
-        the orientations, e.g. Z, 1, 2, N, E
+        Tuple of the components to pick on, e.g. (Z, 1, 2, N, E)
     :type var_wintype: bool
     :param var_wintype:
         If True, the winlen will be multiplied by the P-S time if both P and
@@ -728,10 +729,18 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
     :param velocity:
         Whether to make the pick in velocity space or not. Original definition
         of local magnitude used displacement of Wood-Anderson, MLv in seiscomp
-        and Antelope uses a velocity measurement.
+        and Antelope uses a velocity measurement. *velocity and iaspei_standard
+        are mutually exclusive*.
     :type water_level: float
     :param water_level:
         Water-level for seismometer simulation, see
+        https://docs.obspy.org/packages/autogen/obspy.core.trace.Trace.remove_response.html
+    :type iaspei_standard: bool
+    :param iaspei_standard:
+        Whether to output amplitude in IASPEI standard IAML (wood-anderson
+        static amplification of 1), or AML with wood-anderson static
+        amplification of 2080. Note: Units are SI (and specified in the
+        amplitude)
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.Event`
@@ -741,7 +750,16 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
         dividing the maximum amplitude in the signal window (pick window)
         by the normalized noise amplitude (taken from the whole window
         supplied).
+
+    .. Note::
+        With `iaspei_standard=False`, picks will be returned in SI units
+        (m or m/s), with the standard Wood-Anderson sensitivity of 2080 applied
+        such that the measurements reflect the amplitude measured on a Wood
+        Anderson instrument, as per the original local magnitude definitions
+        of Richter and others.
     """
+    if iaspei_standard and velocity:
+        raise NotImplementedError("Velocity is not IASPEI standard for IAML.")
     try:
         event_origin = event.preferred_origin() or event.origins[0]
     except IndexError:
@@ -801,7 +819,7 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                 hypo_dist = None
             else:
                 # They should all be the same, but take the mean to be sure...
-                distance = np.mean(distances)
+                distance = sum(distances) / len(distances)
                 hypo_dist = np.sqrt(
                     np.square(degrees2kilometers(distance)) +
                     np.square(depth / 1000))
@@ -895,32 +913,65 @@ def amp_pick_event(event, st, inventory, chans=['Z'], var_wintype=True,
                 _, gain = sosfreqz(sos, worN=[1 / period],
                                    fs=tr.stats.sampling_rate)
                 gain = np.abs(gain[0])  # Convert from complex to real.
+                if gain < 1e-2:
+                    Logger.warning(
+                        f"Pick made outside stable pass-band of filter "
+                        f"on {tr.id}, rejecting")
+                    continue
                 amplitude /= gain
                 Logger.debug(f"Removed filter gain: {gain}")
             # Write out the half amplitude, approximately the peak amplitude as
             # used directly in magnitude calculations
             amplitude *= 0.5
+            # Documentation standards
+            module = _sim_WA.__module__
+            fname = currentframe().f_code.co_name
+            # This is here to ensure that if the function name changes this
+            # is still correct
+            method_id = ResourceIdentifier(
+                id=f"{module}.{fname}",
+                prefix=f"smi:eqcorrscan{eqcorrscan.__version__}")
+            filter_id = ResourceIdentifier(
+                id=f"{module}._sim_WA",
+                prefix=f"smi:eqcorrscan{eqcorrscan.__version__}")
+            if iaspei_standard:
+                # Remove wood-anderson amplification
+                units, phase_hint, amplitude_type = (
+                    "m", "IAML", "IAML")
+                # amplitude *= 10 ** 9  # *THIS IS NOT SUPPORTED BY QML*
+                amplitude /= PAZ_WA["sensitivity"]  # Remove WA sensitivity
+                # Set the filter ID to state that sensitivity was removed
+                filter_id = ResourceIdentifier(
+                    id=f"{module}._sim_WA.WA_sensitivity_removed",
+                    prefix=f"smi:eqcorrscan{eqcorrscan.__version__}")
+            else:  # Not IAML, use SI units.
+                if velocity:
+                    units, phase_hint, amplitude_type = (
+                        "m/s", "AML", "AML")
+                else:
+                    units, phase_hint, amplitude_type = (
+                        "m", "AML", "AML")
+            if tr.stats.channel.endswith("Z"):
+                magnitude_hint = "MLv"
+                # MLv is ML picked on the vertical channel
+            else:
+                magnitude_hint = "ML"
             # Append an amplitude reading to the event
             _waveform_id = WaveformStreamID(
                 station_code=tr.stats.station, channel_code=tr.stats.channel,
                 network_code=tr.stats.network)
             pick = Pick(
-                waveform_id=_waveform_id, phase_hint='IAML',
+                waveform_id=_waveform_id, phase_hint=phase_hint,
                 polarity='undecidable', time=tr.stats.starttime + delay,
-                evaluation_mode='automatic')
+                evaluation_mode='automatic',
+                method_id=method_id, filter_id=filter_id)
             event.picks.append(pick)
-            if not velocity:
-                event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude, period=period,
-                    pick_id=pick.resource_id,
-                    waveform_id=pick.waveform_id, unit='m',
-                    magnitude_hint='ML', type='AML', category='point'))
-            else:
-                event.amplitudes.append(Amplitude(
-                    generic_amplitude=amplitude, period=period,
-                    pick_id=pick.resource_id,
-                    waveform_id=pick.waveform_id, unit='m/s',
-                    magnitude_hint='ML', type='AML', category='point'))
+            event.amplitudes.append(Amplitude(
+                generic_amplitude=amplitude, period=period,
+                pick_id=pick.resource_id, waveform_id=pick.waveform_id,
+                unit=units, magnitude_hint=magnitude_hint,
+                type=amplitude_type, category='point', method_id=method_id,
+                filter_id=filter_id))
     return event
 
 

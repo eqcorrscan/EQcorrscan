@@ -10,18 +10,51 @@ import glob
 
 from obspy import read, read_events, UTCDateTime, Catalog, Stream, Trace
 from obspy.io.nordic.core import readwavename
-from obspy.signal import filter
 
 from eqcorrscan.utils.plotting import (
     chunk_data, xcorr_plot, triple_plot, peaks_plot,
     cumulative_detections, threeD_gridplot, multi_event_singlechan,
     detection_multiplot, interev_mag, obspy_3d_plot, noise_plot,
     pretty_template_plot, plot_repicked, svd_plot, plot_synth_real,
-    freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot)
+    freq_mag, spec_trace, subspace_detector_plot, subspace_fc_plot,
+    twoD_seismplot)
 from eqcorrscan.utils.stacking import align_traces
 from eqcorrscan.utils import findpeaks
 from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.core import template_gen, subspace
+
+
+class SeimicityPlottingMethods(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from obspy.clients.fdsn import Client
+        client = Client("IRIS")
+        starttime = UTCDateTime("2000-01-01")
+        endtime = UTCDateTime("2020-05-16")
+        cls.catalog = client.get_events(
+            starttime=starttime, endtime=endtime, latitude=32.5,
+            longitude=47.5, maxradius=0.7)
+
+    @pytest.mark.mpl_image_compare
+    def test_twoD_seismplot_depth_catalog(self):
+        fig = twoD_seismplot(
+            catalog=self.catalog, method='depth',
+            show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_twoD_seismplot_time_catalog(self):
+        fig = twoD_seismplot(
+            catalog=self.catalog, method='time',
+            show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_twoD_seismplot_sequence_catalog(self):
+        fig = twoD_seismplot(
+            catalog=self.catalog, method='sequence',
+            show=False, return_figure=True)
+        return fig
 
 
 class MultiStreamMethods(unittest.TestCase):
@@ -89,7 +122,7 @@ class EventPlottingMethods(unittest.TestCase):
     @pytest.mark.mpl_image_compare
     def test_pretty_template_plot(self):
         fig = pretty_template_plot(
-            self.template, background=self.st, picks=self.event.picks,
+            self.template, background=self.st, event=self.event,
             show=False, return_figure=True, title="test template")
         return fig
 
@@ -97,6 +130,21 @@ class EventPlottingMethods(unittest.TestCase):
     def test_pretty_template_plot_basic(self):
         fig = pretty_template_plot(
             self.template, show=False, return_figure=True)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_pretty_template_plot_sort(self):
+        fig = pretty_template_plot(
+            self.template, background=self.st, event=self.event,
+            show=False, return_figure=True, title="sorted test template")
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_pretty_template_plot_sort_by_picktime(self):
+        fig = pretty_template_plot(
+            self.template, background=self.st, event=self.event,
+            sort_by="pick_time", show=False, return_figure=True,
+            title="sorted test template")
         return fig
 
     @pytest.mark.mpl_image_compare
@@ -273,7 +321,7 @@ class MultiStreamPlottingMethods(unittest.TestCase):
     def setUpClass(cls):
         wavefiles = glob.glob(os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'test_data', 'WAV',
-            'TEST_', '*'))
+            'TEST_', '2013-*'))
         streams = [read(w) for w in wavefiles[1:10]]
         cls.stream_list = []
         for st in streams:

@@ -165,8 +165,13 @@ def _concatenate_and_correlate(streams, template, cores):
         cores=cores)
     # Re-order used_chans
     chan_order = chan_order[0]
-    for _used_chans in used_chans:
+    for i in range(len(used_chans)):
+        _used_chans = used_chans[i]
+        # Remove any channels that ended up not being used.
+        _used_chans = [c for c in _used_chans if c.channel in chan_order]
+        # Order the channels in the same way that they were correlated
         _used_chans.sort(key=lambda chan: chan_order.index(chan.channel))
+        used_chans[i] = _used_chans  # Put back in.
 
     # Reshape ccc output
     ccc_out = np.zeros((len(streams), len(chans),
@@ -185,7 +190,7 @@ def _concatenate_and_correlate(streams, template, cores):
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False, plotdir=None):
+                      plot=False, plotdir=None, export_cc=False, cc_dir=None):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -222,8 +227,15 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type plotdir: str
     :param plotdir:
         Path to plotting folder, plots will be output here.
+    :type export_cc: bool
+    :param export_cc:
+        To generate a binary file in NumPy for every detection or not,
+        defaults to False
+    :type cc_dir: str
+    :param cc_dir:
+        Path to saving folder, NumPy files will be output here.
 
-    :return: Catalog of events.
+    :return: Dictionary of picked events keyed by detection id.
     """
     picked_dict = {}
     delta = family.template.st[0].stats.delta
@@ -245,6 +257,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     for i, detection_id in enumerate(detection_ids):
         detection = [d for d in family.detections if d.id == detection_id][0]
         correlations = ccc[i]
+        if export_cc:
+            os.makedirs(cc_dir, exist_ok=True)
+            fname = f"{detection_id}-cc.npy"
+            np.save(os.path.join(cc_dir, f'{fname}'), correlations)
+            Logger.info(f"Saved correlation statistic to {fname} (lag_calc)")
         picked_chans = chans[i]
         detect_stream = detect_streams_dict[detection_id]
         checksum, cccsum, used_chans = 0.0, 0.0, 0
@@ -361,6 +378,7 @@ def _prepare_data(family, detect_data, shift_len):
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
     for key, detect_stream in detect_streams_dict.items():
+        # Split to remove trailing or leading masks
         for i in range(len(detect_stream) - 1, -1, -1):
             trace = detect_stream[i]
             if np.ma.is_masked(trace.data):
@@ -387,7 +405,7 @@ def _prepare_data(family, detect_data, shift_len):
 def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False, plotdir=None):
+             plot=False, plotdir=None, export_cc=False, cc_dir=None):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -437,6 +455,13 @@ def lag_calc(detections, detect_data, template_names, templates,
         To generate a plot for every detection or not, defaults to False
     :param plotdir:
         Path to plotting folder, plots will be output here.
+    :type export_cc: bool
+    :param export_cc:
+        To generate a binary file in NumPy for every detection or not,
+        defaults to False
+    :type cc_dir: str
+    :param cc_dir:
+        Path to saving folder, NumPy files will be output here.
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -488,6 +513,10 @@ def lag_calc(detections, detect_data, template_names, templates,
             detections[n].id == output[m].resource_id
 
         if the output[m] is for the same event as detections[n].
+
+    .. note::
+        The correlation data that are saved to the binary files can be useful
+        to select an appropriate threshold for your data.
     """
     # First check that sample rates are equal for everything
     for tr in detect_data:
@@ -516,7 +545,8 @@ def lag_calc(detections, detect_data, template_names, templates,
                 family=family, stream=detect_data,
                 min_cc=min_cc, horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
-                cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir)
+                cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
+                export_cc=export_cc, cc_dir=cc_dir)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()

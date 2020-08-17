@@ -1281,7 +1281,8 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
 
 
 @additional_docstring(plotting_kwargs=plotting_kwargs)
-def pretty_template_plot(template, background=False, picks=False, **kwargs):
+def pretty_template_plot(template, background=False, event=False,
+                         sort_by="distance", **kwargs):
     """
     Plot of a single template, possibly within background data.
 
@@ -1289,8 +1290,15 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     :param template: Template stream to plot
     :type background: obspy.core.stream.stream
     :param background: Stream to plot the template within.
-    :type picks: list
-    :param picks: List of :class:`obspy.core.event.origin.Pick` picks.
+    :type event: obspy.core.event.event.Event
+    :param event:
+        Event object containing picks, and optionally information on the origin
+        and arrivals. When supplied, function tries to extract hypocentral
+        distance from origin/arrivals, to sort the template traces by
+        hypocentral distance.
+    :type sort_by: string
+    :param sort_by:
+        "distance" (default) or "pick_time" (not relevant if no event supplied)
     {plotting_kwargs}
 
     :returns: :class:`matplotlib.figure.Figure`
@@ -1319,7 +1327,7 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     ...     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
     >>> template = template_gen._template_gen(event.picks, st, 2)
     >>> pretty_template_plot(template, background=st, # doctest +SKIP
-    ...                      picks=event.picks) # doctest: +SKIP
+    ...                      event=event) # doctest: +SKIP
 
     .. plot::
 
@@ -1342,10 +1350,17 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
             tr.trim(tr.stats.starttime + 30, tr.stats.endtime - 30)
             tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
         template = template_gen._template_gen(event.picks, st, 2)
-        pretty_template_plot(template, background=st,
-                             picks=event.picks)
+        pretty_template_plot(template, background=st, event=event)
     """
+    from eqcorrscan.utils.catalog_utils import get_ordered_trace_indices
     import matplotlib.pyplot as plt
+    picks = kwargs.get("picks", None)
+    if picks:
+        Logger.warning(
+            "The picks argument is depreciated, please use a full event. "
+            "This argument will be removed in future versions.")
+    elif event:
+        picks = event.picks
     fig, axes = plt.subplots(len(template), 1, sharex=True)
     if len(template) > 1:
         axes = axes.ravel()
@@ -1354,6 +1369,10 @@ def pretty_template_plot(template, background=False, picks=False, **kwargs):
     else:
         mintime = background.sort(['starttime'])[0].stats.starttime
     template.sort(['network', 'station', 'starttime'])
+    trace_indices_ordered = get_ordered_trace_indices(template, event=event,
+                                                      sort_by=sort_by)
+    if trace_indices_ordered is not None:
+        template = Stream([template[j] for j in trace_indices_ordered])
     lengths = []
     lines = []
     labels = []
@@ -1551,12 +1570,14 @@ def plot_repicked(template, picks, det_stream, **kwargs):
     axis.set_xlim([0, max(lengths)])
     if len(template) > 1:
         axis = axes[len(template) - 1]
+        axis_legend = axes[0]
     else:
         axis = axes
+        axis_legend = axes
     axis.set_xlabel('Time (s) from %s' %
                     mintime.datetime.strftime('%Y/%m/%d %H:%M:%S.%f'))
-    axes[0].legend(lines, labels, loc='upper right', framealpha=1)
-    axes[0].set_zorder(2)
+    axis_legend.legend(lines, labels, loc='upper right', framealpha=1)
+    axis_legend.set_zorder(2)
     title = kwargs.get("title") or None
     if title:
         if len(template) > 1:
@@ -1598,7 +1619,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
     >>> import glob
     >>> from eqcorrscan.utils.plotting import svd_plot
     >>> from eqcorrscan.utils.clustering import svd, svd_to_stream
-    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/*')
+    >>> wavefiles = glob.glob('eqcorrscan/tests/test_data/WAV/TEST_/2013-*')
     >>> streams = [read(w) for w in wavefiles[1:10]]
     >>> stream_list = []
     >>> for st in streams:
@@ -1619,7 +1640,7 @@ def svd_plot(svstreams, svalues, stachans, **kwargs):
         from eqcorrscan.utils.plotting import svd_plot
         from eqcorrscan.utils.clustering import svd, svd_to_stream
         wavefiles = glob.glob(os.path.realpath('../../..') +
-                             '/tests/test_data/WAV/TEST_/*')
+                             '/tests/test_data/WAV/TEST_/2013-*')
         streams = [read(w) for w in wavefiles[1:10]]
         stream_list = []
         for st in streams:
@@ -2185,6 +2206,135 @@ def subspace_fc_plot(detector, stachans, **kwargs):
     plt.subplots_adjust(hspace=0.2)
     plt.subplots_adjust(wspace=0.2)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
+    return fig
+
+
+@additional_docstring(plotting_kwargs=plotting_kwargs)
+def twoD_seismplot(catalog=None, locations=None, bgcolor='#909090',
+                   method='depth', **kwargs):
+    """
+    Plot seismicity in a 2D map with two cross section along latitude and
+    longitude.
+
+    :type catalog: obspy.core.event.catalog.Catalog
+    :param catalog: Obspy catalog class containing event metadata
+    :type locations: list
+    :param locations:
+        list of one tuple per event of (lat, long, depth, time) with
+        down positive.
+    :type bgcolor: string
+    :param bgcolor: Background's color of map and sections.
+        all name or RGB code that acceptable in matplotlib.
+    :type method: string
+    :param method:
+        making color palette of locations according to 'depth', 'time' or
+        'sequence'.
+    {plotting_kwargs}
+
+    :returns: :class:`matplotlib.figure.Figure`
+
+    .. note::
+        If each location doesn't have time or depth, set them to zero.
+    .. note::
+        kwargs accepts all option that available in
+        `matplotlib.axes.Axes.scatter`.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib import gridspec
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    assert (catalog and locations) or catalog or locations,\
+        "Requires catalog and/or locations"
+    # set default parameters of plt.scatter()
+    default_parameters = {'cmap': 'viridis_r', 'marker': ',', 's': 1, 'lw': 1}
+    for key in default_parameters.keys():
+        if key not in kwargs.keys():
+            kwargs[key] = default_parameters[key]
+    # get parameters of _finalise_figure
+    _kwargs = {}
+    for key in ['title', 'show', 'save', 'savefile', 'return_figure', 'size']:
+        if key in kwargs.keys():
+            _kwargs[key] = kwargs[key]
+            del kwargs[key]
+    # making coordinates
+    locations = locations or []
+    msg = "An event of the catalog got ignored, because it didn't have origin"
+    if catalog:
+        for event in catalog:
+            try:
+                origin = event.preferred_origin() or event.origins[0]
+            except IndexError:  # No origin found
+                Logger.warning(msg)
+                continue
+            _lat = origin.latitude
+            _lon = origin.longitude
+            _dep = origin.depth / 1000
+            _time = origin.time
+            locations.append((_lat, _lon, _dep, _time))
+    # sort location according to method
+    if method in ['time', 'sequence']:
+        locations.sort(key=lambda ind: ind[3])
+    elif method == 'depth':
+        locations.sort(reverse=False, key=lambda ind: ind[2])
+    lat, lon, dep, time = zip(*locations)
+    if method == 'depth':
+        c0, c1, c2 = dep, lon, lat
+        label0, label1, label2 = 'Depth (km)', 'Longitude', 'Latitude'
+    elif method == 'time':
+        dt = [t - time[0] for t in time]
+        c0 = c1 = c2 = dt
+        label = f'Origin-time offset from {time[0]} (s)'
+    elif method == 'sequence':
+        c0 = c1 = c2 = range(len(dep))
+        label = 'Event number'
+    fig = plt.figure()
+    gs = gridspec.GridSpec(2, 2, width_ratios=[3, 1], height_ratios=[3, 1],
+                           wspace=0.01, hspace=0.01)
+    # map view
+    ax0 = plt.subplot(gs[0])
+    ax0.set_facecolor(bgcolor)
+    ax0.set_ylabel('Latitude')
+    ax0.set_xticks([])
+    map0 = ax0.scatter(lon, lat, c=c0, **kwargs)
+    # cross section parallel to latitude (lat ,depth)
+    ax1 = fig.add_subplot(gs[1])
+    ax1.set_facecolor(bgcolor)
+    ax1.set_yticks([])
+    ax1.set_xlabel('Depth (km)')
+    map1 = ax1.scatter(dep, lat, c=c1, **kwargs)
+    # cross section parallel to longitude (lon ,depth)
+    ax2 = plt.subplot(gs[2])
+    ax2.set_facecolor(bgcolor)
+    ax2.invert_yaxis()
+    ax2.set_ylabel('Depth (km)')
+    ax2.set_xlabel('Longitude')
+    map2 = ax2.scatter(lon, dep, c=c2, **kwargs)
+    # location of color bar
+    if method == 'depth':
+        #
+        divider0 = make_axes_locatable(ax0)
+        cax0 = divider0.append_axes("top", size="4%", pad="2%")
+        cbar0 = fig.colorbar(map0, ax=ax0, cax=cax0, orientation="horizontal")
+        cbar0.set_label(label0, rotation=0, labelpad=-45, y=1.05)
+        cax0.xaxis.set_ticks_position("top")
+        #
+        divider1 = make_axes_locatable(ax1)
+        cax1 = divider1.append_axes("top", size="4%", pad="2%")
+        cbar1 = fig.colorbar(map1, ax=ax1, cax=cax1, orientation="horizontal")
+        cbar1.set_label(label1, rotation=0, labelpad=-45, y=1.03)
+        cax1.xaxis.set_ticks_position("top")
+        #
+        divider2 = make_axes_locatable(ax2)
+        cax2 = divider2.append_axes("bottom", size="7%", pad="35%")
+        cbar2 = fig.colorbar(map2, ax=ax2, cax=cax2, orientation="horizontal",
+                             pad=0.7)
+        cbar2.set_label(label2, rotation=0, labelpad=-8, x=1.02)
+        ax2.xaxis.set_label_coords(1.02, -0.1)
+    elif method == 'time' or method == 'sequence':
+        divider1 = make_axes_locatable(ax1)
+        cax1 = divider1.append_axes("right", size="4%", pad="2%")
+        cbar1 = fig.colorbar(map1, ax=ax1, cax=cax1, orientation="vertical")
+        cbar1.set_label(label)
+    fig = _finalise_figure(fig=fig, **_kwargs)  # pragma: no cover
     return fig
 
 

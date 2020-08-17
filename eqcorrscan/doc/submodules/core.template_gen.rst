@@ -1,5 +1,5 @@
 template_gen
-------------
+============
 
 .. currentmodule:: eqcorrscan.core.template_gen
 .. automodule:: eqcorrscan.core.template_gen
@@ -7,15 +7,12 @@ template_gen
 Routines for cutting waveforms around picks for use as
 templates for matched filtering.
 
-    .. comment to end block
+.. comment to end block
 
-    Classes & Functions
-    -------------------
-    .. autosummary::
-       :toctree: autogen
-       :nosignatures:
+Functions
+-------
 
-       template_gen
-       extract_from_stack
+.. autofunction:: template_gen
+.. autofunction:: extract_from_stack
 
-    .. comment to end block
+.. comment to end block

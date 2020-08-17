@@ -299,7 +299,7 @@ class Detection(object):
                             template_pick,
                             key=lambda p: p.time)[_index].phase_hint
                     except IndexError:
-                        Logger.error("No pick for trace")
+                        Logger.error(f"No pick for trace: {tr.id}")
                 ev.picks.append(new_pick)
         if estimate_origin and template is not None\
                 and template.event is not None:

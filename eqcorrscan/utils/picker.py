@@ -196,10 +196,10 @@ def stalta_pick(stream, stalen, ltalen, trig_on, trig_off, freqmin=False,
             for pick in p_pick:
                 Logger.info('P pick after S pick, removing P pick')
                 picks.remove(pick)
-    if show:
-        plotting.pretty_template_plot(stream, picks=picks, title='Autopicks',
-                                      size=(8, 9))
     event.picks = picks
+    if show:
+        plotting.pretty_template_plot(stream, event=event, title='Autopicks',
+                                      size=(8, 9))
     if len(event.picks) > 0:
         event.origins[0].time = min([pick.time for pick in event.picks]) - 1
         # event.origins[0].latitude = float('nan')

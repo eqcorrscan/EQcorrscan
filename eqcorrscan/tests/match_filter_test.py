@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
+from obspy.clients.filesystem.sds import Client as SDSClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
@@ -18,9 +19,20 @@ from eqcorrscan.core.match_filter import (
     read_party, read_tribe, _spike_test)
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
+from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
+
+
+class TestHelpers(unittest.TestCase):
+    def test_monkey_patching(self):
+        """ Test that monkey patching a client works. """
+        client = SDSClient('.')
+        self.assertFalse(hasattr(client, "get_waveforms_bulk"))
+        client = get_waveform_client(client)
+        self.assertTrue(hasattr(client, "get_waveforms_bulk"))
+        # TODO: This should test that the method actually works as expected.
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -683,6 +695,18 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
 
+    def test_tribe_detect_short_data(self):
+        """Test the detect method on Tribe objects"""
+        short_st = self.unproc_st.copy()
+        tribe = self.tribe.copy()
+        for template in tribe:
+            template.process_length = 2400
+        party = tribe.detect(
+            stream=short_st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            ignore_bad_data=True)
+        self.assertEqual(len(party), 4)
+
     @pytest.mark.serial
     def test_tribe_detect_parallel_process(self):
         """Test the detect method on Tribe objects"""
@@ -813,8 +837,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 assert np.allclose(
                     pick_corrs, chained_ev_pick_corrs, atol=0.001)
                 assert np.allclose(
-                    float(ev.comments[1].text.split("=")[-1]),
-                    float(chained_ev.comments[1].text.split("=")[-1]),
+                    float(ev.comments[0].text.split("=")[-1]),
+                    float(chained_ev.comments[0].text.split("=")[-1]),
                     atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
@@ -830,45 +854,70 @@ class TestMatchObjectHeavy(unittest.TestCase):
         catalog = party.lag_calc(stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 3)
 
-    def test_party_mag_calc_unpreprocessed(self):
-        """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.copy().lag_calc(
-            stream=self.unproc_st, pre_processed=False,
-            relative_magnitudes=True, min_snr=0)
-        self.assertEqual(len(catalog), 4)
-        for event in catalog:
-            self.assertGreater(len(event.station_magnitudes), 0)
-            template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Template" in c.text][0]
-            template = [fam.template for fam in self.party
-                        if fam.template.name == template_id][0]
-            self.assertAlmostEqual(
-                template.event.magnitudes[0].mag,
-                event.magnitudes[0].mag, 1)
-            self.assertEqual(
-                template.event.magnitudes[0].magnitude_type,
-                event.magnitudes[0].magnitude_type)
+    def test_party_lag_calc_missing_data(self):
+        """Check that if data are short, then no events are returned. #406 """
+        party = self.party.copy()
+        st = self.unproc_st.copy()
+        st = st.trim(st[0].stats.starttime,
+                     st[0].stats.starttime + (
+                         0.75 * party[0].template.process_length))
+        catalog = party.lag_calc(stream=st, pre_processed=False)
+        self.assertEqual(len(catalog), 0)
 
-    def test_party_mag_calc_preprocessed(self):
-        """Test that the lag-calc works on pre-processed data."""
-        catalog = self.party.copy().lag_calc(
-            stream=self.st, pre_processed=True, relative_magnitudes=True,
-            min_snr=0)
+    def test_party_lag_calc_short_data(self):
+        """ Check that insufficient data with ignore_length are run. #406 """
+        party = self.party.copy()
+        st = self.unproc_st.copy()
+        cut_start = st[0].stats.starttime + (
+                0.5 * party[0].template.process_length)
+        cut_end = st[0].stats.starttime + (
+                0.8 * party[0].template.process_length)
+        st = st.cutout(cut_start, cut_end)
+        catalog = party.lag_calc(stream=st, pre_processed=False,
+                                 ignore_length=True, ignore_bad_data=True)
         self.assertEqual(len(catalog), 4)
-        for event in catalog:
-            self.assertGreater(len(event.station_magnitudes), 0)
-            print(event)
-            print(event.comments)
-            template_id = [c.text.split(": ")[-1] for c in event.comments
-                           if "Template" in c.text][0]
-            template = [fam.template for fam in self.party
-                        if fam.template.name == template_id][0]
-            self.assertAlmostEqual(
-                template.event.magnitudes[0].mag,
-                event.magnitudes[0].mag, 1)
-            self.assertEqual(
-                template.event.magnitudes[0].magnitude_type,
-                event.magnitudes[0].magnitude_type)
+
+    # TODO: tests removed due to method removal - re-instate when relative
+    #  magnitudes is viable.
+    # def test_party_mag_calc_unpreprocessed(self):
+    #     """Test that the lag-calc works on pre-processed data."""
+    #     catalog = self.party.copy().lag_calc(
+    #         stream=self.unproc_st, pre_processed=False,
+    #         relative_magnitudes=True, min_snr=0)
+    #     self.assertEqual(len(catalog), 4)
+    #     for event in catalog:
+    #         self.assertGreater(len(event.station_magnitudes), 0)
+    #         template_id = [c.text.split(": ")[-1] for c in event.comments
+    #                        if "Template" in c.text][0]
+    #         template = [fam.template for fam in self.party
+    #                     if fam.template.name == template_id][0]
+    #         self.assertAlmostEqual(
+    #             template.event.magnitudes[0].mag,
+    #             event.magnitudes[0].mag, 1)
+    #         self.assertEqual(
+    #             template.event.magnitudes[0].magnitude_type,
+    #             event.magnitudes[0].magnitude_type)
+    #
+    # def test_party_mag_calc_preprocessed(self):
+    #     """Test that the lag-calc works on pre-processed data."""
+    #     catalog = self.party.copy().lag_calc(
+    #         stream=self.st, pre_processed=True, relative_magnitudes=True,
+    #         min_snr=0)
+    #     self.assertEqual(len(catalog), 4)
+    #     for event in catalog:
+    #         self.assertGreater(len(event.station_magnitudes), 0)
+    #         print(event)
+    #         print(event.comments)
+    #         template_id = [c.text.split(": ")[-1] for c in event.comments
+    #                        if "Template" in c.text][0]
+    #         template = [fam.template for fam in self.party
+    #                     if fam.template.name == template_id][0]
+    #         self.assertAlmostEqual(
+    #             template.event.magnitudes[0].mag,
+    #             event.magnitudes[0].mag, 1)
+    #         self.assertEqual(
+    #             template.event.magnitudes[0].magnitude_type,
+    #             event.magnitudes[0].magnitude_type)
 
     @pytest.mark.network
     def test_day_long_methods(self):
