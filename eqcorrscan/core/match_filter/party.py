@@ -784,7 +784,7 @@ class Party(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 **kwargs):
+                 float_cc=0, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -851,6 +851,11 @@ class Party(object):
             If False (default), errors will be raised if data are excessively
             gappy or are mostly zeros. If True then no error will be raised,
             but an empty trace will be returned (and not used in detection).
+        :type float_cc: float
+        :param float_cc:
+            It provides the ability of detecting phases with low correlation
+            coefficeint but clear pick. It must set between 0 to 100 as
+            Percentage of maximume of correlation array. defualts to 0.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -875,6 +880,25 @@ class Party(object):
 
         .. Note::
             Picks are corrected for the template pre-pick time.
+
+        .. note::
+            float_cc is a float threshold for correlation coefficient. This
+            number shows the threshold as percentage of maximume correlation
+            coefficient of each data.
+            If it is set to 50, it means that if there was no other picks in
+            area between maximume_cc and 50% of maximume_cc, there is a unique
+            pick and can be considered as a phase.
+            But if there is any picks in this area, it's not cibsuder as a
+            phase.
+            The lower it gets, the more stringent the phase picking gets and
+            vice versa.
+            If it is set to 0, then It doesn't any effect and select phases
+            done only according to min_cc threshold.
+
+        .. warning::
+            There must be enough correlation signal in order to use float_cc,
+            so you need to set proper value for shift_len. Because there must
+            be enough oscillation to have a correct comparsion.
         """
         process_cores = process_cores or cores
         template_groups = group_templates(
@@ -906,7 +930,7 @@ class Party(object):
                     horizontal_chans=horizontal_chans,
                     vertical_chans=vertical_chans, cores=cores,
                     interpolate=interpolate, plot=plot, plotdir=plotdir,
-                    export_cc=export_cc, cc_dir=cc_dir,
+                    export_cc=export_cc, cc_dir=cc_dir, float_cc=float_cc,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
                     ignore_length=ignore_length, **kwargs)
