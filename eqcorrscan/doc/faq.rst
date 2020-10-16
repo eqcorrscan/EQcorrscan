@@ -32,6 +32,13 @@ Everything is done multiple times!
 
 Multiprocessing issue - encapsulate in function
 
+---
+
+Making templates from SAC files
+...............................
+
+It probably isn't a good idea... Try converting the SAC file to an event and go from there.
+
 ----------------------------------------------------------------------
 
 Design Questions
