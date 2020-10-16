@@ -8,7 +8,7 @@ If your problem/question isn't answered here then check the issues on the github
 and, if there isn't an issue related to your problem/question then open a new one and
 we will try to help.
 
----
+----------------------------------------------------------------------
 
 Usage Questions
 ---------------
@@ -36,6 +36,14 @@ Multiprocessing issue - encapsulate in function
 
 Design Questions
 ----------------
+
+Can I use different lengths for different channels in a template?
+.................................................................
+
+Not yet in EQcorrscan - we want this as well, but haven't had time to implement it.
+If you want this then we would really appreciate the contribution! There are two
+main issues with this that require some thought: 1) How correlations are
+computed, and 2) how correlations are weighted in the correlation sum.
 
 Why doesn't EQcorrscan have a GUI?
 ..................................
