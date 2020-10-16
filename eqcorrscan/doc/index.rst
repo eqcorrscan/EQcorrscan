@@ -60,6 +60,7 @@ Contents:
 
    intro
    installation
+   faq
    updates
    tutorial
    api
