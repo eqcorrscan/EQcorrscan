@@ -191,7 +191,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       min_cc_from_mean_cc_factor=None,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False, plotdir=None, export_cc=False, cc_dir=None):
+                      plot=False, plotdir=None, export_cc=False, cc_dir=None,
+                      check_full_seed=False):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -240,13 +241,20 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type cc_dir: str
     :param cc_dir:
         Path to saving folder, NumPy files will be output here.
+        :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check for duplicate traces against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel.
+
 
     :return: Dictionary of picked events keyed by detection id.
     """
     picked_dict = {}
     delta = family.template.st[0].stats.delta
     detect_streams_dict = _prepare_data(
-        family=family, detect_data=stream, shift_len=shift_len)
+        family=family, detect_data=stream, shift_len=shift_len,
+        check_full_seed=check_full_seed)
     detection_ids = list(detect_streams_dict.keys())
     detect_streams = [detect_streams_dict[detection_id]
                       for detection_id in detection_ids]
@@ -362,7 +370,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     return picked_dict
 
 
-def _prepare_data(family, detect_data, shift_len):
+def _prepare_data(family, detect_data, shift_len, check_full_seed):
     """
     Prepare data for lag_calc - reduce memory here.
 
@@ -373,6 +381,11 @@ def _prepare_data(family, detect_data, shift_len):
     :param detect_data: Stream to extract detection streams from.
     :type shift_len: float
     :param shift_len: Shift length in seconds allowed for picking.
+    :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check for duplicate traces against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel.
 
     :returns: Dictionary of detect_streams keyed by detection id
               to be worked on
@@ -398,8 +411,11 @@ def _prepare_data(family, detect_data, shift_len):
                 detect_stream.remove(trace)
                 Logger.warning("Masked array found for {0}, not supported, "
                                "removing.".format(trace.id))
-        stachans = [(tr.stats.station, tr.stats.channel)
-                    for tr in detect_stream]
+        if check_full_seed:
+            stachans = [tr.id for tr in detect_stream]
+        else:
+            stachans = [(tr.stats.station, tr.stats.channel)
+                        for tr in detect_stream]
         c_stachans = Counter(stachans)
         for key in c_stachans.keys():
             if c_stachans[key] > 1:
@@ -419,7 +435,8 @@ def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, min_cc_from_mean_cc_factor=None,
              horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False, plotdir=None, export_cc=False, cc_dir=None):
+             plot=False, plotdir=None, export_cc=False, cc_dir=None,
+             check_full_seed=False):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -481,6 +498,11 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type cc_dir: str
     :param cc_dir:
         Path to saving folder, NumPy files will be output here.
+        :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check for duplicate traces against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel.
 
     :returns:
         Catalog of events with picks.  No origin information is included.
@@ -566,7 +588,8 @@ def lag_calc(detections, detect_data, template_names, templates,
                 horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
-                export_cc=export_cc, cc_dir=cc_dir)
+                export_cc=export_cc, cc_dir=cc_dir,
+                check_full_seed=check_full_seed)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()

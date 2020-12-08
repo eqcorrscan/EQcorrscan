@@ -511,7 +511,7 @@ class Family(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 **kwargs):
+                 check_full_seed=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -584,6 +584,12 @@ class Family(object):
         :type cc_dir: str
         :param cc_dir:
             Path to saving folder, NumPy files will be output here.
+        :type check_full_seed: bool
+        :param check_full_seed:
+            If True, will check for duplicate traces against the full SEED id,
+            including Network, Station, Location and Channel. If False (default),
+            will check only against Station and Channel.
+
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -618,7 +624,7 @@ class Family(object):
             min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir,
-            export_cc=export_cc, cc_dir=cc_dir)
+            export_cc=export_cc, cc_dir=cc_dir, check_full_seed=check_full_seed)
         catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
