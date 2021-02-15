@@ -694,11 +694,11 @@ class TestMatchObjectHeavy(unittest.TestCase):
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
-        
+
     def test_tribe_detect_with_empty_streams(self):
         """
         Compare the detect method for a tribe of one vs two templates and check
-        that the detection has the same detect time, in a case where the 
+        that the detection has the same detect time, in a case where the
         continuous data is incomplete. This test should fail in v0.4.2 due to
         a bug.
         """
@@ -706,18 +706,18 @@ class TestMatchObjectHeavy(unittest.TestCase):
         st = self.unproc_st.copy().remove(
             self.unproc_st.copy().select(station='PHA')[0])
         tribe1 = Tribe([t.copy() for t in self.tribe
-                        if (t.name=='2004_09_28t17_19_08' or
-                            t.name=='2004_09_28t17_19_25')])
+                        if (t.name == '2004_09_28t17_19_08' or
+                            t.name == '2004_09_28t17_19_25')])
         # run detection with 2 templates in tribe
         party1 = tribe1.detect(
             stream=st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
         self.assertEqual(len(party1), 2)
         party1 = Party([f for f in party1
-                        if f.template.name=='2004_09_28t17_19_25'])
+                        if f.template.name == '2004_09_28t17_19_25'])
         # run detection with only 1 template in tribe
         tribe2 = Tribe([t.copy() for t in self.tribe
-                        if t.name=='2004_09_28t17_19_25'])
+                        if t.name == '2004_09_28t17_19_25'])
         party2 = tribe2.detect(
             stream=st, threshold=8.0, threshold_type='MAD',
             trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
