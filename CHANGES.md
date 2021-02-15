@@ -1,4 +1,10 @@
 ## Current
+* utils.plotting
+  - Function added (twoD_seismplot) for plotting seismicity (#365).
+* utils.mag_calc.calc_b_value:
+  - Added useful information to doc-string regarding method and meaning of
+    residuals
+  - Changed the number of magnitudes used to an int (from a string!?)
 * core.party.write
   - BUG-FIX: When `format='tar'` is selected, added a check for .tgz-file
     suffix before checking the filename against an existing file. Previously,
@@ -11,10 +17,7 @@
   - New option `arctype='SDS'` to read from a SeisComp Data Structure (SDS).
     This option is also available in `utils.clustering.extract_detections` and
     in `utils.archive_read._check_available_data`.
-* utils.mag_calc.calc_b_value:
-  - Added useful information to doc-string regarding method and meaning of
-    residuals
-  - Changed the number of magnitudes used to an int (from a string!?)
+* Added the ability of saving correlation data of the lag_calc.
 
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
