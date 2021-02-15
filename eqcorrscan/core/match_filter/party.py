@@ -405,7 +405,8 @@ class Party(object):
                                     rate=rate, **kwargs)
         return fig
 
-    def rethreshold(self, new_threshold, new_threshold_type='MAD'):
+    def rethreshold(self, new_threshold, new_threshold_type='MAD',
+                    abs_values=False):
         """
         Remove detections from the Party that are below a new threshold.
 
@@ -418,6 +419,9 @@ class Party(object):
         :param new_threshold: New threshold level
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
+        :type abs_values: bool
+        :param abs_values:
+            Whether to compare the absolute value of the detection-value.
 
         .. rubric:: Examples
 
@@ -463,7 +467,14 @@ class Party(object):
                     raise MatchFilterError(
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
-                if float(d.detect_val) >= new_thresh:
+                rethresh = False
+                if abs_values:
+                    if abs(float(d.detect_val)) >= new_thresh:
+                        rethresh = True
+                else:
+                    if float(d.detect_val) >= new_thresh:
+                        rethresh = True
+                if rethresh:
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
