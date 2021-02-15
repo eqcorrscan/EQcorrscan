@@ -618,7 +618,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
 
 def _hypodd_phase_pick_str(pick, sparse_event):
     """ Make a hypodd phase.dat style pick string. """
-    pick_str = "{station:5s} {tt:7.2f} {weight:5.3f} {phase:1s}".format(
+    pick_str = "{station:5s} {tt:7.4f} {weight:5.3f} {phase:1s}".format(
         station=pick.waveform_id.station_code,
         tt=pick.tt, weight=pick.weight, phase=pick.phase[0].upper())
     return pick_str
@@ -638,7 +638,7 @@ def _hypodd_phase_str(event, event_id_mapper):
         magnitude = 0.0
     try:
         time_error = origin.quality['standard_error']
-    except AttributeError:
+    except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
 
