@@ -846,9 +846,36 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     # Remove templates with no matching channels
     filt = np.ones(len(template_names)).astype(bool)
     for i, template in enumerate(templates):
-        template_ids = {tr.id for tr in template}
-        if len(template_ids.intersection(stream_ids)) == 0:
+        trace_ids = {tr.id for tr in template}
+        if len(trace_ids.intersection(stream_ids)) == 0:
             filt[i] = 0
+
+    # Ensure that the templates' earliest traces are kept, even if there is no
+    # continuous data for them. If this happens, we need to add a NaN-stream to
+    # the continuous data to avoid inconsistent detection times.
+    n_template_traces = np.array([len(temp) for temp in templates])
+    n_stream_traces = sum([n+1 for s, n in seed_ids])
+    # These checks are not necessary if all templates will get NaN-traces,
+    # because the NaN-traces will save the right starttime for the template.
+    if any(n_template_traces > n_stream_traces):
+        earliest_templ_trace_ids = list(set(
+            [template.sort(['starttime'])[0].id for template in templates]))
+        for earliest_templ_trace_id in earliest_templ_trace_ids:
+            if earliest_templ_trace_id not in template_ids:
+                net, sta, loc, chan = earliest_templ_trace_id.split('.')
+                nan_template += Trace(header=Stats({
+                    'network': net, 'station': sta, 'location': loc,
+                    'channel': chan, 'starttime': UTCDateTime(),
+                    'npts': template_length, 'sampling_rate': samp_rate}))
+                stream_nan_data = np.full(
+                    stream_length, np.nan, dtype=np.float32)
+                out_stream += Trace(
+                    data=np.ma.masked_array(stream_nan_data, stream_nan_data),
+                    header=Stats({
+                        'network': net, 'station': sta, 'location': loc,
+                        'channel': chan, 'starttime': stream_start,
+                        'npts': stream_length, 'sampling_rate': samp_rate}))
+                seed_ids.append((earliest_templ_trace_id, 0))
 
     _out = dict(zip(
         [_tn for _tn, _filt in zip(template_names, filt) if _filt],
