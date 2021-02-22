@@ -9,6 +9,8 @@ assignees: ''
 
 <!--
 Please fill out the form below so that we can help as best we can
+
+To get versions of python packages, import them and `print(package.__version__)`
 -->
 
 # What do you need help with?
