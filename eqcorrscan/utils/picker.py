@@ -15,7 +15,7 @@ import logging
 import numpy as np
 
 from obspy import UTCDateTime
-from obspy.signal.cross_correlation import xcorr
+from obspy.signal.cross_correlation import correlate, xcorr_max
 from obspy.signal.filter import envelope
 from obspy.core.event import Event, Pick, WaveformStreamID
 from obspy.core.event import CreationInfo, Comment, Origin
@@ -86,7 +86,8 @@ def cross_net(stream, env=False, master=False):
         Logger.debug('Comparing {0} with the master'.format(tr.id))
         shift_len = int(0.3 * len(tr))
         Logger.debug('Shift length is set to ' + str(shift_len) + ' samples')
-        index, cc = xcorr(master, tr, shift_len)
+        corr_fun = correlate(master, tr, shift_len)
+        index, cc = xcorr_max(corr_fun)
         wav_id = WaveformStreamID(station_code=tr.stats.station,
                                   channel_code=tr.stats.channel,
                                   network_code=tr.stats.network)
