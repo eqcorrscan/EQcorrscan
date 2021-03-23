@@ -188,6 +188,7 @@ def _concatenate_and_correlate(streams, template, cores):
 
 
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
+                      min_cc_from_mean_cc_factor=None,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
                       plot=False, plotdir=None, export_cc=False, cc_dir=None):
@@ -207,6 +208,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type min_cc: float
     :param min_cc:
         Minimum cross-correlation value to be considered a pick, default=0.4.
+    :type min_cc_from_mean_cc_factor: float
+    :param min_cc_from_mean_cc_factor:
+        If set to a value other than None, then the minimum cross-correlation
+        value for a trace is set individually for each detection based on:
+        min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
     :type horizontal_chans: list
     :param horizontal_chans:
         List of channel endings for horizontal-channels, on which S-picks will
@@ -266,6 +272,13 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         detect_stream = detect_streams_dict[detection_id]
         checksum, cccsum, used_chans = 0.0, 0.0, 0
         event = Event()
+        if min_cc_from_mean_cc_factor is not None:
+            cc_thresh = min(detection.detect_val / detection.no_chans
+                            * min_cc_from_mean_cc_factor, min_cc)
+            Logger.info('Setting minimum cc-threshold for detection %s to %s',
+                        detection.id, str(cc_thresh))
+        else:
+            cc_thresh = min_cc
         for correlation, stachan in zip(correlations, picked_chans):
             if not stachan.used:
                 continue
@@ -283,7 +296,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             picktime = tr.stats.starttime + shift
             checksum += cc_max
             used_chans += 1
-            if cc_max < min_cc:
+            if cc_max < cc_thresh:
                 Logger.debug('Correlation of {0} is below threshold, not '
                              'using'.format(cc_max))
                 continue
