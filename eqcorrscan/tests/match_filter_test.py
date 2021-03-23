@@ -28,7 +28,7 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 class TestHelpers(unittest.TestCase):
     def test_monkey_patching(self):
         """ Test that monkey patching a client works. """
-        client = EWClient('.')
+        client = EWClient("pubavo1.wr.usgs.gov", 16022)
         self.assertFalse(hasattr(client, "get_waveforms_bulk"))
         client = get_waveform_client(client)
         self.assertTrue(hasattr(client, "get_waveforms_bulk"))
