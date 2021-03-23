@@ -1208,11 +1208,16 @@ class TestMatchObjectLight(unittest.TestCase):
             det.id = str(i)
             party[0].detections.append(det)
         self.assertEqual(len(party), 204)
-        party.rethreshold(new_threshold=9)
-        for family in party:
+        party1 = party.copy().rethreshold(new_threshold=9)
+        for family in party1:
             for d in family:
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(d.detect_val, d.threshold)
+        party2 = party.copy().rethreshold(new_threshold=9, abs_values=True)
+        for family in party2:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(abs(d.detect_val), d.threshold)
 
     def test_family_init(self):
         """Test generating a family with various things."""
