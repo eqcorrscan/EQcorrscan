@@ -662,7 +662,7 @@ def match_filter(template_names, template_list, st, threshold,
         Logger.info("Copying data to keep your input safe")
         stream = st.copy()
         templates = [t.copy() for t in template_list]
-        _template_names = template_names.copy()  # This can just be a shallow copy
+        _template_names = template_names.copy()  # This can be a shallow copy
     else:
         stream, templates, _template_names = st, template_list, template_names
 
