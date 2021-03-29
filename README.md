@@ -81,10 +81,8 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 
 | Service tests | Badge |
 |---------------|-------|
-| MacOS & Linux | ![test](https://github.com/eqcorrscan/EQcorrscan/workflows/test/badge.svg)
-| Windows | [![Build status](https://ci.appveyor.com/api/projects/status/6pp6jdop14hj4e63/branch/master?svg=true)](https://ci.appveyor.com/project/EQcorrscan/eqcorrscan/branch/master)
+| CI checks | ![test](https://github.com/eqcorrscan/EQcorrscan/workflows/test/badge.svg)
 | Code coverage | [![codecov](https://codecov.io/gh/eqcorrscan/EQcorrscan/branch/master/graph/badge.svg)](https://codecov.io/gh/eqcorrscan/EQcorrscan) 
-| Network tests | [![CircleCI](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master.svg?style=svg)](https://circleci.com/gh/eqcorrscan/EQcorrscan/tree/master)
 
 # Licence
 
