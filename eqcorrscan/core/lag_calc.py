@@ -80,7 +80,7 @@ def _xcorr_interp(ccc, dt):
         Logger.debug(
             "Fewer than 5 samples selected for fit to cross correlation: "
             "{0}".format(num_samples))
-    coeffs, residual = scipy.polyfit(
+    coeffs, residual = np.polyfit(
         cc_t[first_sample:last_sample + 1],
         cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
     # check results of fit
