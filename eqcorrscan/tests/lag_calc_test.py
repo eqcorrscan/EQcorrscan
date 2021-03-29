@@ -214,12 +214,12 @@ class SimpleRealDataTests(unittest.TestCase):
                               detect_stream[0].stats.endtime)
             if d_start <= t_start and d_end >= t_end:
                 for ccc_chan in _ccc:
-                    self.assertEqual(ccc_chan.max(), 1.0)
+                    self.assertEqual(round(ccc_chan.max(), 5), 1.0)
                     self.assertEqual(ccc_chan.argmax(),
                                      samp_rate * (t_start - d_start))
             else:
                 for ccc_chan in _ccc:
-                    self.assertNotEqual(ccc_chan.max(), 1.0)
+                    self.assertNotEqual(round(ccc_chan.max(), 5), 1.0)
 
     def test_correlation_precision(self):
         """Compare to correlation function outputs"""
