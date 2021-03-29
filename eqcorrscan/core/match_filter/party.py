@@ -269,6 +269,12 @@ class Party(object):
                 Logger.warning('Family: %s not in party' % index)
                 return []
 
+    def __iter__(self):
+        return self.families.__iter__()
+
+    def __next__(self):
+        return self.families.__next__()
+
     def __len__(self):
         """
         Get total number of detections in Party.
