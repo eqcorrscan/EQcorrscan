@@ -507,7 +507,7 @@ class Party(object):
         :param metric: What metric to sort peaks by. Either 'avg_cor' which
             takes the single station average correlation, 'cor_sum' which
             takes the total correlation sum across all channels, or
-            'thresh_exc' which takes the factor by how much the detection 
+            'thresh_exc' which takes the factor by how much the detection
             exceeded the input threshold.
         :type timing: str
         :param timing:
