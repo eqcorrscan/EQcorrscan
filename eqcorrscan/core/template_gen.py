@@ -517,9 +517,13 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
             else:
                 channel_code = pick.waveform_id.channel_code
+            if pick.waveform_id.station_code is None:
+                Logger.error("No station code for pick, skipping")
+                continue
             all_waveform_info.append((
-                pick.waveform_id.network_code, pick.waveform_id.station_code,
-                channel_code, pick.waveform_id.location_code))
+                pick.waveform_id.network_code or "*",
+                pick.waveform_id.station_code,
+                channel_code, pick.waveform_id.location_code or "*"))
     starttime = UTCDateTime(
         catalog[0].origins[0].time - data_pad)
     endtime = starttime + process_len

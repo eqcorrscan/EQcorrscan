@@ -269,6 +269,12 @@ class Party(object):
                 Logger.warning('Family: %s not in party' % index)
                 return []
 
+    def __iter__(self):
+        return self.families.__iter__()
+
+    def __next__(self):
+        return self.families.__next__()
+
     def __len__(self):
         """
         Get total number of detections in Party.
@@ -783,7 +789,8 @@ class Party(object):
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
-                 ignore_bad_data=False, **kwargs):
+                 ignore_bad_data=False, export_cc=False, cc_dir=None,
+                 **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -826,6 +833,13 @@ class Party(object):
         :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
+        :type export_cc: bool
+        :param export_cc:
+            To generate a binary file in NumPy for every detection or not,
+            defaults to False
+        :type cc_dir: str
+        :param cc_dir:
+            Path to saving folder, NumPy files will be output here.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -898,6 +912,7 @@ class Party(object):
                     horizontal_chans=horizontal_chans,
                     vertical_chans=vertical_chans, cores=cores,
                     interpolate=interpolate, plot=plot, plotdir=plotdir,
+                    export_cc=export_cc, cc_dir=cc_dir,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
                     ignore_length=ignore_length, **kwargs)
