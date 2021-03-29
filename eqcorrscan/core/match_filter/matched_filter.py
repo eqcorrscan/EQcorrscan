@@ -385,7 +385,8 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
                  extract_detections=False, arg_check=True, full_peaks=False,
-                 peak_cores=None, spike_test=True, copy_data=True, **kwargs):
+                 peak_cores=None, spike_test=True, copy_data=True, 
+                 export_cccsums=False, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -472,6 +473,9 @@ def match_filter(template_names, template_list, st, threshold,
     :param copy_data:
         Whether to copy data to keep it safe, otherwise will edit your
         templates and stream in place.
+    :type export_cccsums: bool
+    :param export_cccsums: Whether to save the cross-correlation statistic.
+
 
     .. Note::
         When using the "fftw" correlation backend the length of the fft
@@ -709,6 +713,11 @@ def match_filter(template_names, template_list, st, threshold,
     outtoc = default_timer()
     Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
+        if export_cccsums:
+            fname = (f"{_template_names[i]}-{stream[0].stats.starttime}-"
+                     f"{stream[0].stats.endtime}_cccsum.npy")
+            np.save(file=fname, arr=cccsum)
+            Logger.info(f"Saved correlation statistic to {fname}")
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
