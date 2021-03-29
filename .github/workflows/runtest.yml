@@ -55,7 +55,6 @@ jobs:
 
       - name: run main test suite
         shell: bash -l {0}
-        continue-on-error: true
         run: |
           py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
       - name: run slow tests
