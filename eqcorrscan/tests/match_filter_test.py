@@ -430,7 +430,7 @@ class TestNCEDCCases(unittest.TestCase):
         for detection in individual_detections:
             individual_dict.append({'template_name': detection.template_name,
                                     'time': detection.detect_time,
-                                    'cccsum': detection.detect_val.round(6)})
+                                    'cccsum': detection.detect_val.round(4)})
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
@@ -440,7 +440,7 @@ class TestNCEDCCases(unittest.TestCase):
         for detection in detections:
             detection_dict = {'template_name': detection.template_name,
                               'time': detection.detect_time,
-                              'cccsum': detection.detect_val.round(6)}
+                              'cccsum': detection.detect_val.round(4)}
             if detection_dict not in individual_dict:
                 print(f"Detection:\n{detection_dict}\nnot found in:"
                       f"\n{individual_dict}")
