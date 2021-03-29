@@ -3,15 +3,23 @@ on: [pull_request]  #, push]
 
 jobs:
   # Runs the tests on combinations of the supported python/os matrix.
-  test-code-macOS:
-    runs-on: "macos-latest"
+  test-code:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.7, 3.8]
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Get conda env file
+        shell: bash -l {0}
+        run: |
+          if [ "$RUNNER_OS" == "macOS"  ]; then
+              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
+          fi
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
@@ -19,7 +27,7 @@ jobs:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env_macOS.yml
+          environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
 
       - name: install eqcorrscan
@@ -58,59 +66,6 @@ jobs:
           yml: ./codecov.yml
           fail_ci_if_error: true
 
-  test-code-ubuntu:
-    runs-on: "ubuntu-latest"
-    strategy:
-      matrix:
-        python-version: [3.7, 3.8]
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniconda-version: 'latest'
-          python-version: ${{ matrix.python-version }}
-          activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env.yml
-          condarc-file: .github/test_condarc.yml
-
-      - name: install eqcorrscan
-        shell: bash -l {0}
-        run: |
-          pip install -e .
-
-      - name: print package info
-        shell: bash -l {0}
-        run: |
-          conda info -a
-          conda list
-
-      - name: run main test suite
-        shell: bash -l {0}
-        run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-      - name: run slow tests
-        shell: bash -l {0}
-        run: |
-          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
-      - name: run serial test
-        shell: bash -l {0}
-        run: |
-          export OMP_NUM_THREADS=2
-          py.test -m "serial and not network" --cov-report=xml --cov-append
-
-      - name: upload coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          yml: ./codecov.yml
-          fail_ci_if_error: true
 
   test-code-slow:
     runs-on: "ubuntu-latest"
@@ -154,68 +109,6 @@ jobs:
         shell: bash -l {0}
         run: |
           py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
-
-      - name: upload coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          yml: ./codecov.yml
-          fail_ci_if_error: true
-
-  test-code-windows:
-    runs-on: "windows-latest"
-    strategy:
-      matrix:
-        python-version: [3.7]
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniconda-version: 'latest'
-          python-version: ${{ matrix.python-version }}
-          activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env.yml
-          condarc-file: .github/test_condarc.yml
-
-      - name: setup fftw
-        shell: bash -l {0}
-        run: |
-          export C_INCLUDE_PATH=${PREFIX}/include:${C_INCLUDE_PATH}  # required as fftw3.h installed here
-          export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
-          export STATIC_FFTW_DIR=$PREFIX/lib
-
-      - name: install eqcorrscan
-        shell: bash -l {0}
-        run: |
-          pip install -e .
-
-      - name: print package info
-        shell: bash -l {0}
-        run: |
-          conda info -a
-          conda list
-
-      - name: run main test suite
-        shell: bash -l {0}
-        continue-on-error: true
-        run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-      - name: run slow tests
-        shell: bash -l {0}
-        run: |
-          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
-      - name: run serial test
-        shell: bash -l {0}
-        run: |
-          export OMP_NUM_THREADS=2
-          py.test -m "serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
         uses: codecov/codecov-action@v1
