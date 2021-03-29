@@ -401,7 +401,7 @@ class TestNCEDCCases(unittest.TestCase):
         pads = [0 for _ in range(len(template_array))]
         ccc_numpy, no_chans = numpy_normxcorr(template_array, stream, pads)
         ccc, no_chans = fftw_normxcorr(template_array, stream, pads)
-        self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.03))
+        self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.04))
 
     def test_catalog_extraction(self):
         detections, det_cat, detection_streams = \
@@ -441,6 +441,9 @@ class TestNCEDCCases(unittest.TestCase):
             detection_dict = {'template_name': detection.template_name,
                               'time': detection.detect_time,
                               'cccsum': detection.detect_val.round(6)}
+            if detection_dict not in individual_dict:
+                print(f"Detection:\n{detection_dict}\nnot found in:"
+                      f"\n{individual_dict}")
             self.assertTrue(detection_dict in individual_dict)
 
     def test_read_write_detections(self):
