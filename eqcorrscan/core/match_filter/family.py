@@ -506,6 +506,7 @@ class Family(object):
         return
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
+                 min_cc_from_mean_cc_factor=None,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
@@ -531,6 +532,12 @@ class Family(object):
         :param min_cc:
             Minimum cross-correlation value to be considered a pick,
             default=0.4.
+        :type min_cc_from_mean_cc_factor: float
+        :param min_cc_from_mean_cc_factor:
+            If set to a value other than None, then the minimum cross-
+            correlation value for a trace is set individually for each
+            detection based on:
+            min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
         :type horizontal_chans: list
         :param horizontal_chans:
             List of channel endings for horizontal-channels, on which
@@ -608,6 +615,7 @@ class Family(object):
         picked_dict = xcorr_pick_family(
             family=self, stream=processed_stream, shift_len=shift_len,
             min_cc=min_cc, horizontal_chans=horizontal_chans,
+            min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir,
             export_cc=export_cc, cc_dir=cc_dir)

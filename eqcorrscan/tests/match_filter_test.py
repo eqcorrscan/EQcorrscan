@@ -1238,15 +1238,32 @@ class TestMatchObjectLight(unittest.TestCase):
         for i in range(200):
             det = party[0][0].copy()
             det.detect_time += i * 20
+            # Include some negative detections!
+            fudge = np.random.randint(-1, 2)
+            if fudge == 0:
+                fudge += 1
             det.detect_val = det.threshold + (i * 1e-1)
+            det.detect_val *= fudge
             det.id = str(i)
             party[0].detections.append(det)
         self.assertEqual(len(party), 204)
-        party.rethreshold(new_threshold=9)
-        for family in party:
+        negative_count = len([d for f in party for d in f if d.detect_val < 0])
+        self.assertGreater(negative_count, 0)
+        party1 = party.copy().rethreshold(new_threshold=9)
+        for family in party1:
             for d in family:
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(d.detect_val, d.threshold)
+        party2 = party.copy().rethreshold(new_threshold=9, abs_values=True)
+        negative_count = 0
+        for family in party2:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(abs(d.detect_val), d.threshold)
+                if d.detect_val < 0:
+                    negative_count += 1
+        # Check that there actually are some negative detections...
+        self.assertGreater(negative_count, 0)
 
     def test_family_init(self):
         """Test generating a family with various things."""

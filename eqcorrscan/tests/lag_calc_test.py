@@ -170,7 +170,8 @@ class SyntheticTests(unittest.TestCase):
         template_names = [f.template.name for f in self.party]
         output_cat = lag_calc(
             detections, self.data, template_names, templates,
-            shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
+            shift_len=0.2, min_cc=0.4, min_cc_from_mean_cc_factor=1,
+            horizontal_chans=['E', 'N', '1', '2'],
             vertical_chans=['Z'], cores=1, interpolate=False,
             plot=False, export_cc=False)
         self.assertEqual(len(output_cat), len(detections))

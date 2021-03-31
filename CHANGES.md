@@ -6,6 +6,12 @@
    - Provide option of exporting the cross-correlation sums for additional later
      analysis.
 * Added the ability of saving correlation data of the lag_calc.
+* lag_calc:
+  - Added option to set minimum CC threshold individually for detections based
+    on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
+* party.rethreshold:
+  - added option to rethreshold based on absolute values to keep relevant
+    detections with large negative detect_val.
 * utils.mag_calc.calc_b_value:
   - Added useful information to doc-string regarding method and meaning of
     residuals
