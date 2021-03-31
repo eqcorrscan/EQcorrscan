@@ -727,7 +727,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         self.assertEqual(len(party2), 1)
         # This should fail in v0.4.2
         compare_families(
-            party=party1, party_in=party2, float_tol=0.05, check_event=True)
+            party=party1, party_in=party2, float_tol=0.05, check_event=False)
 
     def test_tribe_detect_short_data(self):
         """Test the detect method on Tribe objects"""
