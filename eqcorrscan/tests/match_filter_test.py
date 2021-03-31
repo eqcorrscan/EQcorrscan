@@ -1409,7 +1409,7 @@ class TestMatchObjectLight(unittest.TestCase):
         """Test the write method of family."""
         family = self.family.copy()
         try:
-            family.write('test_family')
+            family.write('test_family', overwrite=True)
             party_back = read_party('test_family.tgz')
             self.assertEqual(len(party_back), 1)
             self.assertEqual(party_back[0], family)

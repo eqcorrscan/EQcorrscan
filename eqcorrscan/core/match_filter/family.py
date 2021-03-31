@@ -456,7 +456,7 @@ class Family(object):
         cumulative_detections(
             detections=self.detections, plot_grouped=plot_grouped)
 
-    def write(self, filename, format='tar'):
+    def write(self, filename, format='tar', overwrite=False):
         """
         Write Family out, select output format.
 
@@ -466,6 +466,10 @@ class Family(object):
             catalog output.
         :type filename: str
         :param filename: Path to write file to.
+        :type overwrite: bool
+        :param overwrite:
+            Specifies whether detection-files are overwritten if they exist
+            already. By default, no files are overwritten.
 
         .. Note:: csv format will write out detection objects, all other
             outputs will write the catalog.  These cannot be rebuilt into
@@ -497,7 +501,8 @@ class Family(object):
         """
         from eqcorrscan.core.match_filter.party import Party
 
-        Party(families=[self]).write(filename=filename, format=format)
+        Party(families=[self]).write(filename=filename, format=format,
+                                     overwrite=overwrite)
         return
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
