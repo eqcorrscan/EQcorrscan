@@ -27,8 +27,7 @@ Logger = logging.getLogger(__name__)
 
 
 def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
-                           concurrency="concurrent", cores=1,
-                           channel_order=None, **kwargs):
+                           concurrency="concurrent", cores=1, **kwargs):
     """
     Calculate cross-channel correlation.
 
@@ -50,12 +49,6 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     :param concurrency: Concurrency for xcorr-func.
     :type cores: int
     :param cores: Number of threads to parallel over
-    :type channel_order: list of str
-    :param channel_order:
-        Ordered list of seed-ids to enforce order of correlations. See PR #439.
-        To ensure correlations are the same independent of what stream st1 is,
-        order must be enforced - this is due to small (10^-5) errors introduced
-        with weak correlations in the 2D FFT used for correlations.
 
     :returns:
         cross channel correlation, float - normalized by number of channels.
@@ -81,27 +74,20 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
                     raise NotImplementedError("Sampling rates differ")
             _streams.append(_stream)
         streams = _streams
+    else:
+        # _prep_data_for_correlation works in place on data.
+        # We need to copy it first.
+        streams = [stream.copy() for stream in streams]
     # Check which channels are in st1 and match those in the stream_list
     st1, streams, stream_indexes = _prep_data_for_correlation(
-        stream=st1, templates=streams,
+        stream=st1.copy(), templates=streams,
         template_names=list(range(len(streams))), force_stream_epoch=False)
-    # Enforce order of channels
-    if channel_order:
-        _st1 = Stream()
-        _streams = [Stream() for _ in streams]
-        for channel_id in channel_order:
-            if len(st1.select(id=channel_id)):
-                continue
-            _st1 += st1.select(id=channel_id)
-            for st, _st in zip(streams, _streams):
-                _st += st.select(id=channel_id)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
         templates=streams, stream=st1, cores=cores, stack=False, **kwargs)
     # Find maximas, sum and divide by no_chans
-    coherances = cccsums.max(axis=-1).astype(
-        np.float64).sum(axis=-1) / no_chans
+    coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
     positions = cccsums.argmax(axis=-1)
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
@@ -150,14 +136,10 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     # Initialize square matrix
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
-    # Set up channel order to enforce internally to ensure the same 2D
-    # matrix is used for correlation.
-    channel_order = sorted(list({tr.id for st in stream_list for tr in st}))
     for i, master in enumerate(stream_list):
         dist_list, _ = cross_chan_correlation(
-            st1=master.copy(), streams=stream_list,
-            shift_len=shift_len, xcorr_func='fftw', cores=cores,
-            channel_order=channel_order)
+            st1=master, streams=stream_list,
+            shift_len=shift_len, xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
     assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
     # Force perfect symmetry
