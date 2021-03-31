@@ -1248,10 +1248,15 @@ class TestMatchObjectLight(unittest.TestCase):
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(d.detect_val, d.threshold)
         party2 = party.copy().rethreshold(new_threshold=9, abs_values=True)
+        negative_count = 0
         for family in party2:
             for d in family:
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(abs(d.detect_val), d.threshold)
+                if d.detect_val < 0:
+                    negative_count += 1
+        # Check that there actually are some negative detections...
+        self.assertGreater(negative_count, 0)
 
     def test_family_init(self):
         """Test generating a family with various things."""
