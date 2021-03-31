@@ -74,9 +74,13 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
                     raise NotImplementedError("Sampling rates differ")
             _streams.append(_stream)
         streams = _streams
+    else:
+        # _prep_data_for_correlation works in place on data.
+        # We need to copy it first.
+        streams = [stream.copy() for stream in streams]
     # Check which channels are in st1 and match those in the stream_list
     st1, streams, stream_indexes = _prep_data_for_correlation(
-        stream=st1, templates=streams,
+        stream=st1.copy(), templates=streams,
         template_names=list(range(len(streams))), force_stream_epoch=False)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
@@ -87,8 +91,11 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     positions = cccsums.argmax(axis=-1)
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
+
+    # This section re-orders the coherences to correspond to the order of the
+    # input streams
     _coherances = np.empty(n_streams)
-    _positions = np.empty((n_streams, no_chans.max()))
+    _positions = np.empty_like(positions)
     _coherances.fill(np.nan)
     _positions.fill(np.nan)
     for coh_ind, stream_ind in enumerate(stream_indexes):
@@ -131,7 +138,7 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
                         len(stream_list))
     for i, master in enumerate(stream_list):
         dist_list, _ = cross_chan_correlation(
-            st1=master.copy(), streams=stream_list,
+            st1=master, streams=stream_list,
             shift_len=shift_len, xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
     assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
