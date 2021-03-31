@@ -105,7 +105,7 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     positions = cccsums.argmax(axis=-1)
     # positions should probably have half the length of the correlogram
     # subtracted, and possibly be converted to seconds?
-    
+
     # This section re-orders the coherences to correspond to the order of the
     # input streams
     _coherances = np.empty(n_streams)
@@ -156,7 +156,8 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     for i, master in enumerate(stream_list):
         dist_list, _ = cross_chan_correlation(
             st1=master.copy(), streams=stream_list,
-            shift_len=shift_len, xcorr_func='fftw', cores=cores)
+            shift_len=shift_len, xcorr_func='fftw', cores=cores,
+            channel_order=channel_order)
         dist_mat[i] = 1 - dist_list
     assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
     # Force perfect symmetry
