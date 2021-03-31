@@ -386,18 +386,18 @@ class Detector(object):
         f = h5py.File(filename, "r")
         self.data = []
         for i in range(f['data'].attrs['length']):
-            self.data.append(f['data']['data_' + str(i)].value)
+            self.data.append(f['data']['data_' + str(i)][...])
         self.u = []
         for i in range(f['u'].attrs['length']):
-            self.u.append(f['u']['u_' + str(i)].value)
+            self.u.append(f['u']['u_' + str(i)][...])
         self.sigma = []
         for i in range(f['sigma'].attrs['length']):
-            self.sigma.append(f['sigma']['sigma_' + str(i)].value)
+            self.sigma.append(f['sigma']['sigma_' + str(i)][...])
         self.v = []
         for i in range(f['v'].attrs['length']):
-            self.v.append(f['v']['v_' + str(i)].value)
+            self.v.append(f['v']['v_' + str(i)][...])
         self.stachans = [tuple(stachan.decode('ascii').split('.'))
-                         for stachan in f['stachans'].value]
+                         for stachan in f['stachans'][...]]
         self.dimension = f['data'].attrs['dimension']
         self.filt_order = f['data'].attrs['filt_order']
         self.highcut = f['data'].attrs['highcut']

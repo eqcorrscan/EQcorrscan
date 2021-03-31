@@ -80,7 +80,7 @@ def _xcorr_interp(ccc, dt):
         Logger.debug(
             "Fewer than 5 samples selected for fit to cross correlation: "
             "{0}".format(num_samples))
-    coeffs, residual = scipy.polyfit(
+    coeffs, residual = np.polyfit(
         cc_t[first_sample:last_sample + 1],
         cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
     # check results of fit
@@ -188,6 +188,7 @@ def _concatenate_and_correlate(streams, template, cores):
 
 
 def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
+                      min_cc_from_mean_cc_factor=None,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
                       plot=False, plotdir=None, export_cc=False, cc_dir=None):
@@ -207,6 +208,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type min_cc: float
     :param min_cc:
         Minimum cross-correlation value to be considered a pick, default=0.4.
+    :type min_cc_from_mean_cc_factor: float
+    :param min_cc_from_mean_cc_factor:
+        If set to a value other than None, then the minimum cross-correlation
+        value for a trace is set individually for each detection based on:
+        min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
     :type horizontal_chans: list
     :param horizontal_chans:
         List of channel endings for horizontal-channels, on which S-picks will
@@ -266,6 +272,13 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         detect_stream = detect_streams_dict[detection_id]
         checksum, cccsum, used_chans = 0.0, 0.0, 0
         event = Event()
+        if min_cc_from_mean_cc_factor is not None:
+            cc_thresh = min(detection.detect_val / detection.no_chans
+                            * min_cc_from_mean_cc_factor, min_cc)
+            Logger.info('Setting minimum cc-threshold for detection %s to %s',
+                        detection.id, str(cc_thresh))
+        else:
+            cc_thresh = min_cc
         for correlation, stachan in zip(correlations, picked_chans):
             if not stachan.used:
                 continue
@@ -283,7 +296,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             picktime = tr.stats.starttime + shift
             checksum += cc_max
             used_chans += 1
-            if cc_max < min_cc:
+            if cc_max < cc_thresh:
                 Logger.debug('Correlation of {0} is below threshold, not '
                              'using'.format(cc_max))
                 continue
@@ -403,7 +416,8 @@ def _prepare_data(family, detect_data, shift_len):
 
 
 def lag_calc(detections, detect_data, template_names, templates,
-             shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
+             shift_len=0.2, min_cc=0.4, min_cc_from_mean_cc_factor=None,
+             horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
              plot=False, plotdir=None, export_cc=False, cc_dir=None):
     """
@@ -436,6 +450,11 @@ def lag_calc(detections, detect_data, template_names, templates,
     :type min_cc: float
     :param min_cc:
         Minimum cross-correlation value to be considered a pick, default=0.4.
+    :type min_cc_from_mean_cc_factor: float
+    :param min_cc_from_mean_cc_factor:
+        If set to a value other than None, then the minimum cross-correlation
+        value for a trace is set individually for each detection based on:
+        min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
     :type horizontal_chans: list
     :param horizontal_chans:
         List of channel endings for horizontal-channels, on which S-picks will
@@ -542,8 +561,9 @@ def lag_calc(detections, detect_data, template_names, templates,
         # Make a sparse template
         if len(template_detections) > 0:
             template_dict = xcorr_pick_family(
-                family=family, stream=detect_data,
-                min_cc=min_cc, horizontal_chans=horizontal_chans,
+                family=family, stream=detect_data, min_cc=min_cc,
+                min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
+                horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
                 export_cc=export_cc, cc_dir=cc_dir)

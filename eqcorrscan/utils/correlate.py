@@ -27,6 +27,7 @@ from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
+import math
 from future.utils import native_str
 
 from eqcorrscan.utils.libnames import _load_cdll
@@ -929,8 +930,11 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
             np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
             {seed_id: stream_data.astype(np.float32)})
+        # PROBLEM - DEBUG: if two traces start just before / just after a
+        # "full-sample-time", then stream_offset can become 1, while a value in
+        # pad_list can become 0. 0-1 = -1; which is problematic.
         stream_offset = int(
-            round(stream_channel.stats.sampling_rate *
+            math.floor(stream_channel.stats.sampling_rate *
                   (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [

@@ -7,6 +7,12 @@ assignees: ''
 
 ---
 
+<!--
+Please fill in the following
+
+To get versions of python packages, import them and `print(package.__version__)`
+-->
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
