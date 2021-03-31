@@ -1238,10 +1238,17 @@ class TestMatchObjectLight(unittest.TestCase):
         for i in range(200):
             det = party[0][0].copy()
             det.detect_time += i * 20
+            # Include some negative detections!
+            fudge = np.random.randint(-1, 2)
+            if fudge == 0:
+                fudge += 1
             det.detect_val = det.threshold + (i * 1e-1)
+            det.detect_val *= fudge
             det.id = str(i)
             party[0].detections.append(det)
         self.assertEqual(len(party), 204)
+        negative_count = len([d for f in party for d in f if d.detect_val < 0])
+        self.assertGreater(negative_count, 0)
         party1 = party.copy().rethreshold(new_threshold=9)
         for family in party1:
             for d in family:
