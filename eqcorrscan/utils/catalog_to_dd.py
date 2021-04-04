@@ -191,9 +191,10 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
             continue
         else:
             tr = tr[0]
-        Logger.debug(f"Trimming trace on {tr.id} between {tr.stats.starttime} - "
-                     f"{tr.stats.endtime} to {pick.time - pre_pick} - "
-                     f"{(pick.time - pre_pick) + extract_len}")
+        Logger.debug(
+            f"Trimming trace on {tr.id} between {tr.stats.starttime} - "
+            f"{tr.stats.endtime} to {pick.time - pre_pick} - "
+            f"{(pick.time - pre_pick) + extract_len}")
         tr = stream.select(id=seed_pick_id.seed_id).slice(
             starttime=pick.time - pre_pick,
             endtime=(pick.time - pre_pick) + extract_len).merge()
@@ -298,7 +299,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                                "providing sufficient data")
             matched_length = matched_length.most_common(1)[0][0]
             if matched_length < master_length:
-                Logger.error("Matched streams are shorter than the master, will not correlate")
+                Logger.error("Matched streams are shorter than the master, "
+                             "will not correlate")
                 continue
             # Remove empty streams and generate an ordered list of event_ids
             used_event_ids, used_matched_streams = [], []
@@ -317,7 +319,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     f"master: {master_seed_ids}, matched: {matched_seed_ids}")
                 continue
             # Do the correlations
-            Logger.debug(f"Correlating channels: {[tr.id for tr in _master_stream]}")
+            Logger.debug(
+                f"Correlating channels: {[tr.id for tr in _master_stream]}")
             ccc_out, used_chans = _concatenate_and_correlate(
                 template=_master_stream, streams=used_matched_streams,
                 cores=max_workers)
@@ -381,7 +384,8 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         event_id_1=event_id_mapper[master.resource_id],
         event_id_2=event_id_mapper[sparse_event.resource_id])
     for master_pick in master.picks:
-        if master_pick.phase and master_pick.phase not in "PS":  # pragma: no cover
+        if master_pick.phase and \
+                master_pick.phase not in "PS":  # pragma: no cover
             continue
         matched_picks = [p for p in sparse_event.picks
                          if p.station == master_pick.station
@@ -479,7 +483,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         additional_args.update(correlation_kwargs)
         n = len(catalog)
         for i, master in enumerate(catalog):
-            sub_catalog = [ev for j, ev in enumerate(catalog) 
+            sub_catalog = [ev for j, ev in enumerate(catalog)
                            if distance_filter[i][j]]
             differential_times.update({
                 master.resource_id.id:
