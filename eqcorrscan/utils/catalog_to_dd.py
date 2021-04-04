@@ -170,7 +170,7 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
     """
     seed_pick_ids = seed_pick_ids or {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
-        for pick in event.picks}
+        for pick in event.picks if pick.phase_hint.startswith(("P", "S"))}
     stream_sliced = defaultdict(lambda: Stream())
     for seed_pick_id in seed_pick_ids:
         pick = [pick for pick in event.picks
@@ -186,6 +186,14 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
         elif len(pick) == 0:
             continue
         pick = pick[0]
+        tr = stream.select(id=seed_pick_id.seed_id).merge()
+        if len(tr) == 0:
+            continue
+        else:
+            tr = tr[0]
+        Logger.debug(f"Trimming trace on {tr.id} between {tr.stats.starttime} - "
+                     f"{tr.stats.endtime} to {pick.time - pre_pick} - "
+                     f"{(pick.time - pre_pick) + extract_len}")
         tr = stream.select(id=seed_pick_id.seed_id).slice(
             starttime=pick.time - pre_pick,
             endtime=(pick.time - pre_pick) + extract_len).merge()
@@ -195,9 +203,13 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
             Logger.error("Multiple traces for {seed_id}".format(
                 seed_id=seed_pick_id.seed_id))
             continue
+        tr = tr[0]
+        if tr.stats.endtime - tr.stats.starttime != extract_len:
+            Logger.warning(f"Insufficient data for {tr.id}, discarding")
+            continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
-             stream_sliced[seed_pick_id.phase_hint] + tr[0]})
+             stream_sliced[seed_pick_id.phase_hint] + tr})
     return stream_sliced
 
 
@@ -215,13 +227,13 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
         stream=stream_dict[master.resource_id.id], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
-    Logger.info(f"The channels provided are: {available_seed_ids}")
+    Logger.debug(f"The channels provided are: {available_seed_ids}")
     master_seed_ids = {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in master.picks if
         pick.phase_hint[0] in "PS" and
         pick.waveform_id.get_seed_string() in available_seed_ids}
-    Logger.info(f"Using channels: {master_seed_ids}")
+    Logger.debug(f"Using channels: {master_seed_ids}")
     # Dictionary of travel-times for master keyed by {station}_{phase_hint}
     master_tts = dict()
     master_origin_time = (master.preferred_origin() or master.origins[0]).time
@@ -237,7 +249,14 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     matched_pre_pick = pre_pick + shift_len
     # We will use this to maintain order
     event_dict = {event.resource_id.id: event for event in catalog}
-    event_ids = list(event_dict.keys())
+    event_ids = set(event_dict.keys())
+    # Check for overlap
+    _stream_event_ids = set(stream_dict.keys())
+    if len(event_ids.difference(_stream_event_ids)):
+        Logger.warning(
+            f"Missing streams for {event_ids.difference(_stream_event_ids)}")
+        # Just use the event ids that we actually have streams for!
+        event_ids = event_ids.intersection(_stream_event_ids)
     matched_streams = {
         event_id: _prepare_stream(
             stream=stream_dict[event_id], event=event_dict[event_id],
@@ -252,6 +271,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             delta = 1.0 / sampling_rate
             _master_stream = master_stream[phase_hint].select(
                 sampling_rate=sampling_rate)
+            if len(_master_stream) == 0:
+                continue
             _matched_streams = dict()
             for key, value in matched_streams.items():
                 _st = value[phase_hint].select(sampling_rate=sampling_rate)
@@ -268,15 +289,17 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                                "are providing sufficient data")
             master_length = Counter(master_length).most_common(1)[0][0]
             _master_stream = _master_stream.select(npts=master_length)
-            
-            matched_length = [
-                tr.stats.npts for st in _matched_streams.values()
-                for tr in st]
-            if len(set(matched_length)) > 1:
-                Logger.warning(
-                    "Multiple lengths found in matched data - check that you "
-                    "are providing sufficient data")
-            matched_length = Counter(matched_length).most_common(1)[0][0]
+            matched_length = Counter(
+                (tr.stats.npts for st in _matched_streams.values()
+                 for tr in st))
+            if len(matched_length) > 1:
+                Logger.warning("Multiple lengths of stream found - taking "
+                               "the most common. Check that you are "
+                               "providing sufficient data")
+            matched_length = matched_length.most_common(1)[0][0]
+            if matched_length < master_length:
+                Logger.error("Matched streams are shorter than the master, will not correlate")
+                continue
             # Remove empty streams and generate an ordered list of event_ids
             used_event_ids, used_matched_streams = [], []
             for event_id, _matched_stream in _matched_streams.items():
@@ -294,6 +317,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     f"master: {master_seed_ids}, matched: {matched_seed_ids}")
                 continue
             # Do the correlations
+            Logger.debug(f"Correlating channels: {[tr.id for tr in _master_stream]}")
             ccc_out, used_chans = _concatenate_and_correlate(
                 template=_master_stream, streams=used_matched_streams,
                 cores=max_workers)
@@ -451,15 +475,18 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
-        sub_catalogs = ([ev for i, ev in enumerate(catalog)
-                         if master_filter[i]]
-                        for master_filter in distance_filter)
+        differential_times = {}
         additional_args.update(correlation_kwargs)
-        differential_times = {
-            master.resource_id.id:
-                _compute_dt_correlations(
-                    sub_catalog, master, **additional_args)
-            for sub_catalog, master in zip(sub_catalogs, catalog)}
+        n = len(catalog)
+        for i, master in enumerate(catalog):
+            sub_catalog = [ev for j, ev in enumerate(catalog) 
+                           if distance_filter[i][j]]
+            differential_times.update({
+                master.resource_id.id:
+                    _compute_dt_correlations(
+                        sub_catalog, master, **additional_args)})
+            Logger.info(
+                f"Completed correlations for core event {i} of {n}")
     else:
         # Reformat catalog to sparse catalog
         sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
