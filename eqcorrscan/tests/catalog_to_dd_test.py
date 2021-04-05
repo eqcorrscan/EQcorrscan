@@ -43,6 +43,26 @@ class TestHelperObjects(unittest.TestCase):
             '#        12        54 0.0\nFOZ       1.982 0.8733 P\n'
             'GCSZ     -1.237 1.0000 S')
 
+    def test_event_pair_spurious_phases(self):
+        """ Make sure that only P and S phases are included. """
+        event_pair = _EventPair(event_id_1=12, event_id_2=54)
+        event_pair.obs = [
+            _DTObs(station="FOZ", tt1=3.268, tt2=1.2857650,
+                   weight=0.873265, phase="P"),
+            _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                   weight=1.0, phase="S"),
+            _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                   weight=1.0, phase="IAML"),
+        ]
+        self.assertEqual(
+            event_pair.ct_string,
+            '#        12        54\nFOZ       3.268   1.286 0.8733 P\n'
+            'GCSZ      0.263   1.500 1.0000 S')
+        self.assertEqual(
+            event_pair.cc_string,
+            '#        12        54 0.0\nFOZ       1.982 0.8733 P\n'
+            'GCSZ     -1.237 1.0000 S')
+
 
 class TestCatalogMethods(unittest.TestCase):
     @classmethod
@@ -212,6 +232,10 @@ class TestCatalogMethods(unittest.TestCase):
                             abs(obs.tt2 - cat_obs.tt2), shift_len)
                         self.assertLessEqual(obs.weight, 1.0)
 
+    def test_compute_correlations_strange_lengths(self):
+        """ Check that streams with too short data are unused. PR #424 """
+        self.assertEqual(True, False)  # To write!
+
     def test_write_catalog(self):
         # Contents checked elsewhere
         write_catalog(catalog=self.catalog, event_id_mapper=None,
@@ -265,6 +289,18 @@ class TestCatalogMethods(unittest.TestCase):
         test_data_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         with open(os.path.join(test_data_path, "station.dat"), "r") as f:
+            original_station = f.read()
+        with open("station.dat") as f:
+            station = f.read()
+        self.assertEqual(station, original_station)
+
+    def test_write_station_elevations(self):
+        """ Include elevations in station.dat: PR #424. """
+        write_station(self.inventory, use_elevation=True)
+        test_data_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        # To do: create this file and test with ph2dt!
+        with open(os.path.join(test_data_path, "station_elev.dat"), "r") as f:
             original_station = f.read()
         with open("station.dat") as f:
             station = f.read()

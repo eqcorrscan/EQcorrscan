@@ -5,10 +5,10 @@
  - match_filter:
    - Provide option of exporting the cross-correlation sums for additional later
      analysis.
-* Added the ability of saving correlation data of the lag_calc.
-* lag_calc:
+* core.lag_calc:
   - Added option to set minimum CC threshold individually for detections based
     on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
+  - Added the ability to save correlation data from lag_calc.  
 * party.rethreshold:
   - added option to rethreshold based on absolute values to keep relevant
     detections with large negative detect_val.
@@ -22,13 +22,21 @@
     when a filename without '.tgz'-suffix was supplied, then the file was
     overwritten against the function's intention.
   - Add option `overwrite=True` to allow overwriting of existing files.
-* utils/archive_read.py
+* utils.archive_read
   - Add support for wildcard-comparisons in the list of requested stations and
     channels.
   - New option `arctype='SDS'` to read from a SeisComp Data Structure (SDS).
     This option is also available in `utils.clustering.extract_detections` and
     in `utils.archive_read._check_available_data`.
-* Added the ability of saving correlation data of the lag_calc.
+* utils.catalog_to_dd
+  - Bug-fixes in #424:
+    - only P and S phases are used now (previously spurious amplitude picks 
+      were included in correlations);
+    - Checks for length are done prior to correlations and more helpful error
+      outputs are provided.
+    - Progress is not reported within dt.cc computation
+  - `write_station` now supports writing elevations: #424.
+
 
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
