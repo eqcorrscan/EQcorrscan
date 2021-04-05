@@ -481,6 +481,10 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         for i, master in enumerate(catalog):
             sub_catalog = [ev for j, ev in enumerate(catalog) 
                            if distance_filter[i][j]]
+            if master.resource_id.id not in additional_args["stream_dict"].keys():
+                Logger.warning(
+                    f"{master.resource_id.id} not in waveforms, skipping")
+                continue
             differential_times.update({
                 master.resource_id.id:
                     _compute_dt_correlations(
