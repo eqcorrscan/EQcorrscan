@@ -39,7 +39,9 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     :type streams: list
     :param streams: Streams to compare to.
     :type shift_len: float
-    :param shift_len: Seconds to shift, only used if `allow_shift=True`
+    :param shift_len:
+        Seconds to shift the streams by (total value for negative and positive
+        direction together)
     :type xcorr_func: str, callable
     :param xcorr_func:
         The method for performing correlations. Accepts either a string or
@@ -88,14 +90,13 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
         templates=streams, stream=st1, cores=cores, stack=False, **kwargs)
     # Find maximas, sum and divide by no_chans
     coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
-    positions = cccsums.argmax(axis=-1)
-    # positions should probably have half the length of the correlogram
-    # subtracted, and possibly be converted to seconds?
+    # Subtract half length of correlogram and convert positions to seconds
+    positions = (cccsums.argmax(axis=-1) - end_trim) / df
 
     # This section re-orders the coherences to correspond to the order of the
     # input streams
     _coherances = np.empty(n_streams)
-    _positions = np.empty_like(positions)
+    _positions = np.empty_like(_coherances)
     _coherances.fill(np.nan)
     _positions.fill(np.nan)
     for coh_ind, stream_ind in enumerate(stream_indexes):
@@ -136,16 +137,28 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     # Initialize square matrix
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
+    shift_mat = np.zeros_like(dist_mat)
     for i, master in enumerate(stream_list):
-        dist_list, _ = cross_chan_correlation(
+        dist_list, shift_list = cross_chan_correlation(
             st1=master, streams=stream_list,
             shift_len=shift_len, xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
-    assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
-    # Force perfect symmetry
-    dist_mat = (dist_mat + dist_mat.T) / 2
+        shift_mat[i] = shift_list
+    if shift_len == 0:
+        assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
+        # Force perfect symmetry
+        dist_mat = (dist_mat + dist_mat.T) / 2
+    else:
+        # get the shortest distance for each correlation pair
+        dist_mat_shortest = np.minimum(dist_mat, dist_mat.T)
+        # Get index for which matrix has shortest dist: value 0: mat2; 1: mat1
+        dist_mat_index = dist_mat_shortest == dist_mat
+        # Get shift for the shortest distances
+        shift_mat =\
+            shift_mat * dist_mat_index + shift_mat.T * (1 - dist_mat_index)
+        dist_mat = dist_mat_shortest
     np.fill_diagonal(dist_mat, 0)
-    return dist_mat
+    return dist_mat, shift_mat
 
 
 def cluster(template_list, show=True, corr_thresh=0.3,
