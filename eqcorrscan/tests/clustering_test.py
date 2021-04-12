@@ -84,9 +84,31 @@ class ClusteringTests(unittest.TestCase):
         for st in stream_list:
             for tr in st:
                 tr.data = tr.data[0:shortest_tr]
-        dist_mat = distance_matrix(stream_list=stream_list, cores=4)
+        # Test with zero shift-length
+        dist_mat, shift_mat = distance_matrix(stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
         self.assertEqual(dist_mat.shape[1], len(stream_list))
+
+        # Test with some shift-length, but only shift templates as a whole
+        dist_mat, shift_mat = distance_matrix(
+            stream_list=stream_list, cores=4, shift_len=0.2,
+            allow_individual_trace_shifts=False)
+        self.assertEqual(dist_mat.shape[0], len(stream_list))
+        self.assertEqual(dist_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(dist_mat == dist_mat.T).all(), True)
+        self.assertEqual(shift_mat.shape[0], len(stream_list))
+        self.assertEqual(shift_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(shift_mat == shift_mat.T).all(), True)
+
+        # Test with shift_len that individual traces are allowed to shift by
+        dist_mat, shift_mat = distance_matrix(
+            stream_list=stream_list, cores=4, shift_len=0.2,
+            allow_individual_trace_shifts=True)
+        self.assertEqual(dist_mat.shape[0], len(stream_list))
+        self.assertEqual(dist_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(dist_mat == dist_mat.T).all(), True)
+        self.assertEqual(len(shift_mat.shape), 3)
+        np.testing.assert_equal(shift_mat, np.transpose(shift_mat, [1, 0, 2]))
 
     def test_unclustered(self):
         """Test clustering on unclustered data..."""
