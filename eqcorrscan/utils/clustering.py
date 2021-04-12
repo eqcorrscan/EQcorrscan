@@ -251,7 +251,7 @@ def cluster(template_list, show=True, corr_thresh=0.3,
     stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
     Logger.info('Computing the distance matrix using %i cores' % num_cores)
-    dist_mat, __ = distance_matrix(
+    dist_mat, _ = distance_matrix(
         stream_list=stream_list, shift_len=shift_len, cores=num_cores)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
