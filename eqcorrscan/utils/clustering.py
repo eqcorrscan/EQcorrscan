@@ -122,7 +122,9 @@ def cross_chan_correlation(
     for coh_ind, stream_ind in enumerate(stream_indexes):
         _coherances[stream_ind] = coherances[coh_ind]
         _positions[stream_ind, :n_shifts_per_stream] = positions[coh_ind]
-    return _coherances, _positions.squeeze()
+    if not allow_individual_trace_shifts:  # remove empty third axis from array
+        _positions = _positions[:, ]
+    return _coherances, _positions
 
 
 def distance_matrix(stream_list, shift_len=0.0,
@@ -179,10 +181,8 @@ def distance_matrix(stream_list, shift_len=0.0,
         if allow_individual_trace_shifts:
             n_shifts_per_stream = shift_list.shape[1]
             shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list
-            axes = [1, 0, 2]
         else:
-            shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list[:, np.newaxis]
-            axes = [1, 0]
+            shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list
     if shift_len == 0:
         assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
         # Force perfect symmetry
@@ -194,14 +194,14 @@ def distance_matrix(stream_list, shift_len=0.0,
         # Indicator says which matrix has shortest dist: value 0: mat2; 1: mat1
         mat_indicator = dist_mat_shortest == dist_mat
         mat_indicator = np.repeat(mat_indicator[:, :, np.newaxis],
-                                  n_shifts_per_stream, axis=2).squeeze()
+                                  n_shifts_per_stream, axis=2)[:, :]
         # Get shift for the shortest distances
-        shift_mat = shift_mat[:, :, 0:n_shifts_per_stream].squeeze()
+        shift_mat = shift_mat[:, :, 0:n_shifts_per_stream][:, :]
         shift_mat = shift_mat * mat_indicator +\
-            np.transpose(shift_mat, axes) * (1 - mat_indicator)
+            np.transpose(shift_mat, [1, 0, 2]) * (1 - mat_indicator)
         dist_mat = dist_mat_shortest
     np.fill_diagonal(dist_mat, 0)
-    return dist_mat, shift_mat
+    return dist_mat, shift_mat.squeeze()
 
 
 def cluster(template_list, show=True, corr_thresh=0.3,
