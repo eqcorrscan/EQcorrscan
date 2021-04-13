@@ -1153,8 +1153,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
         detections_in += 1
         con1 = (new_thresh / old_thresh) * detection.threshold
         con2 = detection.no_chans >= chan_thresh
-        requirted_thresh = (new_thresh / old_thresh) * detection.threshold
-        con3 = abs(detection.detect_val) >= requirted_thresh
+        required_thresh = (new_thresh / old_thresh) * detection.threshold
+        con3 = abs(detection.detect_val) >= required_thresh
         if all([con1, con2, con3]):
             detections_out += 1
             detections.append(detection)
