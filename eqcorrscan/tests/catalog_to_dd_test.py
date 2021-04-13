@@ -46,22 +46,15 @@ class TestHelperObjects(unittest.TestCase):
     def test_event_pair_spurious_phases(self):
         """ Make sure that only P and S phases are included. """
         event_pair = _EventPair(event_id_1=12, event_id_2=54)
-        event_pair.obs = [
-            _DTObs(station="FOZ", tt1=3.268, tt2=1.2857650,
-                   weight=0.873265, phase="P"),
-            _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
-                   weight=1.0, phase="S"),
-            _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
-                   weight=1.0, phase="IAML"),
-        ]
-        self.assertEqual(
-            event_pair.ct_string,
-            '#        12        54\nFOZ       3.268   1.286 0.8733 P\n'
-            'GCSZ      0.263   1.500 1.0000 S')
-        self.assertEqual(
-            event_pair.cc_string,
-            '#        12        54 0.0\nFOZ       1.982 0.8733 P\n'
-            'GCSZ     -1.237 1.0000 S')
+        with self.assertRaises(AssertionError):
+            event_pair.obs = [
+                _DTObs(station="FOZ", tt1=3.268, tt2=1.2857650,
+                       weight=0.873265, phase="P"),
+                _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                       weight=1.0, phase="S"),
+                _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                       weight=1.0, phase="IAML"),
+            ]
 
 
 class TestCatalogMethods(unittest.TestCase):
@@ -102,7 +95,7 @@ class TestCatalogMethods(unittest.TestCase):
         picked_stations = set(picked_stations)
         inv_bulk = [(sta.network, sta.station, sta.location, "HH?",
                      starttime, endtime) for sta in picked_stations]
-        inventory = client.get_stations_bulk(inv_bulk, level="station")
+        inventory = client.get_stations_bulk(inv_bulk, level="channel")
 
         cls.streams = streams
         cls.catalog = catalog
