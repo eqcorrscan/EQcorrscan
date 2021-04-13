@@ -692,7 +692,7 @@ def _hypodd_phase_str(event, event_id_mapper):
         Logger.warning("No magnitude")
         magnitude = 0.0
     try:
-        time_error = origin.quality['standard_error']
+        time_error = origin.quality['standard_error'] or 0.0
     except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
@@ -853,7 +853,7 @@ def _hypodd_event_str(event, event_id):
         Logger.warning("No magnitude")
         magnitude = 0.0
     try:
-        time_error = origin.quality['standard_error']
+        time_error = origin.quality['standard_error'] or 0.0
     except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
