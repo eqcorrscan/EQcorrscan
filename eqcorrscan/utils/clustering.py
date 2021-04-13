@@ -69,8 +69,8 @@ def cross_chan_correlation(
     """
     # Cut all channels in stream-list to be the correct length (shorter than
     # st1 if stack = False by shift_len).
-    allow_individual_trace_shifts =\
-        allow_individual_trace_shifts and shift_len > 0
+    allow_individual_trace_shifts = (
+        allow_individual_trace_shifts and shift_len > 0)
     n_streams = len(streams)
     df = st1[0].stats.sampling_rate
     end_trim = int((shift_len * df) / 2)
