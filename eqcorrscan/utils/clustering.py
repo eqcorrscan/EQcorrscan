@@ -197,8 +197,9 @@ def distance_matrix(stream_list, shift_len=0.0,
                                   n_shifts_per_stream, axis=2)[:, :]
         # Get shift for the shortest distances
         shift_mat = shift_mat[:, :, 0:n_shifts_per_stream][:, :]
-        shift_mat = shift_mat * mat_indicator +\
-            np.transpose(shift_mat, [1, 0, 2]) * (1 - mat_indicator)
+        shift_mat = (
+            shift_mat * mat_indicator +  
+            np.transpose(shift_mat, [1, 0, 2]) * (1 - mat_indicator))
         dist_mat = dist_mat_shortest
     np.fill_diagonal(dist_mat, 0)
     return dist_mat, shift_mat.squeeze()
