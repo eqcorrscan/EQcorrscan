@@ -66,7 +66,7 @@ class ClusteringTests(unittest.TestCase):
         cccoh, _ = cross_chan_correlation(st1=st1, streams=[st2])
         self.assertTrue(cccoh[0] < 0.01)
 
-    def test_distance_matrix(self):
+    def test_distance_matrix_no_shift(self):
         """Test that we can create a useful distance matrix."""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
@@ -84,12 +84,28 @@ class ClusteringTests(unittest.TestCase):
         for st in stream_list:
             for tr in st:
                 tr.data = tr.data[0:shortest_tr]
-        # Test with zero shift-length
         dist_mat, shift_mat = distance_matrix(stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
         self.assertEqual(dist_mat.shape[1], len(stream_list))
 
-        # Test with some shift-length, but only shift templates as a whole
+    def test_distance_matrix_with_shift(self):
+        """Test that we can create a useful distance matrix."""
+        testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
         dist_mat, shift_mat = distance_matrix(
             stream_list=stream_list, cores=4, shift_len=0.2,
             allow_individual_trace_shifts=False)
@@ -100,7 +116,24 @@ class ClusteringTests(unittest.TestCase):
         self.assertEqual(shift_mat.shape[1], len(stream_list))
         self.assertEqual(np.array(shift_mat == shift_mat.T).all(), True)
 
-        # Test with shift_len that individual traces are allowed to shift by
+    def test_distance_matrix_with_shifted_traces(self):
+        """Test that we can create a useful distance matrix."""
+        testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
         dist_mat, shift_mat = distance_matrix(
             stream_list=stream_list, cores=4, shift_len=0.2,
             allow_individual_trace_shifts=True)
