@@ -40,9 +40,7 @@ def cross_chan_correlation(
     :type streams: list
     :param streams: Streams to compare to.
     :type shift_len: float
-    :param shift_len:
-        Seconds to shift the streams by (total value for negative and positive
-        direction together)
+    :param shift_len: How many seconds for templates to shift
     :type allow_individual_trace_shifts: bool
     :param allow_individual_trace_shifts:
         Controls whether templates are shifted by shift_len in relation to the
@@ -89,13 +87,14 @@ def cross_chan_correlation(
         # We need to copy it first.
         streams = [stream.copy() for stream in streams]
     # Check which channels are in st1 and match those in the stream_list
-    st1, prep_streams, stream_indexes = _prep_data_for_correlation(
+    st1_preped, prep_streams, stream_indexes = _prep_data_for_correlation(
         stream=st1.copy(), templates=streams,
         template_names=list(range(len(streams))), force_stream_epoch=False)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
-        templates=prep_streams, stream=st1, cores=cores, stack=False, **kwargs)
+        templates=prep_streams, stream=st1_preped, cores=cores, stack=False,
+        **kwargs)
     # Find maximas, sum and divide by no_chans
     if allow_individual_trace_shifts:
         coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
@@ -110,18 +109,26 @@ def cross_chan_correlation(
     _coherances = np.empty(n_streams)
     if allow_individual_trace_shifts:
         n_max_traces = max([len(st) for st in streams])
-        n_shifts_per_stream = positions.shape[1]
-        _positions = np.empty([positions.shape[0], n_max_traces])
+        # _positions = np.empty([n_streams, n_max_traces])
     else:
         # _positions = np.empty_like(positions)
-        _positions = np.empty([positions.shape[0], 1])
-        n_shifts_per_stream = 1
+        # _positions = np.empty([n_streams, 1])
 
+        positions = positions[:, np.newaxis]
+        n_max_traces = 1
+    n_shifts_per_stream = positions.shape[1]
+    _positions = np.empty([n_streams, n_max_traces])
+
+    # Insert the correlations and shifts at the correct index for the templates
     _coherances.fill(np.nan)
     _positions.fill(np.nan)
+    _coherances[np.ix_(stream_indexes)] = coherances
+    _positions[np.ix_(stream_indexes, range(n_shifts_per_stream))] = (
+        positions)
+
     for coh_ind, stream_ind in enumerate(stream_indexes):
         _coherances[stream_ind] = coherances[coh_ind]
-        _positions[stream_ind, :n_shifts_per_stream] = positions[coh_ind]
+        _positions[stream_ind, 0:n_shifts_per_stream] = positions[coh_ind]
     if not allow_individual_trace_shifts:  # remove empty third axis from array
         _positions = _positions[:, ]
     return _coherances, _positions
@@ -164,13 +171,12 @@ def distance_matrix(stream_list, shift_len=0.0,
     """
     allow_individual_trace_shifts = (
         allow_individual_trace_shifts and shift_len > 0)
+    n_streams = len(stream_list)
+    n_traces_max = max([len(st) for st in stream_list])
     # Initialize square matrix
-    dist_mat = np.array([np.array([0.0] * len(stream_list))] *
-                        len(stream_list))
-    shift_mat = np.zeros_like(dist_mat)
-    shift_mat = np.zeros([len(stream_list),
-                          len(stream_list),
-                          max([len(st) for st in stream_list])])
+    # dist_mat = np.array([np.array([0.0] * n_streams)] * n_streams)
+    dist_mat = np.zeros([n_streams, n_streams])
+    shift_mat = np.zeros([n_streams, n_streams, n_traces_max])
     n_shifts_per_stream = 1
     for i, master in enumerate(stream_list):
         dist_list, shift_list = cross_chan_correlation(
@@ -178,11 +184,15 @@ def distance_matrix(stream_list, shift_len=0.0,
             allow_individual_trace_shifts=allow_individual_trace_shifts,
             xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
-        if allow_individual_trace_shifts:
-            n_shifts_per_stream = shift_list.shape[1]
-            shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list
-        else:
-            shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list
+        shift_mat[i, :, :] = shift_list
+        #if allow_individual_trace_shifts:
+            # shift_mat[i, :, :] = shift_list
+            # n_correlations = shift_list.shape[0]
+            # n_shifts_per_stream = shift_list.shape[1]
+            # shift_mat[i, 0:n_correlations, 0:n_shifts_per_stream] = shift_list
+        #else:
+        #    shift_mat[i, 0:, 0:n_shifts_per_stream] = shift_list
+    n_shifts_per_stream = shift_list.shape[1]
     if shift_len == 0:
         assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
         # Force perfect symmetry
@@ -198,7 +208,7 @@ def distance_matrix(stream_list, shift_len=0.0,
         # Get shift for the shortest distances
         shift_mat = shift_mat[:, :, 0:n_shifts_per_stream][:, :]
         shift_mat = (
-            shift_mat * mat_indicator +  
+            shift_mat * mat_indicator +
             np.transpose(shift_mat, [1, 0, 2]) * (1 - mat_indicator))
         dist_mat = dist_mat_shortest
     np.fill_diagonal(dist_mat, 0)
