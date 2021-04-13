@@ -162,8 +162,8 @@ def distance_matrix(stream_list, shift_len=0.0,
     .. note::
         Requires all traces to have the same sampling rate and same length.
     """
-    allow_individual_trace_shifts =\
-        allow_individual_trace_shifts and shift_len > 0
+    allow_individual_trace_shifts = (
+        allow_individual_trace_shifts and shift_len > 0)
     # Initialize square matrix
     dist_mat = np.array([np.array([0.0] * len(stream_list))] *
                         len(stream_list))
