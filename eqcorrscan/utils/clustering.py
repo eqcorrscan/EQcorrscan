@@ -109,6 +109,10 @@ def cross_chan_correlation(
     _coherances = np.empty(n_streams)
     if allow_individual_trace_shifts:
         n_max_traces = max([len(st) for st in streams])
+        # Set shifts for nan-traces to nan
+        for i, tr in enumerate(st1_preped):
+            if np.ma.is_masked(tr.data):
+                positions[:, i] = np.nan
     else:
         positions = positions[:, np.newaxis]
         n_max_traces = 1
