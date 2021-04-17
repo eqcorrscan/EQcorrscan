@@ -481,16 +481,16 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         additional_args.update(correlation_kwargs)
         n = len(catalog)
         for i, master in enumerate(catalog):
+            master_id = master.resource_id.id
             sub_catalog = [ev for j, ev in enumerate(catalog)
                            if distance_filter[i][j]]
-            if master.resource_id.id not in additional_args["stream_dict"].keys():
+            if master_id not in additional_args["stream_dict"].keys():
                 Logger.warning(
-                    f"{master.resource_id.id} not in waveforms, skipping")
+                    f"{master_id} not in waveforms, skipping")
                 continue
             differential_times.update({
-                master.resource_id.id:
-                    _compute_dt_correlations(
-                        sub_catalog, master, **additional_args)})
+                master_id: _compute_dt_correlations(
+                    sub_catalog, master, **additional_args)})
             Logger.info(
                 f"Completed correlations for core event {i} of {n}")
     else:
