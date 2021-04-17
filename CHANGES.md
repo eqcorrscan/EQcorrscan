@@ -1,27 +1,27 @@
 ## Current
-* utils.plotting
-  - Function added (twoD_seismplot) for plotting seismicity (#365).
 * core.match_filter
  - match_filter:
    - Provide option of exporting the cross-correlation sums for additional later
      analysis.
-* core.lag_calc:
-  - Added option to set minimum CC threshold individually for detections based
-    on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
-  - Added the ability to save correlation data from lag_calc.  
-* party.rethreshold:
-  - added option to rethreshold based on absolute values to keep relevant
-    detections with large negative detect_val.
-* utils.mag_calc.calc_b_value:
-  - Added useful information to doc-string regarding method and meaning of
-    residuals
-  - Changed the number of magnitudes used to an int (from a string!?)
-* core.party.write
+* core.match_filter.party.write
   - BUG-FIX: When `format='tar'` is selected, added a check for .tgz-file
     suffix before checking the filename against an existing file. Previously,
     when a filename without '.tgz'-suffix was supplied, then the file was
     overwritten against the function's intention.
   - Add option `overwrite=True` to allow overwriting of existing files.
+* core.match_filter.party.read
+  - BUG-FIX: Ensure wildcard reading works as expected: #453
+* core.match_filter.party.rethreshold:
+  - added option to rethreshold based on absolute values to keep relevant
+    detections with large negative detect_val.
+* core.lag_calc:
+  - Added option to set minimum CC threshold individually for detections based
+    on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
+  - Added the ability of saving correlation data of the lag_calc.
+* utils.mag_calc.calc_b_value:
+  - Added useful information to doc-string regarding method and meaning of
+    residuals
+  - Changed the number of magnitudes used to an int (from a string!?)
 * utils.archive_read
   - Add support for wildcard-comparisons in the list of requested stations and
     channels.
@@ -36,8 +36,9 @@
       outputs are provided.
     - Progress is not reported within dt.cc computation
   - `write_station` now supports writing elevations: #424.
-
-
+* utils.plotting
+  - Function added (twoD_seismplot) for plotting seismicity (#365).
+  
 ## 0.4.2
 * Add seed-ids to the _spike_test's message.
 * utils.correlation
