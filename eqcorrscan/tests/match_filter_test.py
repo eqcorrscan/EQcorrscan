@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
+from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.earthworm import Client as EWClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
@@ -652,7 +653,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
                       t1 - 5, t2 + 5) for stachan in template_stachans]
         # Just downloading an hour of data
-        st = client.get_waveforms_bulk(bulk_info)
+        try:
+            st = client.get_waveforms_bulk(bulk_info)
+        except FDSNException:
+            st = Stream()
+            for _bulk in bulk_info:
+                st += client.get_waveforms(*_bulk)
         st.merge()
         st.trim(t1, t2)
         for tr in st:
@@ -962,7 +968,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
                      for stachan in self.template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous day-long data')
-        st = client.get_waveforms_bulk(bulk_info)
+        try:
+            st = client.get_waveforms_bulk(bulk_info)
+        except FDSNException:
+            st = Stream()
+            for _bulk in bulk_info:
+                st += client.get_waveforms(*_bulk)
         st.merge(fill_value='interpolate')
         # Hack day-long templates
         daylong_tribe = self.onehztribe.copy()

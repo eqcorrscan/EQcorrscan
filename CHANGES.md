@@ -28,6 +28,14 @@
   - New option `arctype='SDS'` to read from a SeisComp Data Structure (SDS).
     This option is also available in `utils.clustering.extract_detections` and
     in `utils.archive_read._check_available_data`.
+* utils.catalog_to_dd
+  - Bug-fixes in #424:
+    - only P and S phases are used now (previously spurious amplitude picks 
+      were included in correlations);
+    - Checks for length are done prior to correlations and more helpful error
+      outputs are provided.
+    - Progress is not reported within dt.cc computation
+  - `write_station` now supports writing elevations: #424.
 * utils.plotting
   - Function added (twoD_seismplot) for plotting seismicity (#365).
   

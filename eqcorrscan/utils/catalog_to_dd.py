@@ -8,11 +8,9 @@ Functions to generate hypoDD input files from catalogs.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-import os
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
-from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from multiprocessing import cpu_count, Pool
 
@@ -156,7 +154,7 @@ def _make_sparse_event(event):
         picks=[SparsePick(
             tt=pick.time - origin_time,
             seed_id=pick.waveform_id.get_seed_string(),
-            phase=pick.phase_hint,
+            phase=pick.phase_hint[0],  # Only use P or S hints.
             time_weight=time_weight_dict.get(pick.resource_id, 1.0))
             for pick in event.picks])
     return sparse_event
@@ -170,7 +168,7 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
     """
     seed_pick_ids = seed_pick_ids or {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
-        for pick in event.picks}
+        for pick in event.picks if pick.phase_hint.startswith(("P", "S"))}
     stream_sliced = defaultdict(lambda: Stream())
     for seed_pick_id in seed_pick_ids:
         pick = [pick for pick in event.picks
@@ -186,6 +184,15 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
         elif len(pick) == 0:
             continue
         pick = pick[0]
+        tr = stream.select(id=seed_pick_id.seed_id).merge()
+        if len(tr) == 0:
+            continue
+        else:
+            tr = tr[0]
+        Logger.debug(
+            f"Trimming trace on {tr.id} between {tr.stats.starttime} - "
+            f"{tr.stats.endtime} to {pick.time - pre_pick} - "
+            f"{(pick.time - pre_pick) + extract_len}")
         tr = stream.select(id=seed_pick_id.seed_id).slice(
             starttime=pick.time - pre_pick,
             endtime=(pick.time - pre_pick) + extract_len).merge()
@@ -195,9 +202,13 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
             Logger.error("Multiple traces for {seed_id}".format(
                 seed_id=seed_pick_id.seed_id))
             continue
+        tr = tr[0]
+        if tr.stats.endtime - tr.stats.starttime != extract_len:
+            Logger.warning(f"Insufficient data for {tr.id}, discarding")
+            continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
-             stream_sliced[seed_pick_id.phase_hint] + tr[0]})
+             stream_sliced[seed_pick_id.phase_hint] + tr})
     return stream_sliced
 
 
@@ -215,13 +226,13 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
         stream=stream_dict[master.resource_id.id], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
-    Logger.info(f"The channels provided are: {available_seed_ids}")
+    Logger.debug(f"The channels provided are: {available_seed_ids}")
     master_seed_ids = {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in master.picks if
         pick.phase_hint[0] in "PS" and
         pick.waveform_id.get_seed_string() in available_seed_ids}
-    Logger.info(f"Using channels: {master_seed_ids}")
+    Logger.debug(f"Using channels: {master_seed_ids}")
     # Dictionary of travel-times for master keyed by {station}_{phase_hint}
     master_tts = dict()
     master_origin_time = (master.preferred_origin() or master.origins[0]).time
@@ -237,7 +248,14 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     matched_pre_pick = pre_pick + shift_len
     # We will use this to maintain order
     event_dict = {event.resource_id.id: event for event in catalog}
-    event_ids = list(event_dict.keys())
+    event_ids = set(event_dict.keys())
+    # Check for overlap
+    _stream_event_ids = set(stream_dict.keys())
+    if len(event_ids.difference(_stream_event_ids)):
+        Logger.warning(
+            f"Missing streams for {event_ids.difference(_stream_event_ids)}")
+        # Just use the event ids that we actually have streams for!
+        event_ids = event_ids.intersection(_stream_event_ids)
     matched_streams = {
         event_id: _prepare_stream(
             stream=stream_dict[event_id], event=event_dict[event_id],
@@ -252,6 +270,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             delta = 1.0 / sampling_rate
             _master_stream = master_stream[phase_hint].select(
                 sampling_rate=sampling_rate)
+            if len(_master_stream) == 0:
+                continue
             _matched_streams = dict()
             for key, value in matched_streams.items():
                 _st = value[phase_hint].select(sampling_rate=sampling_rate)
@@ -262,12 +282,24 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     master.resource_id.id, phase_hint))
                 continue
             # Check lengths
-            master_length = Counter(
-                (tr.stats.npts for tr in _master_stream)).most_common(1)[0][0]
+            master_length = [tr.stats.npts for tr in _master_stream]
+            if len(set(master_length)) > 1:
+                Logger.warning("Multiple lengths found - check that you "
+                               "are providing sufficient data")
+            master_length = Counter(master_length).most_common(1)[0][0]
             _master_stream = _master_stream.select(npts=master_length)
             matched_length = Counter(
                 (tr.stats.npts for st in _matched_streams.values()
-                 for tr in st)).most_common(1)[0][0]
+                 for tr in st))
+            if len(matched_length) > 1:
+                Logger.warning("Multiple lengths of stream found - taking "
+                               "the most common. Check that you are "
+                               "providing sufficient data")
+            matched_length = matched_length.most_common(1)[0][0]
+            if matched_length < master_length:
+                Logger.error("Matched streams are shorter than the master, "
+                             "will not correlate")
+                continue
             # Remove empty streams and generate an ordered list of event_ids
             used_event_ids, used_matched_streams = [], []
             for event_id, _matched_stream in _matched_streams.items():
@@ -275,6 +307,18 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                 if len(_matched_stream) > 0:
                     used_event_ids.append(event_id)
                     used_matched_streams.append(_matched_stream)
+            # Check that there are matching seed ids.
+            master_seed_ids = set(tr.id for tr in _master_stream)
+            matched_seed_ids = set(
+                tr.id for st in used_matched_streams for tr in st)
+            if not matched_seed_ids.issubset(master_seed_ids):
+                Logger.warning(
+                    "After checking length there are no matched traces: "
+                    f"master: {master_seed_ids}, matched: {matched_seed_ids}")
+                continue
+            # Do the correlations
+            Logger.debug(
+                f"Correlating channels: {[tr.id for tr in _master_stream]}")
             ccc_out, used_chans = _concatenate_and_correlate(
                 template=_master_stream, streams=used_matched_streams,
                 cores=max_workers)
@@ -293,7 +337,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         continue
                     shift -= shift_len
                     pick = [p for p in event_dict[used_event_id].picks
-                            if p.phase_hint == phase_hint
+                            if p.phase_hint[0] == phase_hint
                             and p.waveform_id.station_code == chan.channel[0]
                             and p.waveform_id.channel_code == chan.channel[1]]
                     pick = sorted(pick, key=lambda p: p.time)[0]
@@ -311,7 +355,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2, phase=phase_hint))
+                               tt2=tt2, weight=cc_max ** 2,
+                               phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
     differential_times = [dt for dt in differential_times_dict.values()
@@ -337,7 +382,8 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         event_id_1=event_id_mapper[master.resource_id],
         event_id_2=event_id_mapper[sparse_event.resource_id])
     for master_pick in master.picks:
-        if master_pick.phase  and master_pick.phase not in "PS":  # pragma: no cover
+        if master_pick.phase and \
+                master_pick.phase not in "PS":  # pragma: no cover
             continue
         matched_picks = [p for p in sparse_event.picks
                          if p.station == master_pick.station
@@ -431,15 +477,22 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
     additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
     if correlation:
-        sub_catalogs = ([ev for i, ev in enumerate(catalog)
-                         if master_filter[i]]
-                        for master_filter in distance_filter)
+        differential_times = {}
         additional_args.update(correlation_kwargs)
-        differential_times = {
-            master.resource_id.id:
-                _compute_dt_correlations(
-                    sub_catalog, master, **additional_args)
-            for sub_catalog, master in zip(sub_catalogs, catalog)}
+        n = len(catalog)
+        for i, master in enumerate(catalog):
+            master_id = master.resource_id.id
+            sub_catalog = [ev for j, ev in enumerate(catalog)
+                           if distance_filter[i][j]]
+            if master_id not in additional_args["stream_dict"].keys():
+                Logger.warning(
+                    f"{master_id} not in waveforms, skipping")
+                continue
+            differential_times.update({
+                master_id: _compute_dt_correlations(
+                    sub_catalog, master, **additional_args)})
+            Logger.info(
+                f"Completed correlations for core event {i} of {n}")
     else:
         # Reformat catalog to sparse catalog
         sparse_catalog = [_make_sparse_event(ev) for ev in catalog]
@@ -637,7 +690,7 @@ def _hypodd_phase_str(event, event_id_mapper):
         Logger.warning("No magnitude")
         magnitude = 0.0
     try:
-        time_error = origin.quality['standard_error']
+        time_error = origin.quality['standard_error'] or 0.0
     except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
@@ -798,7 +851,7 @@ def _hypodd_event_str(event, event_id):
         Logger.warning("No magnitude")
         magnitude = 0.0
     try:
-        time_error = origin.quality['standard_error']
+        time_error = origin.quality['standard_error'] or 0.0
     except (TypeError, AttributeError):
         Logger.warning('No time residual in header')
         time_error = 0.0
@@ -852,16 +905,41 @@ def write_event(catalog, event_id_mapper=None):
 
 # Station.dat functions
 
-def write_station(inventory):
+def write_station(inventory, use_elevation=False, filename="station.dat"):
+    """
+    Write a hypoDD formatted station file.
+
+    :type inventory: obspy.core.Inventory
+    :param inventory:
+        Inventory of stations to write - should include channels if
+        use_elevation=True to incorporate channel depths.
+    :type use_elevation: bool
+    :param use_elevation: Whether to write elevations (requires hypoDD >= 2)
+    :type filename: str
+    :param filename: File to write stations to.
+    """
     station_strings = []
+    formatter = "{sta:<7s} {lat:>9.5f} {lon:>10.5f}"
+    if use_elevation:
+        formatter = " ".join([formatter, "{elev:>5.0f}"])
+
     for network in inventory:
         for station in network:
-            station_strings.append(
-                "{station:<7s} {latitude:6.3f} {longitude:6.3f}".format(
-                    station=station.code,
-                    latitude=station.latitude,
-                    longitude=station.longitude))
-    with open("station.dat", "w") as f:
+            parts = dict(sta=station.code, lat=station.latitude,
+                         lon=station.longitude)
+            if use_elevation:
+                channel_depths = {chan.depth for chan in station}
+                if len(channel_depths) == 0:
+                    Logger.warning("No channels provided, using 0 depth.")
+                    depth = 0.0
+                else:
+                    depth = channel_depths.pop()
+                if len(channel_depths) > 1:
+                    Logger.warning(
+                        f"Multiple depths for {station.code}, using {depth}")
+                parts.update(dict(elev=station.elevation - depth))
+            station_strings.append(formatter.format(**parts))
+    with open(filename, "w") as f:
         f.write("\n".join(station_strings))
 
 

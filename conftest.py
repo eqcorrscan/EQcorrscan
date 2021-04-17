@@ -49,6 +49,7 @@ def clean_up_test_files():
         'test_waveforms.ms',
         'mag_calc.out',
         'station.dat',
+        'station_elev.dat',
         'test_waveform.ms',
         '01-0410-35L.S201309',
         '04-0007-55R.S201601',
@@ -83,7 +84,7 @@ def clean_up_test_directories():
         'test_party_out',
         'test_tar_write',
         'tmp1',
-        'cc_exported,'
+        'cc_exported',
     ]
 
     yield
