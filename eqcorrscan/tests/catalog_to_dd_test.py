@@ -289,13 +289,14 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_write_station_elevations(self):
         """ Include elevations in station.dat: PR #424. """
-        write_station(self.inventory, use_elevation=True)
+        write_station(self.inventory, use_elevation=True,
+                      filename="station_elev.dat")
         test_data_path = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), 'test_data')
         # To do: create this file and test with ph2dt!
         with open(os.path.join(test_data_path, "station_elev.dat"), "r") as f:
             original_station = f.read()
-        with open("station.dat") as f:
+        with open("station_elev.dat") as f:
             station = f.read()
         self.assertEqual(station, original_station)
 

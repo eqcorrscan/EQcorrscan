@@ -905,25 +905,41 @@ def write_event(catalog, event_id_mapper=None):
 
 # Station.dat functions
 
-def write_station(inventory, use_elevation=False):
+def write_station(inventory, use_elevation=False, filename="station.dat"):
+    """
+    Write a hypoDD formatted station file.
+
+    :type inventory: obspy.core.Inventory
+    :param inventory:
+        Inventory of stations to write - should include channels if
+        use_elevation=True to incorporate channel depths.
+    :type use_elevation: bool
+    :param use_elevation: Whether to write elevations (requires hypoDD >= 2)
+    :type filename: str
+    :param filename: File to write stations to.
+    """
     station_strings = []
+    formatter = "{sta:<7s} {lat:>9.5f} {lon:>10.5f}"
+    if use_elevation:
+        formatter = " ".join([formatter, "{elev:>5.0f}"])
+
     for network in inventory:
         for station in network:
+            parts = dict(sta=station.code, lat=station.latitude,
+                         lon=station.longitude)
             if use_elevation:
-                station_strings.append(
-                    """{station:<7s} {latitude:6.3f} {longitude:6.3f}
-                    {elevation:5.0f}""".format(
-                        station=station.code,
-                        latitude=station.latitude,
-                        longitude=station.longitude,
-                        elevation=station.elevation - station[0].depth))
-            else:
-                station_strings.append(
-                    "{station:<7s} {latitude:6.3f} {longitude:6.3f}".format(
-                        station=station.code,
-                        latitude=station.latitude,
-                        longitude=station.longitude))
-    with open("station.dat", "w") as f:
+                channel_depths = {chan.depth for chan in station}
+                if len(channel_depths) == 0:
+                    Logger.warning("No channels provided, using 0 depth.")
+                    depth = 0.0
+                else:
+                    depth = channel_depths.pop()
+                if len(channel_depths) > 1:
+                    Logger.warning(
+                        f"Multiple depths for {station.code}, using {depth}")
+                parts.update(dict(elev=station.elevation - depth))
+            station_strings.append(formatter.format(**parts))
+    with open(filename, "w") as f:
         f.write("\n".join(station_strings))
 
 
