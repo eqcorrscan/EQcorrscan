@@ -83,6 +83,7 @@ def clean_up_test_directories():
         'test_party_out',
         'test_tar_write',
         'tmp1',
+        'cc_exported,'
     ]
 
     yield
