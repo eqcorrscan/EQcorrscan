@@ -766,8 +766,8 @@ class Party(object):
         :param read_detection_catalog:
             Whether to read the detection catalog or not, if False, catalog
             will be regenerated - for large catalogs this can be faster.
-        :type estimate_origins: bool
-        :param estimate_origins:
+        :type estimate_origin: bool
+        :param estimate_origin:
             If True and no catalog is found, or read_detection_catalog is False
             then new events with origins estimated from the template origin
             time will be created.
@@ -795,6 +795,7 @@ class Party(object):
             # Expand wildcards
             filenames = glob.glob(filename)
         for _filename in filenames:
+            Logger.info(f"Reading from {_filename}")
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
                 arc.extractall(path=temp_dir, members=_safemembers(arc))
@@ -822,7 +823,7 @@ class Party(object):
                         f for f in families if
                         f.template.name == family.template.name][0]
                     new_family = False
-                family.detections = _read_family(
+                family.detections += _read_family(
                     fname=family_file, all_cat=all_cat, template=template[0],
                     estimate_origin=estimate_origin)
                 if new_family:

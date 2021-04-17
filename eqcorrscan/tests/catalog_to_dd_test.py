@@ -43,6 +43,19 @@ class TestHelperObjects(unittest.TestCase):
             '#        12        54 0.0\nFOZ       1.982 0.8733 P\n'
             'GCSZ     -1.237 1.0000 S')
 
+    def test_event_pair_spurious_phases(self):
+        """ Make sure that only P and S phases are included. """
+        event_pair = _EventPair(event_id_1=12, event_id_2=54)
+        with self.assertRaises(AssertionError):
+            event_pair.obs = [
+                _DTObs(station="FOZ", tt1=3.268, tt2=1.2857650,
+                       weight=0.873265, phase="P"),
+                _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                       weight=1.0, phase="S"),
+                _DTObs(station="GCSZ", tt1=0.263, tt2=1.50,
+                       weight=1.0, phase="IAML"),
+            ]
+
 
 class TestCatalogMethods(unittest.TestCase):
     @classmethod
@@ -82,7 +95,7 @@ class TestCatalogMethods(unittest.TestCase):
         picked_stations = set(picked_stations)
         inv_bulk = [(sta.network, sta.station, sta.location, "HH?",
                      starttime, endtime) for sta in picked_stations]
-        inventory = client.get_stations_bulk(inv_bulk, level="station")
+        inventory = client.get_stations_bulk(inv_bulk, level="channel")
 
         cls.streams = streams
         cls.catalog = catalog
@@ -212,6 +225,45 @@ class TestCatalogMethods(unittest.TestCase):
                             abs(obs.tt2 - cat_obs.tt2), shift_len)
                         self.assertLessEqual(obs.weight, 1.0)
 
+    def test_compute_correlations_strange_lengths(self):
+        """ Check that streams with too short data are unused. PR #424 """
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        cat_dict = {ev.resource_id.id: ev for ev in short_cat}
+        # Need to copy the stream because we are going to trim it!
+        stream_dict = {event.resource_id.id: stream.copy()
+                       for event, stream in zip(short_cat, self.streams)}
+        # Trim to lengths shorter than required.
+        shuffler = [-.5, -3, -5, -4, 1, 3, 4, 8, 5, 10]
+        keys = list(stream_dict.keys())  # Need to retain order for testing
+        for key, shuffle in zip(keys, shuffler):
+            st = stream_dict[key]
+            ev = cat_dict[key]
+            for pick in ev.picks:
+                if pick.phase_hint.startswith("P"):
+                    _st = st.select(station=pick.waveform_id.station_code)
+                    if len(_st) == 0:
+                        continue
+                    _st.trim(pick.time + shuffle, _st[0].stats.endtime)
+        diff_times, mapper = compute_differential_times(
+                catalog=short_cat, correlation=True, event_id_mapper=None,
+                max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+                extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+                interpolate=False, include_master=True)
+
+        self.assertEqual(len(diff_times[keys[-1]]), 0)
+        self.assertEqual(len(diff_times[keys[-2]]), 0)
+        # There should still be all the events.
+        self.assertEqual(len(diff_times), len(short_cat))
+        for master_id, linked in diff_times.items():
+            for link in linked:
+                if link.event_id_2 == link.event_id_1:
+                    # This is the event matched with itself, check that tt1
+                    # and tt2 are the same.
+                    for obs in link.obs:
+                        self.assertTrue(
+                            np.allclose(obs.tt1, obs.tt2, atol=0.000001))
+
     def test_write_catalog(self):
         # Contents checked elsewhere
         write_catalog(catalog=self.catalog, event_id_mapper=None,
@@ -267,6 +319,19 @@ class TestCatalogMethods(unittest.TestCase):
         with open(os.path.join(test_data_path, "station.dat"), "r") as f:
             original_station = f.read()
         with open("station.dat") as f:
+            station = f.read()
+        self.assertEqual(station, original_station)
+
+    def test_write_station_elevations(self):
+        """ Include elevations in station.dat: PR #424. """
+        write_station(self.inventory, use_elevation=True,
+                      filename="station_elev.dat")
+        test_data_path = os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data')
+        # To do: create this file and test with ph2dt!
+        with open(os.path.join(test_data_path, "station_elev.dat"), "r") as f:
+            original_station = f.read()
+        with open("station_elev.dat") as f:
             station = f.read()
         self.assertEqual(station, original_station)
 
