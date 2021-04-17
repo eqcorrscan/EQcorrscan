@@ -227,7 +227,42 @@ class TestCatalogMethods(unittest.TestCase):
 
     def test_compute_correlations_strange_lengths(self):
         """ Check that streams with too short data are unused. PR #424 """
-        self.assertEqual(True, False)  # To write!
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        cat_dict = {ev.resource_id.id: ev for ev in short_cat}
+        # Need to copy the stream because we are going to trim it!
+        stream_dict = {event.resource_id.id: stream.copy()
+                       for event, stream in zip(short_cat, self.streams)}
+        # Trim to lengths shorter than required.
+        shuffler = [-.5, -3, -5, -4, 1, 3, 4, 8, 5, 10]
+        keys = list(stream_dict.keys())  # Need to retain order for testing
+        for key, shuffle in zip(keys, shuffler):
+            st = stream_dict[key]
+            ev = cat_dict[key]
+            for pick in ev.picks:
+                if pick.phase_hint.startswith("P"):
+                    _st = st.select(station=pick.waveform_id.station_code)
+                    if len(_st) == 0:
+                        continue
+                    _st.trim(pick.time + shuffle, _st[0].stats.endtime)
+        diff_times, mapper = compute_differential_times(
+                catalog=short_cat, correlation=True, event_id_mapper=None,
+                max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+                extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+                interpolate=False, include_master=True)
+
+        self.assertEqual(len(diff_times[keys[-1]]), 0)
+        self.assertEqual(len(diff_times[keys[-2]]), 0)
+        # There should still be all the events.
+        self.assertEqual(len(diff_times), len(short_cat))
+        for master_id, linked in diff_times.items():
+            for link in linked:
+                if link.event_id_2 == link.event_id_1:
+                    # This is the event matched with itself, check that tt1
+                    # and tt2 are the same.
+                    for obs in link.obs:
+                        self.assertTrue(
+                            np.allclose(obs.tt1, obs.tt2, atol=0.000001))
 
     def test_write_catalog(self):
         # Contents checked elsewhere
