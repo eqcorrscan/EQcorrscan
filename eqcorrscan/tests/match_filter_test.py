@@ -1044,15 +1044,26 @@ class TestMatchObjectLight(unittest.TestCase):
 
     def test_party_io_wildcards(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_walrus.tgz'):
-            os.remove('test_party_walrus.tgz')
+        party_0 = self.party.copy()
+        for f in party_0:
+            for d in f:
+                detect_time = d.detect_time + 3600
+                d.detect_time = detect_time
+                d.id = (''.join(d.template_name.split(' ')) + '_' +
+                        detect_time.strftime('%Y%m%d_%H%M%S%f'))
+
+        for f in ["0", "1"]:
+            if os.path.isfile(f'test_party_walrus_{f}.tgz'):
+                os.remove(f'test_party_walrus_{f}.tgz')
         try:
-            self.party.write(filename='test_party_walrus')
+            self.party.write(filename='test_party_walrus_0')
+            party_0.write(filename='test_party_walrus_1')
             party_back = read_party(fname='test_party_w*.tgz')
-            self.assertEqual(self.party, party_back)
+            self.assertEqual(self.party + party_0, party_back)
         finally:
-            if os.path.isfile('test_party_walrus.tgz'):
-                os.remove('test_party_walrus.tgz')
+            for f in ["0", "1"]:
+                if os.path.isfile(f'test_party_walrus_{f}.tgz'):
+                    os.remove(f'test_party_walrus_{f}.tgz')
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
