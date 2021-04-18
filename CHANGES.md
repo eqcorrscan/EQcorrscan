@@ -22,6 +22,9 @@
   - Added useful information to doc-string regarding method and meaning of
     residuals
   - Changed the number of magnitudes used to an int (from a string!?)
+* utils.mag_calc.relative_magnitude:
+  - Refactor so that `min_cc` is used regardless of whether 
+    `weight_by_correlation` is set. See issue #455.
 * utils.archive_read
   - Add support for wildcard-comparisons in the list of requested stations and
     channels.
