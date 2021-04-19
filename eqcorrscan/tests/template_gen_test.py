@@ -10,6 +10,8 @@ import logging
 import inspect
 import copy
 import shutil
+from functools import reduce
+from operator import add
 
 from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
@@ -17,11 +19,45 @@ from obspy.core.event import Catalog, Event, Origin, Pick, WaveformStreamID
 
 from eqcorrscan.core import template_gen as template_gen_module
 from eqcorrscan.core.template_gen import (
-    _group_events, extract_from_stack, _template_gen, template_gen)
+    _group_events, extract_from_stack, _template_gen, template_gen,
+    TemplateGenError)
 from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.utils.catalog_utils import filter_picks
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
+
+
+class _StreamTestClient:
+    """A simple waveform client using a stream."""
+
+    def __init__(self, st=None):
+        self.st = st or read()
+
+    def get_waveforms(self, network, station, location, channel,
+                      starttime, endtime):
+        """Get waveforms contained by stream."""
+        out = self.st.copy()
+        st_trimed = out.trim(starttime=starttime, endtime=endtime)
+        st_filtered = st_trimed.select(network=network, station=station,
+                                       location=location, channel=channel)
+        return st_filtered
+
+    def get_default_catalog(self):
+        """Get a catalog with picks from the default stream."""
+        pick1 = Pick(
+            time=UTCDateTime(2009, 8, 24, 0, 20, 7, 696381),
+            waveform_id=WaveformStreamID(seed_string='BW.RJOB..EHZ'),
+            phase_hint='P'
+        )
+        origin = Origin(
+            time=UTCDateTime(2009, 8, 24, 0, 20, 6, 410034),
+            longitude=0,
+            latitude=0,
+            depth=0,
+        )
+        event = Event(picks=[pick1], origins=[origin])
+        return Catalog(events=[event])
+
 
 
 class TestTemplateGeneration(unittest.TestCase):
@@ -302,6 +338,28 @@ class TestTemplateGeneration(unittest.TestCase):
             highcut=9.0, samp_rate=20.0, filt_order=3, length=2, prepick=0.1,
             swin='S')
         self.assertEqual(len(templates), 1)
+
+    def test_from_client(self):
+        """Test for using a waveform client not related to obspy's Clients."""
+        client = _StreamTestClient()
+        cat = client.get_default_catalog()
+        temps = template_gen('from_client', client_id=client, catalog=cat,
+                             highcut=None, lowcut=None, filt_order=4,
+                             samp_rate=100, prepick=0.1, length=10,
+                             process_len=20, data_pad=5)
+        self.assertEqual(len(temps), 1)  # there should be one template stream
+        self.assertEqual(len(temps[0]), 1)  # with one trace
+        self.assertGreater(len(temps[0][0].data), 1)  # with some data
+
+    def test_bad_client(self):
+        """Ensure passing a non-client raises."""
+        client = _StreamTestClient()
+        cat = client.get_default_catalog()
+        with self.assertRaises(TemplateGenError):
+            template_gen('from_client', client_id=cat, catalog=cat,
+                         highcut=None, lowcut=None, filt_order=4,
+                         samp_rate=100, prepick=0.1, length=10,
+                         process_len=20, data_pad=5)
 
 
 class TestEdgeGen(unittest.TestCase):
