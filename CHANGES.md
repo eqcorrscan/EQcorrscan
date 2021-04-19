@@ -1,4 +1,4 @@
-## Current
+## 0.4.3
 * core.match_filter
  - match_filter:
    - Provide option of exporting the cross-correlation sums for additional later
