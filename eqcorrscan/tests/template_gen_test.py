@@ -10,8 +10,6 @@ import logging
 import inspect
 import copy
 import shutil
-from functools import reduce
-from operator import add
 
 from obspy import read, UTCDateTime, read_events
 from obspy.clients.fdsn import Client
