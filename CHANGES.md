@@ -36,6 +36,13 @@
       outputs are provided.
     - Progress is not reported within dt.cc computation
   - `write_station` now supports writing elevations: #424.
+* utils.clustering
+  - For `cluster`, `distance_matrix` and `cross_chan_correlation`, implemented
+    full support for `shift_len != 0`. The latter two functions now return, in
+    addition to the distance-matrix, a shift-matrix (both functions) and a
+    shift-dictionary (for `distance_matrix`). New option for shifting streams
+    as a whole or letting traces shift individually
+    (`allow_individual_trace_shifts=True`).
 * utils.plotting
   - Function added (twoD_seismplot) for plotting seismicity (#365).
   
