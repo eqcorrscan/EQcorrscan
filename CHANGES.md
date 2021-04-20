@@ -18,6 +18,9 @@
   - Added option to set minimum CC threshold individually for detections based
     on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
   - Added the ability of saving correlation data of the lag_calc.
+* core.template_gen:
+  - Added support for generating templates from any object with a
+    get_waveforms method. See #459.
 * utils.mag_calc.calc_b_value:
   - Added useful information to doc-string regarding method and meaning of
     residuals
