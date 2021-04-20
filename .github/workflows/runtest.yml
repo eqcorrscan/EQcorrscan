@@ -138,10 +138,12 @@ jobs:
         run: |
           py.test -n 2 -m "network" --cov-report=xml
       - name: run tutorials
+        if: always()
         shell: bash -l {0}
         run: |
           py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-report=xml --cov-append
       - name: run superslow tests
+        if: always()
         shell: bash -l {0}
         run: |
           py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
