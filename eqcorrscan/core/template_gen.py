@@ -148,8 +148,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
         - `from_client` requires:
             :param str client_id:
-                string passable by obspy to generate Client, or a Client
-                instance
+                string passable by obspy to generate Client, or any object
+                with a `get_waveforms` method, including a Client instance.
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
@@ -251,10 +251,16 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             catalog=catalog, process_len=process_len, template_length=length,
             data_pad=data_pad)
         if method == 'from_client':
-            if isinstance(kwargs.get('client_id'), str):
-                client = FDSNClient(kwargs.get('client_id', None))
+            client_id = kwargs.get('client_id', None)
+            if hasattr(client_id, 'get_waveforms'):
+                client = client_id
+            elif isinstance(client_id, str):
+                client = FDSNClient(client_id)
             else:
-                client = kwargs.get('client_id', None)
+                raise NotImplementedError(
+                    "client_id must be an FDSN client string, or a Client "
+                    "with a get_waveforms method"
+                )
             available_stations = []
         else:
             client = SeisHubClient(kwargs.get('url', None), timeout=10)
@@ -517,9 +523,13 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
             else:
                 channel_code = pick.waveform_id.channel_code
+            if pick.waveform_id.station_code is None:
+                Logger.error("No station code for pick, skipping")
+                continue
             all_waveform_info.append((
-                pick.waveform_id.network_code, pick.waveform_id.station_code,
-                channel_code, pick.waveform_id.location_code))
+                pick.waveform_id.network_code or "*",
+                pick.waveform_id.station_code,
+                channel_code, pick.waveform_id.location_code or "*"))
     starttime = UTCDateTime(
         catalog[0].origins[0].time - data_pad)
     endtime = starttime + process_len

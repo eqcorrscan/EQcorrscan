@@ -123,8 +123,15 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :param plotvar: Turn plotting on or off.
 
     :rtype: list
-    :return: List of tuples of (completeness, b-value, residual,\
-        number of magnitudes used)
+    :return:
+        List of tuples of (completeness, b-value, residual, number of
+        magnitudes used)
+
+    .. Note::
+        High "residuals" indicate better fit. Residuals are calculated
+        according to the Wiemer & Wyss 2000, Minimum Magnitude of Completeness
+        in Earthquake Catalogs: Examples from Alaska, the Western United
+        States, and Japan, BSSA.
 
     .. rubric:: Example
 
@@ -138,12 +145,12 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     >>> # We can set a maximum magnitude:
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False, max_mag=5)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     """
     b_values = []
@@ -182,7 +189,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
                            for i in range(len(complete_freq))]) * 100) /
                    np.sum(complete_freq))
-        b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
+        b_values.append((m_c, abs(fit[0][0]), r, len(complete_mags)))
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],
@@ -542,13 +549,16 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
 
     See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
     on how relative amplitudes are calculated. To compute relative magnitudes
-    from relative amplitudes this function weights the amplitude ratios by
+    from relative amplitudes this function can weight the amplitude ratios by
     the cross-correlation of the two events. The relation used is similar to
-    Schaff and Richards (2014) and is:
+    Schaff and Richards (2014), equation 4 and is:
 
     .. math::
 
         \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+
+    If you decide to use this function you should definitely read the paper
+    to understand what you can use this for and cite the paper!
 
     :type st1: `obspy.core.stream.Stream`
     :param st1: Stream for event1
@@ -614,28 +624,29 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
             event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
         pick2 = _get_pick_for_station(
             event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
-        if weight_by_correlation:
-            if compute_correlations:
-                cc = correlate(
-                    tr1.slice(
-                        starttime=pick1.time + signal_window[0],
-                        endtime=pick1.time + signal_window[1]),
-                    tr2.slice(
-                        starttime=pick2.time + signal_window[0],
-                        endtime=pick2.time + signal_window[1]),
-                    shift=int(shift * tr1.stats.sampling_rate))
-                cc = cc.max()
-                correlations.update({seed_id: cc})
-            else:
-                cc = correlations.get(seed_id, 0.0)
-            if cc < min_cc:
-                continue
+        if compute_correlations:
+            cc = correlate(
+                tr1.slice(
+                    starttime=pick1.time + signal_window[0],
+                    endtime=pick1.time + signal_window[1]),
+                tr2.slice(
+                    starttime=pick2.time + signal_window[0],
+                    endtime=pick2.time + signal_window[1]),
+                shift=int(shift * tr1.stats.sampling_rate))
+            cc = cc.max()
+            correlations.update({seed_id: cc})
         else:
+            cc = correlations.get(seed_id, 0.0)
+        if cc < min_cc:
+            Logger.info(
+                f"Correlation of {cc} less than {min_cc} for {seed_id}, "
+                "skipping.")
+            continue
+        if not weight_by_correlation:
             cc = 1.0
         # Weight and add to relative_magnitudes
         rel_mag = math.log10(amplitude_ratio) * cc
-        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
-            tr1.id, rel_mag))
+        Logger.info(f"Channel: {seed_id} Magnitude change {rel_mag:.2f}")
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
         return relative_magnitudes, correlations
