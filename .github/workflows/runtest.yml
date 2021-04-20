@@ -75,7 +75,6 @@ jobs:
           py.test -m "serial and not network" --cov-report=xml --cov-append
 
       - name: run slow tests
-        if: always()
         shell: bash -l {0}
         run: |
           if: always
