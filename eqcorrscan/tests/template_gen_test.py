@@ -353,7 +353,7 @@ class TestTemplateGeneration(unittest.TestCase):
         """Ensure passing a non-client raises."""
         client = _StreamTestClient()
         cat = client.get_default_catalog()
-        with self.assertRaises(TemplateGenError):
+        with self.assertRaises(NotImplementedError):
             template_gen('from_client', client_id=cat, catalog=cat,
                          highcut=None, lowcut=None, filt_order=4,
                          samp_rate=100, prepick=0.1, length=10,
