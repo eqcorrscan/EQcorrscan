@@ -53,19 +53,19 @@ jobs:
           conda info -a
           conda list
 
-      - name: run main test suite
-        shell: bash -l {0}
-        run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-      - name: run slow tests
-        shell: bash -l {0}
-        run: |
-          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
       - name: run serial test
         shell: bash -l {0}
         run: |
           export OMP_NUM_THREADS=2
           py.test -m "serial and not network" --cov-report=xml --cov-append
+      - name: run slow tests
+        shell: bash -l {0}
+        run: |
+          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
+      - name: run main test suite
+        shell: bash -l {0}
+        run: |
+          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
 
       - name: upload coverage
         uses: codecov/codecov-action@v1
