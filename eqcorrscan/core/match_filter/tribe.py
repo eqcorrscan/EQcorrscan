@@ -986,8 +986,8 @@ class Tribe(object):
 
             - `from_client` requires:
                 :param str client_id:
-                    string passable by obspy to generate Client, or a Client
-                    instance
+                    string passable by obspy to generate Client, or any object
+                    with a `get_waveforms` method, including a Client instance.
                 :param `obspy.core.event.Catalog` catalog:
                     Catalog of events to generate template for
                 :param float data_pad: Pad length for data-downloads in seconds

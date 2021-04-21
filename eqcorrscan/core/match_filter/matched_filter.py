@@ -385,7 +385,7 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
                  extract_detections=False, arg_check=True, full_peaks=False,
-                 peak_cores=None, spike_test=True, copy_data=True, 
+                 peak_cores=None, spike_test=True, copy_data=True,
                  export_cccsums=False, **kwargs):
     """
     Main matched-filter detection function.
