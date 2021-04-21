@@ -502,11 +502,16 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         Note that noise and signal windows are relative to pick-times, so using
         an S-pick might result in a noise window including P-energy.
 
-    :rtype: dict
-    :return: Dictionary of relative amplitudes keyed by seed-id
+    :rtype: dict, dict, dict
+    :return:
+        Dictionary of relative amplitudes keyed by seed-id
+        Dictionary of signal-to-noise ratios for st1
+        Dictionary of signal-to-noise ratios for st2
     """
     seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
     amplitudes = {}
+    snrs_1 = {}
+    snrs_2 = {}
     for seed_id in seed_ids:
         noise1, signal1, std1 = _get_signal_and_noise(
             stream=st1, event=event1, signal_window=signal_window,
@@ -535,7 +540,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
             seed_id, ratio))
         amplitudes.update({seed_id: ratio})
-    return amplitudes
+        snrs_1.update({seed_id: snr1})
+        snrs_2.update({seed_id: snr2})
+    return amplitudes, snrs_1, snrs_2
 
 
 # Magnitude estimation functions
@@ -543,7 +550,7 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
 def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
                        signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
                        use_s_picks=False, correlations=None, shift=.2,
-                       return_correlations=False, weight_by_correlation=True):
+                       return_correlations=False, correct_mag_bias=True):
     """
     Compute the relative magnitudes between two events.
 
@@ -555,7 +562,8 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
 
     .. math::
 
-        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} + \\log{
+            \\frac{(1+\\frac{1/snr_x^2})}{1+\\frac{1/snr_y^2}}\\times CC} 
 
     If you decide to use this function you should definitely read the paper
     to understand what you can use this for and cite the paper!
@@ -598,9 +606,11 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :type return_correlations: bool
     :param return_correlations:
         If true will also return maximum correlations as a dictionary.
-    :type weight_by_correlation: bool
-    :param weight_by_correlation:
-        Whether to weight the magnitude by the correlation or not.
+    :type correct_mag_bias: bool
+    :param correct_mag_bias:
+        Whether to correct for the magnitude-bias introduced by cc<1 and the
+        presence of noise (i.e., SNR << ∞). Without bias-correction, the
+        relative magnitudes are simple L2-norm ratio relative magnitudes.
 
     :rtype: dict
     :return: Dictionary of relative magnitudes keyed by seed-id
@@ -613,7 +623,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     if correlations is None:
         correlations = {}
         compute_correlations = True
-    relative_amplitudes = relative_amplitude(
+    relative_amplitudes, snrs_1, snrs_2 = relative_amplitude(
         st1=st1, st2=st2, event1=event1, event2=event2,
         noise_window=noise_window, signal_window=signal_window,
         min_snr=min_snr, use_s_picks=use_s_picks)
@@ -642,10 +652,16 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
                 f"Correlation of {cc} less than {min_cc} for {seed_id}, "
                 "skipping.")
             continue
-        if not weight_by_correlation:
+        snr_x = snrs_1[seed_id]
+        snr_y = snrs_2[seed_id]
+        if not correct_mag_bias:
             cc = 1.0
-        # Weight and add to relative_magnitudes
-        rel_mag = math.log10(amplitude_ratio) * cc
+            snr_x = 1.0
+            snr_y = 1.0
+        # Correct for CC and SNR-bias and add to relative_magnitudes
+        # This is equation 10 from Schaff & Richards 2014:
+        rel_mag = math.log10(amplitude_ratio) + math.log10(
+            math.sqrt( (1 + 1 / snr_y**2) / (1 + 1 / snr_x**2) ) * cc)
         Logger.info(f"Channel: {seed_id} Magnitude change {rel_mag:.2f}")
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
