@@ -563,7 +563,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     .. math::
 
         \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} + \\log{
-            \\frac{(1+\\frac{1/snr_x^2})}{1+\\frac{1/snr_y^2}}\\times CC} 
+            \\frac{(1+\\frac{1/snr_x^2})}{1+\\frac{1/snr_y^2}}\\times CC}
 
     If you decide to use this function you should definitely read the paper
     to understand what you can use this for and cite the paper!
@@ -661,7 +661,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
         # Correct for CC and SNR-bias and add to relative_magnitudes
         # This is equation 10 from Schaff & Richards 2014:
         rel_mag = math.log10(amplitude_ratio) + math.log10(
-            math.sqrt( (1 + 1 / snr_y**2) / (1 + 1 / snr_x**2) ) * cc)
+            math.sqrt((1 + 1 / snr_y**2) / (1 + 1 / snr_x**2)) * cc)
         Logger.info(f"Channel: {seed_id} Magnitude change {rel_mag:.2f}")
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
