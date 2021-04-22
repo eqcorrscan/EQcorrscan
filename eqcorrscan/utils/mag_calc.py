@@ -563,7 +563,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     .. math::
 
         \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} + \\log{
-            \\frac{(1+\\frac{1/snr_x^2})}{1+\\frac{1/snr_y^2}}\\times CC}
+            \\frac{(1+\\frac{1}{snr_x^2})}{1+\\frac{1}{snr_y^2}}\\times CC}
 
     If you decide to use this function you should definitely read the paper
     to understand what you can use this for and cite the paper!
@@ -610,7 +610,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :param correct_mag_bias:
         Whether to correct for the magnitude-bias introduced by cc<1 and the
         presence of noise (i.e., SNR << ∞). Without bias-correction, the
-        relative magnitudes are simple L2-norm ratio relative magnitudes.
+        relative magnitudes are simple L2-norm-ratio relative magnitudes.
 
     :rtype: dict
     :return: Dictionary of relative magnitudes keyed by seed-id
@@ -655,9 +655,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
         snr_x = snrs_1[seed_id]
         snr_y = snrs_2[seed_id]
         if not correct_mag_bias:
-            cc = 1.0
-            snr_x = 1.0
-            snr_y = 1.0
+            cc = snr_x = snr_y = 1.0
         # Correct for CC and SNR-bias and add to relative_magnitudes
         # This is equation 10 from Schaff & Richards 2014:
         rel_mag = math.log10(amplitude_ratio) + math.log10(
