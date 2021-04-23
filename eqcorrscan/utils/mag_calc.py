@@ -424,15 +424,13 @@ def _snr(tr, noise_window, signal_window):
 def _get_signal_and_noise(stream, event, seed_id, noise_window,
                           signal_window, use_s_picks):
     """
-    Get noise and signal amplitudes and signal standard deviation for an event
-    on a specific channel.
-
-    Noise and signal amplitude are calculated from the L2-norms of the windows,
-    normalized by the number of sampled in the respective window.
+    Get noise and signal RMS-amplitudes and signal standard deviation for an
+    event on a specific channel.
 
     (Until v.0.4.3, this function calculated noise amplitude as the RMS
-    amplitude of the noise window and signal amplitude is the maximum amplitude
-    in the signal window.)
+    amplitude of the noise window and signal amplitude as the maximum amplitude
+    in the signal window. This was changed to only RMS amplitudes to align it
+    with the methodology in Schaff & Richards 2014-paper.)
     """
     from eqcorrscan.core.template_gen import _rms
 
@@ -446,10 +444,10 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     if len(tr) == 0:
         return None, None, None
     tr = tr[0]
-    noise_data = tr.slice(
+    noise = tr.slice(
         starttime=pick.time + noise_window[0],
         endtime=pick.time + noise_window[1]).data
-    noise_amp = np.linalg.norm(noise_data, ord=2) / len(noise_data)
+    noise_amp = _rms(noise)
     if np.isnan(noise_amp):
         noise_amp = None
     signal = tr.slice(
@@ -460,7 +458,7 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
             pick.time + signal_window[0], pick.time + signal_window[1]))
         Logger.debug(tr)
         return noise_amp, None, None
-    signal_amp = np.linalg.norm(signal, ord=2) / len(signal)
+    signal_amp = _rms(signal)
     return noise_amp, signal_amp, signal.std()
 
 
@@ -481,8 +479,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
     from st2.  The standard deviation of the amplitudes is computed in the
     signal window given. If the ratio of amplitudes between the signal window
     and the noise window is below `min_snr` then no result is returned for that
-    trace. The SNR here is defined as the ratio of the L2-norms of signal and
-    noise, respectively. The Windows are computed relative to the first pick
+    trace. The SNR here is defined as the ratio of RMS-amplitudes of signal
+    and noise (equal to ratio of L2-norms of signal and noise, but normalized
+    for signal length). The Windows are computed relative to the first pick
     for that station.
 
     If one stream has insufficient data to estimate noise amplitude, the noise
