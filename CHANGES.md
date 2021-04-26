@@ -1,3 +1,8 @@
+## Current
+* utils.mag_calc:
+ - relative_magnitude: implemented full magnitude bias-correction for CC and SNR
+ - relative_amplitude: returns dicts for SNR measurements
+
 ## 0.4.3
 * core.match_filter
  - match_filter:
