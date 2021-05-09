@@ -18,6 +18,7 @@ import shutil
 import tarfile
 import tempfile
 import logging
+import multiprocessing
 from os.path import join
 
 import numpy as np
@@ -559,7 +560,16 @@ class Party(object):
         """
         if self.__len__() == 0:
             return self
+
+        if min_chans > 0:
+            self.min_chans(min_chans - 1)
+            # min_chans uses explicit >, this uses >=
+
         all_detections = [d for fam in self.families for d in fam.detections]
+
+        if len(all_detections) == 0:
+            return Party()
+
         catalog = None
         if hypocentral_separation:
             catalog = Catalog([d.event for fam in self.families
@@ -569,10 +579,6 @@ class Party(object):
                                "hypocentral separation")
                 catalog = None
 
-        if min_chans > 0:
-            for d in all_detections.copy():
-                if d.no_chans < min_chans:
-                    all_detections.remove(d)
         if len(all_detections) == 0:
             return Party()
 
@@ -657,7 +663,8 @@ class Party(object):
         return copy.deepcopy(self)
 
     def write(self, filename, format='tar', write_detection_catalog=True,
-              catalog_format="QUAKEML", overwrite=False):
+              catalog_format="QUAKEML", overwrite=False,
+              max_events_per_file=1000):
         """
         Write Family out, select output format.
 
@@ -682,6 +689,11 @@ class Party(object):
         :param overwrite:
             Specifies whether detection-files are overwritten if they exist
             already. By default, no files are overwritten.
+        :type max_events_per_file: int
+        :param max_events_per_file:
+            Maximum events to write per QuakeML file. When this number is
+            exceeded a new file will be written to the tar archive - allows
+            for parallel IO.
 
         .. NOTE::
             csv format will write out detection objects, all other
@@ -735,11 +747,16 @@ class Party(object):
                     all_cat = Catalog()
                     for family in self.families:
                         all_cat += family.catalog
-                    if not len(all_cat) == 0:
-                        all_cat.write(
-                            join(temp_dir, 'catalog.{0}'.format(
-                                CAT_EXT_MAP[catalog_format])),
+                    i, j = 0, 0
+                    while i < len(all_cat):
+                        sub_catalog = Catalog(
+                            all_cat[i:i + max_events_per_file])
+                        sub_catalog.write(
+                            join(temp_dir, 'catalog.{0}.{1}'.format(
+                                j, CAT_EXT_MAP[catalog_format])),
                             format=catalog_format)
+                        j += 1
+                        i += max_events_per_file
                 for i, family in enumerate(self.families):
                     Logger.debug('Writing family %i' % i)
                     name = family.template.name + '_detections.csv'
@@ -754,7 +771,7 @@ class Party(object):
         return self
 
     def read(self, filename=None, read_detection_catalog=True,
-             estimate_origin=True):
+             estimate_origin=True, max_processes=1):
         """
         Read a Party from a file.
 
@@ -771,6 +788,10 @@ class Party(object):
             If True and no catalog is found, or read_detection_catalog is False
             then new events with origins estimated from the template origin
             time will be created.
+        :type max_processes: int
+        :param max_processes:
+            Maximum number of processes to use for reading files in parallel.
+            Defaults to single-threaded.
 
         .. rubric:: Example
 
@@ -779,8 +800,9 @@ class Party(object):
         """
         from eqcorrscan.core.match_filter.tribe import Tribe
 
-        tribe = Tribe()
-        families = []
+        tribe, families = Tribe(), []
+        max_processes = max_processes or multiprocessing.cpu_count()
+
         if filename is None:
             # If there is no filename given, then read the example.
             filename = os.path.join(
@@ -794,6 +816,8 @@ class Party(object):
         else:
             # Expand wildcards
             filenames = glob.glob(filename)
+        if len(filenames) == 0:
+            raise FileNotFoundError(f"{filename} does not exist")
         for _filename in filenames:
             Logger.info(f"Reading from {_filename}")
             with tarfile.open(_filename, "r:*") as arc:
@@ -803,17 +827,32 @@ class Party(object):
             # files then we can just read in extra templates as needed.
             # Read in families here!
             party_dir = glob.glob(temp_dir + os.sep + '*')[0]
-            tribe._read_from_folder(dirname=party_dir)
-            det_cat_file = glob.glob(os.path.join(party_dir, "catalog.*"))
-            if len(det_cat_file) != 0 and read_detection_catalog:
-                try:
-                    all_cat = read_events(det_cat_file[0])
-                except TypeError as e:
-                    Logger.error(e)
-                    pass
+            Logger.info("Reading tribe")
+            tribe._read_from_folder(
+                dirname=party_dir, max_processes=max_processes)
+            det_cat_files = glob.glob(os.path.join(party_dir, "catalog.*"))
+            Logger.info("Reading detection catalog")
+            if len(det_cat_files) != 0 and read_detection_catalog:
+                if max_processes > 1:
+                    with multiprocessing.Pool(processes=max_processes) as pool:
+                        _futures = pool.imap_unordered(
+                            _read_catalog_pass_error, det_cat_files,
+                            chunksize=(len(det_cat_files) // max_processes) + (
+                                len(det_cat_files) % max_processes))
+                        sub_catalogs = [cat for cat in _futures]
+                else:
+                    sub_catalogs = [_read_catalog_pass_error(df)
+                                    for df in det_cat_files]
+                all_cat_dict = {
+                    e.resource_id.id.split('/')[-1]: e
+                    for cat in sub_catalogs
+                    for e in cat}
             else:
-                all_cat = Catalog()
+                all_cat_dict = dict()
+            Logger.info("Reconstructing families")
             for family_file in glob.glob(join(party_dir, '*_detections.csv')):
+                Logger.debug(
+                    f"Working on family file {family_file.split('/')[-1]}")
                 template = [
                     t for t in tribe if _templates_match(t, family_file)]
                 family = Family(template=template[0] or Template())
@@ -824,8 +863,8 @@ class Party(object):
                         f.template.name == family.template.name][0]
                     new_family = False
                 family.detections += _read_family(
-                    fname=family_file, all_cat=all_cat, template=template[0],
-                    estimate_origin=estimate_origin)
+                    fname=family_file, all_cat_dict=all_cat_dict,
+                    template=template[0], estimate_origin=estimate_origin)
                 if new_family:
                     families.append(family)
             shutil.rmtree(temp_dir)
@@ -1090,7 +1129,8 @@ class Party(object):
         return self
 
 
-def read_party(fname=None, read_detection_catalog=True, *args, **kwargs):
+def read_party(fname=None, read_detection_catalog=True, max_processes=1,
+               *args, **kwargs):
     """
     Read detections and metadata from a tar archive.
 
@@ -1102,13 +1142,27 @@ def read_party(fname=None, read_detection_catalog=True, *args, **kwargs):
     :param read_detection_catalog:
         Whether to read the detection catalog or not, if False, catalog
         will be regenerated - for large catalogs this can be faster.
+    :type max_processes: int
+    :param max_processes:
+        Maximum number of processes to use for reading files in parallel.
+        Defaults to single-threaded.
 
     :return: :class:`eqcorrscan.core.match_filter.Party`
     """
     party = Party()
     party.read(filename=fname, read_detection_catalog=read_detection_catalog,
-               *args, **kwargs)
+               max_processes=max_processes, *args, **kwargs)
     return party
+
+
+def _read_catalog_pass_error(filename):
+    Logger.debug(f"Reading {filename}")
+    try:
+        cat = read_events(filename)
+    except TypeError as e:
+        Logger.error(e)
+        cat = Catalog()
+    return cat
 
 
 if __name__ == "__main__":

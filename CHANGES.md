@@ -1,3 +1,14 @@
+## Current
+* utils.mag_calc:
+ - relative_magnitude: implemented full magnitude bias-correction for CC and SNR
+ - relative_amplitude: returns dicts for SNR measurements
+* core.match_filter.party:
+ - Implement parallel reading, and chunked writing to save memory on writing and 
+   accelerate reading - PR: #462
+* core.match_filter.tribe:
+ - Implement parallel reading and chunked writing to save memory on writing and
+   accelerate reading - PR: #462
+
 ## 0.4.3
 * core.match_filter
  - match_filter:

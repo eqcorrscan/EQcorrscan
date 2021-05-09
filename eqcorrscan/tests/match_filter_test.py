@@ -1076,6 +1076,18 @@ class TestMatchObjectLight(unittest.TestCase):
                 if os.path.isfile(f'test_party_walrus_{f}.tgz'):
                     os.remove(f'test_party_walrus_{f}.tgz')
 
+    def party_io_parallel(self):
+        party_filename = "test_party_parallel.tgz"
+        if os.path.isfile(party_filename):
+            os.remove(party_filename)
+        try:
+            self.party.write(filename=party_filename, max_events_per_file=2)
+            party_back = read_party(party_filename, max_processes=2)
+            self.assertEqual(self.party, party_back)
+        finally:
+            if os.path.isfile(party_filename):
+                os.remove(party_filename)
+
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
         self.assertTrue(self.tribe == self.tribe)
@@ -1123,6 +1135,18 @@ class TestMatchObjectLight(unittest.TestCase):
         finally:
             if os.path.isfile('test_tribe_SC3ML.tgz'):
                 os.remove('test_tribe_SC3ML.tgz')
+
+    def test_tribe_io_parallel(self):
+        tribe_filename = "test_tribe_parallel.tgz"
+        if os.path.isfile(tribe_filename):
+            os.remove(tribe_filename)
+        try:
+            self.tribe.write(filename=tribe_filename, max_events_per_file=2)
+            tribe_back = read_tribe(tribe_filename, max_processes=2)
+            self.assertEqual(self.tribe, tribe_back)
+        finally:
+            if os.path.isfile(tribe_filename):
+                os.remove(tribe_filename)
 
     # Requires bug-fixes in obspy to be deployed.
     # def test_tribe_io_nordic(self):
