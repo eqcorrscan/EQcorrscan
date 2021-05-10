@@ -432,7 +432,8 @@ class Tribe(object):
                 value: key for key, value in t_files_dict.items()}
             template_streams = dict()
             with ThreadPoolExecutor(max_workers=cores) as executor:
-                for t_file, st in zip(filenames, executor.map(read, filenames)):
+                for t_file, st in zip(
+                        filenames, executor.map(read, filenames)):
                     t_name = t_files_dict_reverse_mapper.get(t_file)
                     template_streams.update({t_name: st})
         else:
