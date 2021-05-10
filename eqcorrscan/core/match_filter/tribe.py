@@ -22,11 +22,12 @@ import logging
 import multiprocessing
 
 import numpy as np
-from obspy import Catalog, Stream, read, read_events
+from obspy import Catalog, Stream, read
 from obspy.core.event import Comment, CreationInfo
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 from eqcorrscan.core.match_filter.template import Template, group_templates
-from eqcorrscan.core.match_filter.party import Party
+from eqcorrscan.core.match_filter.party import Party, _read_catalog_pass_error
 from eqcorrscan.core.match_filter.helpers import (
     _safemembers, _par_read, get_waveform_client)
 from eqcorrscan.core.match_filter.matched_filter import (
@@ -346,14 +347,14 @@ class Tribe(object):
                 parfile.write('\n')
         return self
 
-    def read(self, filename, max_processes=1):
+    def read(self, filename, cores=1):
         """
         Read a tribe of templates from a tar formatted file.
 
         :type filename: str
         :param filename: File to read templates from.
-        :type max_processes: int
-        :param max_processes:
+        :type cores: int
+        :param cores:
             Maximum number of processes to read waveforms with. Defaults to
             serial.
 
@@ -371,22 +372,22 @@ class Tribe(object):
             arc.extractall(path=temp_dir, members=_safemembers(arc))
             tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
             self._read_from_folder(
-                dirname=tribe_dir, max_processes=max_processes)
+                dirname=tribe_dir, cores=cores)
         shutil.rmtree(temp_dir)
         return self
 
-    def _read_from_folder(self, dirname, max_processes=1):
+    def _read_from_folder(self, dirname, cores=1):
         """
         Internal folder reader.
 
         :type dirname: str
         :param dirname: Folder to read from.
-        :type max_processes: int
-        :param max_processes:
+        :type cores: int
+        :param cores:
             Maximum number of processes to read waveforms with. Defaults to
             serial.
         """
-        max_processes = max_processes or multiprocessing.cpu_count()
+        cores = cores or multiprocessing.cpu_count()
         templates = _par_read(dirname=dirname, compressed=False)
         t_files = glob.glob(dirname + os.sep + '*.ms')
         t_files_dict = {os.path.splitext(os.path.basename(t))[0]: t
@@ -396,13 +397,16 @@ class Tribe(object):
         tribe_cat_files = glob.glob(os.path.join(dirname, "tribe_cat.*"))
         tribe_cat = Catalog()
         Logger.info("Reading tribe catalog")
-        if max_processes == 1 or len(tribe_cat_files) == 1:
+        if cores == 1 or len(tribe_cat_files) == 1:
             for tribe_cat_file in tribe_cat_files:
-                tribe_cat += read_events(tribe_cat_file)
+                tribe_cat += _read_catalog_pass_error(tribe_cat_file)
         else:
-            with multiprocessing.Pool(processes=max_processes) as pool:
-                _cats = [_c for _c in pool.imap_unordered(
-                    read_events, tribe_cat_files)]
+            cores = min(cores, len(tribe_cat_files))
+            with ProcessPoolExecutor(max_workers=cores) as executor:
+                _cats = executor.map(
+                    _read_catalog_pass_error, tribe_cat_files,
+                    chunksize=(len(tribe_cat_files) // cores) + (
+                            len(tribe_cat_files) % cores))
             for _cat in _cats:
                 tribe_cat += _cat
 
@@ -414,11 +418,7 @@ class Tribe(object):
         template_names = list(template_names)  # Need an ordered object
 
         Logger.info("Reading tribe streams")
-        if max_processes == 1:
-            template_streams = {
-                key: read(value) for key, value in t_files_dict.items()
-                if key in template_names}
-        else:
+        if cores > 1 and len(template_names) > 1:
             # Need to be able to link stream to template name
             filenames = [t_files_dict.get(t_name)
                          for t_name in template_names
@@ -426,10 +426,19 @@ class Tribe(object):
             # This should never fail due to above assertion...
             assert len(filenames) == len(template_names), \
                 "Missing waveform files for templates"
-            with multiprocessing.Pool(processes=max_processes) as pool:
-                streams = [future for future in pool.imap(read, filenames)]
+            # Don't use more processes than files
+            cores = min(cores, len(filenames))
+            t_files_dict_reverse_mapper = {
+                value: key for key, value in t_files_dict.items()}
+            template_streams = dict()
+            with ThreadPoolExecutor(max_workers=cores) as executor:
+                for t_file, st in zip(filenames, executor.map(read, filenames)):
+                    t_name = t_files_dict_reverse_mapper.get(t_file)
+                    template_streams.update({t_name: st})
+        else:
             template_streams = {
-                t_name: st for t_name, st in zip(template_names, streams)}
+                key: read(value) for key, value in t_files_dict.items()
+                if key in template_names}
 
         Logger.info("Reconstructing tribe")
         for template in templates:
@@ -1105,20 +1114,20 @@ class Tribe(object):
         return self
 
 
-def read_tribe(fname, max_processes=1):
+def read_tribe(fname, cores=1):
     """
     Read a Tribe of templates from a tar archive.
 
     :param fname: Filename to read from
-    :type max_processes: int
-    :param max_processes:
+    :type cores: int
+    :param cores:
         Maximum number of processes to read waveforms with. Defaults to
         serial.
 
     :return: :class:`eqcorrscan.core.match_filter.Tribe`
     """
     tribe = Tribe()
-    tribe.read(filename=fname, max_processes=max_processes)
+    tribe.read(filename=fname, cores=cores)
     return tribe
 
 

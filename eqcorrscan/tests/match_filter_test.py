@@ -1082,7 +1082,7 @@ class TestMatchObjectLight(unittest.TestCase):
             os.remove(party_filename)
         try:
             self.party.write(filename=party_filename, max_events_per_file=2)
-            party_back = read_party(party_filename, max_processes=2)
+            party_back = read_party(party_filename, cores=2)
             self.assertEqual(self.party, party_back)
         finally:
             if os.path.isfile(party_filename):
@@ -1142,7 +1142,7 @@ class TestMatchObjectLight(unittest.TestCase):
             os.remove(tribe_filename)
         try:
             self.tribe.write(filename=tribe_filename, max_events_per_file=2)
-            tribe_back = read_tribe(tribe_filename, max_processes=2)
+            tribe_back = read_tribe(tribe_filename, cores=2)
             self.assertEqual(self.tribe, tribe_back)
         finally:
             if os.path.isfile(tribe_filename):

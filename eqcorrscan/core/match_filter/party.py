@@ -23,6 +23,7 @@ from os.path import join
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
+from concurrent.futures import ProcessPoolExecutor
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -771,7 +772,7 @@ class Party(object):
         return self
 
     def read(self, filename=None, read_detection_catalog=True,
-             estimate_origin=True, max_processes=1):
+             estimate_origin=True, cores=1):
         """
         Read a Party from a file.
 
@@ -788,8 +789,8 @@ class Party(object):
             If True and no catalog is found, or read_detection_catalog is False
             then new events with origins estimated from the template origin
             time will be created.
-        :type max_processes: int
-        :param max_processes:
+        :type cores: int
+        :param cores:
             Maximum number of processes to use for reading files in parallel.
             Defaults to single-threaded.
 
@@ -801,7 +802,7 @@ class Party(object):
         from eqcorrscan.core.match_filter.tribe import Tribe
 
         tribe, families = Tribe(), []
-        max_processes = max_processes or multiprocessing.cpu_count()
+        cores = cores or multiprocessing.cpu_count()
 
         if filename is None:
             # If there is no filename given, then read the example.
@@ -829,16 +830,18 @@ class Party(object):
             party_dir = glob.glob(temp_dir + os.sep + '*')[0]
             Logger.info("Reading tribe")
             tribe._read_from_folder(
-                dirname=party_dir, max_processes=max_processes)
+                dirname=party_dir, cores=cores)
             det_cat_files = glob.glob(os.path.join(party_dir, "catalog.*"))
             Logger.info("Reading detection catalog")
             if len(det_cat_files) != 0 and read_detection_catalog:
-                if max_processes > 1:
-                    with multiprocessing.Pool(processes=max_processes) as pool:
-                        _futures = pool.imap_unordered(
+                if cores > 1 and len(det_cat_files) > 1:
+                    # Don't use more processes than files.
+                    cores = min(cores, len(det_cat_files))
+                    with ProcessPoolExecutor(max_workers=cores) as executor:
+                        _futures = executor.map(
                             _read_catalog_pass_error, det_cat_files,
-                            chunksize=(len(det_cat_files) // max_processes) + (
-                                len(det_cat_files) % max_processes))
+                            chunksize=(len(det_cat_files) // cores) + (
+                                len(det_cat_files) % cores))
                         sub_catalogs = [cat for cat in _futures]
                 else:
                     sub_catalogs = [_read_catalog_pass_error(df)
@@ -1129,7 +1132,7 @@ class Party(object):
         return self
 
 
-def read_party(fname=None, read_detection_catalog=True, max_processes=1,
+def read_party(fname=None, read_detection_catalog=True, cores=1,
                *args, **kwargs):
     """
     Read detections and metadata from a tar archive.
@@ -1142,8 +1145,8 @@ def read_party(fname=None, read_detection_catalog=True, max_processes=1,
     :param read_detection_catalog:
         Whether to read the detection catalog or not, if False, catalog
         will be regenerated - for large catalogs this can be faster.
-    :type max_processes: int
-    :param max_processes:
+    :type cores: int
+    :param cores:
         Maximum number of processes to use for reading files in parallel.
         Defaults to single-threaded.
 
@@ -1151,7 +1154,7 @@ def read_party(fname=None, read_detection_catalog=True, max_processes=1,
     """
     party = Party()
     party.read(filename=fname, read_detection_catalog=read_detection_catalog,
-               max_processes=max_processes, *args, **kwargs)
+               cores=cores, *args, **kwargs)
     return party
 
 
