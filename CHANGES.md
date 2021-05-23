@@ -2,7 +2,7 @@
 * core.match_filter.tribe
  - Detect now allows passing of pre-processed data
 * utils.correlate
- - Fast Matched Filter now supported natively for version > 1.4.0
+ - Fast Matched Filter now supported natively for version >= 1.4.0
 
 ## 0.4.3
 * core.match_filter

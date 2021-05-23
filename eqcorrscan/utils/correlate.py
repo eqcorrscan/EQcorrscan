@@ -923,7 +923,7 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
-    :param arch: GPU or CPU to run on GPU or CPU respectively
+    :param arch: "gpu" or "precise" to run on GPU or CPU respectively
     type arch: str
 
     :return: np.ndarray of cross-correlations
@@ -941,7 +941,7 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
         data_arr=stream.reshape((1, stream.shape[0])),
         weights=np.ones((1, templates.shape[0])),
         pads=np.array([pads]),
-        arch=arch)
+        arch=arch.lower())
 
     return ccc, used_chans
 
@@ -952,7 +952,7 @@ def _fmf_gpu(templates, stream, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to gpu.
     """
-    return fmf_multi_xcorr(templates, stream, arch="gpu")
+    return _fmf_multi_xcorr(templates, stream, arch="gpu")
 
 
 @fmf_xcorr.register("multithread")
@@ -961,10 +961,10 @@ def _fmf_cpu(templates, stream, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to cpu.
     """
-    return fmf_multi_xcorr(templates, stream, arch="precise")
+    return _fmf_multi_xcorr(templates, stream, arch="precise")
 
 
-def fmf_multi_xcorr(templates, stream, *args, **kwargs):
+def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     """
     Apply FastMatchedFilter routine concurrently.
 
@@ -993,7 +993,7 @@ def fmf_multi_xcorr(templates, stream, *args, **kwargs):
             "FMF does not support unstacked correlations, use a different "
             "backend")
     arch = kwargs.get("arch", "gpu")
-    Logger.info(f"Running FMF targetting the {arch}")
+    Logger.info(f"Running FMF targeting the {arch}")
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=True)
@@ -1010,7 +1010,6 @@ def fmf_multi_xcorr(templates, stream, *args, **kwargs):
     # Weights should be shaped like pads
     weights = np.ones_like(pads)
 
-    # TODO: Implement normalize method upstream
     cccsums = _run_fmf_xcorr(
         template_arr=t_arr, weights=weights, pads=pads,
         data_arr=d_arr, step=1, arch=arch)
