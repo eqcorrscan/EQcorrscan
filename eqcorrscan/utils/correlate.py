@@ -32,6 +32,8 @@ from future.utils import native_str
 from packaging import version
 
 from eqcorrscan.utils.libnames import _load_cdll
+from eqcorrscan.utils import FMF_INSTALLED
+
 
 Logger = logging.getLogger(__name__)
 
@@ -199,8 +201,11 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -247,8 +252,11 @@ def _general_serial(func):
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
-                    chan.append((seed_id.split('.')[1],
-                                 seed_id.split('.')[-1].split('_')[0]))
+                    chan.append(seed_id)
+        if stack:
+            cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+        chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+                  for seed_id in _chans] for _chans in chans]
         return cccsums, no_chans, chans
 
     return stream_xcorr
@@ -327,6 +335,30 @@ def register_array_xcorr(name, func=None, is_default=False):
     # called, then used as a decorator
     return wrapper
 
+
+def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
+    """
+    Zero the end portion of the correlation sum that does not include the full
+    set of channels.
+
+    :param cccsums: 2D numpy array
+    :type cccsums: np.ndarray
+    :param pad_dict: pad_dict from _get_array_dicts
+    :type pad_dict: dict
+    :param used_seed_ids: The SEED IDs actually used in correlation
+    :type used_seed_ids: list of list of str
+
+    :return:
+        Valid correlation stack - end will be zero-ed up to maxmimum moveout
+    :rtype: np.ndarray
+    """
+    # TODO: This is potentially quite a slow way to do this.
+    for i, cccsum in enumerate(cccsums):
+        max_moveout = max(value[i] for key, value in pad_dict.items()
+                          if key in used_seed_ids[i])
+        if max_moveout:
+            cccsum[-max_moveout:] = 0.0
+    return cccsums
 
 # ------------------ array_xcorr fetching functions
 
@@ -675,8 +707,11 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -728,8 +763,11 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -877,10 +915,10 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
 # ------------------------------- FastMatchedFilter Wrapper
 
 def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
-    try:
-        import fast_matched_filter
-    except ImportError:
+    if not FMF_INSTALLED:
         raise ImportError("FastMatchedFilter is not available")
+    import fast_matched_filter
+
     if version.parse(fast_matched_filter.__version__) >= MIN_FMF_VERSION:
         from fast_matched_filter import matched_filter as fmf
     else:
@@ -1017,6 +1055,8 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     tr_chans = np.array([~np.isnan(template_dict[seed_id]).any(axis=1)
                          for seed_id in seed_ids])
     no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+    # Note: FMF already returns the zeroed end of correlations - we don't
+    # need to call _get_valid_correlation_sum
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
@@ -1105,6 +1145,9 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     return stream_dict, template_dict, pad_dict, seed_ids
 
 
+# Remove fmf if it isn't installed
+if not FMF_INSTALLED:
+    XCOR_FUNCS.pop("fmf")
 # a dict of built in xcorr functions, used to distinguish from user-defined
 XCORR_FUNCS_ORIGINAL = copy.copy(XCOR_FUNCS)
 
