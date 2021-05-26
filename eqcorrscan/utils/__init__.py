@@ -10,6 +10,12 @@ import sys
 import importlib
 import warnings
 
+try:
+    import fast_matched_filter
+    FMF_INSTALLED = True
+except ImportError:
+    FMF_INSTALLED = False
+
 
 __all__ = ['archive_read', 'catalog_to_dd', 'catalog_utils', 'clustering',
            'correlate', 'despike', 'findpeaks', 'mag_calc', 'picker',
