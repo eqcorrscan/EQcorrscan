@@ -194,7 +194,7 @@ jobs:
         run: |
           cd ..
           git clone https://github.com/beridel/fast_matched_filter.git
-          cd fast_matched_filer
+          cd fast_matched_filter
           pip install -e .
           cd ../EQcorrscan
 

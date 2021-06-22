@@ -11,7 +11,7 @@ import importlib
 import warnings
 
 try:
-    import fast_matched_filter
+    import fast_matched_filter  # noqa: F401
     FMF_INSTALLED = True
 except ImportError:
     FMF_INSTALLED = False
