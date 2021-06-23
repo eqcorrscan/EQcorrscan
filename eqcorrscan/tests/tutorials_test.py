@@ -22,52 +22,58 @@ class TestTutorialScripts(unittest.TestCase):
     @pytest.mark.slow
     def test_templates_and_match(self):
         """Call the template creation then the matched-filter tests."""
-        print("Making templates")
-        # Some output for travis to stop it from stalling
-        mktemplates(plot=False)
-        print("Made templates")
-        for template_no in range(4):
-            template = read('tutorial_template_' + str(template_no) + '.ms')
-            expected_template = read(
-                os.path.join(self.testing_path,
-                             'tutorial_template_' + str(template_no) + '.ms'))
-            # self.assertTrue(len(template) > 1)
-            self.assertEqual(len(template), len(expected_template))
-        # Run the matched-filter
-        print("Running the match-filter")
-        tutorial_detections = match_filter.run_tutorial(
-            plot=False, num_cores=1)
-        print("Match-filter ran")
-        # It should make 20 detections in total...
-        fname = os.path.join(self.testing_path,
-                             'expected_tutorial_detections.txt')
-        expected_detections = read_detections(fname)
+        try:
+            print("Making templates")
+            # Some output for travis to stop it from stalling
+            mktemplates(plot=False)
+            print("Made templates")
+            for template_no in range(4):
+                template = read(
+                    'tutorial_template_' + str(template_no) + '.ms')
+                expected_template = read(
+                    os.path.join(
+                        self.testing_path,
+                        'tutorial_template_' + str(template_no) + '.ms'))
+                # self.assertTrue(len(template) > 1)
+                self.assertEqual(len(template), len(expected_template))
+            # Run the matched-filter
+            print("Running the match-filter")
+            tutorial_detections = match_filter.run_tutorial(
+                plot=False, num_cores=1)
+            print("Match-filter ran")
+            # It should make 20 detections in total...
+            fname = os.path.join(self.testing_path,
+                                 'expected_tutorial_detections.txt')
+            expected_detections = read_detections(fname)
 
-        expected_times = [detection.detect_time for detection
-                          in expected_detections]
-        for expected_time in expected_times:
-            expected_time.precision = 3  # Lower the precision slightly
-        # expected_correlations = [round(detection.detect_val, 4) for detection
-        #                          in expected_detections]
-        for detection in tutorial_detections:
-            assert (detection.detect_val < detection.no_chans)
-            detection.detect_time.precision = 3
-            self.assertIn(detection.detect_time, expected_times,
-                          msg='Detection at %s is not in expected detections'
-                          % detection.detect_time)
-        if len(expected_detections) > len(tutorial_detections):
-            # This is a fail but we are trying to debug
-            actual_times = [tutorial_detection.detect_time
-                            for tutorial_detection in tutorial_detections]
-            for detection in expected_detections:
-                self.assertIn(detection.detect_time, actual_times,
-                              msg='Expected detection at %s was not made'
-                              % detection.detect_time)
-        self.assertEqual(len(tutorial_detections), 22)
-        for template_no in range(4):
-            if os.path.isfile('tutorial_template_' +
-                              str(template_no) + '.ms'):
-                os.remove('tutorial_template_' + str(template_no) + '.ms')
+            expected_times = [detection.detect_time for detection
+                              in expected_detections]
+            for expected_time in expected_times:
+                expected_time.precision = 3  # Lower the precision slightly
+            # expected_correlations = [
+            #     round(detection.detect_val, 4)
+            #     for detection in expected_detections]
+            for detection in tutorial_detections:
+                assert (detection.detect_val < detection.no_chans)
+                detection.detect_time.precision = 3
+                self.assertIn(
+                    detection.detect_time, expected_times,
+                    msg='Detection at %s is not in expected detections'
+                    % detection.detect_time)
+            if len(expected_detections) > len(tutorial_detections):
+                # This is a fail but we are trying to debug
+                actual_times = [tutorial_detection.detect_time
+                                for tutorial_detection in tutorial_detections]
+                for detection in expected_detections:
+                    self.assertIn(detection.detect_time, actual_times,
+                                  msg='Expected detection at %s was not made'
+                                  % detection.detect_time)
+            self.assertEqual(len(tutorial_detections), 23)
+        finally:
+            for template_no in range(4):
+                if os.path.isfile('tutorial_template_' +
+                                  str(template_no) + '.ms'):
+                    os.remove('tutorial_template_' + str(template_no) + '.ms')
 
     @pytest.mark.slow
     def test_lag_calc(self):
