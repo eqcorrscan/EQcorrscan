@@ -990,6 +990,10 @@ def _fmf_gpu(templates, stream, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to gpu.
     """
+    from fast_matched_filter import GPU_LOADED
+    if not GPU_LOADED:
+        Logger.warning("FMF reports GPU not loaded, reverting to CPU")
+        return _fmf_cpu(templates=template, stream=stream, *args, **kwargs)
     return _fmf_multi_xcorr(templates, stream, arch="gpu")
 
 
@@ -999,6 +1003,10 @@ def _fmf_cpu(templates, stream, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to cpu.
     """
+    from fast_matched_filter import CPU_LOADED
+    if not CPU_LOADED:
+        raise NotImplementedError(
+            "FMF reports CPU not loaded - try rebuilding FMF")
     return _fmf_multi_xcorr(templates, stream, arch="precise")
 
 
