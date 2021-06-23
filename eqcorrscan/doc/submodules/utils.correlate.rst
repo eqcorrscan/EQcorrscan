@@ -58,7 +58,7 @@ Selecting a correlation function
 
 EQcorrscan strives to use sensible default algorithms for calculating
 correlation values, however, you may want to change how correlations are
-caclulated to be more advantageous to your specific needs.
+calculated to be more advantageous to your specific needs.
 
 
 There are currently 3 different correlations functions currently included in EQcorrscan:
@@ -70,6 +70,9 @@ There are currently 3 different correlations functions currently included in EQc
     3. :func:`eqcorrscan.utils.correlate.fftw_normxcorr` known as "fftw"
 
 Number 3 is the default.
+
+A further time-domain correlation backend is available, see note below on using
+Fast Matched Filter within EQcorrscan.
 
 Setting FFT length
 ~~~~~~~~~~~~~~~~~~
@@ -92,11 +95,8 @@ Using Fast Matched Filter within EQcorrscan
 |FMF| provides fast time-domain correlations for both CPU and GPU
 architectures.  For massively multi-threaded environment this runs faster than
 the frequency-domain routines native to EQcorrscan (when more than 40 CPU cores,
-or an NVIDIA GPU card is available) with less memory consumption. Documentation
-on how to call Fast Matched Filter from within EQcorrscan is provided here: 
-fast_matched_filter_
-
-.. _fast_matched_filter: utils.correlate.fast_matched_filter.html
+or an NVIDIA GPU card is available) with less memory consumption. |FMF| is now
+supported natively, and can be used as a backend by setting `xcorr_func="fmf"`.
 
 .. |FMF| raw:: html
 

@@ -49,17 +49,31 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(),
     # threshold metrics. However the chunk size should be the same as your
     # template process_len.
 
+    # To ensure a complete catalogue you should overlap your chunks by at least
+    # the largest moveout in your template set
+    overlap = 0
+    for template in templates:
+        template_starttime = min(tr.stats.starttime for tr in template)
+        template_overlap = max([tr.stats.starttime - template_starttime
+                                for tr in template])
+        if template_overlap > overlap:
+            overlap = template_overlap
+    overlap = 10 * ((overlap // 10) + 1)  # Round to nearest whole 10 seconds
+
     # You should test different parameters!!!
     start_time = UTCDateTime(2016, 1, 4)
     end_time = UTCDateTime(2016, 1, 5)
     chunks = []
     chunk_start = start_time
+    step_length = process_len - overlap
+    assert step_length > 0, "Positive step length required - " \
+                            "try longer process length"
     while chunk_start < end_time:
         chunk_end = chunk_start + process_len
         if chunk_end > end_time:
             chunk_end = end_time
         chunks.append((chunk_start, chunk_end))
-        chunk_start += process_len
+        chunk_start += step_length
 
     unique_detections = []
 
@@ -101,43 +115,43 @@ def run_tutorial(plot=False, process_len=3600, num_cores=cpu_count(),
         detections = match_filter.match_filter(
             template_names=template_names, template_list=templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=plot, plotdir='.', cores=num_cores,
+            plot=plot, plotdir='.', cores=num_cores,
             plot_format='png', **kwargs)
 
         # Now lets try and work out how many unique events we have just to
         # compare with the GeoNet catalog of 20 events on this day in this
         # sequence
-        for master in detections:
+        for parent in detections:
             keep = True
-            for slave in detections:
-                if not master == slave and abs(master.detect_time -
-                                               slave.detect_time) <= 1.0:
+            for child in detections:
+                if not parent == child and abs(parent.detect_time -
+                                               child.detect_time) <= 1.0:
                     # If the events are within 1s of each other then test which
                     # was the 'best' match, strongest detection
-                    if not master.detect_val > slave.detect_val:
+                    if not parent.detect_val > child.detect_val:
                         keep = False
                         print('Removed detection at %s with cccsum %s'
-                              % (master.detect_time, master.detect_val))
+                              % (parent.detect_time, parent.detect_val))
                         print('Keeping detection at %s with cccsum %s'
-                              % (slave.detect_time, slave.detect_val))
+                              % (child.detect_time, child.detect_val))
                         break
             if keep:
-                unique_detections.append(master)
-                print('Detection at :' + str(master.detect_time) +
-                      ' for template ' + master.template_name +
+                unique_detections.append(parent)
+                print('Detection at :' + str(parent.detect_time) +
+                      ' for template ' + parent.template_name +
                       ' with a cross-correlation sum of: ' +
-                      str(master.detect_val))
+                      str(parent.detect_val))
                 # We can plot these too
                 if plot:
                     stplot = st.copy()
                     template = templates[template_names.index(
-                        master.template_name)]
+                        parent.template_name)]
                     lags = sorted([tr.stats.starttime for tr in template])
                     maxlag = lags[-1] - lags[0]
-                    stplot.trim(starttime=master.detect_time - 10,
-                                endtime=master.detect_time + maxlag + 10)
+                    stplot.trim(starttime=parent.detect_time - 10,
+                                endtime=parent.detect_time + maxlag + 10)
                     plotting.detection_multiplot(
-                        stplot, template, [master.detect_time.datetime])
+                        stplot, template, [parent.detect_time.datetime])
     print('We made a total of ' + str(len(unique_detections)) + ' detections')
     return unique_detections
 
