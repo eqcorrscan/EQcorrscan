@@ -993,7 +993,7 @@ def _fmf_gpu(templates, stream, *args, **kwargs):
     from fast_matched_filter import GPU_LOADED
     if not GPU_LOADED:
         Logger.warning("FMF reports GPU not loaded, reverting to CPU")
-        return _fmf_cpu(templates=template, stream=stream, *args, **kwargs)
+        return _fmf_cpu(templates=templates, stream=stream, *args, **kwargs)
     return _fmf_multi_xcorr(templates, stream, arch="gpu")
 
 
