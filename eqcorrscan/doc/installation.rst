@@ -20,7 +20,7 @@ with the following:
 
 .. code-block:: bash
 
-    conda create -n eqcorrscan -c conda-forge colorama numpy scipy matplotlib obspy bottleneck pyproj
+    conda create -n eqcorrscan -c conda-forge colorama numpy scipy matplotlib obspy bottleneck pyproj python=3.8
     source activate eqcorrscan
 
 To then install EQcorrscan you can simply run:
