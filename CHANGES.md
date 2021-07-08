@@ -1,3 +1,12 @@
+## Current
+* core.match_filter.tribe
+ - Detect now allows passing of pre-processed data
+* utils.correlate
+ - Fast Matched Filter now supported natively for version >= 1.4.0
+ - Only full correlation stacks are returned now (e.g. where fewer than than
+   the full number of channels are in the stack at the end of the stack, zeros
+   are returned).
+
 ## 0.4.3
 * core.match_filter
  - match_filter:

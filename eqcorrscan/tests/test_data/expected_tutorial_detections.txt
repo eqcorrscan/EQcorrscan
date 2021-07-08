@@ -1,23 +1,24 @@
-Template name; Detection time (UTC); Number of channels; Channel list; Detection value; Threshold; Detection type
-tutorial_template_1.ms; 2016-01-04T00:15:11.898399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.35962; 1.73596191406; corr
-tutorial_template_1.ms; 2016-01-04T00:17:02.098399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.20946; 1.73596191406; corr
-tutorial_template_1.ms; 2016-01-04T00:18:42.248399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.15381; 1.73596191406; corr
-tutorial_template_1.ms; 2016-01-04T00:23:15.148399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.27966; 1.73596191406; corr
-tutorial_template_1.ms; 2016-01-04T00:25:08.198399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 4.64209; 1.73596191406; corr
-tutorial_template_2.ms; 2016-01-04T00:13:23.498399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.50732; 1.77685546875; corr
-tutorial_template_2.ms; 2016-01-04T00:13:39.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 4.11426; 1.77685546875; corr
-tutorial_template_2.ms; 2016-01-04T00:45:58.148399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 4.66797; 1.77685546875; corr
-tutorial_template_0.ms; 2016-01-04T00:08:01.848399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 4.81543; 2.16552734375; corr
-tutorial_template_0.ms; 2016-01-04T00:49:00.398399Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.19128; 2.16552734375; corr
-tutorial_template_1.ms; 2016-01-04T01:21:42.798394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.3335; 1.763671875; corr
-tutorial_template_1.ms; 2016-01-04T01:57:21.598394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.82428; 1.763671875; corr
-tutorial_template_2.ms; 2016-01-04T01:48:52.998394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.74585; 1.80651855469; corr
-tutorial_template_3.ms; 2016-01-04T02:01:03.048394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 1.8984; 1.81433105469; corr
-tutorial_template_3.ms; 2016-01-04T02:10:47.898394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.86377; 1.81433105469; corr
-tutorial_template_2.ms; 2016-01-04T02:17:23.898394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.01324; 1.79795837402; corr
-tutorial_template_1.ms; 2016-01-04T03:24:01.398394Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.36414; 1.75337219238; corr
-tutorial_template_1.ms; 2016-01-04T09:21:42.998388Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.41602; 1.7763671875; corr
-tutorial_template_2.ms; 2016-01-04T09:22:14.048388Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 3.2688; 1.78466796875; corr
-tutorial_template_2.ms; 2016-01-04T12:57:19.298393Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.57898; 1.7080078125; corr
-tutorial_template_1.ms; 2016-01-04T14:01:08.798396Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.84357; 1.6630859375; corr
-tutorial_template_0.ms; 2016-01-04T16:29:43.298396Z; 5; [(u'BFZ', u'HZ'), (u'DVHZ', u'EZ'), (u'HOWZ', u'EZ'), (u'POWZ', u'EZ'), (u'CPWZ', u'EZ')]; 2.41583; 2.072265625; corr
+Template name; Detection time (UTC); Number of channels; Channel list; Detection value; Threshold; Threshold type; Input threshold; Detection type
+tutorial_template_0.ms; 2016-01-04T00:08:01.848Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 4.815313816070557; 2.160778522491455; MAD; 8.0; corr
+tutorial_template_0.ms; 2016-01-04T00:49:00.398Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.191185712814331; 2.160778522491455; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T00:15:11.898Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 3.359866142272949; 1.7321995496749878; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T00:17:02.098Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.209214687347412; 1.7321995496749878; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T00:18:42.248Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.153686046600342; 1.7321995496749878; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T00:23:15.148Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.279348134994507; 1.7321995496749878; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T00:25:08.198Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 4.642038345336914; 1.7321995496749878; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T00:13:23.498Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.506805658340454; 1.7722141742706299; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T00:13:39.398Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 4.114824295043945; 1.7722141742706299; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T00:45:58.148Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 4.66798210144043; 1.7722141742706299; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T01:21:42.798Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.3335423469543457; 1.7587989568710327; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T01:57:21.598Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.824449062347412; 1.7587989568710327; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T01:48:52.998Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.7457122802734375; 1.8024909496307373; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T02:17:23.898Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.0131101608276367; 1.795336127281189; MAD; 8.0; corr
+tutorial_template_3.ms; 2016-01-04T02:01:03.048Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 1.8980555534362793; 1.8105688095092773; MAD; 8.0; corr
+tutorial_template_3.ms; 2016-01-04T02:10:47.898Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 3.863588809967041; 1.8105688095092773; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T03:24:01.398Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.363903760910034; 1.7487361431121826; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T09:21:42.998Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 3.4162466526031494; 1.7718582153320312; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T09:22:14.048Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 3.2683494091033936; 1.7790192365646362; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T12:03:07.348Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; -1.6782662868499756; 1.678146481513977; MAD; 8.0; corr
+tutorial_template_2.ms; 2016-01-04T12:57:19.298393Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.5785763263702393; 1.7041990756988525; MAD; 8.0; corr
+tutorial_template_1.ms; 2016-01-04T14:01:08.798396Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.844041347503662; 1.6589139699935913; MAD; 8.0; corr
+tutorial_template_0.ms; 2016-01-04T16:29:43.298396Z; 5; [('BFZ', 'HHZ'), ('CPWZ', 'EHZ'), ('DVHZ', 'EHZ'), ('HOWZ', 'EHZ'), ('POWZ', 'EHZ')]; 2.415628671646118; 2.067970037460327; MAD; 8.0; corr
