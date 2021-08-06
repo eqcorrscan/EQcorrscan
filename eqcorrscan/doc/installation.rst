@@ -20,10 +20,14 @@ with the following:
 
 .. code-block:: bash
 
-    conda create -n eqcorrscan -c conda-forge colorama numpy scipy matplotlib obspy bottleneck pyproj python=3.8
+    conda create -n eqcorrscan -c conda-forge eqcorrscan
     source activate eqcorrscan
+    
+This will create an environment called eqcorrscan and install eqcorrscan and its 
+dependancies in that environment.
 
-To then install EQcorrscan you can simply run:
+If you already have a conda environment that you want to use then to install EQcorrscan 
+you can simply run:
 
 .. code-block:: bash
 
