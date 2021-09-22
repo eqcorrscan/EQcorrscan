@@ -285,6 +285,20 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile("dt.cc"))
         os.remove('dt.cc')
 
+    def test_write_correlations_parallel(self):
+        # Contents checked elsewhere
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        stream_dict = {event.resource_id.id: stream
+                       for event, stream in zip(short_cat, self.streams)}
+        write_correlations(
+            catalog=short_cat, event_id_mapper=None,
+            max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+            extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+            interpolate=False, parallel_process=True, max_workers=2)
+        self.assertTrue(os.path.isfile("dt.cc"))
+        os.remove('dt.cc')
+
     def test_filter_stream(self):
         """ Check that original data are unchanged. """
         st = self.streams[0].copy()

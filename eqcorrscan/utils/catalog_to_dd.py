@@ -641,10 +641,14 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     if parallel_process:
         if not (lowcut is None and highcut is None):
             with pool_boy(Pool, len(stream_dict), cores=max_workers) as pool:
-                func = partial(
-                    _meta_filter_stream, stream_dict=stream_dict,
-                    lowcut=lowcut, highcut=highcut)
-                results = [pool.apply_async(func, key)
+                # func = partial(
+                #     _meta_filter_stream, stream_dict=stream_dict,
+                #     lowcut=lowcut, highcut=highcut)
+                # results = [pool.apply_async(func, key)
+                #            for key in stream_dict.keys()]
+                results = [pool.apply_async(
+                    _meta_filter_stream,
+                    (key, stream_dict, lowcut, highcut))
                            for key in stream_dict.keys()]
             for result in results:
                 processed_stream_dict.update(result.get())
