@@ -635,10 +635,11 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         min_cc = cc_thresh
         Logger.warning("cc_thresh is depreciated, use min_cc instead")
     max_workers = max_workers or cpu_count()
+    processed_stream_dict = stream_dict
     # Process the streams
-    processed_stream_dict = dict()
-    if parallel_process:
-        if not (lowcut is None and highcut is None):
+    if not (lowcut is None and highcut is None):
+        processed_stream_dict = dict()
+        if parallel_process:
             with pool_boy(Pool, len(stream_dict), cores=max_workers) as pool:
                 results = [pool.apply_async(
                     _meta_filter_stream,
@@ -646,11 +647,11 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                            for key in stream_dict.keys()]
             for result in results:
                 processed_stream_dict.update(result.get())
-    else:
-        for key in stream_dict.keys():
-            processed_stream_dict.update(_meta_filter_stream(
-                stream_dict=stream_dict, lowcut=lowcut, highcut=highcut,
-                event_id=key))
+        else:
+            for key in stream_dict.keys():
+                processed_stream_dict.update(_meta_filter_stream(
+                    stream_dict=stream_dict, lowcut=lowcut, highcut=highcut,
+                    event_id=key))
     correlation_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=True, event_id_mapper=event_id_mapper,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,

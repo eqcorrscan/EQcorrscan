@@ -285,7 +285,7 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertTrue(os.path.isfile("dt.cc"))
         os.remove('dt.cc')
 
-    def test_write_correlations_parallel(self):
+    def test_write_correlations_parallel_process(self):
         # Contents checked elsewhere
         shift_len = 2
         short_cat = self.catalog[0:10]
