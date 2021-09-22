@@ -11,7 +11,6 @@ Functions to generate hypoDD input files from catalogs.
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
-from functools import partial
 from multiprocessing import cpu_count, Pool
 
 from obspy import UTCDateTime, Stream
@@ -641,11 +640,6 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     if parallel_process:
         if not (lowcut is None and highcut is None):
             with pool_boy(Pool, len(stream_dict), cores=max_workers) as pool:
-                # func = partial(
-                #     _meta_filter_stream, stream_dict=stream_dict,
-                #     lowcut=lowcut, highcut=highcut)
-                # results = [pool.apply_async(func, key)
-                #            for key in stream_dict.keys()]
                 results = [pool.apply_async(
                     _meta_filter_stream,
                     (key, stream_dict, lowcut, highcut))
