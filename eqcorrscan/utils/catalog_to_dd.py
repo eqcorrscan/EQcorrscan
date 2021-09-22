@@ -168,7 +168,7 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
     seed_pick_ids = seed_pick_ids or {
         SeedPickID(pick.waveform_id.get_seed_string(), pick.phase_hint[0])
         for pick in event.picks if pick.phase_hint.startswith(("P", "S"))}
-    stream_sliced = defaultdict(lambda: Stream())
+    stream_sliced = defaultdict(Stream)
     for seed_pick_id in seed_pick_ids:
         pick = [pick for pick in event.picks
                 if pick.waveform_id.get_seed_string() == seed_pick_id.seed_id
@@ -255,12 +255,23 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
             f"Missing streams for {event_ids.difference(_stream_event_ids)}")
         # Just use the event ids that we actually have streams for!
         event_ids = event_ids.intersection(_stream_event_ids)
-    matched_streams = {
-        event_id: _prepare_stream(
-            stream=stream_dict[event_id], event=event_dict[event_id],
-            extract_len=matched_length, pre_pick=matched_pre_pick,
-            seed_pick_ids=master_seed_ids)
-        for event_id in event_ids}
+    if max_workers > 1:
+        with pool_boy(Pool, len(event_ids), cores=max_workers) as pool:
+            results = [pool.apply_async(
+                _prepare_stream,
+                args=(stream_dict[event_id], event_dict[event_id],
+                      matched_length, matched_pre_pick),
+                kwds=dict(seed_pick_ids=master_seed_ids))
+                        for event_id in event_ids]
+        matched_streams = {id_res[0]: id_res[1].get()
+                           for id_res in zip(event_ids, results)}
+    else:
+        matched_streams = {
+            event_id: _prepare_stream(
+                stream=stream_dict[event_id], event=event_dict[event_id],
+                extract_len=matched_length, pre_pick=matched_pre_pick,
+                seed_pick_ids=master_seed_ids)
+            for event_id in event_ids}
 
     sampling_rates = {tr.stats.sampling_rate for st in master_stream.values()
                       for tr in st}
