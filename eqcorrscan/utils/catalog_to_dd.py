@@ -8,7 +8,6 @@ Functions to generate hypoDD input files from catalogs.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-from re import A
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
