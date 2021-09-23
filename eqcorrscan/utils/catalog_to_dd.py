@@ -8,6 +8,7 @@ Functions to generate hypoDD input files from catalogs.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
+from re import A
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
@@ -510,10 +511,23 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                          if master_filter[i]]
                         for master_filter in distance_filter)
-        differential_times = {
-            master.resource_id: _compute_dt(
-                sub_catalog, master, **additional_args)
-            for master, sub_catalog in zip(sparse_catalog, sub_catalogs)}
+        max_workers = max_workers or cpu_count()
+        if max_workers > 1:
+            with pool_boy(
+                    Pool, len(sparse_catalog), cores=max_workers) as pool:
+                results = [pool.apply_async(
+                    _compute_dt,
+                    args=(sub_catalog, master), kwds=additional_args)
+                           for master, sub_catalog in zip(
+                               sparse_catalog, sub_catalogs)]
+                differential_times = {
+                    master.resource_id: result.get()
+                    for master, result in zip(sparse_catalog, results)}
+        else:
+            differential_times = {
+                master.resource_id: _compute_dt(
+                    sub_catalog, master, **additional_args)
+                for master, sub_catalog in zip(sparse_catalog, sub_catalogs)}
 
     # Remove Nones
     for key, value in differential_times.items():
@@ -523,7 +537,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
 
 # dt.ct functions
 
-def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8):
+def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
+                  max_workers=None):
     """
     Generate a dt.ct file for hypoDD for a series of events.
 
@@ -542,12 +557,16 @@ def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8):
         Minimum links for an event to be paired, e.g. minimum number of picks
         from the same station and channel (and phase) that are shared between
         two events for them to be paired.
+    :type max_workers: int
+    :param max_workers:
+        Maximum number of workers for parallel processing. If None then all
+        threads will be used.
 
     :returns: event_id_mapper
     """
     differential_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=False, event_id_mapper=event_id_mapper,
-        max_sep=max_sep, min_link=min_link)
+        max_sep=max_sep, min_link=min_link, max_workers=max_workers)
     with open("dt.ct", "w") as f:
         for master_id, linked_events in differential_times.items():
             for linked_event in linked_events:

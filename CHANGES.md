@@ -7,7 +7,9 @@
    the full number of channels are in the stack at the end of the stack, zeros
    are returned).
 * utils.catalog_to_dd.write_correlations
- - fixed bug on execution of parallel execution
+ - Fixed bug on execution of parallel execution.
+ - Added parallel-options for catalog-dt measurements and for stream-preparation
+   before cross correlation-dt measurements.
 
 ## 0.4.3
 * core.match_filter
