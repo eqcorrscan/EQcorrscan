@@ -183,7 +183,7 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
         elif len(pick) == 0:
             continue
         pick = pick[0]
-        tr = stream.select(id=seed_pick_id.seed_id).merge()
+        tr = stream.select(id=seed_pick_id.seed_id)
         if len(tr) == 0:
             continue
         else:
@@ -595,7 +595,7 @@ def _filter_stream(event_id, st, lowcut, highcut):
             "highpass", freq=lowcut, corners=4, zerophase=True)
     else:
         st_out = st  # Don't need to copy if we aren't doing anything.
-    return {event_id: st_out}
+    return {event_id: st_out.merge()}
 
 
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
