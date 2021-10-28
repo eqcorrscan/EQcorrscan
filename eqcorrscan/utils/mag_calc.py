@@ -23,7 +23,7 @@ import math
 from inspect import currentframe
 from scipy.signal import iirfilter, sosfreqz
 from collections import Counter
-from obspy import Trace
+from obspy import Stream, Trace
 from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.core.event import (
     Amplitude, Pick, WaveformStreamID, Origin, ResourceIdentifier)
@@ -366,7 +366,7 @@ def _pairwise(iterable):
 
 # Helpers for relative magnitude calculation
 
-def _get_pick_for_station(event, station, use_s_picks):
+def _get_pick_for_station(event, station, channel, use_s_picks):
     """
     Get the first reported pick for a given station.
 
@@ -380,7 +380,8 @@ def _get_pick_for_station(event, station, use_s_picks):
     :rtype: `obspy.core.event.Pick`
     :return: First reported pick for station
     """
-    picks = [p for p in event.picks if p.waveform_id.station_code == station]
+    picks = [p for p in event.picks if p.waveform_id.station_code == station
+             and p.waveform_id.channel_code == channel]
     if len(picks) == 0:
         Logger.info("No pick for {0}".format(station))
         return None
@@ -433,8 +434,9 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     from eqcorrscan.core.template_gen import _rms
 
     station = seed_id.split('.')[1]
+    channel = seed_id.split('.')[3]
     pick = _get_pick_for_station(
-        event=event, station=station, use_s_picks=use_s_picks)
+        event=event, station=station, channel=channel, use_s_picks=use_s_picks)
     if pick is None:
         Logger.error("No pick for {0}".format(station))
         return None, None, None
@@ -505,6 +507,15 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :rtype: dict
     :return: Dictionary of relative amplitudes keyed by seed-id
     """
+    # keep input safe
+    event1 = event1.copy()
+    # sort out S-picks if not to be used
+    if not use_s_picks:
+        event1.picks = [p for p in event1.picks if p.phase_hint[0] != "S"]
+        st1 = Stream(
+            [tr for tr in st1.copy() if (tr.stats.station, tr.stats.channel) in
+             [(p.waveform_id.station_code, p.waveform_id.channel_code)
+              for p in event1.picks]])
     seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
     amplitudes = {}
     for seed_id in seed_ids:
@@ -621,9 +632,11 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
         tr1 = st1.select(id=seed_id)[0]
         tr2 = st2.select(id=seed_id)[0]
         pick1 = _get_pick_for_station(
-            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
+            event=event1, station=tr1.stats.station, channel=tr1.stats.channel,
+            use_s_picks=use_s_picks)
         pick2 = _get_pick_for_station(
-            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
+            event=event2, station=tr2.stats.station, channel=tr2.stats.channel,
+            use_s_picks=use_s_picks)
         if compute_correlations:
             cc = correlate(
                 tr1.slice(
