@@ -6,6 +6,9 @@
  - Only full correlation stacks are returned now (e.g. where fewer than than
    the full number of channels are in the stack at the end of the stack, zeros
    are returned).
+* utils.mag_calc.relative_magnitude
+ - fixed bug where S-picks / traces were used for relative-magnitude calculation
+   against user's choice.
 
 ## 0.4.3
 * core.match_filter
