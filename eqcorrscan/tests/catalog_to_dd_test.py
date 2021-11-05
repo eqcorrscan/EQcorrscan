@@ -127,7 +127,7 @@ class TestCatalogMethods(unittest.TestCase):
                 matched_pick = [
                     p for p in sparse_event.picks
                     if p.seed_id == pick.waveform_id.get_seed_string()
-                    and p.phase == pick.phase_hint]
+                    and p.phase_hint == pick.phase_hint]
                 self.assertEqual(len(matched_pick), 1)
                 self.assertEqual(
                     matched_pick[0].tt, pick.time - sparse_event.origin_time)
