@@ -10,6 +10,9 @@
  - Fixed bug on execution of parallel execution.
  - Added parallel-options for catalog-dt measurements and for stream-preparation
    before cross correlation-dt measurements.
+ - Default parallelization of dt-computation is now across events (loads CPUs
+   more efficiently), and there is a new option ``max_trace_workers` to use
+   the old parallelization strategy across traces.
 
 ## 0.4.3
 * core.match_filter
