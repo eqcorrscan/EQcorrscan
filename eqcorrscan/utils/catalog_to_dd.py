@@ -530,8 +530,9 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         parallelization across events (default) or across each event's traces
         (when max_workers = 1 and max_traces_workers > 1). The former is often
         quicker for short traces because it generally loads the CPU better for
-        multiple events, but the latter can be quicker for few events with many
-        or very long traces.
+        multiple events and may require more memory, but the latter can be
+        quicker for few events with many or very long traces and requires less
+        memory.
     """
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
