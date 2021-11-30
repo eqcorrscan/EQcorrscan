@@ -469,7 +469,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
                                all_horiz=False, max_workers=None,
-                               *args, **kwargs):
+                               max_trace_workers=1, *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -509,8 +509,13 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         Whether to interpolate correlations or not. Allows subsample accuracy
     :type max_workers: int
     :param max_workers:
-        Maximum number of workers for parallel processing. If None then all
-        threads will be used - only used if correlation = True
+        Maximum number of workers for parallel correlation of events. If None
+        then all threads will be used.
+    :type max_trace_workers: int
+    :param max_trace_workers:
+        Maximum number of workers for parallel correlation of traces insted of
+        events. If None then all threads will be used (but can only be used 
+        when max_workers = 1).
 
     :rtype: dict
     :return: Dictionary of differential times keyed by event id.
@@ -520,6 +525,13 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     .. note::
         The arguments min_cc, stream_dict, extract_len, pre_pick, shift_len
         and interpolate are only required if correlation=True.
+
+        Two parallelization strategies are available for correlating waveforms:
+        parallelization across events (default) or across each event's traces
+        (when max_workers = 1 and max_traces_workers > 1). The former is often
+        quicker for short traces because it generally loads the CPU better for
+        multiple events, but the latter can be quicker for few events with many
+        or very long traces.
     """
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
@@ -551,6 +563,9 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         additional_args.update(correlation_kwargs)
         n = len(sparse_catalog)
         if max_workers == 1:
+            # If desired, parallelize over traces instead of events:
+            max_trace_workers = max_trace_workers or cpu_count()
+            additional_args.update(dict(max_workers=max_trace_workers))
             for i, master in enumerate(sparse_catalog):
                 master_id = str(master.resource_id)
                 sub_catalog = [ev for j, ev in enumerate(sparse_catalog)
@@ -565,12 +580,12 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                 Logger.info(
                     f"Completed correlations for core event {i} of {n}")
         else:
-            additional_args.update(dict(max_workers=1))
             sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                              if master_filter[i]]
                             for master_filter in distance_filter)
-            with pool_boy(
-                    Pool, n, cores=max_workers) as pool:
+            with pool_boy(Pool, n, cores=max_workers) as pool:
+                # Parallelize over events instead of traces
+                additional_args.update(dict(max_workers=1))
                 results = [
                     pool.apply_async(
                         _compute_dt_correlations,
@@ -747,7 +762,11 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     if not (lowcut is None and highcut is None):
         processed_stream_dict = dict()
         if parallel_process:
-            with pool_boy(Pool, len(stream_dict), cores=max_workers) as pool:
+            max_process_workers = int(max(np.array(
+                [max_workers, kwargs.get('max_trace_workers')],
+                dtype=np.float64)))
+            with pool_boy(
+                Pool, len(stream_dict), cores=max_process_workers) as pool:
                 results = [pool.apply_async(
                     _meta_filter_stream,
                     (key, stream_dict, lowcut, highcut))
@@ -764,7 +783,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,
         stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
-        interpolate=interpolate, all_horiz=all_horiz)
+        interpolate=interpolate, all_horiz=all_horiz, **kwargs)
     with open("dt.cc", "w") as f:
         for master_id, linked_events in correlation_times.items():
             for linked_event in linked_events:
