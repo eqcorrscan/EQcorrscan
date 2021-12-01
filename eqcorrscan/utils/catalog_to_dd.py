@@ -12,7 +12,6 @@ import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
 from obspy.core import stream
-from orderedset import OrderedSet
 from multiprocessing import cpu_count, Pool
 
 from obspy import UTCDateTime, Stream
@@ -22,7 +21,6 @@ from obspy.core.event import (
 from eqcorrscan.utils.clustering import dist_mat_km
 from eqcorrscan.core.lag_calc import _concatenate_and_correlate, _xcorr_interp
 from eqcorrscan.utils.correlate import pool_boy
-from wcmatch.glob import C
 
 Logger = logging.getLogger(__name__)
 
@@ -259,14 +257,16 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     matched_pre_pick = pre_pick + shift_len
     # We will use this to maintain order
     event_dict = {str(event.resource_id): event for event in catalog}
-    event_ids = OrderedSet(event_dict.keys())
+    event_ids = set(event_dict.keys())
     # Check for overlap
-    _stream_event_ids = OrderedSet(stream_dict.keys())
+    _stream_event_ids = set(stream_dict.keys())
     if len(event_ids.difference(_stream_event_ids)):
         Logger.warning(
             f"Missing streams for {event_ids.difference(_stream_event_ids)}")
         # Just use the event ids that we actually have streams for!
         event_ids = event_ids.intersection(_stream_event_ids)
+    # Reorder event_ids according to original order
+    event_ids = [key for key in event_dict.keys() if key in event_ids]
 
     if max_workers > 1:
         with pool_boy(Pool, len(event_ids), cores=max_workers) as pool:
@@ -436,8 +436,8 @@ def _prep_horiz_picks(catalog, stream_dict, event_id_mapper):
     catalog = catalog.copy()
     for event in catalog:
         event_S_picks = [
-            pick for pick in event.picks if pick.phase_hint.startswith('S') and
-            pick.waveform_id.get_seed_string()[-1] in 'EN12XY']
+            pick for pick in event.picks if pick.phase_hint.upper().startswith(
+                'S') and pick.waveform_id.get_seed_string()[-1] in 'EN12XY']
         st = stream_dict[str(event.resource_id)]
         st = Stream([tr for tr in st if tr.stats.channel[-1] in 'EN12XY'])
         for tr in st:
@@ -514,7 +514,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     :type max_trace_workers: int
     :param max_trace_workers:
         Maximum number of workers for parallel correlation of traces insted of
-        events. If None then all threads will be used (but can only be used 
+        events. If None then all threads will be used (but can only be used
         when max_workers = 1).
 
     :rtype: dict
@@ -767,7 +767,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                 [max_workers, kwargs.get('max_trace_workers')],
                 dtype=np.float64)))
             with pool_boy(
-                Pool, len(stream_dict), cores=max_process_workers) as pool:
+                    Pool, len(stream_dict), cores=max_process_workers) as pool:
                 results = [pool.apply_async(
                     _meta_filter_stream,
                     (key, stream_dict, lowcut, highcut))
