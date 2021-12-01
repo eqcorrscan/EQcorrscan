@@ -13,6 +13,8 @@
  - Default parallelization of dt-computation is now across events (loads CPUs
    more efficiently), and there is a new option ``max_trace_workers` to use
    the old parallelization strategy across traces.
+ - Now includes `all_horiz`-option that will correlate all matching horizontal
+   channels no matter to which of these the S-pick is linking.
 
 ## 0.4.3
 * core.match_filter
