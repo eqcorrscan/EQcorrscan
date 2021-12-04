@@ -6,6 +6,15 @@
  - Only full correlation stacks are returned now (e.g. where fewer than than
    the full number of channels are in the stack at the end of the stack, zeros
    are returned).
+* utils.catalog_to_dd.write_correlations
+ - Fixed bug on execution of parallel execution.
+ - Added parallel-options for catalog-dt measurements and for stream-preparation
+   before cross correlation-dt measurements.
+ - Default parallelization of dt-computation is now across events (loads CPUs
+   more efficiently), and there is a new option ``max_trace_workers` to use
+   the old parallelization strategy across traces.
+ - Now includes `all_horiz`-option that will correlate all matching horizontal
+   channels no matter to which of these the S-pick is linking.
 
 ## 0.4.3
 * core.match_filter
