@@ -9,6 +9,15 @@
 * utils.mag_calc.relative_magnitude
  - fixed bug where S-picks / traces were used for relative-magnitude calculation
    against user's choice.
+* utils.catalog_to_dd.write_correlations
+ - Fixed bug on execution of parallel execution.
+ - Added parallel-options for catalog-dt measurements and for stream-preparation
+   before cross correlation-dt measurements.
+ - Default parallelization of dt-computation is now across events (loads CPUs
+   more efficiently), and there is a new option ``max_trace_workers` to use
+   the old parallelization strategy across traces.
+ - Now includes `all_horiz`-option that will correlate all matching horizontal
+   channels no matter to which of these the S-pick is linking.
 
 ## 0.4.3
 * core.match_filter
