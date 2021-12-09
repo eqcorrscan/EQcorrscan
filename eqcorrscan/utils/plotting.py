@@ -70,7 +70,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     show = kwargs.get("show", True)
     save = kwargs.get("save", False)
     savefile = kwargs.get("savefile", "EQcorrscan_figure.png")
-    return_fig = kwargs.get("return_figure", False)
+    return_figure = kwargs.get("return_figure", False)
     size = kwargs.get("size", (10.5, 7.5))
     fig.set_size_inches(size)
     if title:
@@ -80,7 +80,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
         Logger.info("Saved figure to {0}".format(savefile))
     if show:
         plt.show(block=True)
-    if return_fig:
+    if return_figure:
         return fig
     fig.clf()
     plt.close(fig)
