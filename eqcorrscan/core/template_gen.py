@@ -822,7 +822,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 channel=_starttime['channel'])[0]
         else:
             tr = st.select(
-                station=_starttime['station'], 
+                station=_starttime['station'],
                 channel=_starttime['channel'])[0]
         Logger.info(f"Found Trace {tr}")
         used_tr = False
