@@ -9,7 +9,8 @@ import pytest
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
-from obspy.clients.filesystem.sds import Client as SDSClient
+from obspy.clients.fdsn.header import FDSNException
+from obspy.clients.earthworm import Client as EWClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
@@ -28,7 +29,7 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 class TestHelpers(unittest.TestCase):
     def test_monkey_patching(self):
         """ Test that monkey patching a client works. """
-        client = SDSClient('.')
+        client = EWClient("pubavo1.wr.usgs.gov", 16022)
         self.assertFalse(hasattr(client, "get_waveforms_bulk"))
         client = get_waveform_client(client)
         self.assertTrue(hasattr(client, "get_waveforms_bulk"))
@@ -146,7 +147,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False)
+                     plot=False)
 
     def test_half_samp_diff(self):
         """
@@ -170,7 +171,7 @@ class TestSynthData(unittest.TestCase):
         templates[0][1].stats.station = 'B'
         match_filter(template_names=['1'], template_list=templates, st=stream,
                      threshold=8, threshold_type='MAD', trig_int=1,
-                     plotvar=False)
+                     plot=False)
 
 
 @pytest.mark.network
@@ -227,7 +228,7 @@ class TestGeoNetCase(unittest.TestCase):
         detections = match_filter(template_names=self.template_names,
                                   template_list=templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  trig_int=6.0, plot=False, plotdir='.',
                                   cores=1)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 6)
@@ -241,7 +242,7 @@ class TestGeoNetCase(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=st, threshold=8.0,
-                         threshold_type='MAD', trig_int=6.0, plotvar=False,
+                         threshold_type='MAD', trig_int=6.0, plot=False,
                          plotdir='.', cores=1)
 
     def test_missing_cont_channel(self):
@@ -252,7 +253,7 @@ class TestGeoNetCase(unittest.TestCase):
         detections, det_cat = match_filter(
             template_names=self.template_names, template_list=self.templates,
             st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=False, plotdir='.', cores=1, output_cat=True)
+            plot=False, plotdir='.', cores=1, output_cat=True)
         self.assertEqual(len(detections), 1)
         self.assertEqual(detections[0].no_chans, 5)
         self.assertEqual(len(detections), len(det_cat))
@@ -266,7 +267,7 @@ class TestGeoNetCase(unittest.TestCase):
             match_filter(
                 template_names=self.template_names,
                 template_list=self.templates, st=st, threshold=8.0,
-                threshold_type='MAD', trig_int=6.0, plotvar=False,
+                threshold_type='MAD', trig_int=6.0, plot=False,
                 plotdir='.', cores=1)
 
     @pytest.mark.flaky(reruns=2)
@@ -282,7 +283,7 @@ class TestGeoNetCase(unittest.TestCase):
         party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plotvar=False)
+            daylong=False, plot=False)
         self.assertEqual(len(party), 16)
 
 
@@ -313,7 +314,7 @@ class TestGappyData(unittest.TestCase):
         party = self.tribe.client_detect(
             client=self.client, starttime=self.starttime,
             endtime=self.endtime, threshold=0.6,
-            threshold_type="absolute", trig_int=2, plotvar=False,
+            threshold_type="absolute", trig_int=2, plot=False,
             parallel_process=False, cores=1)
         for family in party:
             print(family)
@@ -327,7 +328,7 @@ class TestGappyData(unittest.TestCase):
         party = self.tribe.client_detect(
             client=self.client, starttime=self.starttime,
             endtime=self.endtime, threshold=8,
-            threshold_type="MAD", trig_int=2, plotvar=False,
+            threshold_type="MAD", trig_int=2, plot=False,
             parallel_process=False, min_gap=1)
         self.assertEqual(len(party), 0)
 
@@ -385,7 +386,7 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plotvar=False, plotdir='.',
+                         trig_int=6.0, plot=False, plotdir='.',
                          cores=1, extract_detections=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
@@ -401,14 +402,14 @@ class TestNCEDCCases(unittest.TestCase):
         pads = [0 for _ in range(len(template_array))]
         ccc_numpy, no_chans = numpy_normxcorr(template_array, stream, pads)
         ccc, no_chans = fftw_normxcorr(template_array, stream, pads)
-        self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.03))
+        self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.04))
 
     def test_catalog_extraction(self):
         detections, det_cat, detection_streams = \
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plotvar=False, plotdir='.',
+                         trig_int=6.0, plot=False, plotdir='.',
                          cores=1, extract_detections=True, output_cat=True)
         self.assertEqual(len(detections), 4)
         self.assertEqual(len(detection_streams), len(detections))
@@ -425,22 +426,25 @@ class TestNCEDCCases(unittest.TestCase):
             individual_detections += match_filter(
                 template_names=[template_name], template_list=[template],
                 st=self.st.copy(), threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, plotvar=False, plotdir='.', cores=1)
+                trig_int=6.0, plot=False, plotdir='.', cores=1)
         individual_dict = []
         for detection in individual_detections:
             individual_dict.append({'template_name': detection.template_name,
                                     'time': detection.detect_time,
-                                    'cccsum': detection.detect_val.round(6)})
+                                    'cccsum': detection.detect_val.round(4)})
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  trig_int=6.0, plot=False, plotdir='.',
                                   cores=1)
         self.assertEqual(len(individual_detections), len(detections))
         for detection in detections:
             detection_dict = {'template_name': detection.template_name,
                               'time': detection.detect_time,
-                              'cccsum': detection.detect_val.round(6)}
+                              'cccsum': detection.detect_val.round(4)}
+            if detection_dict not in individual_dict:
+                print(f"Detection:\n{detection_dict}\nnot found in:"
+                      f"\n{individual_dict}")
             self.assertTrue(detection_dict in individual_dict)
 
     def test_read_write_detections(self):
@@ -450,7 +454,7 @@ class TestNCEDCCases(unittest.TestCase):
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  trig_int=6.0, plot=False, plotdir='.',
                                   cores=1)
         detection_dict = []
         for detection in detections:
@@ -481,7 +485,7 @@ class TestNCEDCCases(unittest.TestCase):
         detections = match_filter(
             template_names=self.template_names, template_list=self.templates,
             st=self.st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plotvar=False, plotdir='.', cores=1)
+            plot=False, plotdir='.', cores=1)
         cat = get_catalog(detections)
         self.assertEqual(len(cat), len(detections))
         for det in detections:
@@ -497,7 +501,7 @@ class TestNCEDCCases(unittest.TestCase):
         detections = match_filter(template_names=self.template_names,
                                   template_list=self.templates, st=self.st,
                                   threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plotvar=False, plotdir='.',
+                                  trig_int=6.0, plot=False, plotdir='.',
                                   cores=1)
         streams = extract_from_stream(stream=self.st.copy(),
                                       detections=detections)
@@ -513,37 +517,37 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=self.template_names[0],
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # templates is not a list
             match_filter(template_names=self.template_names,
                          template_list=self.templates[0], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # template and template_names length are not equal
             match_filter(template_names=self.template_names,
                          template_list=[self.templates[0]], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # templates is not a list of streams
             match_filter(template_names=self.template_names,
                          template_list=['abc'], st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # st is not a Stream
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=np.random.randn(10),
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
         with self.assertRaises(MatchFilterError):
             # threshold_type is wrong
             match_filter(template_names=self.template_names,
                          template_list=self.templates, st=self.st,
                          threshold=8.0, threshold_type='albert', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
 
     def test_masked_template(self):
         templates = [self.templates[0].copy()]
@@ -555,7 +559,7 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
 
     def test_non_equal_template_lengths(self):
         templates = [self.templates[0].copy()]
@@ -565,7 +569,7 @@ class TestNCEDCCases(unittest.TestCase):
             match_filter(template_names=[self.template_names[0]],
                          template_list=templates, st=self.st,
                          threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                         plotvar=False, plotdir='.', cores=1)
+                         plot=False, plotdir='.', cores=1)
 
 
 class TestMatchCopy(unittest.TestCase):
@@ -649,7 +653,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
         bulk_info = [(stachan[0], stachan[1], '*', stachan[2],
                       t1 - 5, t2 + 5) for stachan in template_stachans]
         # Just downloading an hour of data
-        st = client.get_waveforms_bulk(bulk_info)
+        try:
+            st = client.get_waveforms_bulk(bulk_info)
+        except FDSNException:
+            st = Stream()
+            for _bulk in bulk_info:
+                st += client.get_waveforms(*_bulk)
         st.merge()
         st.trim(t1, t2)
         for tr in st:
@@ -689,11 +698,42 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+            trig_int=6.0, daylong=False, plot=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
             check_event=True)
+
+    def test_tribe_detect_with_empty_streams(self):
+        """
+        Compare the detect method for a tribe of one vs two templates and check
+        that the detection has the same detect time, in a case where the
+        continuous data is incomplete. This test should fail in v0.4.2 due to
+        a bug.
+        """
+        # remove trace for station PHA (PHOB, PSR, PCA, PAG remain)
+        st = self.unproc_st.copy().remove(
+            self.unproc_st.copy().select(station='PHA')[0])
+        tribe1 = Tribe([t.copy() for t in self.tribe
+                        if (t.name == '2004_09_28t17_19_08' or
+                            t.name == '2004_09_28t17_19_25')])
+        # run detection with 2 templates in tribe
+        party1 = tribe1.detect(
+            stream=st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+        self.assertEqual(len(party1), 2)
+        party1 = Party([f for f in party1
+                        if f.template.name == '2004_09_28t17_19_25'])
+        # run detection with only 1 template in tribe
+        tribe2 = Tribe([t.copy() for t in self.tribe
+                        if t.name == '2004_09_28t17_19_25'])
+        party2 = tribe2.detect(
+            stream=st, threshold=8.0, threshold_type='MAD',
+            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+        self.assertEqual(len(party2), 1)
+        # This should fail in v0.4.2
+        compare_families(
+            party=party1, party_in=party2, float_tol=0.05, check_event=False)
 
     def test_tribe_detect_short_data(self):
         """Test the detect method on Tribe objects"""
@@ -703,7 +743,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.process_length = 2400
         party = tribe.detect(
             stream=short_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
             ignore_bad_data=True)
         self.assertEqual(len(party), 4)
 
@@ -712,7 +752,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=True,
+            trig_int=6.0, daylong=False, plot=False, parallel_process=True,
             process_cores=2)
         self.assertEqual(len(party), 4)
         compare_families(
@@ -723,7 +763,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test the detect method on Tribe objects"""
         party = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
             save_progress=True)
         self.assertEqual(len(party), 4)
         self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
@@ -742,7 +782,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream[0].stats.starttime + 1900, stream[0].stats.endtime))
         party = self.tribe.detect(
             stream=stream, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False,
+            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
             xcorr_func='fftw', concurrency='concurrent')
         self.assertEqual(len(party), 4)
 
@@ -754,7 +794,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.highcut = None
         party = tribe.detect(
             stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
+            trig_int=6.0, daylong=False, plot=False, parallel_process=False)
         self.assertEqual(len(party), 4)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
@@ -768,7 +808,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plotvar=False)
+            daylong=False, plot=False)
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
@@ -781,7 +821,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plotvar=False, save_progress=True)
+            daylong=False, plot=False, save_progress=True)
         self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
         saved_party = Party().read("eqcorrscan_temporary_party.tgz")
         self.assertEqual(party, saved_party)
@@ -796,7 +836,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         # Test the chained method
         chained_cat = self.tribe.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False).lag_calc(
+            trig_int=6.0, daylong=False, plot=False).lag_calc(
             stream=self.unproc_st, pre_processed=False)
         catalog = self.party.copy().lag_calc(
             stream=self.unproc_st, pre_processed=False)
@@ -928,7 +968,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
                      for stachan in self.template_stachans]
         # Just downloading an hour of data
         print('Downloading continuous day-long data')
-        st = client.get_waveforms_bulk(bulk_info)
+        try:
+            st = client.get_waveforms_bulk(bulk_info)
+        except FDSNException:
+            st = Stream()
+            for _bulk in bulk_info:
+                st += client.get_waveforms(*_bulk)
         st.merge(fill_value='interpolate')
         # Hack day-long templates
         daylong_tribe = self.onehztribe.copy()
@@ -938,7 +983,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         # MAD!
         day_party = daylong_tribe.detect(
             stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=True, plotvar=False, parallel_process=False)
+            daylong=True, plot=False, parallel_process=False)
         self.assertEqual(len(day_party), 4)
         day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
                                          parallel=False)
@@ -957,7 +1002,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         test_template = self.family.template.copy()
         party_t = test_template.detect(
             stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, overlap=None)
+            trig_int=6.0, daylong=False, plot=False, overlap=None)
         self.assertEqual(len(party_t), 1)
 
     def test_template_construct_not_implemented(self):
@@ -1010,15 +1055,26 @@ class TestMatchObjectLight(unittest.TestCase):
 
     def test_party_io_wildcards(self):
         """Test reading and writing party objects."""
-        if os.path.isfile('test_party_walrus.tgz'):
-            os.remove('test_party_walrus.tgz')
+        party_0 = self.party.copy()
+        for f in party_0:
+            for d in f:
+                detect_time = d.detect_time + 3600
+                d.detect_time = detect_time
+                d.id = (''.join(d.template_name.split(' ')) + '_' +
+                        detect_time.strftime('%Y%m%d_%H%M%S%f'))
+
+        for f in ["0", "1"]:
+            if os.path.isfile(f'test_party_walrus_{f}.tgz'):
+                os.remove(f'test_party_walrus_{f}.tgz')
         try:
-            self.party.write(filename='test_party_walrus')
+            self.party.write(filename='test_party_walrus_0')
+            party_0.write(filename='test_party_walrus_1')
             party_back = read_party(fname='test_party_w*.tgz')
-            self.assertEqual(self.party, party_back)
+            self.assertEqual(self.party + party_0, party_back)
         finally:
-            if os.path.isfile('test_party_walrus.tgz'):
-                os.remove('test_party_walrus.tgz')
+            for f in ["0", "1"]:
+                if os.path.isfile(f'test_party_walrus_{f}.tgz'):
+                    os.remove(f'test_party_walrus_{f}.tgz')
 
     def test_tribe_internal_methods(self):
         self.assertEqual(len(self.tribe), 4)
@@ -1204,15 +1260,32 @@ class TestMatchObjectLight(unittest.TestCase):
         for i in range(200):
             det = party[0][0].copy()
             det.detect_time += i * 20
+            # Include some negative detections!
+            fudge = np.random.randint(-1, 2)
+            if fudge == 0:
+                fudge += 1
             det.detect_val = det.threshold + (i * 1e-1)
+            det.detect_val *= fudge
             det.id = str(i)
             party[0].detections.append(det)
         self.assertEqual(len(party), 204)
-        party.rethreshold(new_threshold=9)
-        for family in party:
+        negative_count = len([d for f in party for d in f if d.detect_val < 0])
+        self.assertGreater(negative_count, 0)
+        party1 = party.copy().rethreshold(new_threshold=9)
+        for family in party1:
             for d in family:
                 self.assertEqual(d.threshold_input, 9.0)
                 self.assertGreaterEqual(d.detect_val, d.threshold)
+        party2 = party.copy().rethreshold(new_threshold=9, abs_values=True)
+        negative_count = 0
+        for family in party2:
+            for d in family:
+                self.assertEqual(d.threshold_input, 9.0)
+                self.assertGreaterEqual(abs(d.detect_val), d.threshold)
+                if d.detect_val < 0:
+                    negative_count += 1
+        # Check that there actually are some negative detections...
+        self.assertGreater(negative_count, 0)
 
     def test_family_init(self):
         """Test generating a family with various things."""
@@ -1375,7 +1448,7 @@ class TestMatchObjectLight(unittest.TestCase):
         """Test the write method of family."""
         family = self.family.copy()
         try:
-            family.write('test_family')
+            family.write('test_family', overwrite=True)
             party_back = read_party('test_family.tgz')
             self.assertEqual(len(party_back), 1)
             self.assertEqual(party_back[0], family)
@@ -1465,7 +1538,7 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
                     assert det.__dict__[key] == check_det.__dict__[key]
 
 
-def test_match_filter(plotvar=False, extract_detections=False,
+def test_match_filter(plot=False, extract_detections=False,
                       threshold_type='MAD', threshold=10,
                       template_excess=False, stream_excess=False):
     """
@@ -1511,7 +1584,7 @@ def test_match_filter(plotvar=False, extract_detections=False,
     detections = match_filter(
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
-        plotvar=plotvar, plotdir='.', cores=1, output_cat=False,
+        plot=plot, plotdir='.', cores=1, output_cat=False,
         extract_detections=extract_detections)
     if extract_detections:
         detection_streams = detections[1]

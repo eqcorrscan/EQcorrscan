@@ -428,7 +428,7 @@ class Tribe(object):
                xcorr_func=None, concurrency=None, cores=None,
                ignore_length=False, ignore_bad_data=False, group_size=None,
                overlap="calculate", full_peaks=False, save_progress=False,
-               process_cores=None, **kwargs):
+               process_cores=None, pre_processed=False, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -505,6 +505,10 @@ class Tribe(object):
         :param process_cores:
             Number of processes to use for pre-processing (if different to
             `cores`).
+        :type pre_processed: bool
+        :param pre_processed:
+            Whether the stream has been pre-processed or not to match the
+            templates.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -581,12 +585,16 @@ class Tribe(object):
         """
         party = Party()
         template_groups = group_templates(self.templates)
+        if len(template_groups) > 1 and pre_processed:
+            raise NotImplementedError(
+                "Inconsistent template processing and pre-processed data - "
+                "something is wrong!")
         # now we can compute the detections for each group
         for group in template_groups:
             group_party = _group_detect(
                 templates=group, stream=stream.copy(), threshold=threshold,
                 threshold_type=threshold_type, trig_int=trig_int,
-                plot=plot, group_size=group_size, pre_processed=False,
+                plot=plot, group_size=group_size, pre_processed=pre_processed,
                 daylong=daylong, parallel_process=parallel_process,
                 xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
                 ignore_length=ignore_length, overlap=overlap, plotdir=plotdir,
@@ -986,8 +994,8 @@ class Tribe(object):
 
             - `from_client` requires:
                 :param str client_id:
-                    string passable by obspy to generate Client, or a Client
-                    instance
+                    string passable by obspy to generate Client, or any object
+                    with a `get_waveforms` method, including a Client instance.
                 :param `obspy.core.event.Catalog` catalog:
                     Catalog of events to generate template for
                 :param float data_pad: Pad length for data-downloads in seconds

@@ -21,7 +21,7 @@ from itertools import cycle
 from scipy.linalg import diagsvd
 from scipy import fftpack
 from obspy import UTCDateTime, Stream, Catalog, Trace
-from obspy.signal.cross_correlation import xcorr
+from obspy.signal.cross_correlation import correlate, xcorr_max
 
 from eqcorrscan.utils.stacking import align_traces, PWS_stack, linstack
 
@@ -70,7 +70,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
     show = kwargs.get("show", True)
     save = kwargs.get("save", False)
     savefile = kwargs.get("savefile", "EQcorrscan_figure.png")
-    return_fig = kwargs.get("return_figure", False)
+    return_figure = kwargs.get("return_figure", False)
     size = kwargs.get("size", (10.5, 7.5))
     fig.set_size_inches(size)
     if title:
@@ -80,7 +80,7 @@ def _finalise_figure(fig, **kwargs):  # pragma: no cover
         Logger.info("Saved figure to {0}".format(savefile))
     if show:
         plt.show(block=True)
-    if return_fig:
+    if return_figure:
         return fig
     fig.clf()
     plt.close(fig)
@@ -1758,7 +1758,9 @@ def plot_synth_real(real_template, synthetic, channels=False, **kwargs):
                                        channel=stachan[1])[0]
         synth_tr = synthetic.select(station=stachan[0],
                                     channel=stachan[1])[0]
-        shift, corr = xcorr(real_tr, synth_tr, 2)
+        corr_fun = correlate(real_tr, synth_tr, 2)
+        shift, corr = xcorr_max(corr_fun)
+        shift = int(shift)
         Logger.info('Shifting by: ' + str(shift) + ' samples')
         if corr < 0:
             synth_tr.data = synth_tr.data * -1

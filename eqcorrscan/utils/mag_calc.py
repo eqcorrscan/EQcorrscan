@@ -23,7 +23,7 @@ import math
 from inspect import currentframe
 from scipy.signal import iirfilter, sosfreqz
 from collections import Counter
-from obspy import Trace
+from obspy import Stream, Trace
 from obspy.signal.invsim import simulate_seismometer as seis_sim
 from obspy.core.event import (
     Amplitude, Pick, WaveformStreamID, Origin, ResourceIdentifier)
@@ -366,7 +366,7 @@ def _pairwise(iterable):
 
 # Helpers for relative magnitude calculation
 
-def _get_pick_for_station(event, station, use_s_picks):
+def _get_pick_for_station(event, station, channel, use_s_picks):
     """
     Get the first reported pick for a given station.
 
@@ -380,7 +380,8 @@ def _get_pick_for_station(event, station, use_s_picks):
     :rtype: `obspy.core.event.Pick`
     :return: First reported pick for station
     """
-    picks = [p for p in event.picks if p.waveform_id.station_code == station]
+    picks = [p for p in event.picks if p.waveform_id.station_code == station
+             and p.waveform_id.channel_code == channel]
     if len(picks) == 0:
         Logger.info("No pick for {0}".format(station))
         return None
@@ -433,8 +434,9 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     from eqcorrscan.core.template_gen import _rms
 
     station = seed_id.split('.')[1]
+    channel = seed_id.split('.')[3]
     pick = _get_pick_for_station(
-        event=event, station=station, use_s_picks=use_s_picks)
+        event=event, station=station, channel=channel, use_s_picks=use_s_picks)
     if pick is None:
         Logger.error("No pick for {0}".format(station))
         return None, None, None
@@ -505,6 +507,15 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :rtype: dict
     :return: Dictionary of relative amplitudes keyed by seed-id
     """
+    # keep input safe
+    event1 = event1.copy()
+    # sort out S-picks if not to be used
+    if not use_s_picks:
+        event1.picks = [p for p in event1.picks if p.phase_hint[0] != "S"]
+        st1 = Stream(
+            [tr for tr in st1.copy() if (tr.stats.station, tr.stats.channel) in
+             [(p.waveform_id.station_code, p.waveform_id.channel_code)
+              for p in event1.picks]])
     seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
     amplitudes = {}
     for seed_id in seed_ids:
@@ -549,13 +560,16 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
 
     See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
     on how relative amplitudes are calculated. To compute relative magnitudes
-    from relative amplitudes this function weights the amplitude ratios by
+    from relative amplitudes this function can weight the amplitude ratios by
     the cross-correlation of the two events. The relation used is similar to
-    Schaff and Richards (2014) and is:
+    Schaff and Richards (2014), equation 4 and is:
 
     .. math::
 
         \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+
+    If you decide to use this function you should definitely read the paper
+    to understand what you can use this for and cite the paper!
 
     :type st1: `obspy.core.stream.Stream`
     :param st1: Stream for event1
@@ -618,31 +632,34 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
         tr1 = st1.select(id=seed_id)[0]
         tr2 = st2.select(id=seed_id)[0]
         pick1 = _get_pick_for_station(
-            event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
+            event=event1, station=tr1.stats.station, channel=tr1.stats.channel,
+            use_s_picks=use_s_picks)
         pick2 = _get_pick_for_station(
-            event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
-        if weight_by_correlation:
-            if compute_correlations:
-                cc = correlate(
-                    tr1.slice(
-                        starttime=pick1.time + signal_window[0],
-                        endtime=pick1.time + signal_window[1]),
-                    tr2.slice(
-                        starttime=pick2.time + signal_window[0],
-                        endtime=pick2.time + signal_window[1]),
-                    shift=int(shift * tr1.stats.sampling_rate))
-                cc = cc.max()
-                correlations.update({seed_id: cc})
-            else:
-                cc = correlations.get(seed_id, 0.0)
-            if cc < min_cc:
-                continue
+            event=event2, station=tr2.stats.station, channel=tr2.stats.channel,
+            use_s_picks=use_s_picks)
+        if compute_correlations:
+            cc = correlate(
+                tr1.slice(
+                    starttime=pick1.time + signal_window[0],
+                    endtime=pick1.time + signal_window[1]),
+                tr2.slice(
+                    starttime=pick2.time + signal_window[0],
+                    endtime=pick2.time + signal_window[1]),
+                shift=int(shift * tr1.stats.sampling_rate))
+            cc = cc.max()
+            correlations.update({seed_id: cc})
         else:
+            cc = correlations.get(seed_id, 0.0)
+        if cc < min_cc:
+            Logger.info(
+                f"Correlation of {cc} less than {min_cc} for {seed_id}, "
+                "skipping.")
+            continue
+        if not weight_by_correlation:
             cc = 1.0
         # Weight and add to relative_magnitudes
         rel_mag = math.log10(amplitude_ratio) * cc
-        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
-            tr1.id, rel_mag))
+        Logger.info(f"Channel: {seed_id} Magnitude change {rel_mag:.2f}")
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
         return relative_magnitudes, correlations

@@ -27,9 +27,13 @@ from multiprocessing import Pool as ProcessPool, cpu_count
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
+import math
 from future.utils import native_str
+from packaging import version
 
 from eqcorrscan.utils.libnames import _load_cdll
+from eqcorrscan.utils import FMF_INSTALLED
+
 
 Logger = logging.getLogger(__name__)
 
@@ -55,6 +59,9 @@ XCOR_ARRAY_METHODS = ('array_xcorr')
 
 # Gain shift for low-variance stabilization
 MULTIPLIER = 1e8
+
+# Minimum version for compatible correlations from Fast Matched Filter
+MIN_FMF_VERSION = version.parse("1.4.0")
 
 
 class CorrelationError(Exception):
@@ -194,8 +201,11 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -242,8 +252,11 @@ def _general_serial(func):
             no_chans += tr_chans.astype(np.int)
             for chan, state in zip(chans, tr_chans):
                 if state:
-                    chan.append((seed_id.split('.')[1],
-                                 seed_id.split('.')[-1].split('_')[0]))
+                    chan.append(seed_id)
+        if stack:
+            cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+        chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+                  for seed_id in _chans] for _chans in chans]
         return cccsums, no_chans, chans
 
     return stream_xcorr
@@ -322,6 +335,30 @@ def register_array_xcorr(name, func=None, is_default=False):
     # called, then used as a decorator
     return wrapper
 
+
+def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
+    """
+    Zero the end portion of the correlation sum that does not include the full
+    set of channels.
+
+    :param cccsums: 2D numpy array
+    :type cccsums: np.ndarray
+    :param pad_dict: pad_dict from _get_array_dicts
+    :type pad_dict: dict
+    :param used_seed_ids: The SEED IDs actually used in correlation
+    :type used_seed_ids: list of list of str
+
+    :return:
+        Valid correlation stack - end will be zero-ed up to maxmimum moveout
+    :rtype: np.ndarray
+    """
+    # TODO: This is potentially quite a slow way to do this.
+    for i, cccsum in enumerate(cccsums):
+        max_moveout = max(value[i] for key, value in pad_dict.items()
+                          if key in used_seed_ids[i])
+        if max_moveout:
+            cccsum[-max_moveout:] = 0.0
+    return cccsums
 
 # ------------------ array_xcorr fetching functions
 
@@ -670,8 +707,11 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
         no_chans += tr_chans.astype(np.int)
         for chan, state in zip(chans, tr_chans):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -723,8 +763,11 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
-                chan.append((seed_id.split('.')[1],
-                             seed_id.split('.')[-1].split('_')[0]))
+                chan.append(seed_id)
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+    chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+              for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
 
 
@@ -868,6 +911,168 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         stream_array[i] *= multipliers[x]
     return cccs, used_chans
 
+
+# ------------------------------- FastMatchedFilter Wrapper
+
+def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
+    if not FMF_INSTALLED:
+        raise ImportError("FastMatchedFilter is not available")
+    import fast_matched_filter
+
+    if version.parse(fast_matched_filter.__version__) >= MIN_FMF_VERSION:
+        from fast_matched_filter import matched_filter as fmf
+    else:
+        raise ImportError(f"FMF version {fast_matched_filter.__version__} "
+                          f"must be >= {MIN_FMF_VERSION}")
+    # Demean
+    template_arr -= template_arr.mean(axis=-1, keepdims=True)
+    data_arr -= data_arr.mean(axis=-1, keepdims=True)
+
+    multipliers = []
+    for x in range(data_arr.shape[0]):
+        # Check that stream is non-zero and above variance threshold
+        if not np.all(data_arr[x] == 0) and np.var(data_arr[x]) < 1e-8:
+            # Apply gain
+            data_arr[x] *= MULTIPLIER
+            Logger.warning(f"Low variance found for {x}, applying gain "
+                           "to stabilise correlations")
+            multipliers.append(MULTIPLIER)
+        else:
+            multipliers.append(1)
+
+    cccsums = fmf(
+        templates=template_arr, weights=weights, moveouts=pads,
+        data=data_arr, step=step, arch=arch, normalize="full")
+    # Remove gain
+    for x in range(data_arr.shape[0]):
+        data_arr[x] *= multipliers[x]
+
+    return cccsums
+
+
+@register_array_xcorr("fmf")
+def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
+    """
+    Compute cross-correlations in the time-domain using the FMF routine.
+
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+    :param arch: "gpu" or "precise" to run on GPU or CPU respectively
+    type arch: str
+
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
+    """
+    assert templates.ndim == 2, "Templates must be 2D"
+    assert stream.ndim == 1, "Stream must be 1D"
+
+    used_chans = ~np.isnan(templates).any(axis=1)
+
+    # We have to reshape to an extra dimension for FMF
+    ccc = _run_fmf_xcorr(
+        template_arr=templates.reshape(
+            (1, templates.shape[0], templates.shape[1])).swapaxes(0, 1),
+        data_arr=stream.reshape((1, stream.shape[0])),
+        weights=np.ones((1, templates.shape[0])),
+        pads=np.array([pads]),
+        arch=arch.lower())
+
+    return ccc, used_chans
+
+
+@fmf_xcorr.register("stream_xcorr")
+@fmf_xcorr.register("concurrent")
+def _fmf_gpu(templates, stream, *args, **kwargs):
+    """
+    Thin wrapper of fmf_multi_xcorr setting arch to gpu.
+    """
+    from fast_matched_filter import GPU_LOADED
+    if not GPU_LOADED:
+        Logger.warning("FMF reports GPU not loaded, reverting to CPU")
+        return _fmf_cpu(templates=templates, stream=stream, *args, **kwargs)
+    return _fmf_multi_xcorr(templates, stream, arch="gpu")
+
+
+@fmf_xcorr.register("multithread")
+@fmf_xcorr.register("multiprocess")
+def _fmf_cpu(templates, stream, *args, **kwargs):
+    """
+    Thin wrapper of fmf_multi_xcorr setting arch to cpu.
+    """
+    from fast_matched_filter import CPU_LOADED
+    if not CPU_LOADED:
+        raise NotImplementedError(
+            "FMF reports CPU not loaded - try rebuilding FMF")
+    return _fmf_multi_xcorr(templates, stream, arch="precise")
+
+
+def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
+    """
+    Apply FastMatchedFilter routine concurrently.
+
+    :type templates: list
+    :param templates:
+        A list of templates, where each one should be an obspy.Stream object
+        containing multiple traces of seismic data and the relevant header
+        information.
+    :type stream: obspy.core.stream.Stream
+    :param stream:
+        A single Stream object to be correlated with the templates.
+
+    :returns:
+        New list of :class:`numpy.ndarray` objects.  These will contain
+        the correlation sums for each template for this day of data.
+    :rtype: list
+    :returns:
+        list of ints as number of channels used for each cross-correlation.
+    :rtype: list
+    :returns:
+        list of list of tuples of station, channel for all cross-correlations.
+    :rtype: list
+    """
+    if kwargs.get("stack", False):
+        raise NotImplementedError(
+            "FMF does not support unstacked correlations, use a different "
+            "backend")
+    arch = kwargs.get("arch", "gpu")
+    Logger.info(f"Running FMF targeting the {arch}")
+
+    chans = [[] for _i in range(len(templates))]
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=True)
+    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    assert set(seed_ids)
+
+    # Reshape templates into [templates x traces x time]
+    t_arr = np.array([template_dict[seed_id]
+                      for seed_id in seed_ids]).swapaxes(0, 1)
+    # Reshape stream into [traces x time]
+    d_arr = np.array([stream_dict[seed_id] for seed_id in seed_ids])
+    # Moveouts should be [templates x traces]
+    pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
+    # Weights should be shaped like pads
+    weights = np.ones_like(pads)
+
+    cccsums = _run_fmf_xcorr(
+        template_arr=t_arr, weights=weights, pads=pads,
+        data_arr=d_arr, step=1, arch=arch)
+
+    tr_chans = np.array([~np.isnan(template_dict[seed_id]).any(axis=1)
+                         for seed_id in seed_ids])
+    no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+    # Note: FMF already returns the zeroed end of correlations - we don't
+    # need to call _get_valid_correlation_sum
+    for seed_id, tr_chan in zip(seed_ids, tr_chans):
+        for chan, state in zip(chans, tr_chan):
+            if state:
+                chan.append((seed_id.split('.')[1],
+                             seed_id.split('.')[-1].split('_')[0]))
+    return cccsums, no_chans, chans
+
+
 # ------------------------------- stream_xcorr functions
 
 
@@ -929,8 +1134,11 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
             np.abs(stream_channel.data)) / 1e5)
         stream_dict.update(
             {seed_id: stream_data.astype(np.float32)})
+        # PROBLEM - DEBUG: if two traces start just before / just after a
+        # "full-sample-time", then stream_offset can become 1, while a value in
+        # pad_list can become 0. 0-1 = -1; which is problematic.
         stream_offset = int(
-            round(stream_channel.stats.sampling_rate *
+            math.floor(stream_channel.stats.sampling_rate *
                   (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
@@ -945,6 +1153,9 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     return stream_dict, template_dict, pad_dict, seed_ids
 
 
+# Remove fmf if it isn't installed
+if not FMF_INSTALLED:
+    XCOR_FUNCS.pop("fmf")
 # a dict of built in xcorr functions, used to distinguish from user-defined
 XCORR_FUNCS_ORIGINAL = copy.copy(XCOR_FUNCS)
 

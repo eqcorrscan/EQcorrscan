@@ -170,7 +170,8 @@ class SyntheticTests(unittest.TestCase):
         template_names = [f.template.name for f in self.party]
         output_cat = lag_calc(
             detections, self.data, template_names, templates,
-            shift_len=0.2, min_cc=0.4, horizontal_chans=['E', 'N', '1', '2'],
+            shift_len=0.2, min_cc=0.4, min_cc_from_mean_cc_factor=1,
+            horizontal_chans=['E', 'N', '1', '2'],
             vertical_chans=['Z'], cores=1, interpolate=False,
             plot=False, export_cc=False)
         self.assertEqual(len(output_cat), len(detections))
@@ -213,12 +214,12 @@ class SimpleRealDataTests(unittest.TestCase):
                               detect_stream[0].stats.endtime)
             if d_start <= t_start and d_end >= t_end:
                 for ccc_chan in _ccc:
-                    self.assertEqual(ccc_chan.max(), 1.0)
+                    self.assertEqual(round(ccc_chan.max(), 5), 1.0)
                     self.assertEqual(ccc_chan.argmax(),
                                      samp_rate * (t_start - d_start))
             else:
                 for ccc_chan in _ccc:
-                    self.assertNotEqual(ccc_chan.max(), 1.0)
+                    self.assertNotEqual(round(ccc_chan.max(), 5), 1.0)
 
     def test_correlation_precision(self):
         """Compare to correlation function outputs"""
