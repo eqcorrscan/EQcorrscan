@@ -587,8 +587,8 @@ class Family(object):
         :type check_full_seed: bool
         :param check_full_seed:
             If True, will check for duplicate traces against the full SEED id,
-            including Network, Station, Location and Channel. If False (default),
-            will check only against Station and Channel.
+            including Network, Station, Location and Channel. If False
+            (default), will check only against Station and Channel.
 
 
         :returns:
@@ -624,7 +624,8 @@ class Family(object):
             min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir,
-            export_cc=export_cc, cc_dir=cc_dir, check_full_seed=check_full_seed)
+            export_cc=export_cc, cc_dir=cc_dir, 
+            check_full_seed=check_full_seed)
         catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:
