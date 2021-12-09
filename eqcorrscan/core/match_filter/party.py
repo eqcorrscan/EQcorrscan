@@ -914,10 +914,10 @@ class Party(object):
         :type check_full_seed: bool
         :param check_full_seed:
             If True, will check for duplicate traces against the full SEED id,
-            including Network, Station, Location and Channel. If False (default),
-            will check only against Station and Channel. This behavior was
-            originally necessary to cope with some software (i.e. SEISAN) not
-            storing picks with full SEED info.
+            including Network, Station, Location and Channel. If False
+            (default), will check only against Station and Channel. This
+            behaviour was originally necessary to cope with some software
+            (i.e. SEISAN) not storing picks with full SEED info.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
