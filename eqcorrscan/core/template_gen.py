@@ -605,7 +605,7 @@ def _rms(array):
 
 def _template_gen(picks, st, length, swin='all', prepick=0.05,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  plotdir=None):
+                  plotdir=None, check_full_seed=False):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -651,6 +651,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
+    :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check the trace header against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel. This behavior was
+        originally necessary to cope with some software (i.e. SEISAN) not
+        storing picks with full SEED info.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
