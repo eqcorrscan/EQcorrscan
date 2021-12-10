@@ -3,8 +3,9 @@ import logging
 from multiprocessing import cpu_count
 
 from obspy.clients.fdsn import Client
+from obspy.clients.fdsn.header import FDSNException
 from obspy.core.event import Catalog
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Stream
 
 from eqcorrscan.core import template_gen, match_filter, lag_calc
 from eqcorrscan.utils import pre_processing, catalog_utils
@@ -66,7 +67,12 @@ def run_tutorial(min_magnitude=2, shift_len=0.2, num_cores=4, min_cc=0.5):
         bulk_info = [(tr.stats.network, tr.stats.station, '*',
                       tr.stats.channel, t1, t2) for tr in templates[0]]
         # Just downloading a chunk of data
-        st = client.get_waveforms_bulk(bulk_info)
+        try:
+            st = client.get_waveforms_bulk(bulk_info)
+        except FDSNException:
+            st = Stream()
+            for _bulk in bulk_info:
+                st += client.get_waveforms(*_bulk)
         st.merge(fill_value='interpolate')
         st = pre_processing.shortproc(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,

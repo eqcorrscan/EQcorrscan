@@ -18,22 +18,22 @@ logging.basicConfig(
 
 
 def mktemplates(
-        network_code='GEONET', plot=True, publicIDs=None):
+        network_code='GEONET', plot=True, public_ids=None):
     """Functional wrapper to make templates"""
-    publicIDs = publicIDs or [
+    public_ids = public_ids or [
         '2016p008122', '2016p008353', '2016p008155', '2016p008194']
     client = Client(network_code)
     # We want to download a few events from an earthquake sequence, these are
     # identified by publiID numbers, given as arguments
 
     catalog = Catalog()
-    for publicID in publicIDs:
+    for public_id in public_ids:
         try:
             catalog += client.get_events(
-                eventid=publicID, includearrivals=True)
+                eventid=public_id, includearrivals=True)
         except TypeError:
             # Cope with some FDSN services not implementing includearrivals
-            catalog += client.get_events(eventid=publicID)
+            catalog += client.get_events(eventid=public_id)
 
     # Lets plot the catalog to see what we have
     if plot:
@@ -78,4 +78,4 @@ if __name__ == '__main__':
         net_code = sys.argv[1]
         idlist = list(sys.argv)[2:]
         print(idlist)
-        mktemplates(net_code, idlist)
+        mktemplates(network_code=net_code, public_ids=idlist)

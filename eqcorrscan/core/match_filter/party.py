@@ -269,6 +269,12 @@ class Party(object):
                 Logger.warning('Family: %s not in party' % index)
                 return []
 
+    def __iter__(self):
+        return self.families.__iter__()
+
+    def __next__(self):
+        return self.families.__next__()
+
     def __len__(self):
         """
         Get total number of detections in Party.
@@ -405,7 +411,8 @@ class Party(object):
                                     rate=rate, **kwargs)
         return fig
 
-    def rethreshold(self, new_threshold, new_threshold_type='MAD'):
+    def rethreshold(self, new_threshold, new_threshold_type='MAD',
+                    abs_values=False):
         """
         Remove detections from the Party that are below a new threshold.
 
@@ -418,6 +425,9 @@ class Party(object):
         :param new_threshold: New threshold level
         :type new_threshold_type: str
         :param new_threshold_type: Either 'MAD', 'absolute' or 'av_chan_corr'
+        :type abs_values: bool
+        :param abs_values:
+            Whether to compare the absolute value of the detection-value.
 
         .. rubric:: Examples
 
@@ -463,7 +473,14 @@ class Party(object):
                     raise MatchFilterError(
                         'new_threshold_type %s is not recognised' %
                         str(new_threshold_type))
-                if float(d.detect_val) >= new_thresh:
+                rethresh = False
+                if abs_values:
+                    if abs(float(d.detect_val)) >= new_thresh:
+                        rethresh = True
+                else:
+                    if float(d.detect_val) >= new_thresh:
+                        rethresh = True
+                if rethresh:
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
@@ -472,7 +489,8 @@ class Party(object):
         return self
 
     def decluster(self, trig_int, timing='detect', metric='avg_cor',
-                  hypocentral_separation=None):
+                  hypocentral_separation=None, min_chans=0,
+                  absolute_values=False):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -487,8 +505,10 @@ class Party(object):
         :param trig_int: Minimum detection separation in seconds.
         :type metric: str
         :param metric: What metric to sort peaks by. Either 'avg_cor' which
-            takes the single station average correlation or 'cor_sum' which
-            takes the total correlation sum across all channels.
+            takes the single station average correlation, 'cor_sum' which
+            takes the total correlation sum across all channels, or
+            'thresh_exc' which takes the factor by how much the detection
+            exceeded the input threshold.
         :type timing: str
         :param timing:
             Either 'detect' or 'origin' to decluster based on either the
@@ -498,6 +518,15 @@ class Party(object):
             Maximum inter-event separation in km to decluster events within.
             If an event happens within this distance of another event, and
             within the trig_int defined time, then they will be declustered.
+        :type min_chans: int
+        :param min_chans:
+            Minimum number of channels for a detection to be retained. If a
+            detection was made on very few channels, then the MAD detection
+            statistics become much less robust.
+        :type absolute_values: bool
+        :param absolute_values:
+            Use the absolute value of the metric to choose the preferred
+            detection.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -540,24 +569,41 @@ class Party(object):
                                "hypocentral separation")
                 catalog = None
 
-        assert metric in ('avg_cor', 'cor_sum'), \
-            'metric is not cor_sum or avg_cor'
+        if min_chans > 0:
+            for d in all_detections.copy():
+                if d.no_chans < min_chans:
+                    all_detections.remove(d)
+        if len(all_detections) == 0:
+            return Party()
+
+        assert metric in ('avg_cor', 'cor_sum', 'thresh_exc'), \
+            'metric is not cor_sum, avg_cor or thresh_exc'
         assert timing in ('detect', 'origin'), 'timing is not detect or origin'
         if timing == 'detect':
             if metric == 'avg_cor':
                 detect_info = [(d.detect_time, d.detect_val / d.no_chans)
                                for d in all_detections]
-            else:
+            elif metric == 'cor_sum':
                 detect_info = [(d.detect_time, d.detect_val)
+                               for d in all_detections]
+            elif metric == 'thresh_exc':
+                detect_info = [(d.detect_time, d.detect_val / d.threshold)
                                for d in all_detections]
         else:
             if metric == 'avg_cor':
                 detect_info = [(_get_origin(d.event).time,
                                 d.detect_val / d.no_chans)
                                for d in all_detections]
-            else:
+            elif metric == 'cor_sum':
                 detect_info = [(_get_origin(d.event).time, d.detect_val)
                                for d in all_detections]
+            elif metric == 'thresh_exc':
+                detect_info = [(_get_origin(d.event).time,
+                                d.detect_val / d.threshold)
+                               for d in all_detections]
+        if absolute_values:
+            for j, tup in enumerate(detect_info):
+                detect_info[j] = (tup[0], abs(tup[1]))
         min_det = sorted([d[0] for d in detect_info])[0]
         detect_vals = np.array([d[1] for d in detect_info], dtype=np.float32)
         detect_times = np.array([
@@ -611,7 +657,7 @@ class Party(object):
         return copy.deepcopy(self)
 
     def write(self, filename, format='tar', write_detection_catalog=True,
-              catalog_format="QUAKEML"):
+              catalog_format="QUAKEML", overwrite=False):
         """
         Write Family out, select output format.
 
@@ -632,6 +678,10 @@ class Party(object):
             SC3ML, QUAKEML are supported. Note that not all information is
             written for all formats (QUAKEML is the most complete, but is
             slow for IO).
+        :type overwrite: bool
+        :param overwrite:
+            Specifies whether detection-files are overwritten if they exist
+            already. By default, no files are overwritten.
 
         .. NOTE::
             csv format will write out detection objects, all other
@@ -662,14 +712,18 @@ class Party(object):
         if catalog_format not in CAT_EXT_MAP.keys():
             raise TypeError("{0} is not supported".format(catalog_format))
         if format.lower() == 'csv':
-            if os.path.isfile(filename):
+            if os.path.isfile(filename) and not overwrite:
                 raise MatchFilterError(
                     'Will not overwrite existing file: %s' % filename)
+            if os.path.isfile(filename) and overwrite:
+                os.remove(filename)
             for family in self.families:
                 write_detections(fname=filename, detections=family.detections,
                                  mode="a")
         elif format.lower() == 'tar':
-            if os.path.exists(filename):
+            if not filename.endswith('.tgz'):
+                filename = filename + ".tgz"
+            if os.path.exists(filename) and not overwrite:
                 raise IOError('Will not overwrite existing file: %s'
                               % filename)
             # os.makedirs(filename)
@@ -691,8 +745,6 @@ class Party(object):
                     name = family.template.name + '_detections.csv'
                     name_to_write = join(temp_dir, name)
                     _write_family(family=family, filename=name_to_write)
-                if not filename.endswith('.tgz'):
-                    filename = filename + ".tgz"
                 with tarfile.open(filename, "w:gz") as tar:
                     tar.add(temp_dir, arcname=os.path.basename(filename))
         else:
@@ -714,8 +766,8 @@ class Party(object):
         :param read_detection_catalog:
             Whether to read the detection catalog or not, if False, catalog
             will be regenerated - for large catalogs this can be faster.
-        :type estimate_origins: bool
-        :param estimate_origins:
+        :type estimate_origin: bool
+        :param estimate_origin:
             If True and no catalog is found, or read_detection_catalog is False
             then new events with origins estimated from the template origin
             time will be created.
@@ -743,6 +795,7 @@ class Party(object):
             # Expand wildcards
             filenames = glob.glob(filename)
         for _filename in filenames:
+            Logger.info(f"Reading from {_filename}")
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
                 arc.extractall(path=temp_dir, members=_safemembers(arc))
@@ -770,7 +823,7 @@ class Party(object):
                         f for f in families if
                         f.template.name == family.template.name][0]
                     new_family = False
-                family.detections = _read_family(
+                family.detections += _read_family(
                     fname=family_file, all_cat=all_cat, template=template[0],
                     estimate_origin=estimate_origin)
                 if new_family:
@@ -780,10 +833,12 @@ class Party(object):
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
+                 min_cc_from_mean_cc_factor=None,
                  horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
-                 ignore_bad_data=False, **kwargs):
+                 ignore_bad_data=False, export_cc=False, cc_dir=None,
+                 **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -804,6 +859,12 @@ class Party(object):
         :param min_cc:
             Minimum cross-correlation value to be considered a pick,
             default=0.4.
+        :type min_cc_from_mean_cc_factor: float
+        :param min_cc_from_mean_cc_factor:
+            If set to a value other than None, then the minimum cross-
+            correlation value for a trace is set individually for each
+            detection based on:
+            min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
         :type horizontal_chans: list
         :param horizontal_chans:
             List of channel endings for horizontal-channels, on which S-picks
@@ -826,6 +887,13 @@ class Party(object):
         :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
+        :type export_cc: bool
+        :param export_cc:
+            To generate a binary file in NumPy for every detection or not,
+            defaults to False
+        :type cc_dir: str
+        :param cc_dir:
+            Path to saving folder, NumPy files will be output here.
         :type parallel: bool
         :param parallel: Turn parallel processing on or off.
         :type process_cores: int
@@ -895,9 +963,11 @@ class Party(object):
                 catalog += family.lag_calc(
                     stream=processed_stream, pre_processed=True,
                     shift_len=shift_len, min_cc=min_cc,
+                    min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
                     horizontal_chans=horizontal_chans,
                     vertical_chans=vertical_chans, cores=cores,
                     interpolate=interpolate, plot=plot, plotdir=plotdir,
+                    export_cc=export_cc, cc_dir=cc_dir,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
                     ignore_length=ignore_length, **kwargs)

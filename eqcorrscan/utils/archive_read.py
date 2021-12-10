@@ -16,11 +16,13 @@ Helper functions for reading data from archives for the EQcorrscan package.
 import os
 import logging
 import glob
+import fnmatch
 
 from obspy import read, UTCDateTime, Stream
 from obspy.clients.fdsn.header import FDSNException
 from obspy.clients.seishub import Client as SeishubClient
 from obspy.clients.fdsn import Client as FDSNClient
+from obspy.clients.filesystem.sds import Client as SDSClient
 
 
 Logger = logging.getLogger(__name__)
@@ -106,7 +108,14 @@ def read_data(archive, arc_type, day, stachans, length=86400):
         else:
             station_map = station
             available_stations_map = available_stations
-        if station_map not in available_stations_map:
+        # Allow matching of station-channel-tuples with wildcards
+        stachan_in_station_map = False
+        for av_station in available_stations_map:
+            if fnmatch.fnmatch(av_station[0], station[0])\
+                    and fnmatch.fnmatch(av_station[1], station[1]):
+                stachan_in_station_map = True
+                break
+        if not stachan_in_station_map:
             msg = ' '.join([station[0], station_map[1], 'is not available for',
                             day.strftime('%Y/%m/%d')])
             Logger.warning(msg)
@@ -128,6 +137,12 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                 Logger.warning('No data on server despite station being ' +
                                'available...')
                 continue
+        elif arc_type.upper() == "SDS":
+            client = SDSClient(archive)
+            st += client.get_waveforms(
+                    network='*', station=station_map[0], location='*',
+                    channel=station_map[1], starttime=UTCDateTime(day),
+                    endtime=UTCDateTime(day) + length)
         elif arc_type.lower() == 'day_vols':
             wavfiles = _get_station_file(os.path.join(
                 archive, day.strftime('Y%Y' + os.sep + 'R%j.01')),
@@ -216,6 +231,11 @@ def _check_available_data(archive, arc_type, day):
                 for channel in station:
                     available_stations.append((station.code,
                                                channel.code))
+    elif arc_type.upper() == "SDS":
+        client = SDSClient(archive)
+        nslc = client.get_all_nslc(sds_type=None, datetime=UTCDateTime(day))
+        for item in nslc:
+            available_stations.append((item[1], item[3]))
     return available_stations
 
 

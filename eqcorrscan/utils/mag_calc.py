@@ -123,8 +123,15 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     :param plotvar: Turn plotting on or off.
 
     :rtype: list
-    :return: List of tuples of (completeness, b-value, residual,\
-        number of magnitudes used)
+    :return:
+        List of tuples of (completeness, b-value, residual, number of
+        magnitudes used)
+
+    .. Note::
+        High "residuals" indicate better fit. Residuals are calculated
+        according to the Wiemer & Wyss 2000, Minimum Magnitude of Completeness
+        in Earthquake Catalogs: Examples from Alaska, the Western United
+        States, and Japan, BSSA.
 
     .. rubric:: Example
 
@@ -138,12 +145,12 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
     >>> magnitudes = [event.magnitudes[0].mag for event in catalog]
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     >>> # We can set a maximum magnitude:
     >>> b_values = calc_b_value(magnitudes, completeness=np.arange(3, 7, 0.2),
     ...                         plotvar=False, max_mag=5)
-    >>> round(b_values[4][1])
+    >>> round(b_values[4][1], 1)
     1.0
     """
     b_values = []
@@ -182,7 +189,7 @@ def calc_b_value(magnitudes, completeness, max_mag=None, plotvar=True):
         r = 100 - ((np.sum([abs(complete_freq[i] - predicted_freqs[i])
                            for i in range(len(complete_freq))]) * 100) /
                    np.sum(complete_freq))
-        b_values.append((m_c, abs(fit[0][0]), r, str(len(complete_mags))))
+        b_values.append((m_c, abs(fit[0][0]), r, len(complete_mags)))
     if plotvar:
         fig, ax1 = plt.subplots()
         b_vals = ax1.scatter(list(zip(*b_values))[0], list(zip(*b_values))[1],
@@ -417,11 +424,13 @@ def _snr(tr, noise_window, signal_window):
 def _get_signal_and_noise(stream, event, seed_id, noise_window,
                           signal_window, use_s_picks):
     """
-    Get noise and signal amplitudes and signal standard deviation for an event
-    on a specific channel.
+    Get noise and signal RMS-amplitudes and signal standard deviation for an
+    event on a specific channel.
 
-    Noise amplitude is calculated as the RMS amplitude in the noise window,
-    signal amplitude is the maximum amplitude in the signal window.
+    (Until v.0.4.3, this function calculated noise amplitude as the RMS
+    amplitude of the noise window and signal amplitude as the maximum amplitude
+    in the signal window. This was changed to only RMS amplitudes to align it
+    with the methodology in Schaff & Richards 2014-paper.)
     """
     from eqcorrscan.core.template_gen import _rms
 
@@ -435,9 +444,10 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
     if len(tr) == 0:
         return None, None, None
     tr = tr[0]
-    noise_amp = _rms(tr.slice(
+    noise = tr.slice(
         starttime=pick.time + noise_window[0],
-        endtime=pick.time + noise_window[1]).data)
+        endtime=pick.time + noise_window[1]).data
+    noise_amp = _rms(noise)
     if np.isnan(noise_amp):
         noise_amp = None
     signal = tr.slice(
@@ -448,11 +458,12 @@ def _get_signal_and_noise(stream, event, seed_id, noise_window,
             pick.time + signal_window[0], pick.time + signal_window[1]))
         Logger.debug(tr)
         return noise_amp, None, None
-    return noise_amp, signal.max(), signal.std()
+    signal_amp = _rms(signal)
+    return noise_amp, signal_amp, signal.std()
 
 
 def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
-                       signal_window=(-.5, 20), min_snr=5.0,
+                       signal_window=(-.5, 20), min_snr=1.5,
                        use_s_picks=False):
     """
     Compute the relative amplitudes between two streams.
@@ -468,7 +479,10 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
     from st2.  The standard deviation of the amplitudes is computed in the
     signal window given. If the ratio of amplitudes between the signal window
     and the noise window is below `min_snr` then no result is returned for that
-    trace. Windows are computed relative to the first pick for that station.
+    trace. The SNR here is defined as the ratio of RMS-amplitudes of signal
+    and noise (equal to ratio of L2-norms of signal and noise, but normalized
+    for signal length). The Windows are computed relative to the first pick
+    for that station.
 
     If one stream has insufficient data to estimate noise amplitude, the noise
     amplitude of the other will be used.
@@ -495,11 +509,16 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         Note that noise and signal windows are relative to pick-times, so using
         an S-pick might result in a noise window including P-energy.
 
-    :rtype: dict
-    :return: Dictionary of relative amplitudes keyed by seed-id
+    :rtype: dict, dict, dict
+    :return:
+        Dictionary of relative amplitudes keyed by seed-id
+        Dictionary of signal-to-noise ratios for st1
+        Dictionary of signal-to-noise ratios for st2
     """
     seed_ids = {tr.id for tr in st1}.intersection({tr.id for tr in st2})
     amplitudes = {}
+    snrs_1 = {}
+    snrs_2 = {}
     for seed_id in seed_ids:
         noise1, signal1, std1 = _get_signal_and_noise(
             stream=st1, event=event1, signal_window=signal_window,
@@ -528,7 +547,9 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
         Logger.debug("Channel: {0} Relative amplitude: {1:.2f}".format(
             seed_id, ratio))
         amplitudes.update({seed_id: ratio})
-    return amplitudes
+        snrs_1.update({seed_id: snr1})
+        snrs_2.update({seed_id: snr2})
+    return amplitudes, snrs_1, snrs_2
 
 
 # Magnitude estimation functions
@@ -536,19 +557,23 @@ def relative_amplitude(st1, st2, event1, event2, noise_window=(-20, -1),
 def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
                        signal_window=(-.5, 20), min_snr=5.0, min_cc=0.7,
                        use_s_picks=False, correlations=None, shift=.2,
-                       return_correlations=False, weight_by_correlation=True):
+                       return_correlations=False, correct_mag_bias=True):
     """
     Compute the relative magnitudes between two events.
 
     See :func:`eqcorrscan.utils.mag_calc.relative_amplitude` for information
     on how relative amplitudes are calculated. To compute relative magnitudes
-    from relative amplitudes this function weights the amplitude ratios by
+    from relative amplitudes this function can weight the amplitude ratios by
     the cross-correlation of the two events. The relation used is similar to
-    Schaff and Richards (2014) and is:
+    Schaff and Richards (2014), equation 4 and is:
 
     .. math::
 
-        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} \\times CC
+        \\Delta m = \\log{\\frac{std(tr2)}{std(tr1)}} + \\log{
+            \\frac{(1+\\frac{1}{snr_x^2})}{1+\\frac{1}{snr_y^2}}\\times CC}
+
+    If you decide to use this function you should definitely read the paper
+    to understand what you can use this for and cite the paper!
 
     :type st1: `obspy.core.stream.Stream`
     :param st1: Stream for event1
@@ -588,9 +613,11 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     :type return_correlations: bool
     :param return_correlations:
         If true will also return maximum correlations as a dictionary.
-    :type weight_by_correlation: bool
-    :param weight_by_correlation:
-        Whether to weight the magnitude by the correlation or not.
+    :type correct_mag_bias: bool
+    :param correct_mag_bias:
+        Whether to correct for the magnitude-bias introduced by cc<1 and the
+        presence of noise (i.e., SNR << ∞). Without bias-correction, the
+        relative magnitudes are simple L2-norm-ratio relative magnitudes.
 
     :rtype: dict
     :return: Dictionary of relative magnitudes keyed by seed-id
@@ -603,7 +630,7 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
     if correlations is None:
         correlations = {}
         compute_correlations = True
-    relative_amplitudes = relative_amplitude(
+    relative_amplitudes, snrs_1, snrs_2 = relative_amplitude(
         st1=st1, st2=st2, event1=event1, event2=event2,
         noise_window=noise_window, signal_window=signal_window,
         min_snr=min_snr, use_s_picks=use_s_picks)
@@ -614,28 +641,33 @@ def relative_magnitude(st1, st2, event1, event2, noise_window=(-20, -1),
             event=event1, station=tr1.stats.station, use_s_picks=use_s_picks)
         pick2 = _get_pick_for_station(
             event=event2, station=tr2.stats.station, use_s_picks=use_s_picks)
-        if weight_by_correlation:
-            if compute_correlations:
-                cc = correlate(
-                    tr1.slice(
-                        starttime=pick1.time + signal_window[0],
-                        endtime=pick1.time + signal_window[1]),
-                    tr2.slice(
-                        starttime=pick2.time + signal_window[0],
-                        endtime=pick2.time + signal_window[1]),
-                    shift=int(shift * tr1.stats.sampling_rate))
-                cc = cc.max()
-                correlations.update({seed_id: cc})
-            else:
-                cc = correlations.get(seed_id, 0.0)
-            if cc < min_cc:
-                continue
+        if compute_correlations:
+            cc = correlate(
+                tr1.slice(
+                    starttime=pick1.time + signal_window[0],
+                    endtime=pick1.time + signal_window[1]),
+                tr2.slice(
+                    starttime=pick2.time + signal_window[0],
+                    endtime=pick2.time + signal_window[1]),
+                shift=int(shift * tr1.stats.sampling_rate))
+            cc = cc.max()
+            correlations.update({seed_id: cc})
         else:
-            cc = 1.0
-        # Weight and add to relative_magnitudes
-        rel_mag = math.log10(amplitude_ratio) * cc
-        Logger.debug("Channel: {0} Magnitude change {1:.2f}".format(
-            tr1.id, rel_mag))
+            cc = correlations.get(seed_id, 0.0)
+        if cc < min_cc:
+            Logger.info(
+                f"Correlation of {cc} less than {min_cc} for {seed_id}, "
+                "skipping.")
+            continue
+        snr_x = snrs_1[seed_id]
+        snr_y = snrs_2[seed_id]
+        if not correct_mag_bias:
+            cc = snr_x = snr_y = 1.0
+        # Correct for CC and SNR-bias and add to relative_magnitudes
+        # This is equation 10 from Schaff & Richards 2014:
+        rel_mag = math.log10(amplitude_ratio) + math.log10(
+            math.sqrt((1 + 1 / snr_y**2) / (1 + 1 / snr_x**2)) * cc)
+        Logger.info(f"Channel: {seed_id} Magnitude change {rel_mag:.2f}")
         relative_magnitudes.update({seed_id: rel_mag})
     if return_correlations:
         return relative_magnitudes, correlations
