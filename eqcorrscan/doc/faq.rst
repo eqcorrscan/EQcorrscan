@@ -16,28 +16,69 @@ Usage Questions
 No output to terminal
 .....................
 
-Logging
+EQcorrscan uses `Logging <https://docs.python.org/3/howto/logging.html>`_
+to handle output. If you are seeing no output to screen you
+probably haven't set up your logging settings. A simple way to do
+this is to run code like:
+
+.. code-block:: python
+    import logging
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
+
+You can set different levels to get more or less output (DEBUG is the
+most output, then INFO, then WARNNG, then ERROR, then CRITICAL). You will need to run this before any calls to EQcorrscan's functions to
+get logging output.
 
 ---
 
 No correlations computed
 ........................
 
-Check SEED IDs
+Frequently the cause of no correlations being computed is that the
+SEED ID (network.station.location.channel) for your template do not
+match your continuous data. Check that they match, and try increasing
+the logging output (above) to help you find the issue.
 
 ---
 
 Everything is done multiple times!
 ..................................
 
-Multiprocessing issue - encapsulate in function
+EQcorrscan uses `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
+under the hood, which will spawn multiple processes when called. To
+ensure that programs do not run multiple times you should always
+write your scripts with a form:
+
+.. code-block:: python
+
+    def main():
+        # Do the mahi
+
+    if __name__ == "__main__":
+        main()
+
+See the `multiprocessing note on "Safe importing of main module" <https://docs.python.org/3/library/multiprocessing.html>`_ for more info.
 
 ---
 
 Making templates from SAC files
 ...............................
 
-It probably isn't a good idea... Try converting the SAC file to an event and go from there.
+While there is support for making templates from SAC, it generally
+isn't a good idea, unless you have SAC waveforms of the length that
+you want to correlate with. This is for two reasons:
+1. Because templates and continuous
+data *must* be processed the same, including using the same length
+FFT, for correlations to be accurate. If you make your template from
+short data you will be forced to correlate with short chunks of data, which is not very efficient
+2. The programming team are not SAC users, and do not understand the nuances of where picks can be saved in SAC headers.
+
+Instead: you might find it better to convert your SAC picks into
+another obspy readable pick/event format. You can try EQcorrscan's
+basic sac_utils to do this, but not everything will be retained.
 
 ----------------------------------------------------------------------
 
@@ -65,7 +106,9 @@ open EQcorrscan up to more users, which would be great!
 Why do you have a functional and object-oriented API?
 .....................................................
 
-Legacy - use the OO API where possible
+Simply legacy, when Calum started writing EQcorrscan he didn't know
+anything about classes. The functional API is retained so that old
+codes can still be run, but if you are starting from scratch please use the OO API where possible.
 
 
 
