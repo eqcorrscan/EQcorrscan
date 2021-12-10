@@ -250,6 +250,12 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
 
     :return: Dictionary of picked events keyed by detection id.
     """
+    if not check_full_seed:
+        warnings.warn(
+            "Deprecation warning: check_full_seed will default to"
+            "True in a future release. Check the docs page here "
+            "for how this will affect you: "
+            "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
     picked_dict = {}
     delta = family.template.st[0].stats.delta
     detect_streams_dict = _prepare_data(
@@ -559,6 +565,12 @@ def lag_calc(detections, detect_data, template_names, templates,
         The correlation data that are saved to the binary files can be useful
         to select an appropriate threshold for your data.
     """
+    if not check_full_seed:
+        warnings.warn(
+            "Deprecation warning: check_full_seed will default to"
+            "True in a future release. Check the docs page here "
+            "for how this will affect you: "
+            "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
     # First check that sample rates are equal for everything
     for tr in detect_data:
         if tr.stats.sampling_rate != detect_data[0].stats.sampling_rate:

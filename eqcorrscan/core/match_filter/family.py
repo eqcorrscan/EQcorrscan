@@ -614,6 +614,13 @@ class Family(object):
         """
         from eqcorrscan.core.lag_calc import xcorr_pick_family
 
+        if not check_full_seed:
+            warnings.warn(
+                "Deprecation warning: check_full_seed will default to"
+                "True in a future release. Check the docs page here "
+                "for how this will affect you: "
+                "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
+
         processed_stream = self._process_streams(
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,

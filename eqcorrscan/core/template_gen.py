@@ -244,6 +244,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
+    if not check_full_seed:
+        warnings.warn(
+            "Deprecation warning: check_full_seed will default to"
+            "True in a future release. Check the docs page here "
+            "for how this will affect you: "
+            "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
     client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
     assert method in ('from_client', 'from_seishub', 'from_meta_file',
                       'from_sac')

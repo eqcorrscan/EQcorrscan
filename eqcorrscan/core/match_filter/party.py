@@ -943,6 +943,12 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
+        if not check_full_seed:
+            warnings.warn(
+                "Deprecation warning: check_full_seed will default to"
+                "True in a future release. Check the docs page here "
+                "for how this will affect you: "
+                "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families
