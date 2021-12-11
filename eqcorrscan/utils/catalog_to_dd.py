@@ -10,6 +10,7 @@ Functions to generate hypoDD input files from catalogs.
 """
 import numpy as np
 import logging
+import warnings
 from collections import namedtuple, defaultdict, Counter
 from obspy.core import stream
 from multiprocessing import cpu_count, Pool
@@ -221,7 +222,8 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate, max_workers=1):
+                             shift_len, interpolate, max_workers=1,
+                             *args, **kwargs):
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(

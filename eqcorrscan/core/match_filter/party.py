@@ -18,6 +18,7 @@ import shutil
 import tarfile
 import tempfile
 import logging
+import warnings
 from os.path import join
 
 import numpy as np

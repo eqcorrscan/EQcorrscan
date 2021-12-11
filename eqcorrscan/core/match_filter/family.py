@@ -16,6 +16,7 @@ import copy
 import os
 import shutil
 import logging
+import warnings
 
 from obspy import UTCDateTime, Stream, Catalog
 from obspy.core.event import (

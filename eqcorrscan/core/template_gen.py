@@ -20,6 +20,7 @@ repeating events.
 import numpy as np
 import logging
 import os
+import warnings
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog

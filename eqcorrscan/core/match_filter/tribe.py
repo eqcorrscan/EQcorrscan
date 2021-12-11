@@ -19,6 +19,7 @@ import shutil
 import tarfile
 import tempfile
 import logging
+import warnings
 
 import numpy as np
 from obspy import Catalog, Stream, read, read_events

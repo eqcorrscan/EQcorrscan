@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import logging
+import warnings
 
 import numpy as np
 from obspy import Stream
