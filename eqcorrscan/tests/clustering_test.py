@@ -256,6 +256,21 @@ class EfficientClustering(unittest.TestCase):
             show=False, corr_thresh=0.3)
         self.assertEqual(len(groups), 9)
 
+    def test_clustered_with_nan_links(self):
+        """
+        Test clustering when some events are not directly linked by matching
+        traces.
+        """
+        template_list=[(st.copy(), i) for i, st in enumerate(self.stream_list)]
+        # For the first 2 templates: remove the first / the second half of the
+        # traces, respectively.
+        for j, tr in enumerate(template_list[0][0][0:4]):
+            template_list[0][0].remove(tr)
+        for j, tr in enumerate(template_list[1][0][4:]):
+            template_list[1][0].remove(tr)
+        groups = cluster(template_list, show=False, corr_thresh=0.3)
+        self.assertEqual(len(groups), 9)
+
 
 class DistanceClusterTests(unittest.TestCase):
     @classmethod
