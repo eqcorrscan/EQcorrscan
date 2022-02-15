@@ -131,6 +131,22 @@ def cross_chan_correlation(
     return _coherances, _positions
 
 
+def fill_nans_with_rowcol_mean(dist_mat):
+    """
+    # Fill missing correlations (nans) with the mean of column and row
+    """
+    missing_corrs = ~np.isfinite(dist_mat)
+    col_mean = np.nanmean(dist_mat, 0, keepdims=1)
+    row_mean = np.nanmean(dist_mat, 1, keepdims=1)
+    missing_mean = ((np.repeat(col_mean, len(row_mean), 0) +
+                     np.repeat(row_mean, len(col_mean), 1)) / 2)
+    dist_mat = np.where(missing_corrs, missing_mean, dist_mat)
+    assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
+    # force perfect symmetry
+    dist_mat = (dist_mat + dist_mat.T) / 2
+    return dist_mat
+
+
 def distance_matrix(stream_list, shift_len=0.0,
                     allow_individual_trace_shifts=True, cores=1):
     """
@@ -203,9 +219,7 @@ def distance_matrix(stream_list, shift_len=0.0,
         trace_shift_dict = dict(zip(master_ids, shift_mat_list))
         shift_dict[i] = trace_shift_dict
     if shift_len == 0:
-        assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
-        # Force perfect symmetry
-        dist_mat = (dist_mat + dist_mat.T) / 2
+        dist_mat = fill_nans_with_rowcol_mean(dist_mat)
     else:
         # get the shortest distance for each correlation pair
         dist_mat_shortest = np.minimum(dist_mat, dist_mat.T)
@@ -284,6 +298,7 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         Logger.info('Saved the distance matrix as dist_mat.npy')
+    dist_mat = fill_nans_with_rowcol_mean(dist_mat)
     dist_vec = squareform(dist_mat)
     Logger.info('Computing linkage')
     Z = linkage(dist_vec)
