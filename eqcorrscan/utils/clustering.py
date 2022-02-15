@@ -254,6 +254,10 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     similar events.  Groups are then created by clustering the distance matrix
     at distances less than 1 - corr_thresh.
 
+    When distance_matrix contains NaNs (event pairs that cannot be directly
+    compared), then the mean correlation between templates is used instead of
+    NaN (see https://github.com/eqcorrscan/EQcorrscan/issues/484).
+
     Will compute the distance matrix in parallel, using all available cores
 
     :type template_list: list
