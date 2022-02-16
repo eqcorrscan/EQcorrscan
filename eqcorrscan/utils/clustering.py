@@ -151,6 +151,7 @@ def handle_distmat_nans(dist_mat, replace_nan_distances_with=None):
         :type: np.ndarray
     """
     missing_corrs = ~np.isfinite(dist_mat)
+    missing_vals = np.full_like(dist_mat, fill_value=1)
     if not replace_nan_distances_with:
         if np.isnan(dist_mat).any():
             raise CorrelationError(
@@ -159,7 +160,6 @@ def handle_distmat_nans(dist_mat, replace_nan_distances_with=None):
                 "indirectly linked via other templates. You should check " +
                 " templates. Then you can try cluster() with "
                 "replace_nan_distances_with=1")
-        return dist_mat
     elif isinstance(replace_nan_distances_with, (int, float)):
         missing_vals = np.full_like(
             dist_mat, fill_value=replace_nan_distances_with)
@@ -355,7 +355,8 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         Logger.info('Saved the distance matrix as dist_mat.npy')
-    dist_mat = handle_distmat_nans(dist_mat, replace_nan_distances_with)
+    dist_mat = handle_distmat_nans(
+        dist_mat, replace_nan_distances_with=replace_nan_distances_with)
     dist_vec = squareform(dist_mat)
     Logger.info('Computing linkage')
     Z = linkage(dist_vec, **kwargs)
