@@ -11,6 +11,7 @@ Functions to cluster seismograms by a range of constraints.
 import os
 import logging
 from multiprocessing import cpu_count
+from re import A
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +21,8 @@ from scipy.spatial.distance import squareform
 
 from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
-from eqcorrscan.utils.correlate import get_array_xcorr, get_stream_xcorr
+from eqcorrscan.utils.correlate import (
+    get_array_xcorr, get_stream_xcorr, CorrelationError)
 from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
 
 Logger = logging.getLogger(__name__)
@@ -131,16 +133,51 @@ def cross_chan_correlation(
     return _coherances, _positions
 
 
-def fill_nans_with_rowcol_mean(dist_mat):
+def handle_distmat_nans(dist_mat, replace_nan_distances_with=None):
     """
-    # Fill missing correlations (nans) with the mean of column and row
+    Checks for nans and optionally fills missing correlations (nans) with a
+    replacement value.
+
+    :type dist_mat: np.ndarray
+    :param dist_mag: Distance matrix.
+    :type replace_nan_distances_with: None, 'mean', 'min', or float
+    :param replace_nan_distances_with:
+        Controls how the clustering handles nan-distances in the distance
+        matrix. None/False only performs a check, while other choices (e.g.,
+        1, 'mean', 'min' or float) replace nans in the distance matrix.
+
+    :returns:
+        Distance matrix.
+        :type: np.ndarray
     """
     missing_corrs = ~np.isfinite(dist_mat)
-    col_mean = np.nanmean(dist_mat, 0, keepdims=1)
-    row_mean = np.nanmean(dist_mat, 1, keepdims=1)
-    missing_mean = ((np.repeat(col_mean, len(row_mean), 0) +
-                     np.repeat(row_mean, len(col_mean), 1)) / 2)
-    dist_mat = np.where(missing_corrs, missing_mean, dist_mat)
+    if not replace_nan_distances_with:
+        if np.isnan(dist_mat).any():
+            raise CorrelationError(
+                "The distance matrix contains nans, which may indicate that " +
+                "some templates have no matching traces and can only be " +
+                "indirectly linked via other templates. You should check " +
+                " templates. Then you can try cluster() with "
+                "replace_nan_distances_with=1")
+        return dist_mat
+    elif isinstance(replace_nan_distances_with, (int, float)):
+        missing_vals = np.full_like(
+            dist_mat, fill_value=replace_nan_distances_with)
+    elif replace_nan_distances_with == 'mean':
+        col_mean = np.nanmean(dist_mat, 0, keepdims=1)
+        row_mean = np.nanmean(dist_mat, 1, keepdims=1)
+        missing_vals = ((np.repeat(col_mean, len(row_mean), 0) +
+                        np.repeat(row_mean, len(col_mean), 1)) / 2)
+    elif replace_nan_distances_with == 'min':
+        col_min = np.nanmin(dist_mat, 0, keepdims=1)
+        row_min = np.nanmin(dist_mat, 1, keepdims=1)
+        missing_vals = np.minimum(((np.repeat(col_min, len(row_min), 0),
+                                    np.repeat(row_min, len(col_min), 1))))
+    else:
+        raise NotImplementedError(
+            'replace_nan_distances_with={} is not supported'.format(
+                replace_nan_distances_with))
+    dist_mat = np.where(missing_corrs, missing_vals, dist_mat)
     assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
     # force perfect symmetry
     dist_mat = (dist_mat + dist_mat.T) / 2
@@ -148,6 +185,7 @@ def fill_nans_with_rowcol_mean(dist_mat):
 
 
 def distance_matrix(stream_list, shift_len=0.0,
+                    replace_nan_distances_with=None,
                     allow_individual_trace_shifts=True, cores=1):
     """
     Compute distance matrix for waveforms based on cross-correlations.
@@ -168,6 +206,11 @@ def distance_matrix(stream_list, shift_len=0.0,
         Controls whether templates are shifted by shift_len in relation to the
         picks as a whole, or whether each trace can be shifted individually.
         Defaults to True.
+    :type replace_nan_distances_with: None, 'mean', 'min', or float
+    :param replace_nan_distances_with:
+        Controls how the clustering handles nan-distances in the distance
+        matrix. None/False only performs a check, while other choices (e.g.,
+        1, 'mean', 'min' or float) replace nans in the distance matrix.
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
@@ -219,7 +262,8 @@ def distance_matrix(stream_list, shift_len=0.0,
         trace_shift_dict = dict(zip(master_ids, shift_mat_list))
         shift_dict[i] = trace_shift_dict
     if shift_len == 0:
-        dist_mat = fill_nans_with_rowcol_mean(dist_mat)
+        dist_mat = handle_distmat_nans(
+            dist_mat, replace_nan_distances_with=replace_nan_distances_with)
     else:
         # get the shortest distance for each correlation pair
         dist_mat_shortest = np.minimum(dist_mat, dist_mat.T)
@@ -241,7 +285,7 @@ def distance_matrix(stream_list, shift_len=0.0,
 
 def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
             allow_individual_trace_shifts=True, save_corrmat=False,
-            cores='all'):
+            replace_nan_distances_with=None, cores='all', **kwargs):
     """
     Cluster template waveforms based on average correlations.
 
@@ -279,6 +323,11 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     :param save_corrmat:
         If True will save the distance matrix to dist_mat.npy in the local
         directory.
+    :type replace_nan_distances_with: None, 'mean', 'min', or float
+    :param replace_nan_distances_with:
+        Controls how the clustering handles nan-distances in the distance
+        matrix. None/False only performs a check, while other choices (e.g.,
+        1, 'mean', 'min' or float) replace nans in the distance matrix.
     :type cores: int
     :param cores:
         number of cores to use when computing the distance matrix, defaults to
@@ -298,14 +347,15 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     Logger.info('Computing the distance matrix using %i cores' % num_cores)
     dist_mat, shift_mat, shift_dict = distance_matrix(
         stream_list=stream_list, shift_len=shift_len, cores=num_cores,
+        replace_nan_distances_with=replace_nan_distances_with,
         allow_individual_trace_shifts=allow_individual_trace_shifts)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         Logger.info('Saved the distance matrix as dist_mat.npy')
-    dist_mat = fill_nans_with_rowcol_mean(dist_mat)
+    dist_mat = handle_distmat_nans(dist_mat, replace_nan_distances_with)
     dist_vec = squareform(dist_mat)
     Logger.info('Computing linkage')
-    Z = linkage(dist_vec)
+    Z = linkage(dist_vec, **kwargs)
     if show:
         Logger.info('Plotting the dendrogram')
         dendrogram(Z, color_threshold=1 - corr_thresh,
