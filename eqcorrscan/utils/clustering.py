@@ -302,7 +302,10 @@ def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
     compared), then the mean correlation between templates is used instead of
     NaN (see https://github.com/eqcorrscan/EQcorrscan/issues/484).
 
-    Will compute the distance matrix in parallel, using all available cores
+    Will compute the distance matrix in parallel, using all available cores.
+    The method, metric, and order to compute linkage from the distance matrix
+    can be controled with parameters from scipy.cluster.hierarchy.linkage as
+    kwargs.
 
     :type template_list: list
     :param template_list:
