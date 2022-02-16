@@ -269,7 +269,7 @@ class EfficientClustering(unittest.TestCase):
             template_list[0][0].remove(tr)
         for j, tr in enumerate(template_list[1][0][4:]):
             template_list[1][0].remove(tr)
-        groups = cluster(template_list, show=True, corr_thresh=0.3,
+        groups = cluster(template_list, show=False, corr_thresh=0.3,
                          replace_nan_distances_with=1, method='complete',
                          metric='chebyshev', optimal_ordering=True)
         self.assertEqual(len(groups), 9)
