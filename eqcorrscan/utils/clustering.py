@@ -11,7 +11,6 @@ Functions to cluster seismograms by a range of constraints.
 import os
 import logging
 from multiprocessing import cpu_count
-from re import A
 
 import matplotlib.pyplot as plt
 import numpy as np
