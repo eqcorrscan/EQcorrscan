@@ -28,7 +28,6 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import math
-from future.utils import native_str
 
 from eqcorrscan.utils.libnames import _load_cdll
 
@@ -452,13 +451,13 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
 
     argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     restype = ctypes.c_int
     if threaded:
         func = utilslib.multi_normxcorr_time_threaded
@@ -527,22 +526,22 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
 
     argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     restype = ctypes.c_int
 
     if threaded:
@@ -750,23 +749,23 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
 
     utilslib.multi_normxcorr_fftw.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_long, ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''

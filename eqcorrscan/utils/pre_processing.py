@@ -632,7 +632,6 @@ def _resample(tr, sampling_rate, threads=1):
     Provide a pyfftw version of obspy's trace resampling.  This code is
     modified from obspy's Trace.resample method.
     """
-    from future.utils import native_str
     from scipy.signal import get_window
     from pyfftw.interfaces.scipy_fftpack import rfft, irfft
 
@@ -648,7 +647,7 @@ def _resample(tr, sampling_rate, threads=1):
     x_i = x[1::2]
 
     large_w = np.fft.ifftshift(
-        get_window(native_str("hanning"), tr.stats.npts))
+        get_window("hanning", tr.stats.npts))
     x_r *= large_w[:tr.stats.npts // 2 + 1]
     x_i *= large_w[:tr.stats.npts // 2 + 1]
 
