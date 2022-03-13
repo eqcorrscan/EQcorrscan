@@ -3,7 +3,7 @@ matplotlib>=1.3.0
 scipy>=0.18
 bottleneck
 obspy>=1.3.0  # ObsPy <1.3.0 is incompatible with numpy >= 1.22: https://github.com/obspy/obspy/issues/2912
-pyfftw==0.12  # PyFFTW 0.13 on conda has a build issue: https://github.com/conda-forge/pyfftw-feedstock/issues/51
+pyfftw  # PyFFTW 0.13 on conda has a build issue: https://github.com/conda-forge/pyfftw-feedstock/issues/51
 h5py
 pytest>=2.0.0
 pytest-cov
