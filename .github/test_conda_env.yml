@@ -12,7 +12,6 @@ dependencies:
   - pyyaml
   - bottleneck
   - fftw
-  - pyproj<2
   - pytest>=2.0.0
   - pytest-cov
   - pytest-pep8
