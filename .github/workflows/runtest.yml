@@ -12,10 +12,9 @@ jobs:
       fail-fast: false
 #      continue-on-error: true
     env:
-      env-file: ${{ startsWith(matrix.os, 'macos') && '.github/test_conda_env_macOS.yml' || '.github/test_conda_env.yml' }}
+      env_file: ${{ startsWith(matrix.os, 'macos') && '.github/test_conda_env_macOS.yml' || '.github/test_conda_env.yml' }}
       cache_key: ${{ matrix.os }}-py${{ matrix.python-version }}
       prefix: ${{ startsWith(matrix.os, 'ubuntu') && '/usr/share/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'macos') && '/Users/runner/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'windows') && 'C:\Miniconda3\envs\eqcorrscan-test' }}
-
     steps:
       - uses: actions/checkout@v2
 
