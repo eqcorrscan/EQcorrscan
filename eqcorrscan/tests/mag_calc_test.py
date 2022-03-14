@@ -153,7 +153,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), len(st1))
         for value in relative_amplitudes.values():
@@ -171,7 +171,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -191,7 +191,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
             pick.phase_hint = "S"
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -210,7 +210,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2.picks = []
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -223,7 +223,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -240,14 +240,14 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 1)
         for value in relative_amplitudes.values():
             self.assertAlmostEqual(value, scale_factor)
 
     def test_real_near_repeat(self):
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2)
         for seed_id, ratio in relative_amplitudes.items():
             self.assertLess(abs(0.8 - ratio), 0.1)
@@ -256,6 +256,13 @@ class TestRelativeAmplitudes(unittest.TestCase):
         relative_magnitudes, correlations = relative_magnitude(
             st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
             return_correlations=True)
+        for seed_id, mag_diff in relative_magnitudes.items():
+            self.assertLess(abs(mag_diff + 0.15), 0.1)
+
+    def test_real_near_repeat_magnitudes_no_bias_correction(self):
+        relative_magnitudes, correlations = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            return_correlations=True, correct_mag_bias=False)
         for seed_id, mag_diff in relative_magnitudes.items():
             self.assertLess(abs(mag_diff + 0.15), 0.1)
 
