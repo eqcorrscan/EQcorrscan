@@ -46,7 +46,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -e . -v
 
       - name: print package info
         shell: bash -l {0}
@@ -132,7 +132,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -e . -v
 
       - name: print package info
         shell: bash -l {0}
