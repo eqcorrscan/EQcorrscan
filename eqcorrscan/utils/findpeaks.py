@@ -14,7 +14,6 @@ import numpy as np
 
 from multiprocessing import Pool, cpu_count
 from scipy import ndimage
-from future.utils import native_str
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
@@ -344,17 +343,17 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(total_length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=long_type, shape=(total_length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=long_type, shape=(n,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         long_type,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(total_length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int]
     func.restype = ctypes.c_int
 
@@ -440,14 +439,14 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
 
     func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=long_type, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length * length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         long_type, ctypes.c_float, long_type, ctypes.c_float,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     func.restype = ctypes.c_int
 
     sorted_inds = np.abs(peaks).argsort()
@@ -505,12 +504,12 @@ def decluster(peaks, index, trig_int, threshold=0):
 
     func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=long_type, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         long_type, ctypes.c_float, long_type,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length,),
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     func.restype = ctypes.c_int
 
     sorted_inds = np.abs(peaks).argsort()
@@ -539,10 +538,10 @@ def _find_peaks_c(array, threshold):
     length = array.shape[0]
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_float,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length, ),
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     utilslib.find_peaks.restype = ctypes.c_int
     arr = np.ascontiguousarray(array, np.float32)
     out = np.ascontiguousarray(np.zeros((length, ), dtype=np.uint32))
@@ -567,13 +566,13 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     arr = np.ascontiguousarray(arrays.flatten(), np.float32)
     utilslib.multi_find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n * length,),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n, ),
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(n * length, ),
-                               flags=native_str('C_CONTIGUOUS'))]
+                               flags='C_CONTIGUOUS')]
     utilslib.multi_find_peaks.restype = ctypes.c_int
 
     out = np.ascontiguousarray(np.zeros((n * length, ), dtype=np.uint32))

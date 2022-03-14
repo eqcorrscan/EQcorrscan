@@ -9,6 +9,9 @@
 * utils.mag_calc.relative_magnitude
  - fixed bug where S-picks / traces were used for relative-magnitude calculation
    against user's choice.
+ - implemented full magnitude bias-correction for CC and SNR
+* utils.mag_calc.relative_amplitude:
+ - returns dicts for SNR measurements
 * utils.catalog_to_dd.write_correlations
  - Fixed bug on execution of parallel execution.
  - Added parallel-options for catalog-dt measurements and for stream-preparation
