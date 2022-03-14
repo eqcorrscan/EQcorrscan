@@ -16,8 +16,8 @@ dependencies:
   - matplotlib>=1.3.0
   - scipy>=0.18
   - mock
-  - obspy>=1.0.3
-  - h5py
+  - obspy>=1.3.0
+  - h5py<3.2  # Issue with dep resolution: https://github.com/conda-forge/h5py-feedstock/issues/92
   - pyyaml
   - bottleneck
   - fftw
