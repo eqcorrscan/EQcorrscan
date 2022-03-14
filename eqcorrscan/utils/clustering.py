@@ -837,21 +837,20 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     """
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
-    from future.utils import native_str
     from math import radians
 
     utilslib = _load_cdll('libutils')
 
     utilslib.remove_unclustered.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.uint8,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_float, ctypes.c_int]
     utilslib.remove_unclustered.restype = ctypes.c_int
 
@@ -905,20 +904,19 @@ def dist_mat_km(catalog, num_threads=None):
     """
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
-    from future.utils import native_str
 
     utilslib = _load_cdll('libutils')
 
     utilslib.distance_matrix.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int]
     utilslib.distance_matrix.restype = ctypes.c_int
 
