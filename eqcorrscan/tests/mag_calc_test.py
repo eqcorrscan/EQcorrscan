@@ -279,6 +279,27 @@ class TestRelativeAmplitudes(unittest.TestCase):
             correlations={tr.id: 0.2 for tr in self.st1})
         self.assertEqual(len(relative_magnitudes), 0)
 
+    def test_real_near_repeat_magnitudes_S_picks(self):
+        self.event1.picks.append(self.event1.picks[0].copy())
+        self.event1.picks[-1].phase_hint = "S"
+        self.event1.picks[-1].waveform_id.channel_code = "EHN"
+        self.st1.append(self.st1[0].copy())
+        self.st1[-1].id = self.st1[-1].id[0:-1] + "N"
+        self.event2.picks.append(self.event2.picks[13].copy())
+        self.event2.picks[-1].phase_hint = "S"
+        self.event2.picks[-1].waveform_id.channel_code = "EHN"
+        self.st2.append(
+            self.st2.select(station=self.st1[0].stats.station)[0].copy())
+        self.st2[-1].id = self.st2[-1].id[0:-1] + "N"
+        # Check that the results are not equal when using or not using S:
+        relative_magnitudes1 = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            use_s_picks=False)
+        relative_magnitudes2 = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            use_s_picks=True)
+        self.assertNotEqual(relative_magnitudes1, relative_magnitudes2)
+
 
 class TestAmpPickEvent(unittest.TestCase):
     @classmethod
