@@ -11,42 +11,42 @@ jobs:
         python-version: ['3.7', '3.8', '3.9', '3.10']
       fail-fast: false
 #      continue-on-error: true
-    env:
-      env_file: ${{ startsWith(matrix.os, 'macos') && '.github/test_conda_env_macOS.yml' || '.github/test_conda_env.yml' }}
-      cache_key: ${{ matrix.os }}-py${{ matrix.python-version }}
-      prefix: ${{ startsWith(matrix.os, 'ubuntu') && '/usr/share/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'macos') && '/Users/runner/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'windows') && 'C:\Miniconda3\envs\eqcorrscan-test' }}
+
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      - name: Get conda env file
+        shell: bash -l {0}
+        run: |
+          if [ "$RUNNER_OS" == "macOS"  ]; then
+              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
+          fi
 
-      - uses: conda-incubator/setup-miniconda@v2.1.1
-        with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          activate-environment: eqcorrscan-test
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
-
-      - uses: actions/cache@v2
-        with:
-          path: ${{ env.prefix }}
-          key: ${{ env.cache_key }}-hash${{ hashFiles(env.env_file) }}-${{ steps.date.outputs.date }}-${{ env.CACHE_NUMBER }}
+      - name: Cache conda
+        uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if needed by env file has not changed
           CACHE_NUMBER: 0
-        id: cache
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('.github/test_conda_env.yml') }}
 
-      - name: Update environment
-        run: mamba env update -n eqcorrscan-test -f ${{ env.env_file }}
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: 'latest'
+          python-version: ${{ matrix.python-version }}
+          activate-environment: eqcorrscan-test
+          environment-file: .github/test_conda_env.yml
+          condarc-file: .github/test_condarc.yml
+          use-only-tar-bz2: true  # Must be set for caching to work properly
 
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e . -v
+          pip install -e .
 
       - name: print package info
         shell: bash -l {0}
@@ -97,42 +97,35 @@ jobs:
       matrix:
         python-version: [3.8]
       fail-fast: false
-    env:
-      env_file: ${{ startsWith(matrix.os, 'macos') && '.github/test_conda_env_macOS.yml' || '.github/test_conda_env.yml' }}
-      cache_key: ${{ matrix.os }}-py${{ matrix.python-version }}
-      prefix: ${{ startsWith(matrix.os, 'ubuntu') && '/usr/share/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'macos') && '/Users/runner/miniconda3/envs/eqcorrscan-test' || startsWith(matrix.os, 'windows') && 'C:\Miniconda3\envs\eqcorrscan-test' }}
+
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - uses: conda-incubator/setup-miniconda@v2.1.1
-        with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          activate-environment: eqcorrscan-test
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
-
-      - uses: actions/cache@v2
-        with:
-          path: ${{ env.prefix }}
-          key: ${{ env.cache_key }}-hash${{ hashFiles(env.env_file) }}-${{ steps.date.outputs.date }}-${{ env.CACHE_NUMBER }}
+      - name: Cache conda
+        uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if needed by env file has not changed
           CACHE_NUMBER: 0
-        id: cache
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('.github/test_conda_env.yml') }}
 
-      - name: Update environment
-        run: mamba env update -n eqcorrscan-test -f ${{ env.env_file }}
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: 'latest'
+          python-version: ${{ matrix.python-version }}
+          activate-environment: eqcorrscan-test
+          environment-file: .github/test_conda_env.yml
+          condarc-file: .github/test_condarc.yml
+          use-only-tar-bz2: true  # Must be set for caching to work properly
 
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e . -v
+          pip install -e .
 
       - name: print package info
         shell: bash -l {0}
