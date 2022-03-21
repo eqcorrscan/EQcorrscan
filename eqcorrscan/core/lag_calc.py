@@ -12,6 +12,7 @@ import numpy as np
 import scipy
 import logging
 import os
+import scipy
 
 from collections import Counter, namedtuple
 
@@ -43,7 +44,7 @@ class LagCalcError(Exception):
         return 'LagCalcError: ' + self.value
 
 
-def _xcorr_interp(ccc, dt):
+def _xcorr_interp_old(ccc, dt):
     """
     Interpolate around the maximum correlation value for sub-sample precision.
 
@@ -59,6 +60,7 @@ def _xcorr_interp(ccc, dt):
         cc = ccc[0]
     else:
         cc = ccc
+
     # Code borrowed from obspy.signal.cross_correlation.xcorr_pick_correction
     cc_curvature = np.concatenate((np.zeros(1), np.diff(cc, 2), np.zeros(1)))
     cc_t = np.arange(0, len(cc) * dt, dt)
@@ -101,6 +103,39 @@ def _xcorr_interp(ccc, dt):
                        "returning maximum in data")
         return np.argmax(ccc) * dt, np.amax(ccc)
     return shift, coeff
+
+
+def _xcorr_interp(ccc, dt, resample_factor=10):
+    """
+    Resample correlation-trace and check if there is a better CCC peak for
+    sub-sample precision.
+
+    :param ccc: Cross-correlation array
+    :type ccc: numpy.ndarray
+    :param dt: sample interval
+    :type dt: float
+
+    :return: Position of interpolated maximum in seconds from start of ccc
+    :rtype: float
+    """
+    if ccc.shape[0] == 1:
+        cc = ccc[0]
+    else:
+        cc = ccc
+
+    cc_resampled = scipy.signal.resample(cc, len(cc) * resample_factor + 1)
+    dt_resampled = dt / resample_factor
+    cc_t = np.arange(0, len(cc_resampled) * dt_resampled, dt_resampled)
+    peak_index = cc_resampled.argmax()
+    cc_peak = max(cc_resampled)
+
+    shift = cc_t[peak_index]
+    if cc_peak < np.amax(cc) or cc_peak > 1.0 or not 0 < shift < len(ccc) * dt:
+        # Sometimes the interpolation returns a worse result.
+        Logger.warning("Interpolation did not give an accurate result, "
+                       "returning maximum in data")
+        return np.argmax(ccc) * dt, np.amax(ccc)
+    return shift, cc_peak
 
 
 def _concatenate_and_correlate(streams, template, cores):
