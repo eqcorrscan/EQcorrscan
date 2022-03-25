@@ -1,6 +1,8 @@
 ## Current
 * core.match_filter.tribe
  - Detect now allows passing of pre-processed data
+* core.lag_calc._xcorr_interp
+ - -CC-interpolation replaced with resampling (more robust)
 * utils.correlate
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than

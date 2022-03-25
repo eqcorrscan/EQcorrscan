@@ -53,6 +53,8 @@ def _xcorr_interp(ccc, dt, resample_factor=10):
     :type ccc: numpy.ndarray
     :param dt: sample interval
     :type dt: float
+    :param resample_factor: Factor for upsampling CC-values.
+    :type resample_factor: int
 
     :return: Position of interpolated maximum in seconds from start of ccc
     :rtype: float
