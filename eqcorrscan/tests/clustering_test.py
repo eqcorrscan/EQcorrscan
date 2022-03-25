@@ -213,6 +213,7 @@ class EfficientClustering(unittest.TestCase):
             os.path.abspath(os.path.dirname(__file__)), 'test_data',
             'similar_events_processed')
         stream_files = glob.glob(os.path.join(testing_path, '*'))
+        stream_files = sorted(stream_files)
         stream_list = [read(stream_file) for stream_file in stream_files]
         for st in stream_list:
             st.detrend().filter("bandpass", freqmin=5.0, freqmax=15.0)
@@ -269,10 +270,10 @@ class EfficientClustering(unittest.TestCase):
             template_list[0][0].remove(tr)
         for j, tr in enumerate(template_list[1][0][4:]):
             template_list[1][0].remove(tr)
-        groups = cluster(template_list, show=False, corr_thresh=0.35,
+        groups = cluster(template_list, show=False, corr_thresh=0.3,
                          replace_nan_distances_with=1, method='complete',
                          metric='chebyshev', optimal_ordering=True)
-        self.assertEqual(len(groups), 11)
+        self.assertEqual(len(groups), 9)
 
 
 class DistanceClusterTests(unittest.TestCase):
