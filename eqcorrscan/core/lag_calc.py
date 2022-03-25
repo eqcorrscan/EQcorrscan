@@ -44,67 +44,6 @@ class LagCalcError(Exception):
         return 'LagCalcError: ' + self.value
 
 
-def _xcorr_interp_old(ccc, dt):
-    """
-    Interpolate around the maximum correlation value for sub-sample precision.
-
-    :param ccc: Cross-correlation array
-    :type ccc: numpy.ndarray
-    :param dt: sample interval
-    :type dt: float
-
-    :return: Position of interpolated maximum in seconds from start of ccc
-    :rtype: float
-    """
-    if ccc.shape[0] == 1:
-        cc = ccc[0]
-    else:
-        cc = ccc
-
-    # Code borrowed from obspy.signal.cross_correlation.xcorr_pick_correction
-    cc_curvature = np.concatenate((np.zeros(1), np.diff(cc, 2), np.zeros(1)))
-    cc_t = np.arange(0, len(cc) * dt, dt)
-    peak_index = cc.argmax()
-    first_sample = peak_index
-    # XXX this could be improved..
-    while first_sample > 0 and cc_curvature[first_sample - 1] <= 0:
-        first_sample -= 1
-    last_sample = peak_index
-    while last_sample < len(cc) - 1 and cc_curvature[last_sample + 1] <= 0:
-        last_sample += 1
-    num_samples = last_sample - first_sample + 1
-    if num_samples < 3:
-        Logger.warning(
-            "Fewer than 3 samples selected for fit to cross correlation: "
-            "{0}, returning maximum in data".format(num_samples))
-        return np.argmax(cc) * dt, np.amax(cc)
-    if num_samples < 5:
-        Logger.debug(
-            "Fewer than 5 samples selected for fit to cross correlation: "
-            "{0}".format(num_samples))
-    coeffs, residual = np.polyfit(
-        cc_t[first_sample:last_sample + 1],
-        cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
-    # check results of fit
-    if coeffs[0] >= 0:
-        Logger.info("Fitted parabola opens upwards!")
-    if residual > 0.1:
-        Logger.info(
-            "Residual in quadratic fit to cross correlation maximum larger "
-            "than 0.1: {0}".format(residual))
-    # X coordinate of vertex of parabola gives time shift to correct
-    # differential pick time. Y coordinate gives maximum correlation
-    # coefficient.
-    shift = -coeffs[1] / 2.0 / coeffs[0]
-    coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
-    if coeff < np.amax(ccc) or coeff > 1.0 or not 0 < shift < len(ccc) * dt:
-        # Sometimes the interpolation returns a worse result.
-        Logger.warning("Interpolation did not give an accurate result, "
-                       "returning maximum in data")
-        return np.argmax(ccc) * dt, np.amax(ccc)
-    return shift, coeff
-
-
 def _xcorr_interp(ccc, dt, resample_factor=10):
     """
     Resample correlation-trace and check if there is a better CCC peak for
@@ -226,7 +165,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       min_cc_from_mean_cc_factor=None,
                       horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False, plotdir=None, export_cc=False, cc_dir=None):
+                      plot=False, plotdir=None, export_cc=False, cc_dir=None,
+                      **kwargs):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -320,7 +260,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             tr = detect_stream.select(
                 station=stachan.channel[0], channel=stachan.channel[1])[0]
             if interpolate:
-                shift, cc_max = _xcorr_interp(correlation, dt=delta)
+                shift, cc_max = _xcorr_interp(correlation, dt=delta, **kwargs)
             else:
                 cc_max = np.amax(correlation)
                 shift = np.argmax(correlation) * delta
