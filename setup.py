@@ -395,7 +395,9 @@ def setup_package():
         'tests_require': ['pytest>=2.0.0', 'pytest-cov', 'pytest-pep8',
                           'pytest-xdist', 'pytest-rerunfailures',
                           'obspy>=1.1.0'],
-        'cmdclass': {'build_ext': CustomBuildExt}
+        'cmdclass': {'build_ext': CustomBuildExt},
+        # Declare packages explicitly so setuptools>=61.0.0 does not auto discover
+        'packages': []
     }
 
     if using_setuptools:
