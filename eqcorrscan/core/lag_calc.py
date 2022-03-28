@@ -11,6 +11,7 @@ Functions to generate pick-corrections for events detected by correlation.
 import numpy as np
 import scipy
 import logging
+import warnings
 import os
 import scipy
 
@@ -26,6 +27,7 @@ from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.utils.plotting import plot_repicked
 
+show_interp_deprec_warning = True
 
 Logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ class LagCalcError(Exception):
         return 'LagCalcError: ' + self.value
 
 
-def _xcorr_interp(ccc, dt, resample_factor=10):
+def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False):
     """
     Resample correlation-trace and check if there is a better CCC peak for
     sub-sample precision.
@@ -53,7 +55,8 @@ def _xcorr_interp(ccc, dt, resample_factor=10):
     :type ccc: numpy.ndarray
     :param dt: sample interval
     :type dt: float
-    :param resample_factor: Factor for upsampling CC-values.
+    :param resample_factor:
+        Factor for upsampling CC-values (only for use_new_resamp_method=True)
     :type resample_factor: int
 
     :return: Position of interpolated maximum in seconds from start of ccc
@@ -64,19 +67,73 @@ def _xcorr_interp(ccc, dt, resample_factor=10):
     else:
         cc = ccc
 
-    cc_resampled = scipy.signal.resample(cc, len(cc) * resample_factor + 1)
-    dt_resampled = dt / resample_factor
-    cc_t = np.arange(0, len(cc_resampled) * dt_resampled, dt_resampled)
-    peak_index = cc_resampled.argmax()
-    cc_peak = max(cc_resampled)
+    # New method with resampling - make this the default in a future version
+    if use_new_resamp_method:
+        cc_resampled = scipy.signal.resample(cc, len(cc) * resample_factor + 1)
+        dt_resampled = dt / resample_factor
+        cc_t = np.arange(0, len(cc_resampled) * dt_resampled, dt_resampled)
+        peak_index = cc_resampled.argmax()
+        cc_peak = max(cc_resampled)
 
-    shift = cc_t[peak_index]
-    if cc_peak < np.amax(cc) or cc_peak > 1.0 or not 0 < shift < len(ccc) * dt:
+        shift = cc_t[peak_index]
+        if (cc_peak < np.amax(cc) or cc_peak > 1.0 or
+                not 0 < shift < len(ccc) * dt):
+            # Sometimes the interpolation returns a worse result.
+            Logger.warning("Interpolation did not give an accurate result, "
+                           "returning maximum in data")
+            return np.argmax(ccc) * dt, np.amax(ccc)
+        return shift, cc_peak
+
+    # Otherwise use old interpolation method, but warn with deprcation message
+    # (but show it only once):
+    global show_interp_deprec_warning
+    if show_interp_deprec_warning:
+        Logger.warning(
+            'This method for interpolating cross-correlations is deprecated, '
+            'use a more robust method with use_new_resamp_method=True')
+        show_interp_deprec_warning = False
+    # Code borrowed from obspy.signal.cross_correlation.xcorr_pick_correction
+    cc_curvature = np.concatenate((np.zeros(1), np.diff(cc, 2), np.zeros(1)))
+    cc_t = np.arange(0, len(cc) * dt, dt)
+    peak_index = cc.argmax()
+    first_sample = peak_index
+    # XXX this could be improved..
+    while first_sample > 0 and cc_curvature[first_sample - 1] <= 0:
+        first_sample -= 1
+    last_sample = peak_index
+    while last_sample < len(cc) - 1 and cc_curvature[last_sample + 1] <= 0:
+        last_sample += 1
+    num_samples = last_sample - first_sample + 1
+    if num_samples < 3:
+        Logger.warning(
+            "Fewer than 3 samples selected for fit to cross correlation: "
+            "{0}, returning maximum in data".format(num_samples))
+        return np.argmax(cc) * dt, np.amax(cc)
+    if num_samples < 5:
+        Logger.debug(
+            "Fewer than 5 samples selected for fit to cross correlation: "
+            "{0}".format(num_samples))
+    coeffs, residual = np.polyfit(
+        cc_t[first_sample:last_sample + 1],
+        cc[first_sample:last_sample + 1], deg=2, full=True)[:2]
+    # check results of fit
+    if coeffs[0] >= 0:
+        Logger.info("Fitted parabola opens upwards!")
+    if residual > 0.1:
+        Logger.info(
+            "Residual in quadratic fit to cross correlation maximum larger "
+            "than 0.1: {0}".format(residual))
+    # X coordinate of vertex of parabola gives time shift to correct
+    # differential pick time. Y coordinate gives maximum correlation
+    # coefficient.
+    shift = -coeffs[1] / 2.0 / coeffs[0]
+    coeff = (4 * coeffs[0] * coeffs[2] - coeffs[1] ** 2) / (4 * coeffs[0])
+    if coeff < np.amax(ccc) or coeff > 1.0 or not 0 < shift < len(ccc) * dt:
         # Sometimes the interpolation returns a worse result.
         Logger.warning("Interpolation did not give an accurate result, "
                        "returning maximum in data")
         return np.argmax(ccc) * dt, np.amax(ccc)
-    return shift, cc_peak
+    return shift, coeff
 
 
 def _concatenate_and_correlate(streams, template, cores):
