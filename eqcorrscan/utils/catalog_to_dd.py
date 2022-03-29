@@ -540,6 +540,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
         pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate,
         max_workers=max_workers)
+    for key, value in kwargs.items():
+        correlation_kwargs.update({key: value})
     if correlation:
         for arg, name in correlation_kwargs.items():
             assert arg is not None, "{0} is required for correlation".format(
