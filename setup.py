@@ -373,7 +373,8 @@ def setup_package():
     setup_args = {
         'name': 'EQcorrscan',
         'version': VERSION,
-        'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
+        'description':
+        'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
         'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
@@ -396,7 +397,8 @@ def setup_package():
                           'pytest-xdist', 'pytest-rerunfailures',
                           'obspy>=1.1.0'],
         'cmdclass': {'build_ext': CustomBuildExt},
-        # Declare packages explicitly so setuptools>=61.0.0 does not auto discover
+        # Declare packages explicitly so setuptools>=61.0.0 does not auto
+        # discover
         'packages': []
     }
 
