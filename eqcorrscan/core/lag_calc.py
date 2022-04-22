@@ -46,7 +46,8 @@ class LagCalcError(Exception):
         return 'LagCalcError: ' + self.value
 
 
-def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False):
+def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False,
+                  **kwargs):
     """
     Resample correlation-trace and check if there is a better CCC peak for
     sub-sample precision.
@@ -453,7 +454,7 @@ def lag_calc(detections, detect_data, template_names, templates,
              shift_len=0.2, min_cc=0.4, min_cc_from_mean_cc_factor=None,
              horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False, plotdir=None, export_cc=False, cc_dir=None):
+             plot=False, plotdir=None, export_cc=False, cc_dir=None, **kwargs):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -600,7 +601,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                 horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
-                export_cc=export_cc, cc_dir=cc_dir)
+                export_cc=export_cc, cc_dir=cc_dir, **kwargs)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()
