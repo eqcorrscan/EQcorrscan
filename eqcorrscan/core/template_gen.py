@@ -53,10 +53,10 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin="all", process_len=86400,
-                 all_horiz=False, delayed=True, plot=False, plotdir=None,
-                 return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, skip_short_chans=False,
-                 vertical_chans=['Z'],
+                 all_vert=False, all_horiz=False, delayed=True, plot=False,
+                 plotdir=None, return_event=False, min_snr=None,
+                 parallel=False, num_cores=False, save_progress=False,
+                 skip_short_chans=False, vertical_chans=['Z'],
                  horizontal_chans=['E', 'N', '1', '2', '3'], **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
@@ -84,6 +84,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one of
@@ -407,9 +411,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
-                plotdir=plotdir, vertical_chans=vertical_chans,
-                horizontal_chans=horizontal_chans)
+                all_vert=all_vert, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr, vertical_chans=vertical_chans,
+                horizontal_chans=horizontal_chans, plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -606,7 +610,7 @@ def _rms(array):
     return np.sqrt(np.mean(np.square(array)))
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05,
+def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
                   plotdir=None, vertical_chans=['Z'],
                   horizontal_chans=['E', 'N', '1', '2', '3']):
@@ -632,6 +636,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param prepick:
         Length in seconds to extract before the pick time default is 0.05
         seconds.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one
@@ -760,7 +768,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
-                if all_horiz and tr.stats.channel[-1] in horizontal_chans:
+                if all_vert and tr.stats.channel[-1] in vertical_chans:
+                    # Get all picks on vertical channels
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code[-1] in
+                        vertical_chans]
+                elif all_horiz and tr.stats.channel[-1] in horizontal_chans:
                     # Get all picks on horizontal channels
                     channel_pick = [
                         pick for pick in station_picks
@@ -775,8 +789,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P' and
-                          pick.waveform_id.channel_code == tr.stats.channel]
+                          if pick.phase_hint.upper()[0] == 'P']
+                if not all_vert:
+                    p_pick = [pick for pick in p_pick
+                              if pick.waveform_id.channel_code ==
+                              tr.stats.channel]
                 if len(p_pick) == 0:
                     continue
                 starttime.update({'picks': p_pick})
