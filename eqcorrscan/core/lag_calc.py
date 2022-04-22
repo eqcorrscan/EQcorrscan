@@ -11,9 +11,7 @@ Functions to generate pick-corrections for events detected by correlation.
 import numpy as np
 import scipy
 import logging
-import warnings
 import os
-import scipy
 
 from collections import Counter, namedtuple
 
