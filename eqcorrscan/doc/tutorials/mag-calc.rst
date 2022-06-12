@@ -11,7 +11,7 @@ This method closely follows the method outlined by |SVD_mag_link|.
 
 .. |SVD_mag_link| raw:: html
 
-    <a href="http://www.bssaonline.org/content/100/5A/1952.short" target="_blank">Rubinstein & Ellsworth 2010</a>
+    <a href="https://pubs.geoscienceworld.org/ssa/bssa/article/100/5A/1952/325099" target="_blank">Rubinstein & Ellsworth 2010</a>
 
 This example requires data downloaded from the eqcorrscan github repository.
 
