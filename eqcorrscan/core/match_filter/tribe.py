@@ -306,7 +306,7 @@ class Tribe(object):
         for template in self.templates:
             template.st.write(
                 os.path.join(dirname, '{0}.ms'.format(template.name)),
-                format='MSEED', **kwargs)
+                format='MSEED')
         if compress:
             if not filename.endswith(".tgz"):
                 Logger.info("Appending '.tgz' to filename.")
@@ -386,8 +386,11 @@ class Tribe(object):
                 Logger.error('No waveform for template: ' + template.name)
                 templates.remove(template)
                 continue
+            elif len(t_file) > 1:
+                Logger.warning('Multiple waveforms found, using: ' + t_file[0])
+            template.st = read(t_file[0])
             template = template._check_trace_length()
-        self.templates.extend([t for t in templates if t.st])
+        self.templates.extend(templates)
         return
 
     def cluster(self, method, **kwargs):
