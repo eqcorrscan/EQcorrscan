@@ -387,7 +387,7 @@ def _prepare_data(family, detect_data, shift_len):
         length = round(length_samples) / family.template.samp_rate
         Logger.info("Setting length to {0}s to give an integer number of "
                     "samples".format(length))
-    prepick = shift_len
+    prepick = shift_len + family.template.prepick
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick)
     for key, detect_stream in detect_streams_dict.items():
@@ -557,7 +557,7 @@ def lag_calc(detections, detect_data, template_names, templates,
             detections=template_detections,
             template=Template(
                 name=template_name, st=template,
-                samp_rate=template[0].stats.sampling_rate))
+                samp_rate=template[0].stats.sampling_rate, prepick=0.0))
         # Make a sparse template
         if len(template_detections) > 0:
             template_dict = xcorr_pick_family(
