@@ -17,7 +17,7 @@ dependencies:
   - pytest-pep8
   - pytest-xdist
   - pytest-rerunfailures
-  - pytest-mpl<0.16.0,>0.16.0
+  - pytest-mpl<0.16.0
   - codecov
   - pip
   - pip:
