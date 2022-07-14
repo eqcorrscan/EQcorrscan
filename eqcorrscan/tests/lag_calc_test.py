@@ -78,9 +78,11 @@ class SyntheticTests(unittest.TestCase):
                 self.assertAlmostEqual(
                     tr.stats.endtime - tr.stats.starttime,
                     (2 * shift_len) + self.t_length, 1)
-                pick = [p for p in detection.event.picks if p.waveform_id.get_seed_string() == tr.id][0]
+                pick = [p for p in detection.event.picks
+                        if p.waveform_id.get_seed_string() == tr.id][0]
                 self.assertAlmostEqual(
-                    tr.stats.starttime, pick.time - (family.template.prepick + shift_len), 1)
+                    tr.stats.starttime,
+                    pick.time - (family.template.prepick + shift_len), 1)
 
     def test_prepare_data(self):
         shift_len = 0.2
