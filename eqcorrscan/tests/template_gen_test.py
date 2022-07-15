@@ -256,49 +256,6 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
                             tr.stats.delta)
 
-    def test_seishub(self):
-        """Test the seishub method, use obspy default seishub client."""
-        import sys
-        if sys.version_info.major == 2:
-            from future.backports.urllib.request import URLError
-        else:
-            from urllib.request import URLError
-        t = UTCDateTime(2009, 9, 3)
-        test_cat = Catalog()
-        test_cat.append(Event())
-        test_cat[0].origins.append(Origin())
-        test_cat[0].origins[0].time = t
-        test_cat[0].origins[0].latitude = 45
-        test_cat[0].origins[0].longitude = 45
-        test_cat[0].origins[0].depth = 5000
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHZ', network_code='BW'),
-            phase_hint='PG', time=t + 2000))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHN', network_code='BW'),
-            phase_hint='SG', time=t + 2005))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHE', network_code='BW'),
-            phase_hint='SG', time=t + 2005.5))
-
-        test_url = "http://teide.geophysik.uni-muenchen.de:8080"
-
-        if sys.version_info.major == 3:
-            try:
-                template = template_gen(
-                    method="from_seishub", catalog=test_cat, url=test_url,
-                    lowcut=1.0, highcut=5.0, samp_rate=20, filt_order=4,
-                    length=3, prepick=0.5, swin='all', process_len=300)
-            except URLError:
-                pass
-        else:
-            pass
-        if 'template' in locals():
-            self.assertEqual(len(template), 3)
-
     def test_catalog_grouping(self):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_', '*.S??????')
