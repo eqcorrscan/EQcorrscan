@@ -20,7 +20,6 @@ import fnmatch
 
 from obspy import read, UTCDateTime, Stream
 from obspy.clients.fdsn.header import FDSNException
-from obspy.clients.seishub import Client as SeishubClient
 from obspy.clients.fdsn import Client as FDSNClient
 from obspy.clients.filesystem.sds import Client as SDSClient
 
@@ -34,12 +33,11 @@ def read_data(archive, arc_type, day, stachans, length=86400):
 
     :type archive: str
     :param archive:
-        The archive source - if arc_type is seishub, this should be a url,
-        if the arc_type is FDSN then this can be either a url or a known obspy
-        client.  If arc_type is day_vols, then this is the path to the top
-        directory.
+        The archive source -  if arc_type is FDSN then this can be either a url
+        or a known obspy client. If arc_type is day_vols, then this is the
+        path to the top directory.
     :type arc_type: str
-    :param arc_type: The type of archive, can be: seishub, FDSN, day_volumes
+    :param arc_type: The type of archive, can be: FDSN, day_volumes
     :type day: datetime.date
     :param day: Date to retrieve data for
     :type stachans: list
@@ -120,12 +118,6 @@ def read_data(archive, arc_type, day, stachans, length=86400):
                             day.strftime('%Y/%m/%d')])
             Logger.warning(msg)
             continue
-        if arc_type.lower() == 'seishub':
-            client = SeishubClient(archive)
-            st += client.get_waveforms(
-                    network='*', station=station_map[0], location='*',
-                    channel=station_map[1], starttime=UTCDateTime(day),
-                    endtime=UTCDateTime(day) + length)
         elif arc_type.upper() == "FDSN":
             client = FDSNClient(archive)
             try:
@@ -204,7 +196,6 @@ def _check_available_data(archive, arc_type, day):
 
     :returns: list of tuples of (station, channel) as available.
 
-    .. note:: Currently the seishub options are untested.
 
     """
     available_stations = []
@@ -215,12 +206,6 @@ def _check_available_data(archive, arc_type, day):
             header = read(wavefile, headonly=True)
             available_stations.append((header[0].stats.station,
                                        header[0].stats.channel))
-    elif arc_type.lower() == 'seishub':
-        client = SeishubClient(archive)
-        st = client.get_previews(starttime=UTCDateTime(day),
-                                 endtime=UTCDateTime(day) + 86400)
-        for tr in st:
-            available_stations.append((tr.stats.station, tr.stats.channel))
     elif arc_type.lower() == 'fdsn':
         client = FDSNClient(archive)
         inventory = client.get_stations(starttime=UTCDateTime(day),
