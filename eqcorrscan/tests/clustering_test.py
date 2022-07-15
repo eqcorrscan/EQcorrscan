@@ -66,7 +66,7 @@ class ClusteringTests(unittest.TestCase):
         cccoh, _ = cross_chan_correlation(st1=st1, streams=[st2])
         self.assertTrue(cccoh[0] < 0.01)
 
-    def test_distance_matrix(self):
+    def test_distance_matrix_no_shift(self):
         """Test that we can create a useful distance matrix."""
         testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
         stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
@@ -84,9 +84,80 @@ class ClusteringTests(unittest.TestCase):
         for st in stream_list:
             for tr in st:
                 tr.data = tr.data[0:shortest_tr]
-        dist_mat = distance_matrix(stream_list=stream_list, cores=4)
+        dist_mat, shift_mat, shift_dict = distance_matrix(
+            stream_list=stream_list, cores=4)
         self.assertEqual(dist_mat.shape[0], len(stream_list))
         self.assertEqual(dist_mat.shape[1], len(stream_list))
+        self.assertEqual(len(shift_dict), len(stream_list))
+        for j, key in enumerate(shift_dict.keys()):
+            self.assertEqual(len(shift_dict[key]), len(stream_list[j]))
+
+    def test_distance_matrix_with_shift(self):
+        """
+        Test that we can create a useful distance and shift matrix with some
+        shift.
+        """
+        testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
+        dist_mat, shift_mat, shift_dict = distance_matrix(
+            stream_list=stream_list, cores=4, shift_len=0.2,
+            allow_individual_trace_shifts=False)
+        self.assertEqual(dist_mat.shape[0], len(stream_list))
+        self.assertEqual(dist_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(dist_mat == dist_mat.T).all(), True)
+        self.assertEqual(shift_mat.shape[0], len(stream_list))
+        self.assertEqual(shift_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(shift_mat == shift_mat.T).all(), True)
+        self.assertEqual(len(shift_dict), len(stream_list))
+        for j, key in enumerate(shift_dict.keys()):
+            self.assertEqual(len(shift_dict[key]), len(stream_list[j]))
+
+    def test_distance_matrix_with_shifted_traces(self):
+        """
+        Test that we can create a useful distance and shift matrix with
+        individual traces allowed to shift.
+        """
+        testing_path = os.path.join(self.testing_path, 'WAV', 'TEST_')
+        stream_files = glob.glob(os.path.join(testing_path, '*DFDPC*'))[0:10]
+        stream_list = [read(stream_file) for stream_file in stream_files]
+        for st in stream_list:
+            for tr in st:
+                if tr.stats.sampling_rate != 100.0:
+                    ratio = tr.stats.sampling_rate / 100
+                    if int(ratio) == ratio:
+                        tr.decimate(int(ratio))
+                    else:
+                        tr.resample(100)
+        shortest_tr = min(
+            [tr.stats.npts for st in stream_list for tr in st])
+        for st in stream_list:
+            for tr in st:
+                tr.data = tr.data[0:shortest_tr]
+        dist_mat, shift_mat, shift_dict = distance_matrix(
+            stream_list=stream_list, cores=4, shift_len=0.2,
+            allow_individual_trace_shifts=True)
+        self.assertEqual(dist_mat.shape[0], len(stream_list))
+        self.assertEqual(dist_mat.shape[1], len(stream_list))
+        self.assertEqual(np.array(dist_mat == dist_mat.T).all(), True)
+        self.assertEqual(len(shift_mat.shape), 3)
+        np.testing.assert_equal(shift_mat, np.transpose(shift_mat, [1, 0, 2]))
+        self.assertEqual(len(shift_dict), len(stream_list))
+        for j, key in enumerate(shift_dict.keys()):
+            self.assertEqual(len(shift_dict[key]), len(stream_list[j]))
 
     def test_unclustered(self):
         """Test clustering on unclustered data..."""

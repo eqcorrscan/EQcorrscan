@@ -476,8 +476,8 @@ static inline int set_ncc(
         }
         else if (fabsf(value) > 1.01) {
             // this will raise a warning when we return to Python
-            printf("WARNING: Correlation out of range at:\n\tncc_index: %ld\n\ttemplate: %ld\n\tchannel: %i\n\tindex: %ld\n\tvalue: %f\nSETTING TO ZERO.",
-                   ncc_index, t, chan, i, value);
+            printf("WARNING: Correlation value=%f:\tncc_index: %ld\ttemplate: %ld\tchannel: %i\tindex: %ld\nSETTING TO ZERO.\n",
+                   value, ncc_index, t, chan, i);
             value = 0.0;
             status = 1;
         }

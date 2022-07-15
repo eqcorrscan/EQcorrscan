@@ -26,8 +26,9 @@ from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
 Logger = logging.getLogger(__name__)
 
 
-def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
-                           concurrency="concurrent", cores=1, **kwargs):
+def cross_chan_correlation(
+        st1, streams, shift_len=0.0, allow_individual_trace_shifts=True,
+        xcorr_func='fftw', concurrency="concurrent", cores=1, **kwargs):
     """
     Calculate cross-channel correlation.
 
@@ -39,7 +40,12 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     :type streams: list
     :param streams: Streams to compare to.
     :type shift_len: float
-    :param shift_len: Seconds to shift, only used if `allow_shift=True`
+    :param shift_len: How many seconds for templates to shift
+    :type allow_individual_trace_shifts: bool
+    :param allow_individual_trace_shifts:
+        Controls whether templates are shifted by shift_len in relation to the
+        picks as a whole, or whether each trace can be shifted individually.
+        Defaults to True.
     :type xcorr_func: str, callable
     :param xcorr_func:
         The method for performing correlations. Accepts either a string or
@@ -61,6 +67,8 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
     """
     # Cut all channels in stream-list to be the correct length (shorter than
     # st1 if stack = False by shift_len).
+    allow_individual_trace_shifts = (
+        allow_individual_trace_shifts and shift_len > 0)
     n_streams = len(streams)
     df = st1[0].stats.sampling_rate
     end_trim = int((shift_len * df) / 2)
@@ -74,30 +82,57 @@ def cross_chan_correlation(st1, streams, shift_len=0.0, xcorr_func='fftw',
                     raise NotImplementedError("Sampling rates differ")
             _streams.append(_stream)
         streams = _streams
+    else:
+        # _prep_data_for_correlation works in place on data.
+        # We need to copy it first.
+        streams = [stream.copy() for stream in streams]
     # Check which channels are in st1 and match those in the stream_list
-    st1, streams, stream_indexes = _prep_data_for_correlation(
-        stream=st1, templates=streams,
+    st1_preped, prep_streams, stream_indexes = _prep_data_for_correlation(
+        stream=st1.copy(), templates=streams,
         template_names=list(range(len(streams))), force_stream_epoch=False)
     # Run the correlations
     multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
     [cccsums, no_chans, _] = multichannel_normxcorr(
-        templates=streams, stream=st1, cores=cores, stack=False, **kwargs)
+        templates=prep_streams, stream=st1_preped, cores=cores, stack=False,
+        **kwargs)
     # Find maximas, sum and divide by no_chans
-    coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
-    positions = cccsums.argmax(axis=-1)
-    # positions should probably have half the length of the correlogram
-    # subtracted, and possibly be converted to seconds?
+    if allow_individual_trace_shifts:
+        coherances = cccsums.max(axis=-1).sum(axis=-1) / no_chans
+    else:
+        cccsums = cccsums.sum(axis=1)
+        coherances = cccsums.max(axis=-1) / no_chans
+    # Subtract half length of correlogram and convert positions to seconds
+    positions = (cccsums.argmax(axis=-1) - end_trim) / df
+
+    # This section re-orders the coherences to correspond to the order of the
+    # input streams
     _coherances = np.empty(n_streams)
-    _positions = np.empty((n_streams, no_chans.max()))
+    if allow_individual_trace_shifts:
+        n_max_traces = max([len(st) for st in prep_streams])
+        # Set shifts for nan-traces to nan
+        for i, tr in enumerate(st1_preped):
+            if np.ma.is_masked(tr.data):
+                positions[:, i] = np.nan
+    else:
+        positions = positions[:, np.newaxis]
+        n_max_traces = 1
+    n_shifts_per_stream = positions.shape[1]
+    _positions = np.empty([n_streams, n_max_traces])
+
     _coherances.fill(np.nan)
     _positions.fill(np.nan)
-    for coh_ind, stream_ind in enumerate(stream_indexes):
-        _coherances[stream_ind] = coherances[coh_ind]
-        _positions[stream_ind] = positions[coh_ind]
+    # Insert the correlations and shifts at the correct index for the templates
+    _coherances[np.ix_(stream_indexes)] = coherances
+    _positions[np.ix_(stream_indexes, range(n_shifts_per_stream))] = (
+        positions)
+
+    if not allow_individual_trace_shifts:  # remove empty third axis from array
+        _positions = _positions[:, ]
     return _coherances, _positions
 
 
-def distance_matrix(stream_list, shift_len=0.0, cores=1):
+def distance_matrix(stream_list, shift_len=0.0,
+                    allow_individual_trace_shifts=True, cores=1):
     """
     Compute distance matrix for waveforms based on cross-correlations.
 
@@ -112,11 +147,24 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
         matrix for
     :type shift_len: float
     :param shift_len: How many seconds for templates to shift
+    :type allow_individual_trace_shifts: bool
+    :param allow_individual_trace_shifts:
+        Controls whether templates are shifted by shift_len in relation to the
+        picks as a whole, or whether each trace can be shifted individually.
+        Defaults to True.
     :type cores: int
     :param cores: Number of cores to parallel process using, defaults to 1.
 
-    :returns: distance matrix
-    :rtype: :class:`numpy.ndarray`
+    :returns:
+        - distance matrix (:py:class:`numpy.ndarray`) of size
+          len(stream_list)**2
+        - shift matrix (:py:class:`numpy.ndarray`) containing shifts between
+          traces of the sorted streams. Size is len(stream_list)**2 * x, where
+          x is 1 for shift_len=0 and/or allow_individual_trace_shifts=False.
+          Missing correlations are indicated by nans.
+        - shift dict (:py:class:`dict`):
+          dictionary of (template_id: trace_dict) where trace_dict contains
+          (trace.id: shift matrix (size `len(stream_list)**2`) for trace.id)
 
     .. warning::
         Because distance is given as :math:`1-abs(coherence)`, negatively
@@ -126,23 +174,60 @@ def distance_matrix(stream_list, shift_len=0.0, cores=1):
     .. note::
         Requires all traces to have the same sampling rate and same length.
     """
+    n_streams = len(stream_list)
+    # May have to allow duplicate channels for P- and S-picks at each station
+    stream_list = [st.sort() for st in stream_list]
+    uniq_traces = set([tr.id for st in stream_list for tr in st])
+    n_uniq_traces = len(uniq_traces)
     # Initialize square matrix
-    dist_mat = np.array([np.array([0.0] * len(stream_list))] *
-                        len(stream_list))
+    dist_mat = np.zeros([n_streams, n_streams])
+    shift_mat = np.empty([n_streams, n_streams, n_uniq_traces])
+    shift_mat[:] = np.nan
+    shift_dict = dict()
     for i, master in enumerate(stream_list):
-        dist_list, _ = cross_chan_correlation(
-            st1=master.copy(), streams=stream_list,
-            shift_len=shift_len, xcorr_func='fftw', cores=cores)
+        dist_list, shift_list = cross_chan_correlation(
+            st1=master, streams=stream_list, shift_len=shift_len,
+            allow_individual_trace_shifts=allow_individual_trace_shifts,
+            xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
-    assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
-    # Force perfect symmetry
-    dist_mat = (dist_mat + dist_mat.T) / 2
+        master_ids = [tr.id for tr in master]
+        master_trace_indcs = [
+            j for j, tr_id in enumerate(uniq_traces) if tr_id in master_ids]
+        # Sort computed shifts into shift-matrix. shift_list could contain a
+        # nan-column that needs to be ignored here (only when earliest trace is
+        # missing)
+        shift_mat[np.ix_([i], list(range(n_streams)), master_trace_indcs)] = (
+            shift_list[:, ~np.all(np.isnan(shift_list), axis=0)])
+        # Add trace-id with corresponding shift-matrix to shift-dictionary
+        shift_mat_list = [shift_mat[:, :, mti] for mti in master_trace_indcs]
+        trace_shift_dict = dict(zip(master_ids, shift_mat_list))
+        shift_dict[i] = trace_shift_dict
+    if shift_len == 0:
+        assert np.allclose(dist_mat, dist_mat.T, atol=0.00001)
+        # Force perfect symmetry
+        dist_mat = (dist_mat + dist_mat.T) / 2
+    else:
+        # get the shortest distance for each correlation pair
+        dist_mat_shortest = np.minimum(dist_mat, dist_mat.T)
+        # Indicator says which matrix has shortest dist: value 0: mat2; 1: mat1
+        mat_indicator = dist_mat_shortest == dist_mat
+        mat_indicator = np.repeat(mat_indicator[:, :, np.newaxis],
+                                  n_uniq_traces, axis=2)[:, :]
+        # Get shift for the shortest distances
+        shift_mat = (
+            shift_mat * mat_indicator +
+            np.transpose(shift_mat, [1, 0, 2]) * (1 - mat_indicator))
+        dist_mat = dist_mat_shortest
+    # Squeeze matrix to 2 axis (ignore nans) if 3rd dimension not needed
+    if shift_len == 0 or allow_individual_trace_shifts is False:
+        shift_mat = np.nanmean(shift_mat, axis=2)
     np.fill_diagonal(dist_mat, 0)
-    return dist_mat
+    return dist_mat, shift_mat.squeeze(), shift_dict
 
 
-def cluster(template_list, show=True, corr_thresh=0.3,
-            shift_len=0, save_corrmat=False, cores='all'):
+def cluster(template_list, show=True, corr_thresh=0.3, shift_len=0,
+            allow_individual_trace_shifts=True, save_corrmat=False,
+            cores='all'):
     """
     Cluster template waveforms based on average correlations.
 
@@ -167,6 +252,11 @@ def cluster(template_list, show=True, corr_thresh=0.3,
     :param corr_thresh: Cross-channel correlation threshold for grouping
     :type shift_len: float
     :param shift_len: How many seconds to allow the templates to shift
+    :type allow_individual_trace_shifts: bool
+    :param allow_individual_trace_shifts:
+        Controls whether templates are shifted by shift_len in relation to the
+        picks as a whole, or whether each trace can be shifted individually.
+        Defaults to True.
     :type save_corrmat: bool
     :param save_corrmat:
         If True will save the distance matrix to dist_mat.npy in the local
@@ -188,8 +278,9 @@ def cluster(template_list, show=True, corr_thresh=0.3,
     stream_list = [x[0] for x in template_list]
     # Compute the distance matrix
     Logger.info('Computing the distance matrix using %i cores' % num_cores)
-    dist_mat = distance_matrix(
-        stream_list=stream_list, shift_len=shift_len, cores=num_cores)
+    dist_mat, shift_mat, shift_dict = distance_matrix(
+        stream_list=stream_list, shift_len=shift_len, cores=num_cores,
+        allow_individual_trace_shifts=allow_individual_trace_shifts)
     if save_corrmat:
         np.save('dist_mat.npy', dist_mat)
         Logger.info('Saved the distance matrix as dist_mat.npy')
@@ -746,21 +837,20 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     """
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
-    from future.utils import native_str
     from math import radians
 
     utilslib = _load_cdll('libutils')
 
     utilslib.remove_unclustered.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.uint8,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_float, ctypes.c_int]
     utilslib.remove_unclustered.restype = ctypes.c_int
 
@@ -814,20 +904,19 @@ def dist_mat_km(catalog, num_threads=None):
     """
     import ctypes
     from eqcorrscan.utils.libnames import _load_cdll
-    from future.utils import native_str
 
     utilslib = _load_cdll('libutils')
 
     utilslib.distance_matrix.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_long,
         np.ctypeslib.ndpointer(dtype=np.float32,
-                               flags=native_str('C_CONTIGUOUS')),
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int]
     utilslib.distance_matrix.restype = ctypes.c_int
 
@@ -1094,8 +1183,8 @@ def re_thresh_csv(path, old_thresh, new_thresh, chan_thresh):
         detections_in += 1
         con1 = (new_thresh / old_thresh) * detection.threshold
         con2 = detection.no_chans >= chan_thresh
-        requirted_thresh = (new_thresh / old_thresh) * detection.threshold
-        con3 = abs(detection.detect_val) >= requirted_thresh
+        required_thresh = (new_thresh / old_thresh) * detection.threshold
+        con3 = abs(detection.detect_val) >= required_thresh
         if all([con1, con2, con3]):
             detections_out += 1
             detections.append(detection)

@@ -153,7 +153,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), len(st1))
         for value in relative_amplitudes.values():
@@ -171,7 +171,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -191,7 +191,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
             pick.phase_hint = "S"
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -210,7 +210,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2.picks = []
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -223,7 +223,7 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 0)
 
@@ -240,14 +240,14 @@ class TestRelativeAmplitudes(unittest.TestCase):
         event2 = event1
         for tr in st2:
             tr.data *= scale_factor
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=st1, st2=st2, event1=event1, event2=event2)
         self.assertEqual(len(relative_amplitudes), 1)
         for value in relative_amplitudes.values():
             self.assertAlmostEqual(value, scale_factor)
 
     def test_real_near_repeat(self):
-        relative_amplitudes = relative_amplitude(
+        relative_amplitudes, _, _ = relative_amplitude(
             st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2)
         for seed_id, ratio in relative_amplitudes.items():
             self.assertLess(abs(0.8 - ratio), 0.1)
@@ -256,6 +256,13 @@ class TestRelativeAmplitudes(unittest.TestCase):
         relative_magnitudes, correlations = relative_magnitude(
             st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
             return_correlations=True)
+        for seed_id, mag_diff in relative_magnitudes.items():
+            self.assertLess(abs(mag_diff + 0.15), 0.1)
+
+    def test_real_near_repeat_magnitudes_no_bias_correction(self):
+        relative_magnitudes, correlations = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            return_correlations=True, correct_mag_bias=False)
         for seed_id, mag_diff in relative_magnitudes.items():
             self.assertLess(abs(mag_diff + 0.15), 0.1)
 
@@ -271,6 +278,27 @@ class TestRelativeAmplitudes(unittest.TestCase):
             st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
             correlations={tr.id: 0.2 for tr in self.st1})
         self.assertEqual(len(relative_magnitudes), 0)
+
+    def test_real_near_repeat_magnitudes_S_picks(self):
+        self.event1.picks.append(self.event1.picks[0].copy())
+        self.event1.picks[-1].phase_hint = "S"
+        self.event1.picks[-1].waveform_id.channel_code = "EHN"
+        self.st1.append(self.st1[0].copy())
+        self.st1[-1].id = self.st1[-1].id[0:-1] + "N"
+        self.event2.picks.append(self.event2.picks[13].copy())
+        self.event2.picks[-1].phase_hint = "S"
+        self.event2.picks[-1].waveform_id.channel_code = "EHN"
+        self.st2.append(
+            self.st2.select(station=self.st1[0].stats.station)[0].copy())
+        self.st2[-1].id = self.st2[-1].id[0:-1] + "N"
+        # Check that the results are not equal when using or not using S:
+        relative_magnitudes1 = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            use_s_picks=False)
+        relative_magnitudes2 = relative_magnitude(
+            st1=self.st1, st2=self.st2, event1=self.event1, event2=self.event2,
+            use_s_picks=True)
+        self.assertNotEqual(relative_magnitudes1, relative_magnitudes2)
 
 
 class TestAmpPickEvent(unittest.TestCase):

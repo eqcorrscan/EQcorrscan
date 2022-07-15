@@ -85,6 +85,10 @@ def get_include_dirs():
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
+    if get_build_platform() in ('win32', 'win-amd64'):
+        # Add the Library dir
+        include_dirs.append(os.path.join(sys.prefix, 'Library', 'include'))
+
     if get_build_platform().startswith('freebsd'):
         include_dirs.append('/usr/local/include')
 
@@ -98,7 +102,8 @@ def get_library_dirs():
     if get_build_platform() in ('win32', 'win-amd64'):
         library_dirs.append(os.path.join(os.getcwd(), 'eqcorrscan', 'utils',
                                          'lib'))
-        library_dirs.append(os.path.join(sys.prefix, 'bin'))
+        library_dirs.append(os.path.join(sys.prefix, 'lib'))
+        library_dirs.append(os.path.join(sys.prefix, 'Library', 'lib'))
 
     library_dirs.append(os.path.join(sys.prefix, 'lib'))
     if get_build_platform().startswith('freebsd'):
@@ -171,7 +176,8 @@ def get_libraries():
     from pkg_resources import get_build_platform
 
     if get_build_platform() in ('win32', 'win-amd64'):
-        libraries = ['libfftw3-3', 'libfftw3f-3']
+        # libraries = ['libfftw3-3', 'libfftw3f-3']
+        libraries = ['fftw3', 'fftw3f']
     else:
         libraries = ['fftw3', 'fftw3_threads', 'fftw3f', 'fftw3f_threads']
 
@@ -389,7 +395,11 @@ def setup_package():
         'tests_require': ['pytest>=2.0.0', 'pytest-cov', 'pytest-pep8',
                           'pytest-xdist', 'pytest-rerunfailures',
                           'obspy>=1.1.0'],
-        'cmdclass': {'build_ext': CustomBuildExt}
+        'cmdclass': {'build_ext': CustomBuildExt},
+        'packages': [
+            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
+            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests'],
     }
 
     if using_setuptools:
@@ -407,10 +417,6 @@ def setup_package():
         # For these actions, NumPy is not required.
         pass
     else:
-        setup_args['packages'] = [
-            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
-            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
-            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()

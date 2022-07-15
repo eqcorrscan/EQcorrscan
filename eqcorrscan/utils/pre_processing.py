@@ -632,7 +632,6 @@ def _resample(tr, sampling_rate, threads=1):
     Provide a pyfftw version of obspy's trace resampling.  This code is
     modified from obspy's Trace.resample method.
     """
-    from future.utils import native_str
     from scipy.signal import get_window
     from pyfftw.interfaces.scipy_fftpack import rfft, irfft
 
@@ -648,7 +647,7 @@ def _resample(tr, sampling_rate, threads=1):
     x_i = x[1::2]
 
     large_w = np.fft.ifftshift(
-        get_window(native_str("hanning"), tr.stats.npts))
+        get_window("hanning", tr.stats.npts))
     x_r *= large_w[:tr.stats.npts // 2 + 1]
     x_i *= large_w[:tr.stats.npts // 2 + 1]
 
@@ -846,16 +845,46 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     # Remove templates with no matching channels
     filt = np.ones(len(template_names)).astype(bool)
     for i, template in enumerate(templates):
-        template_ids = {tr.id for tr in template}
-        if len(template_ids.intersection(stream_ids)) == 0:
+        trace_ids = {tr.id for tr in template}
+        if len(trace_ids.intersection(stream_ids)) == 0:
             filt[i] = 0
 
     _out = dict(zip(
         [_tn for _tn, _filt in zip(template_names, filt) if _filt],
         [_t for _t, _filt in zip(templates, filt) if _filt]))
+    flt_templates = list(_out.values())
 
     if len(_out) != len(templates):
         Logger.debug("Some templates not used due to no matching channels")
+
+    # Ensure that the templates' earliest traces are kept, even if there is no
+    # continuous data for them. If this happens, we need to add a NaN-stream to
+    # the continuous data to avoid inconsistent detection times.
+    n_template_traces = np.array([len(temp) for temp in flt_templates])
+    n_stream_traces = sum([n+1 for s, n in seed_ids])
+    # These checks are not necessary if all templates will get NaN-traces,
+    # because the NaN-traces will save the right starttime for the template.
+    nan_stream_ids = list()
+    if any(n_template_traces > n_stream_traces):
+        earliest_templ_trace_ids = set(
+            [template.sort(['starttime'])[0].id for template in flt_templates])
+        for earliest_templ_trace_id in earliest_templ_trace_ids:
+            if earliest_templ_trace_id not in template_ids:
+                nan_stream_ids.append(earliest_templ_trace_id)
+                net, sta, loc, chan = earliest_templ_trace_id.split('.')
+                nan_template += Trace(header=Stats({
+                    'network': net, 'station': sta, 'location': loc,
+                    'channel': chan, 'starttime': UTCDateTime(),
+                    'npts': template_length, 'sampling_rate': samp_rate}))
+                stream_nan_data = np.full(
+                    stream_length, np.nan, dtype=np.float32)
+                out_stream += Trace(
+                    data=np.ma.masked_array(stream_nan_data, stream_nan_data),
+                    header=Stats({
+                        'network': net, 'station': sta, 'location': loc,
+                        'channel': chan, 'starttime': stream_start,
+                        'npts': stream_length, 'sampling_rate': samp_rate}))
+                seed_ids.append((earliest_templ_trace_id, 0))
 
     incomplete_templates = {
         template_name for template_name, template in _out.items() if
@@ -875,6 +904,13 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
                     template_starttime
             else:
                 out_template[channel_number] = template_channel[channel_index]
+        # If a template-trace matches a NaN-trace in the stream , then set
+        # template-trace to NaN so that this trace does not appear in channel-
+        # list of detections.
+        if len(nan_stream_ids) > 0:
+            for tr in out_template:
+                if tr.id in nan_stream_ids:
+                    tr.data = nan_channel
         _out.update({template_name: out_template})
 
     out_templates = list(_out.values())

@@ -3,32 +3,45 @@ on: [pull_request]  #, push]
 
 jobs:
   # Runs the tests on combinations of the supported python/os matrix.
-  test-code-macOS:
-    runs-on: "macos-latest"
+  test-code:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.7', '3.8', '3.9']
       fail-fast: false
+#      continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - name: Setup conda
-        uses: actions/cache@v1
+      - name: Get conda env file
+        shell: bash -l {0}
+        run: |
+          if [ "$RUNNER_OS" == "macOS"  ]; then
+              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
+          fi
+
+      - name: Cache conda
+        uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if needed by env file has not changed
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('.github/test_conda_env_macOS.yml') }}
-      - uses: goanpeca/setup-miniconda@v1
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('.github/test_conda_env.yml') }}
+
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env_macOS.yml
+          environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true  # Must be set for caching to work properly
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -41,20 +54,31 @@ jobs:
           conda info -a
           conda list
 
+#      - name: run all tests
+#        shell: bash -l {0}
+#        run: |
+#          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
+#          export OMP_NUM_THREADS=2
+#          py.test -m "serial and not network" --cov-report=xml --cov-append
+#          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
+
       - name: run main test suite
         shell: bash -l {0}
-        continue-on-error: true
         run: |
           py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-      - name: run slow tests
-        shell: bash -l {0}
-        run: |
-          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
+
       - name: run serial test
+        if: always()
         shell: bash -l {0}
         run: |
           export OMP_NUM_THREADS=2
           py.test -m "serial and not network" --cov-report=xml --cov-append
+
+      - name: run slow tests
+        if: always()
+        shell: bash -l {0}
+        run: |
+          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
         uses: codecov/codecov-action@v1
@@ -66,32 +90,37 @@ jobs:
           yml: ./codecov.yml
           fail_ci_if_error: true
 
-  test-code-ubuntu:
+
+  test-code-slow:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - name: Setup conda
-        uses: actions/cache@v1
+      - name: Cache conda
+        uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if needed by env file has not changed
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('.github/test_conda_env.yml') }}
-      - uses: goanpeca/setup-miniconda@v1
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('.github/test_conda_env.yml') }}
+
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true  # Must be set for caching to work properly
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -104,19 +133,87 @@ jobs:
           conda info -a
           conda list
 
-      - name: run main test suite
+      - name: run network tests
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
-      - name: run slow tests
+          py.test -n 2 -m "network" --cov-report=xml
+      - name: run tutorials
+        if: always()
         shell: bash -l {0}
         run: |
-          py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
-      - name: run serial test
+          py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-report=xml --cov-append
+      - name: run superslow tests
+        if: always()
+        shell: bash -l {0}
+        run: |
+          py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
+
+      - name: upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          yml: ./codecov.yml
+          fail_ci_if_error: true
+
+  test-code-fmf:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version: [3.8]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if needed by env file has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('.github/test_conda_env.yml') }}
+
+      - name: Setup conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: 'latest'
+          python-version: ${{ matrix.python-version }}
+          activate-environment: eqcorrscan-test
+          environment-file: .github/test_conda_env.yml
+          condarc-file: .github/test_condarc.yml
+          use-only-tar-bz2: true  # Must be set for caching to work properly
+
+      - name: install fmf
+        shell: bash -l {0}
+        run: |
+          cd ..
+          git clone https://github.com/beridel/fast_matched_filter.git
+          cd fast_matched_filter
+          pip install -e .
+          cd ../EQcorrscan
+
+      - name: install eqcorrscan
+        shell: bash -l {0}
+        run: |
+          pip install -e .
+
+      - name: print package info
+        shell: bash -l {0}
+        run: |
+          conda info -a
+          conda list
+
+      - name: run correlation test
         shell: bash -l {0}
         run: |
           export OMP_NUM_THREADS=2
-          py.test -m "serial and not network" --cov-report=xml --cov-append
+          py.test eqcorrscan/tests/correlate_test.py --cov-report=xml
 
       - name: upload coverage
         uses: codecov/codecov-action@v1

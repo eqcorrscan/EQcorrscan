@@ -385,7 +385,8 @@ def match_filter(template_names, template_list, st, threshold,
                  xcorr_func=None, concurrency=None, cores=None,
                  plot_format='png', output_cat=False, output_event=True,
                  extract_detections=False, arg_check=True, full_peaks=False,
-                 peak_cores=None, spike_test=True, **kwargs):
+                 peak_cores=None, spike_test=True, copy_data=True,
+                 export_cccsums=False, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -468,6 +469,13 @@ def match_filter(template_names, template_list, st, threshold,
     :type spike_test: bool
     :param spike_test: If set True, raise error when there is a spike in data.
         defaults to True.
+    :type copy_data: bool
+    :param copy_data:
+        Whether to copy data to keep it safe, otherwise will edit your
+        templates and stream in place.
+    :type export_cccsums: bool
+    :param export_cccsums: Whether to save the cross-correlation statistic.
+
 
     .. Note::
         When using the "fftw" correlation backend the length of the fft
@@ -653,11 +661,14 @@ def match_filter(template_names, template_list, st, threshold,
         parallel = False
     if peak_cores is None:
         peak_cores = cores
-    # Copy the stream here because we will muck about with it
-    Logger.info("Copying data to keep your input safe")
-    stream = st.copy()
-    templates = [t.copy() for t in template_list]
-    _template_names = template_names.copy()  # This can just be a shallow copy
+    if copy_data:
+        # Copy the stream here because we will muck about with it
+        Logger.info("Copying data to keep your input safe")
+        stream = st.copy()
+        templates = [t.copy() for t in template_list]
+        _template_names = template_names.copy()  # This can be a shallow copy
+    else:
+        stream, templates, _template_names = st, template_list, template_names
 
     Logger.info("Reshaping templates")
     stream, templates, _template_names = _prep_data_for_correlation(
@@ -702,6 +713,11 @@ def match_filter(template_names, template_list, st, threshold,
     outtoc = default_timer()
     Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
     for i, cccsum in enumerate(cccsums):
+        if export_cccsums:
+            fname = (f"{_template_names[i]}-{stream[0].stats.starttime}-"
+                     f"{stream[0].stats.endtime}_cccsum.npy")
+            np.save(file=fname, arr=cccsum)
+            Logger.info(f"Saved correlation statistic to {fname}")
         if np.abs(np.mean(cccsum)) > 0.05:
             Logger.warning('Mean is not zero!  Check this!')
         # Set up a trace object for the cccsum as this is easier to plot and
