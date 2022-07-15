@@ -532,8 +532,8 @@ class Template(object):
 
         :param method:
             Method to make the template, the only available method is:
-            `from_sac`. For all other methods (`from_seishub`, `from_client`
-            and `from_meta_file`) use `Tribe.construct()`.
+            `from_sac`. For all other methods (`from_client` and
+            `from_meta_file`) use `Tribe.construct()`.
         :type method: str
         :type name: str
         :param name: Name for the template
@@ -635,8 +635,7 @@ class Template(object):
         Tribe.construct instead.
 
         """
-        if method in ['from_meta_file', 'from_seishub', 'from_client',
-                      'multi_template_gen']:
+        if method in ['from_meta_file', 'from_client', 'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')
         streams, events, process_lengths = template_gen.template_gen(
