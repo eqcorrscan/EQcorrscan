@@ -710,7 +710,7 @@ def extract_detections(detections, templates, archive, arc_type,
         Either name of archive or path to continuous data, see
         :func:`eqcorrscan.utils.archive_read` for details
     :type arc_type: str
-    :param arc_type: Type of archive, either seishub, FDSN, day_vols
+    :param arc_type: Type of archive, either FDSN, day_vols
     :type extract_len: float
     :param extract_len:
         Length to extract around the detection (will be equally cut around
