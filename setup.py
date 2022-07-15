@@ -396,8 +396,10 @@ def setup_package():
                           'pytest-xdist', 'pytest-rerunfailures',
                           'obspy>=1.1.0'],
         'cmdclass': {'build_ext': CustomBuildExt},
-        # Declare packages explicitly so setuptools>=61.0.0 does not auto discover
-        'packages': []
+        'packages': [
+            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
+            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests'],
     }
 
     if using_setuptools:
@@ -415,10 +417,6 @@ def setup_package():
         # For these actions, NumPy is not required.
         pass
     else:
-        setup_args['packages'] = [
-            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
-            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
-            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
