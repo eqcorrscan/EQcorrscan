@@ -1,4 +1,3 @@
-from __future__ import print_function
 try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
@@ -373,7 +372,8 @@ def setup_package():
     setup_args = {
         'name': 'EQcorrscan',
         'version': VERSION,
-        'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
+        'description':
+        'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
         'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
@@ -395,7 +395,11 @@ def setup_package():
         'tests_require': ['pytest>=2.0.0', 'pytest-cov', 'pytest-pep8',
                           'pytest-xdist', 'pytest-rerunfailures',
                           'obspy>=1.1.0'],
-        'cmdclass': {'build_ext': CustomBuildExt}
+        'cmdclass': {'build_ext': CustomBuildExt},
+        'packages': [
+            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
+            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests'],
     }
 
     if using_setuptools:
@@ -413,10 +417,6 @@ def setup_package():
         # For these actions, NumPy is not required.
         pass
     else:
-        setup_args['packages'] = [
-            'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
-            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
-            'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests']
         setup_args['ext_modules'] = get_extensions(no_mkl=no_mkl)
         setup_args['package_data'] = get_package_data()
         setup_args['package_dir'] = get_package_dir()
