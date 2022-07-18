@@ -19,7 +19,7 @@ from eqcorrscan.core.lag_calc import (
 from eqcorrscan.core.match_filter import Detection, Family, Party, Template
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
-# np.random.seed(999)
+np.random.seed(999)
 
 
 class SyntheticTests(unittest.TestCase):
