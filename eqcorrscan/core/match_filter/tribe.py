@@ -926,8 +926,8 @@ class Tribe(object):
         :type method: str
         :param method:
             Method of Tribe generation. Possible options are: `from_client`,
-            `from_seishub`, `from_meta_file`.  See below on the additional
-            required arguments for each method.
+            `from_meta_file`.  See below on the additional required arguments
+            for each method.
         :type lowcut: float
         :param lowcut:
             Low cut (Hz), if set to None will not apply a lowcut
@@ -1005,11 +1005,6 @@ class Tribe(object):
                 :param str client_id:
                     string passable by obspy to generate Client, or any object
                     with a `get_waveforms` method, including a Client instance.
-                :param `obspy.core.event.Catalog` catalog:
-                    Catalog of events to generate template for
-                :param float data_pad: Pad length for data-downloads in seconds
-            - `from_seishub` requires:
-                :param str url: url to seishub database
                 :param `obspy.core.event.Catalog` catalog:
                     Catalog of events to generate template for
                 :param float data_pad: Pad length for data-downloads in seconds
