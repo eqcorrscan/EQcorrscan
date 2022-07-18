@@ -175,6 +175,16 @@ class SyntheticTests(unittest.TestCase):
                 self.assertAlmostEqual(
                     float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
 
+    def test_family_picking_with_new_interpolation(self):
+        catalog_dict = xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
+            interpolate=True, use_new_resamp_method=True, export_cc=False)
+        for event in catalog_dict.values():
+            for pick in event.picks:
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
+
     def test_lag_calc_api(self):
         detections = [d for f in self.party for d in f]
         templates = [f.template.st for f in self.party]
@@ -275,7 +285,7 @@ class ShortTests(unittest.TestCase):
                         0.60129057, -0.71043723,  0.16709118, 0.96839009,
                         1.58283915, -0.3053663])
 
-        _xcorr_interp(ccc, 0.1)
+        _xcorr_interp(ccc, 0.1, use_new_resamp_method=True)
         self.assertEqual(len(self.log_messages['warning']), 1)
         self.assertTrue(
             'not give an accurate result' in self.log_messages['warning'][0])
