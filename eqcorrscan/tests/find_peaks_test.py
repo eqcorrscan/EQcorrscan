@@ -192,7 +192,7 @@ class TestEdgeCases:
         spike_locs = np.random.randint(0, self.data_len, size=500)
         threshold = 0.5
         for spike_loc in spike_locs:
-            arr[spike_loc] *= 100 * np.random.randn()
+            arr[spike_loc] *= 100 * np.random.random()
         return arr, spike_locs, threshold
 
     @pytest.fixture(scope='class')

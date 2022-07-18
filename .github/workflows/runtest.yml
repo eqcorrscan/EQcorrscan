@@ -65,7 +65,7 @@ jobs:
       - name: run main test suite
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml
+          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml --dist loadscope
 
       - name: run serial test
         if: always()
