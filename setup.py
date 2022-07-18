@@ -1,4 +1,3 @@
-from __future__ import print_function
 try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
