@@ -8,7 +8,6 @@ import unittest
 import numpy as np
 import logging
 
-import pytest
 from obspy import read, UTCDateTime
 
 from eqcorrscan.utils.synth_seis import generate_synth_data
@@ -196,8 +195,8 @@ class SyntheticTests(unittest.TestCase):
     def test_xcorr_pick_family_export_cc(self):
         cc_dir = 'lag_calc_cc_exported'
         xcorr_pick_family(
-            family=self.party[0], stream=self.data.copy(), shift_len=0.2, plot=False,
-            interpolate=False, export_cc=True, cc_dir=cc_dir)
+            family=self.party[0], stream=self.data.copy(), shift_len=0.2,
+            plot=False, interpolate=False, export_cc=True, cc_dir=cc_dir)
         cc_files = glob.glob(os.path.join(cc_dir, '*.npy'))
         assert len(cc_files) == len(self.party[0])
         for fcc in cc_files:
