@@ -3,6 +3,7 @@ A series of test functions for the core functions in EQcorrscan.
 """
 import glob
 import os
+import shutil
 import unittest
 import numpy as np
 import logging
@@ -25,12 +26,13 @@ class SyntheticTests(unittest.TestCase):
     """ Test lag-calc with synthetic data. """
     @classmethod
     def setUpClass(cls):
+        print("Setting up class")
         samp_rate = 50
-        cls.t_length = .75
+        t_length = .75
         # Make some synthetic templates
         templates, data, seeds = generate_synth_data(
             nsta=5, ntemplates=5, nseeds=10, samp_rate=samp_rate,
-            t_length=cls.t_length, max_amp=10, max_lag=15, phaseout="both",
+            t_length=t_length, max_amp=10, max_lag=15, phaseout="both",
             jitter=0, noise=False, same_phase=True)
         # Rename channels
         channel_mapper = {"SYN_Z": "HHZ", "SYN_H": "HHN"}
@@ -39,7 +41,7 @@ class SyntheticTests(unittest.TestCase):
         for template in templates:
             for tr in template:
                 tr.stats.channel = channel_mapper[tr.stats.channel]
-        cls.party = Party()
+        party = Party()
         t = 0
         data_start = data[0].stats.starttime
         for template, template_seeds in zip(templates, seeds):
@@ -64,9 +66,12 @@ class SyntheticTests(unittest.TestCase):
                 samp_rate=samp_rate, filt_order=4, process_length=86400,
                 prepick=10. / samp_rate, event=None)
             family = Family(template=_template, detections=detections)
-            cls.party += family
+            party += family
             t += 1
+        cls.party = party
         cls.data = data
+        cls.t_length = t_length
+        assert len(data) == 10
 
     def _prepare_data_checks(self, detect_stream_dict, shift_len, family):
         self.assertEqual(
@@ -78,6 +83,11 @@ class SyntheticTests(unittest.TestCase):
                 self.assertAlmostEqual(
                     tr.stats.endtime - tr.stats.starttime,
                     (2 * shift_len) + self.t_length, 1)
+                pick = [p for p in detection.event.picks
+                        if p.waveform_id.get_seed_string() == tr.id][0]
+                self.assertAlmostEqual(
+                    tr.stats.starttime,
+                    pick.time - (family.template.prepick + shift_len), 1)
 
     def test_prepare_data(self):
         shift_len = 0.2
@@ -141,8 +151,8 @@ class SyntheticTests(unittest.TestCase):
             export_cc=False)
         gap = gappy_data.split().get_gaps()
         for event in catalog_dict.values():
-            if len(event.picks) != len(self.data):
-                self.assertEqual(len(event.picks), len(self.data) - 1)
+            if len(event.picks) != len(gappy_data):
+                self.assertEqual(len(event.picks), len(gappy_data) - 1)
                 # Check that the event happened to be in the gap
                 self.assertTrue(gap[0][4] <= event.picks[0].time <= gap[0][5])
                 # Check that there isn't a pick on the channel missing data
@@ -164,6 +174,16 @@ class SyntheticTests(unittest.TestCase):
                 self.assertAlmostEqual(
                     float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
 
+    def test_family_picking_with_new_interpolation(self):
+        catalog_dict = xcorr_pick_family(
+            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
+            interpolate=True, use_new_resamp_method=True, export_cc=False)
+        for event in catalog_dict.values():
+            for pick in event.picks:
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
+
     def test_lag_calc_api(self):
         detections = [d for f in self.party for d in f]
         templates = [f.template.st for f in self.party]
@@ -177,16 +197,22 @@ class SyntheticTests(unittest.TestCase):
         self.assertEqual(len(output_cat), len(detections))
         for event in output_cat:
             self.assertEqual(len(event.picks), len(self.data))
+            for pick in event.picks:
+                self.assertTrue("cc_max=" in pick.comments[0].text)
+                self.assertAlmostEqual(
+                    float(pick.comments[0].text.split("=")[-1]), 1.0, 1)
 
     def test_xcorr_pick_family_export_cc(self):
-        cc_dir = 'cc_exported'
+        cc_dir = 'lag_calc_cc_exported'
         xcorr_pick_family(
-            family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
-            interpolate=False, export_cc=True, cc_dir=cc_dir)
+            family=self.party[0], stream=self.data.copy(), shift_len=0.2,
+            plot=False, interpolate=False, export_cc=True, cc_dir=cc_dir)
         cc_files = glob.glob(os.path.join(cc_dir, '*.npy'))
         assert len(cc_files) == len(self.party[0])
         for fcc in cc_files:
             np.load(fcc)
+        if os.path.isdir(cc_dir):
+            shutil.rmtree(cc_dir)
 
 
 class SimpleRealDataTests(unittest.TestCase):
@@ -258,7 +284,7 @@ class ShortTests(unittest.TestCase):
                         0.60129057, -0.71043723,  0.16709118, 0.96839009,
                         1.58283915, -0.3053663])
 
-        _xcorr_interp(ccc, 0.1)
+        _xcorr_interp(ccc, 0.1, use_new_resamp_method=True)
         self.assertEqual(len(self.log_messages['warning']), 1)
         self.assertTrue(
             'not give an accurate result' in self.log_messages['warning'][0])

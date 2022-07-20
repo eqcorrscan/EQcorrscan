@@ -1,4 +1,3 @@
-from __future__ import print_function
 try:
     # use setuptools if we can
     from setuptools import setup, Command, Extension
@@ -373,7 +372,8 @@ def setup_package():
     setup_args = {
         'name': 'EQcorrscan',
         'version': VERSION,
-        'description': 'EQcorrscan - matched-filter earthquake detection and analysis',
+        'description':
+        'EQcorrscan - matched-filter earthquake detection and analysis',
         'long_description': long_description,
         'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
