@@ -4,6 +4,15 @@
 * core.lag_calc._xcorr_interp
  - CC-interpolation replaced with resampling (more robust), old method
    deprecated. Use new method with use_new_resamp_method=True as **kwarg.
+* core.lag_calc
+ - Added new option all_vert to transfer P-picks to all channels defined as
+   vertical_chans.
+ - Made usage of all_vert, all_horiz consistent across the lag_calc.
+* core.template_gen
+ - Added new option all_vert to transfer P-picks to all channels defined as
+   vertical_chans.
+ - Made handling of horizontal_chans and vertical_chans consistent so that user
+   can freely choose relevant channels.
 * utils.correlate
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than
