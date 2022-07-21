@@ -618,7 +618,7 @@ class Family(object):
             min_cc_from_mean_cc_factor=min_cc_from_mean_cc_factor,
             vertical_chans=vertical_chans, cores=cores,
             interpolate=interpolate, plot=plot, plotdir=plotdir,
-            export_cc=export_cc, cc_dir=cc_dir)
+            export_cc=export_cc, cc_dir=cc_dir, **kwargs)
         catalog_out = Catalog([ev for ev in picked_dict.values()])
         for detection_id, event in picked_dict.items():
             for pick in event.picks:

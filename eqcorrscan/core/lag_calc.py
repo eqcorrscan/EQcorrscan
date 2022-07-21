@@ -25,6 +25,7 @@ from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.template import Template
 from eqcorrscan.utils.plotting import plot_repicked
 
+show_interp_deprec_warning = True
 
 Logger = logging.getLogger(__name__)
 
@@ -43,14 +44,19 @@ class LagCalcError(Exception):
         return 'LagCalcError: ' + self.value
 
 
-def _xcorr_interp(ccc, dt):
+def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False,
+                  **kwargs):
     """
-    Interpolate around the maximum correlation value for sub-sample precision.
+    Resample correlation-trace and check if there is a better CCC peak for
+    sub-sample precision.
 
     :param ccc: Cross-correlation array
     :type ccc: numpy.ndarray
     :param dt: sample interval
     :type dt: float
+    :param resample_factor:
+        Factor for upsampling CC-values (only for use_new_resamp_method=True)
+    :type resample_factor: int
 
     :return: Position of interpolated maximum in seconds from start of ccc
     :rtype: float
@@ -59,6 +65,32 @@ def _xcorr_interp(ccc, dt):
         cc = ccc[0]
     else:
         cc = ccc
+
+    # New method with resampling - make this the default in a future version
+    if use_new_resamp_method:
+        cc_resampled = scipy.signal.resample(cc, len(cc) * resample_factor + 1)
+        dt_resampled = dt / resample_factor
+        cc_t = np.arange(0, len(cc_resampled) * dt_resampled, dt_resampled)
+        peak_index = cc_resampled.argmax()
+        cc_peak = max(cc_resampled)
+
+        shift = cc_t[peak_index]
+        if (cc_peak < np.amax(cc) or cc_peak > 1.0 or
+                not 0 < shift < len(ccc) * dt):
+            # Sometimes the interpolation returns a worse result.
+            Logger.warning("Interpolation did not give an accurate result, "
+                           "returning maximum in data")
+            return np.argmax(ccc) * dt, np.amax(ccc)
+        return shift, cc_peak
+
+    # Otherwise use old interpolation method, but warn with deprcation message
+    # (but show it only once):
+    global show_interp_deprec_warning
+    if show_interp_deprec_warning:
+        Logger.warning(
+            'This method for interpolating cross-correlations is deprecated, '
+            'use a more robust method with use_new_resamp_method=True')
+        show_interp_deprec_warning = False
     # Code borrowed from obspy.signal.cross_correlation.xcorr_pick_correction
     cc_curvature = np.concatenate((np.zeros(1), np.diff(cc, 2), np.zeros(1)))
     cc_t = np.arange(0, len(cc) * dt, dt)
@@ -191,7 +223,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                       min_cc_from_mean_cc_factor=None, all_vert=False,
                       all_horiz=False, horizontal_chans=['E', 'N', '1', '2'],
                       vertical_chans=['Z'], cores=1, interpolate=False,
-                      plot=False, plotdir=None, export_cc=False, cc_dir=None):
+                      plot=False, plotdir=None, export_cc=False, cc_dir=None,
+                      **kwargs):
     """
     Compute cross-correlation picks for detections in a family.
 
@@ -287,7 +320,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             tr = detect_stream.select(
                 station=stachan.channel[0], channel=stachan.channel[1])[0]
             if interpolate:
-                shift, cc_max = _xcorr_interp(correlation, dt=delta)
+                shift, cc_max = _xcorr_interp(correlation, dt=delta, **kwargs)
             else:
                 cc_max = np.amax(correlation)
                 shift = np.argmax(correlation) * delta
@@ -391,7 +424,7 @@ def _prepare_data(family, detect_data, shift_len, all_vert=False,
         length = round(length_samples) / family.template.samp_rate
         Logger.info("Setting length to {0}s to give an integer number of "
                     "samples".format(length))
-    prepick = shift_len
+    prepick = shift_len + family.template.prepick
     detect_streams_dict = family.extract_streams(
         stream=detect_data, length=length, prepick=prepick,
         all_vert=all_vert, all_horiz=all_horiz, vertical_chans=vertical_chans,
@@ -426,7 +459,7 @@ def lag_calc(detections, detect_data, template_names, templates,
              all_vert=False, all_horiz=False,
              horizontal_chans=['E', 'N', '1', '2'],
              vertical_chans=['Z'], cores=1, interpolate=False,
-             plot=False, plotdir=None, export_cc=False, cc_dir=None):
+             plot=False, plotdir=None, export_cc=False, cc_dir=None, **kwargs):
     """
     Cross-correlation derived picking of seismic events.
 
@@ -564,7 +597,7 @@ def lag_calc(detections, detect_data, template_names, templates,
             detections=template_detections,
             template=Template(
                 name=template_name, st=template,
-                samp_rate=template[0].stats.sampling_rate))
+                samp_rate=template[0].stats.sampling_rate, prepick=0.0))
         # Make a sparse template
         if len(template_detections) > 0:
             template_dict = xcorr_pick_family(
@@ -574,7 +607,7 @@ def lag_calc(detections, detect_data, template_names, templates,
                 horizontal_chans=horizontal_chans,
                 vertical_chans=vertical_chans, interpolate=interpolate,
                 cores=cores, shift_len=shift_len, plot=plot, plotdir=plotdir,
-                export_cc=export_cc, cc_dir=cc_dir)
+                export_cc=export_cc, cc_dir=cc_dir, **kwargs)
             initial_cat.update(template_dict)
     # Order the catalogue to match the input
     output_cat = Catalog()
