@@ -24,6 +24,7 @@ import os
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
 from obspy.clients.fdsn import Client as FDSNClient
+from obspy.core.util.attribdict import AttribDict
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
@@ -822,30 +823,19 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             weight = 1
             namespace = 'EQcorrscan'
             if not hasattr(tr_cut.stats, 'extra'):
-                tr_cut.stats.extra = {}
+                tr_cut.stats.extra = AttribDict()
             tr_cut.stats.extra.update(
-                {'length_npts': {'value': tr_cut.stats.npts,
-                                 'namespace': namespace}})
+                {'length_npts': tr_cut.stats.npts})
             tr_cut.stats.extra.update(
-                {'starttime': {
-                    'value': tr_cut.stats.starttime,
-                    'namespace': namespace}})
+                {'starttime': tr_cut.stats.starttime})
+            tr_cut.stats.extra.update({
+                'endtime': tr_cut.stats.endtime})
+            tr_cut.stats.extra.update({
+                'peak_snr': peak_snr})
+            tr_cut.stats.extra.update({
+                'rms_snr': rms_snr})
             tr_cut.stats.extra.update(
-                {'endtime': {
-                    'value': tr_cut.stats.endtime,
-                    'namespace': namespace}})
-            tr_cut.stats.extra.update(
-                {'peak_snr': {
-                    'value': peak_snr,
-                    'namespace': namespace}})
-            tr_cut.stats.extra.update(
-                {'rms_snr': {
-                    'value': rms_snr,
-                    'namespace': namespace}})
-            tr_cut.stats.extra.update(
-                {'weight': {
-                    'value': weight,
-                    'namespace': namespace}})
+                {'weight': weight})
             st1 += tr_cut
             used_tr = True
         if not used_tr:
