@@ -316,43 +316,6 @@ class Tribe(object):
                         t.event.extra.update(
                             {event_key: { 'value': trace_extra_parameters,
                                          'namespace': namespace}})
-
-                    # trace_lengths_npts = [
-                    #     tr.stats.extra.length_npts.value for tr in t.st]
-                    # trace_starttimes = [
-                    #     tr.stats.extra.starttime.value for tr in t.st]
-                    # trace_endtimes = [
-                    #     tr.stats.extra.endtime.value for tr in t.st]
-                    # trace_peak_snrs = [
-                    #     tr.stats.extra.peak_snr.value for tr in t.st]
-                    # trace_rms_snrs = [
-                    #     tr.stats.extra.rms_snr.value for tr in t.st]
-                    # trace_weights = [
-                    #     tr.stats.extra.weight.value for tr in t.st]
-                    # namespace = 'EQcorrscan'
-                    # if not hasattr(t.event, 'extra'):
-                    #     t.event.extra = {}
-                    # t.event.extra.update(
-                    #     {'trace_ids': { 'value': trace_ids,
-                    #                 'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_lengths_npts': {'value': trace_lengths_npts,
-                    #                             'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_starttimes': {'value': trace_starttimes,
-                    #                         'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_endtimes': {'value': trace_endtimes,
-                    #                         'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_peak_snrs': {'value': trace_peak_snrs,
-                    #                         'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_rms_snrs': {'value': trace_rms_snrs,
-                    #                         'namespace': namespace}})
-                    # t.event.extra.update(
-                    #     {'trace_weights': {'value': trace_weights,
-                    #                     'namespace': namespace}})
                 except AttributeError:
                     Logger.warning(
                         'Template %s has no extended trace-metadata', t.name)
@@ -506,29 +469,6 @@ class Tribe(object):
                     tr.stats.extra[trace_key].update({
                         value: tr_metadata_value,
                         'namespace': namespace})
-                
-            # namespace = 'EQcorrscan'
-            # for j_t, tr in enumerate(template.st):
-            #     if not hasattr(tr.stats, 'extra'):
-            #         tr.stats.extra = {}
-            #     tr.stats.extra.update({'lengths_npts':
-            #         {'value': template.event.extra.trace_npts.value[j_t],
-            #          'namespace': namespace}})
-            #     tr.stats.extra.update({'starttime':
-            #         {'value': template.event.extra.trace_starttimes.value[j_t],
-            #          'namespace': namespace}})
-            #     tr.stats.extra.update({'endtime':
-            #         {'value': template.event.extra.trace_endtimes.value[j_t],
-            #          'namespace': namespace}})
-            #     tr.stats.extra.update({'peak_snr':
-            #         {'value': template.event.extra.trace_peak_snrs.value[j_t],
-            #         'namespace': namespace}})
-            #     tr.stats.extra.update({'rms_snr':
-            #         {'value': template.event.extra.trace_rms_snrs.value[j_t],
-            #         'namespace': namespace}})
-            #     tr.stats.extra.update({'weight':
-            #         {'value': template.event.extra.trace_weights.value[j_t],
-            #         'namespace': namespace}})
         except (KeyError, AttributeError):
             # TODO decide whether to support tribes without
             #      extended metadata
