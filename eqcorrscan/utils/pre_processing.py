@@ -647,7 +647,7 @@ def _resample(tr, sampling_rate, threads=1):
     x_i = x[1::2]
 
     large_w = np.fft.ifftshift(
-        get_window("hanning", tr.stats.npts))
+        get_window("hann", tr.stats.npts))
     x_r *= large_w[:tr.stats.npts // 2 + 1]
     x_i *= large_w[:tr.stats.npts // 2 + 1]
 
