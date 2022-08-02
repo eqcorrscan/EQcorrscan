@@ -821,30 +821,31 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 continue
             weight = 1
             namespace = 'EQcorrscan'
-            tr_cut.stats.extra = {
-                'lengths_npts': {
-                    'value': tr_cut.stats.npts,
-                    'namespace': namespace}}
-            tr_cut.stats.extra = {
-                'starttime': {
+            if not hasattr(tr_cut.stats, 'extra'):
+                tr_cut.stats.extra = {}
+            tr_cut.stats.extra.update(
+                {'length_npts': {'value': tr_cut.stats.npts,
+                                 'namespace': namespace}})
+            tr_cut.stats.extra.update(
+                {'starttime': {
                     'value': tr_cut.stats.starttime,
-                    'namespace': namespace}}
-            tr_cut.stats.extra = {
-                'endtime': {
+                    'namespace': namespace}})
+            tr_cut.stats.extra.update(
+                {'endtime': {
                     'value': tr_cut.stats.endtime,
-                    'namespace': namespace}}
-            tr_cut.stats.extra = {
-                'peak_snr': {
+                    'namespace': namespace}})
+            tr_cut.stats.extra.update(
+                {'peak_snr': {
                     'value': peak_snr,
-                    'namespace': namespace}}
-            tr_cut.stats.extra = {
-                'rms_snr': {
+                    'namespace': namespace}})
+            tr_cut.stats.extra.update(
+                {'rms_snr': {
                     'value': rms_snr,
-                    'namespace': namespace}}
-            tr_cut.stats.extra = {
-                'weight': {
+                    'namespace': namespace}})
+            tr_cut.stats.extra.update(
+                {'weight': {
                     'value': weight,
-                    'namespace': namespace}}
+                    'namespace': namespace}})
             st1 += tr_cut
             used_tr = True
         if not used_tr:
