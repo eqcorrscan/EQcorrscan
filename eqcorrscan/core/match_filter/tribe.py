@@ -298,6 +298,51 @@ class Tribe(object):
                     if comment.text and comment.text.startswith(
                             "eqcorrscan_template_"):
                         comment.text = "eqcorrscan_template_{0}".format(t.name)
+                # TODO: add extra info for each trace to event object, write
+                #       into quakeml, and read back from quakeml into trace
+                #       stats
+                trace_ids = [tr.id for tr in t]
+                trace_lengths_npts = [tr.extra.length_npts.value for tr in t]
+                trace_starttimes = [tr.extra.starttime.value for tr in t]
+                trace_endtimes = [tr.extra.endtime.value for tr in t]
+                trace_peak_snrs = [tr.extra.peak_snr.value for tr in t]
+                trace_rms_snrs = [tr.extra.rms_snr.value for tr in t]
+                trace_weights = [tr.extra.weight.value for tr in t]
+                t.event.extra = {
+                    'trace_ids': {
+                    'value': trace_ids,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_lengths_npts': {
+                    'value': trace_lengths_npts,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_starttimes': {
+                    'value': trace_starttimes,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_endtimes': {
+                    'value': trace_endtimes,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_peak_snrs': {
+                    'value': trace_peak_snrs,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_rms_snrs': {
+                    'value': trace_rms_snrs,
+                    'namespace':
+                        'EQC'}}
+                t.event.extra = {
+                    'trace_weights': {
+                    'value': trace_weights,
+                    'namespace':
+                        'EQC'}}
                 tribe_cat.append(t.event)
         if len(tribe_cat) > 0:
             tribe_cat.write(
@@ -380,6 +425,7 @@ class Tribe(object):
                 for comment in event.comments:
                     if comment.text == 'eqcorrscan_template_' + template.name:
                         template.event = event
+                        self._assign_trace_metadata(template, event)
             t_file = [t for t in t_files
                       if t.split(os.sep)[-1] == template.name + '.ms']
             if len(t_file) == 0:
@@ -390,6 +436,68 @@ class Tribe(object):
                 Logger.warning('Multiple waveforms found, using: ' + t_file[0])
             template.st = read(t_file[0])
         self.templates.extend(templates)
+        return
+
+    def _assign_trace_metadata(template, event):
+        # TODO: put Template trace metadata back into
+        #       trace.extra
+        try:
+            n_traces = len(template.st)
+            n_traces_metadata = len(event.extra.trace_ids.value)
+            # First check that stream has the right number of traces -
+            # otherwise, we'll need to split the traces according to the
+            # metadata. See https://github.com/eqcorrscan/EQcorrscan/issues/497
+            if n_traces < n_traces_metadata:
+                Logger.info(
+                    'Need to split traces for template %s', template.name)
+                tr_ids = event.extra.trace_ids.value
+                tr_starttimes = event.extra.trace_starttimes.value
+                tr_endtimes = event.extra.trace_endtimes.value
+                tr_lengths_npts = event.extra.trace_length_npts.value
+                template_st_cut = Stream()
+                for tr_id, tr_starttime, tr_endtime, tr_length_npts in zip(
+                        tr_ids, tr_starttimes, tr_endtimes, tr_lengths_npts):
+                    # There could be multiple traces with same ID in stream
+                    st_cut = template.st.select(id=tr_id).slice(
+                        starttime=tr_starttime, endtime=tr_endtime,
+                        nearest_sample=False).copy()
+                    # Need to select the cut trace that has the exact same
+                    # length as during writing of the file.
+                    tr_cut = None
+                    for tr in st_cut:
+                        if tr.stats.npts == tr_length_npts:
+                            tr_cut = tr
+                    # TODO: throw useful error when it does not work like this?
+                    template_st_cut += tr_cut
+                template.st = template_st_cut
+            elif n_traces > n_traces_metadata:
+                raise NotImplementedError(
+                    'Template %s: Read in more traces than trace metadata, '
+                    'this should not happen.', template.name)
+            namespace = 'EQcorrscan'
+            for j_t, tr in enumerate(template.st):
+                tr.stats.extra = {'lengths_npts':
+                    {'value': template.event.extra.trace_npts.value[j_t],
+                     'namespace': namespace}}
+                tr.stats.extra = {'starttime':
+                    {'value': template.event.extra.trace_starttimes.value[j_t],
+                     'namespace': namespace}}
+                tr.stats.extra = {'endtime':
+                    {'value': template.event.extra.trace_endtimes.value[j_t],
+                     'namespace': namespace}}
+                tr.stats.extra = {'peak_snr':
+                    {'value': template.event.extra.trace_peak_snrs.value[j_t],
+                    'namespace': namespace}}
+                tr.stats.extra = {'rms_snr':
+                    {'value': template.event.extra.trace_rms_snrs.value[j_t],
+                    'namespace': namespace}}
+                tr.stats.extra = {'weight':
+                    {'value': template.event.extra.trace_weights.value[j_t],
+                    'namespace': namespace}}
+        except KeyError:
+            # TODO decide whether to support tribes without
+            #      extended metadata
+            pass
         return
 
     def cluster(self, method, **kwargs):
