@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from multiprocessing import cpu_count
 from obspy import Trace, Stream, read
+from obspy.core.util import AttribDict
 from scipy.fftpack import next_fast_len
 
 import eqcorrscan.utils.correlate as corr
@@ -95,6 +96,16 @@ def generate_multichannel_templates():
                 template[-1].stats.channel = channel
                 template[-1].stats.station = station
         templates.append(template)
+    return templates
+
+
+def generate_weighted_multichannel_templates():
+    random.seed(42)
+    templates = generate_multichannel_templates()
+    for template in templates:
+        for tr in template:
+            tr.stats.extra = AttribDict()
+            tr.stats.extra.update({"weight": random.random()})
     return templates
 
 
@@ -252,6 +263,12 @@ def multichannel_templates():
 
 
 @pytest.fixture(scope='module')
+def weighted_multichannel_templates():
+    """ create weighted multichannel templates """
+    return generate_weighted_multichannel_templates()
+
+
+@pytest.fixture(scope='module')
 def multichannel_stream():
     """ create a multichannel stream for tests """
     return generate_multichannel_stream()
@@ -290,8 +307,7 @@ stream_funcs = {fname + '_' + mname: corr.get_stream_xcorr(fname, mname)
                 if fname != 'default'}
 
 
-@pytest.fixture(scope='module')
-def stream_cc_output_dict(multichannel_templates, multichannel_stream):
+def _stream_cc_output_dict(multichannel_templates, multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
@@ -321,9 +337,32 @@ def stream_cc_output_dict(multichannel_templates, multichannel_stream):
 
 
 @pytest.fixture(scope='module')
+def stream_cc_output_dict(multichannel_templates, multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    return _stream_cc_output_dict(
+        multichannel_templates=multichannel_templates,
+        multichannel_stream=multichannel_stream
+    )
+
+
+@pytest.fixture(scope='module')
+def stream_cc_weighted_output_dict(weighted_multichannel_templates, multichannel_stream):
+    return _stream_cc_output_dict(
+        multichannel_templates=weighted_multichannel_templates,
+        multichannel_stream=multichannel_stream
+    )
+
+
+@pytest.fixture(scope='module')
 def stream_cc_dict(stream_cc_output_dict):
     """ return just the cc arrays from the stream_cc functions """
     return {name: result[0] for name, result in stream_cc_output_dict.items()}
+
+
+@pytest.fixture(scope='module')
+def stream_cc_weighted_dict(stream_cc_weighted_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0] for name, result in stream_cc_weighted_output_dict.items()}
 
 
 @pytest.fixture(scope='module')
@@ -617,6 +656,17 @@ class TestStreamCorrelateFunctions:
         # get correlation results into a list
         cc_names = list(stream_cc_dict.keys())
         cc_list = [stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
+    def test_weighted_multi_channel_xcorr(self, stream_cc_weighted_dict):
+        """ test various correlation methods weighted with multiple channels """
+        # get correlation results into a list
+        cc_names = list(stream_cc_weighted_dict.keys())
+        cc_list = [stream_cc_weighted_dict[cc_name] for cc_name in cc_names]
         cc_1 = cc_list[0]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
