@@ -989,7 +989,8 @@ def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
 
 
 @register_array_xcorr("fmf")
-def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
+def fmf_xcorr(templates, stream, pads, weights=None, arch="precise",
+              *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using the FMF routine.
 
@@ -999,6 +1000,8 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param weights: 1D Array of weights to match templates
+    :type weights: np.ndarray
     :param arch: "gpu" or "precise" to run on GPU or CPU respectively
     type arch: str
 
@@ -1007,6 +1010,12 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
     """
     assert templates.ndim == 2, "Templates must be 2D"
     assert stream.ndim == 1, "Stream must be 1D"
+    # Handle weights
+    n_templates = templates.shape[0]
+    if weights is None:
+        weights = np.ones(n_templates)
+    assert weights.shape[0] == templates.shape[0], "Weights required for all "\
+                                                   "templates"
 
     used_chans = ~np.isnan(templates).any(axis=1)
 
@@ -1015,7 +1024,7 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
         template_arr=templates.reshape(
             (1, templates.shape[0], templates.shape[1])).swapaxes(0, 1),
         data_arr=stream.reshape((1, stream.shape[0])),
-        weights=np.ones((1, templates.shape[0])),
+        weights=np.array([weights]),
         pads=np.array([pads]),
         arch=arch.lower())
 

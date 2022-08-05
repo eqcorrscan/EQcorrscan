@@ -175,6 +175,8 @@ def print_class_name(request):
 # array fixtures
 
 starting_index = 500
+GLOBAL_WEIGHT = 0.5  # Weight applied to array ccs funcs
+# global to allow comparison to unweighted
 
 
 @pytest.fixture(scope='module')
@@ -203,6 +205,29 @@ def pads(array_template):
     return an array of zeros for padding, matching templates len.
     """
     return np.zeros(array_template.shape[0], dtype=int)
+
+
+@pytest.fixture(scope='module')
+def array_ccs_weighted(array_template, array_stream, pads):
+    """ Use each function stored in the normxcorr cache to correlate the
+     templates and arrays, return a dict with keys as func names and values
+     as the cc calculated by said function"""
+    out = {}
+    weights = np.ones(array_template.shape[0]) * GLOBAL_WEIGHT
+    for name in list(corr.XCORR_FUNCS_ORIGINAL.keys()):
+        func = corr.get_array_xcorr(name)
+        print("Running %s" % name)
+        cc, _ = time_func(
+            func, name, array_template, array_stream, pads, weights)
+        out[name] = cc
+        if "fftw" in name:
+            print("Running fixed len fft")
+            fft_len = next_fast_len(
+                max(len(array_stream) // 4, len(array_template)))
+            cc, _ = time_func(func, name, array_template, array_stream, pads,
+                              weights, fft_len=fft_len)
+            out[name + "_fixed_len"] = cc
+    return out
 
 
 @pytest.fixture(scope='module')
@@ -628,6 +653,21 @@ class TestArrayCorrelateFunctions:
                 np.save("cc2.npy", cc2)
             assert np.allclose(cc1, cc2, atol=self.atol)
 
+    def test_known_weight_application(self, array_ccs, array_ccs_weighted):
+        cc_names = list(array_ccs.keys())
+        print(cc_names)
+        for key1, key2 in itertools.combinations(cc_names, 2):
+            cc1 = array_ccs_weighted[key1]
+            cc2 = array_ccs_weighted[key2]
+            print(f"Comparing {key1} and {key2}")
+            assert np.allclose(cc1, cc2, atol=self.atol)
+        for cc_name in cc_names:
+            print(f"Checking for {cc_name}")
+            assert np.allclose(
+                array_ccs_weighted[cc_name],
+                array_ccs[cc_name] * GLOBAL_WEIGHT,
+                atol=1e-5)
+
     def test_autocorrelation(self, array_ccs):
         """ ensure an autocorrelation occurred in each of ccs where it is
         expected, defined by starting_index variable """
@@ -887,10 +927,11 @@ class TestGenericStreamXcorr:
         """ ensure a callable can be registered """
         small_count = {}
 
-        def some_callable(template_array, stream_array, pad_array):
+        def some_callable(template_array, stream_array, pad_array,
+                          weight_array):
             small_count['name'] = 1
             return corr.numpy_normxcorr(template_array, stream_array,
-                                        pad_array)
+                                        pad_array, weight_array)
 
         func = corr.get_stream_xcorr(some_callable)
         func(multichannel_templates, multichannel_stream)
@@ -933,7 +974,7 @@ class TestRegisterNormXcorrs:
     # helper functions
     def name_func_is_registered(self, func_name):
         """ return True if func is registered as a normxcorr func """
-        # Note: don not remove this fixture or bad things will happen
+        # Note: do not remove this fixture or bad things will happen
         name = func_name.__name__ if callable(func_name) else func_name
         return name in corr.XCOR_FUNCS
 
