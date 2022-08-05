@@ -102,6 +102,18 @@ supported natively, and can be used as a backend by setting `xcorr_func="fmf"`.
 
     <a href="https://github.com/beridel/fast_matched_filter" target="_blank">Fast Matched Filter</a>
 
+Using weights
+~~~~~~~~~~~~~
+
+New for version 0.5.0: support for weighting cross-correlation stacks. All array
+correlation functions have an optional `weights` argument to allow you to weight
+different templates. This makes most sense when using the stream correlation functions
+where different template channels might have different quality. For the stream
+correlation functions the weight for each channel of each template is required to
+be stored in `trace.stats.extra.weight`. Individual channel cross-correlations
+are multiplied by this weight before stacking. Weights can be any floating point
+number, although weights between 0 and 1 make the most sense.
+
 
 Switching which correlation function is used
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,10 +153,10 @@ for example:
     ...                           1, False, xcorr_func='numpy')
 
     >>> # do correlation using a custom function
-    >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
+    >>> def custom_normxcorr(templates, stream, pads, weights *args, **kwargs):
     ...     # Just to keep example short call other xcorr function
     ...     print('calling custom xcorr function')
-    ...     return numpy_normxcorr(templates, stream, pads, *args, **kwargs)
+    ...     return numpy_normxcorr(templates, stream, pads, weights, *args, **kwargs)
 
     >>> detections = match_filter(
     ...     ['1'], [template], stream, .5, 'absolute', 1, False,

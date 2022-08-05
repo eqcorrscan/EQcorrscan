@@ -5,6 +5,8 @@
  - CC-interpolation replaced with resampling (more robust), old method
    deprecated. Use new method with use_new_resamp_method=True as **kwarg.
 * utils.correlate
+ - Weighted correlations supported. Template weights are expected in
+   individual trace.stats.extra.weight attributes.
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than
    the full number of channels are in the stack at the end of the stack, zeros
