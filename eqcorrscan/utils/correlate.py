@@ -181,10 +181,11 @@ def pool_boy(Pool, traces, **kwargs):
 def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    stream_dict, template_dict, pad_dict, weight_dict, seed_ids = array_dict_tuple
     # get parameter iterator
-    params = ((template_dict[sid], stream_dict[sid], pad_dict[sid])
-              for sid in seed_ids)
+    params = (
+        (template_dict[sid], stream_dict[sid], pad_dict[sid], weight_dict[sid])
+        for sid in seed_ids)
     # get cc results and used chans into their own lists
     results = [pool.apply_async(func, param) for param in params]
     try:
@@ -233,7 +234,7 @@ def _general_serial(func):
         no_chans = np.zeros(len(templates))
         chans = [[] for _ in range(len(templates))]
         array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-        stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+        stream_dict, template_dict, pad_dict, weight_dict, seed_ids = array_dict_tuple
         if stack:
             cccsums = np.zeros([len(templates),
                                 len(stream[0]) - len(templates[0][0]) + 1])
@@ -243,7 +244,8 @@ def _general_serial(func):
         for chan_no, seed_id in enumerate(seed_ids):
             tr_cc, tr_chans = func(template_dict[seed_id],
                                    stream_dict[seed_id],
-                                   pad_dict[seed_id])
+                                   pad_dict[seed_id],
+                                   weight_dict[seed_id])
             if stack:
                 cccsums = np.sum([cccsums, tr_cc], axis=0)
             else:
@@ -399,9 +401,9 @@ def get_array_xcorr(name_or_func=None):
 
 
 @register_array_xcorr('numpy')
-def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
+def numpy_normxcorr(templates, stream, pads, weights=None, *args, **kwargs):
     """
-    Compute the normalized cross-correlation using numpy and bottleneck.
+    Compute normalized cross-correlations of multiple templates using numpy.
 
     :param templates: 2D Array of templates
     :type templates: np.ndarray
@@ -409,12 +411,20 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param weights: 1D Array of weights to match templates
+    :type weights: np.ndarray
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
     import bottleneck
 
+    # Handle weights
+    n_templates = templates.shape[0]
+    if weights is None:
+        weights = np.ones(n_templates)
+    assert weights.shape[0] == templates.shape[0], "Weights required for all "\
+                                                   "templates"
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
     # Currently have to use float64 as bottleneck runs into issues with other
@@ -448,6 +458,7 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
 
     for i, pad in enumerate(pads):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
+    res *= weights.reshape(n_templates, 1)
     return res.astype(np.float32), used_chans
 
 
@@ -464,8 +475,8 @@ def _centered(arr, newshape):
 
 
 @register_array_xcorr('time_domain')
-def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
-                         **kwargs):
+def time_multi_normxcorr(templates, stream, pads, weights=None, threaded=False,
+                         *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
 
@@ -475,12 +486,20 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param weights: 1D Array of weights to match templates
+    :type weights: np.ndarray
     :param threaded: Whether to use the threaded routine or not
     :type threaded: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
+    # Handle weights
+    n_templates = templates.shape[0]
+    if weights is None:
+        weights = np.ones(n_templates)
+    assert weights.shape[0] == templates.shape[0], "Weights required for all "\
+                                                   "templates"
     used_chans = ~np.isnan(templates).any(axis=1)
 
     utilslib = _load_cdll('libutils')
@@ -508,7 +527,6 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     templates = templates.astype(np.float32) - templates_means
     stream = stream.astype(np.float32) - stream_mean
     template_len = templates.shape[1]
-    n_templates = templates.shape[0]
     image_len = stream.shape[0]
     ccc_length = image_len - template_len + 1
     assert ccc_length > 0, "Template must be shorter than stream"
@@ -526,11 +544,14 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
         ccc[i] = np.append(ccc[i], np.zeros(pads[i]))[pads[i]:]
     templates += templates_means
     stream += stream_mean
+    # Apply weights
+    ccc *= weights.reshape(n_templates, 1)
     return ccc, used_chans
 
 
 @register_array_xcorr('fftw', is_default=True)
-def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
+def fftw_normxcorr(templates, stream, pads, weights=None, threaded=False,
+                   *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -550,6 +571,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param weights: 1D Array of weights to match templates
+    :type weights: np.ndarray
     :param threaded:
         Whether to use the threaded routine or not - note openMP and python
         multiprocessing don't seem to play nice for this.
@@ -558,6 +581,12 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
+    # Handle weights
+    n_templates = templates.shape[0]
+    if weights is None:
+        weights = np.ones(n_templates)
+    assert weights.shape[0] == templates.shape[0], "Weights required for all "\
+                                                   "templates"
     utilslib = _load_cdll('libutils')
 
     argtypes = [
@@ -653,6 +682,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
                 variance_warning[0]))
     # Remove variance correction
     stream /= multiplier
+    # Apply weights
+    ccc *= weights.reshape(n_templates, 1)
     return ccc, used_chans
 
 
@@ -687,7 +718,7 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     no_chans = np.zeros(len(templates))
     chans = [[] for _ in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    stream_dict, template_dict, pad_dict, weight_dict, seed_ids = array_dict_tuple
     ccc_length = max(
         len(stream[0]) - len(templates[0][0]) + 1,
         len(templates[0][0]) - len(stream[0]) + 1)
@@ -698,7 +729,7 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     for chan_no, seed_id in enumerate(seed_ids):
         tr_cc, tr_chans = time_multi_normxcorr(
             template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
-            True)
+            weights=weight_dict[seed_id], threaded=True)
         if stack:
             cccsums = np.sum([cccsums, tr_cc], axis=0)
         else:
@@ -752,12 +783,12 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    stream_dict, template_dict, pad_dict, weight_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        stack=stack, *args, **kwargs)
+        weight_array=weight_dict, stack=stack, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -771,7 +802,8 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
 
 
 def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, stack=True, *args, **kwargs):
+                         cores_inner, weight_array=None, stack=True,
+                         *args, **kwargs):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -783,6 +815,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     :param pad_array:
     :type seed_ids: list
     :param seed_ids:
+    :type weight_array: dict
+    :param weight_array:
 
     rtype: np.ndarray, list
     :return: 3D Array of cross-correlations and list of used channels.
@@ -803,6 +837,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
@@ -822,6 +858,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         fft-length
         used channels (stacked as per templates)
         pad array (stacked as per templates)
+        weight array (stack as per templates)
         num thread inner
         variance warnings
         missed correlation warnings (usually due to gaps)
@@ -876,6 +913,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     used_chans_np = np.ascontiguousarray(used_chans, dtype=np.intc)
     pad_array_np = np.ascontiguousarray(
         [pad_array[seed_id] for seed_id in seed_ids], dtype=np.intc)
+    weight_array_np = np.ascontiguousarray(
+        [weight_array[seed_id] for seed_id in seed_ids], dtype=np.float32)
     variance_warnings = np.ascontiguousarray(
         np.zeros(n_channels), dtype=np.intc)
     missed_correlations = np.ascontiguousarray(
@@ -884,7 +923,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     # call C function
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
-        image_len, cccs, fft_len, used_chans_np, pad_array_np,
+        image_len, cccs, fft_len, used_chans_np, pad_array_np, weight_array_np,
         cores_inner, variance_warnings, missed_correlations, int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
@@ -1042,7 +1081,7 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=True)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    stream_dict, template_dict, pad_dict, weight_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
 
     # Reshape templates into [templates x traces x time]
@@ -1053,7 +1092,8 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     # Moveouts should be [templates x traces]
     pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
     # Weights should be shaped like pads
-    weights = np.ones_like(pads)
+    weights = np.array([weight_dict[seed_id]
+                        for seed_id in seed_ids]).swapaxes(0, 1)
 
     cccsums = _run_fmf_xcorr(
         template_arr=t_arr, weights=weights, pads=pads,
@@ -1106,6 +1146,14 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
+def _get_weight(tr, default_weight=1):
+    if not hasattr(tr.stats, "extra"):
+        return default_weight
+    if not hasattr(tr.stats.extra, "weight"):
+        return default_weight
+    return tr.stats.extra.weight
+
+
 def _get_array_dicts(templates, stream, stack, copy_streams=True):
     """ prepare templates and stream, return dicts """
     # Do some reshaping
@@ -1113,6 +1161,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     template_dict = {}
     stream_dict = {}
     pad_dict = {}
+    weight_dict = {}
     t_starts = []
 
     stream.sort(['network', 'station', 'location', 'channel'])
@@ -1127,6 +1176,10 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         temps_with_seed = [template[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
+        # Get weights - stored in trace.stats.extra.weight
+        weights = np.array([_get_weight(template[i])
+                            for template in templates])
+        weight_dict.update({seed_id: weights})
         stream_channel = stream.select(id=seed_id.split('_')[0])[0]
         # Normalize data to ensure no float overflow
         stream_data = stream_channel.data / (np.max(
@@ -1149,7 +1202,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
             pad_list = [0 for _ in range(len(templates))]
         pad_dict.update({seed_id: pad_list})
 
-    return stream_dict, template_dict, pad_dict, seed_ids
+    return stream_dict, template_dict, pad_dict, weight_dict, seed_ids
 
 
 # Remove fmf if it isn't installed
