@@ -716,14 +716,20 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                              tr.stats.station]
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P']
+                          if pick.phase_hint and
+                          pick.phase_hint.upper()[0] == 'P']
                 if len(p_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint P "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S_all':
                 s_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'S']
+                          if pick.phase_hint and
+                          pick.phase_hint.upper()[0] == 'S']
                 if len(s_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint S "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
@@ -743,22 +749,30 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P' and
+                          if pick.phase_hint and
+                          pick.phase_hint.upper()[0] == 'P' and
                           pick.waveform_id.channel_code == tr.stats.channel]
                 if len(p_pick) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint P "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
                 if tr.stats.channel[-1] in ['Z', 'U']:
                     continue
                 s_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'S']
+                          if pick.phase_hint and
+                          pick.phase_hint.upper()[0] == 'S']
                 if not all_horiz:
                     s_pick = [pick for pick in s_pick
                               if pick.waveform_id.channel_code ==
                               tr.stats.channel]
                 starttime.update({'picks': s_pick})
                 if len(starttime['picks']) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint S "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
             if not delayed:
                 starttime.update({'picks': [first_pick]})
