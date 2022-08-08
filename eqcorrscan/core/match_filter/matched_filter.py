@@ -201,6 +201,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             n_groups += 1
     else:
         n_groups = 1
+    kwargs.update({'peak_cores': kwargs.get('peak_cores', process_cores)})
     for st_chunk in streams:
         chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
                                   max(tr.stats.endtime for tr in st_chunk))
@@ -226,8 +227,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 xcorr_func=xcorr_func, concurrency=concurrency,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
-                full_peaks=full_peaks, peak_cores=process_cores,
-                **kwargs)
+                full_peaks=full_peaks, **kwargs)
             for template in template_group:
                 family = Family(template=template, detections=[])
                 for detection in detections:
