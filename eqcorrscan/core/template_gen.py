@@ -714,10 +714,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             station_picks = [pick for pick in picks_copy
                              if pick.waveform_id.station_code ==
                              tr.stats.station]
+            # Cope with missing phase_hints
+            if _swin != "all":
+                station_picks = [p for p in station_picks if p.phase_hint]
+
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint and
-                          pick.phase_hint.upper()[0] == 'P']
+                          if pick.phase_hint.upper()[0] == 'P']
                 if len(p_pick) == 0:
                     Logger.debug(f"No picks with phase_hint P "
                                  f"found for {tr.stats.station}")
@@ -725,8 +728,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': p_pick})
             elif _swin == 'S_all':
                 s_pick = [pick for pick in station_picks
-                          if pick.phase_hint and
-                          pick.phase_hint.upper()[0] == 'S']
+                          if pick.phase_hint.upper()[0] == 'S']
                 if len(s_pick) == 0:
                     Logger.debug(f"No picks with phase_hint S "
                                  f"found for {tr.stats.station}")
@@ -749,8 +751,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint and
-                          pick.phase_hint.upper()[0] == 'P' and
+                          if pick.phase_hint.upper()[0] == 'P' and
                           pick.waveform_id.channel_code == tr.stats.channel]
                 if len(p_pick) == 0:
                     Logger.debug(
@@ -762,8 +763,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 if tr.stats.channel[-1] in ['Z', 'U']:
                     continue
                 s_pick = [pick for pick in station_picks
-                          if pick.phase_hint and
-                          pick.phase_hint.upper()[0] == 'S']
+                          if pick.phase_hint.upper()[0] == 'S']
                 if not all_horiz:
                     s_pick = [pick for pick in s_pick
                               if pick.waveform_id.channel_code ==
