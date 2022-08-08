@@ -309,8 +309,9 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         checksum, cccsum, used_chans = 0.0, 0.0, 0
         event = Event()
         if min_cc_from_mean_cc_factor is not None:
-            cc_thresh = min(detection.detect_val / detection.no_chans
-                            * min_cc_from_mean_cc_factor, min_cc)
+            cc_thresh = min(abs(detection.detect_val / detection.no_chans
+                                * min_cc_from_mean_cc_factor),
+                            min_cc)
             Logger.info('Setting minimum cc-threshold for detection %s to %s',
                         detection.id, str(cc_thresh))
         else:

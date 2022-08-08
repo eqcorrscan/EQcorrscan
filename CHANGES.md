@@ -1,4 +1,7 @@
 ## Current
+* core.match_filter
+  - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
+    Fix: only update peak_cores if it isn't there already.
 * core.match_filter.tribe
  - Detect now allows passing of pre-processed data
 * core.lag_calc._xcorr_interp
@@ -8,6 +11,8 @@
  - Added new option all_vert to transfer P-picks to all channels defined as
    vertical_chans.
  - Made usage of all_vert, all_horiz consistent across the lag_calc.
+ - Fixed bug where minimum CC defined via min_cc_from_mean_cc_factor was not
+   set correctly for negative correlation sums.
 * core.template_gen
  - Added new option all_vert to transfer P-picks to all channels defined as
    vertical_chans.
