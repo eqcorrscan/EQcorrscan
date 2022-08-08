@@ -7,6 +7,9 @@
 * core.lag_calc._xcorr_interp
  - CC-interpolation replaced with resampling (more robust), old method
    deprecated. Use new method with use_new_resamp_method=True as **kwarg.
+* core.lag_calc:
+ - Fixed bug where minimum CC defined via min_cc_from_mean_cc_factor was not
+   set correctly for negative correlation sums.
 * utils.correlate
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than
