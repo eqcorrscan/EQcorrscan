@@ -152,13 +152,6 @@ class Detection(object):
     def __ge__(self, other):
         return not self.__lt__(other)
 
-    def __hash__(self):
-        """
-        Cannot hash Detection objects, they may change.
-        :return: 0
-        """
-        return 0
-
     def __ne__(self, other):
         return not self.__eq__(other)
 
