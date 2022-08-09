@@ -160,6 +160,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     from eqcorrscan.core.match_filter.family import Family
 
     master = templates[0]
+    peak_cores = kwargs.get('peak_cores', process_cores)
+    kwargs.update(dict(peak_cores=peak_cores))
     # Check that they are all processed the same.
     lap = 0.0
     for template in templates:

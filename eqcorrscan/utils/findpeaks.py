@@ -217,7 +217,7 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
         List of list of tuples of (peak, index) in same order as input arrays
     """
     peaks = []
-    if not parallel:
+    if not parallel or cores == 1:
         for sub_arr, arr_thresh in zip(arr, thresh):
             peaks.append(internal_func(
                 arr=sub_arr, thresh=arr_thresh, trig_int=trig_int,

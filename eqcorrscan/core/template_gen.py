@@ -715,16 +715,24 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             station_picks = [pick for pick in picks_copy
                              if pick.waveform_id.station_code ==
                              tr.stats.station]
+            # Cope with missing phase_hints
+            if _swin != "all":
+                station_picks = [p for p in station_picks if p.phase_hint]
+
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'P']
                 if len(p_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint P "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S_all':
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
                 if len(s_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint S "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
@@ -747,6 +755,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                           if pick.phase_hint.upper()[0] == 'P' and
                           pick.waveform_id.channel_code == tr.stats.channel]
                 if len(p_pick) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint P "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
@@ -760,6 +771,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                               tr.stats.channel]
                 starttime.update({'picks': s_pick})
                 if len(starttime['picks']) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint S "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
             if not delayed:
                 starttime.update({'picks': [first_pick]})
