@@ -164,8 +164,7 @@ Version 0.4.0
    - Removed enforcement of seisan, arguments are now standard obspy objects.
 * Add plotdir to lag-calc, template construction and matched-filter detection
   methods and functions (#330, #325).
-* Wholesale re-write of lag-calc function and methods. External interface is
-  similar, but some arguments have been depreciated as they were unnecessary (#321).
+* Wholesale re-write of lag-calc function and methods. External interface is similar, but some arguments have been depreciated as they were unnecessary (#321).
    - This was done to make use of the new internal correlation functions which
      are faster and more memory efficient.
    - Party.lag_calc and Family.lag_calc now work in-place on the events in
@@ -192,8 +191,7 @@ Version 0.4.0
   outside the time-range.
 * Changed all prints to calls to logging, as a result, debug is no longer
   an argument for function calls.
-* `find-peaks` replaced by compiled peak finding routine - more efficient
-  both in memory and time #249 - approx 50x faster
+* `find-peaks` replaced by compiled peak finding routine - more efficient both in memory and time #249 - approx 50x faster
    - Note that the results of the C-func and the Python functions are slightly
      different.  The C function (now the default) is more stable when peaks
      are small and close together (e.g. in noisy data).
@@ -212,8 +210,7 @@ Version 0.4.0
 * Refactored match-filter into smaller files. Namespace remains the same.
   This was done to ease maintenance - the match_filter.py file had become
   massive and was slow to load and process in IDEs.
-* Refactored `_prep_data_for_correlation` to reduce looping for speed,
-  now approximately six times faster than previously (minor speed-up)
+* Refactored `_prep_data_for_correlation` to reduce looping for speed, now approximately six times faster than previously (minor speed-up)
    - Now explicitly doesn't allow templates with different length traces -
      previously this was ignored and templates with different length
      channels to other templates had their channels padded with zeros or
