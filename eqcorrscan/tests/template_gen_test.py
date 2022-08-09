@@ -57,7 +57,6 @@ class _StreamTestClient:
         return Catalog(events=[event])
 
 
-
 class TestTemplateGeneration(unittest.TestCase):
     """Test the reading a writing of pick info."""
     def test_sac_template_gen(self):
@@ -364,6 +363,23 @@ class TestEdgeGen(unittest.TestCase):
         picks[0].waveform_id.station_code = 'DUMMY'
         template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
+
+    def test_missing_phase_hints(self):
+        picks = copy.deepcopy(self.picks)
+        template = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertIn("WV03", {tr.stats.station for tr in template})
+        # Remove phase_hint for WV03 P pick
+        for pick in picks:
+            if pick.waveform_id.station_code == "WV03":
+                pick.phase_hint = None
+        template_2 = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertNotIn("WV03", {tr.stats.station for tr in template_2})
+        for tr in template:
+            if tr.stats.station == "WV03":
+                continue
+            # check that other than WV03 the template is the same
+            tr2 = template_2.select(id=tr.id)[0]
+            self.assertEqual(tr, tr2)
 
     def test_misc(self):
         template = _template_gen(self.picks, self.st.copy(), 10)

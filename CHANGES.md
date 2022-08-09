@@ -1,9 +1,13 @@
 ## Current
+
+## 0.4.4
 * core.match_filter
   - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
     Fix: only update peak_cores if it isn't there already.
 * core.match_filter.tribe
  - Detect now allows passing of pre-processed data
+* core.match_filter.template
+ - Remove duplicate detections from overlapping windows using `._uniq()`
 * core.lag_calc._xcorr_interp
  - CC-interpolation replaced with resampling (more robust), old method
    deprecated. Use new method with use_new_resamp_method=True as **kwarg.
