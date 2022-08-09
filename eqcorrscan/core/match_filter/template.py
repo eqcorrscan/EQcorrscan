@@ -520,7 +520,10 @@ class Template(object):
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
             overlap=overlap, full_peaks=full_peaks, **kwargs)
-        return party[0]
+        family = party[0]
+        # Remove duplicates
+        family.detections = family._uniq().detections
+        return family
 
     def construct(self, method, name, lowcut, highcut, samp_rate, filt_order,
                   length, prepick, swin="all", process_len=86400,
