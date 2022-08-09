@@ -57,7 +57,6 @@ class _StreamTestClient:
         return Catalog(events=[event])
 
 
-
 class TestTemplateGeneration(unittest.TestCase):
     """Test the reading a writing of pick info."""
     def test_sac_template_gen(self):
@@ -256,49 +255,6 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
                             tr.stats.delta)
 
-    def test_seishub(self):
-        """Test the seishub method, use obspy default seishub client."""
-        import sys
-        if sys.version_info.major == 2:
-            from future.backports.urllib.request import URLError
-        else:
-            from urllib.request import URLError
-        t = UTCDateTime(2009, 9, 3)
-        test_cat = Catalog()
-        test_cat.append(Event())
-        test_cat[0].origins.append(Origin())
-        test_cat[0].origins[0].time = t
-        test_cat[0].origins[0].latitude = 45
-        test_cat[0].origins[0].longitude = 45
-        test_cat[0].origins[0].depth = 5000
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHZ', network_code='BW'),
-            phase_hint='PG', time=t + 2000))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHN', network_code='BW'),
-            phase_hint='SG', time=t + 2005))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHE', network_code='BW'),
-            phase_hint='SG', time=t + 2005.5))
-
-        test_url = "http://teide.geophysik.uni-muenchen.de:8080"
-
-        if sys.version_info.major == 3:
-            try:
-                template = template_gen(
-                    method="from_seishub", catalog=test_cat, url=test_url,
-                    lowcut=1.0, highcut=5.0, samp_rate=20, filt_order=4,
-                    length=3, prepick=0.5, swin='all', process_len=300)
-            except URLError:
-                pass
-        else:
-            pass
-        if 'template' in locals():
-            self.assertEqual(len(template), 3)
-
     def test_catalog_grouping(self):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_', '*.S??????')
@@ -407,6 +363,23 @@ class TestEdgeGen(unittest.TestCase):
         picks[0].waveform_id.station_code = 'DUMMY'
         template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
+
+    def test_missing_phase_hints(self):
+        picks = copy.deepcopy(self.picks)
+        template = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertIn("WV03", {tr.stats.station for tr in template})
+        # Remove phase_hint for WV03 P pick
+        for pick in picks:
+            if pick.waveform_id.station_code == "WV03":
+                pick.phase_hint = None
+        template_2 = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertNotIn("WV03", {tr.stats.station for tr in template_2})
+        for tr in template:
+            if tr.stats.station == "WV03":
+                continue
+            # check that other than WV03 the template is the same
+            tr2 = template_2.select(id=tr.id)[0]
+            self.assertEqual(tr, tr2)
 
     def test_misc(self):
         template = _template_gen(self.picks, self.st.copy(), 10)

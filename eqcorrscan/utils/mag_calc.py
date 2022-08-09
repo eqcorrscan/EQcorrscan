@@ -1022,7 +1022,7 @@ def svd_moments(u, s, v, stachans, event_list, n_svs=2):
 
     For more information see the paper by
     `Rubinstein & Ellsworth (2010).
-    <http://www.bssaonline.org/content/100/5A/1952.short>`_
+    <https://pubs.geoscienceworld.org/ssa/bssa/article/100/5A/1952/325099>`_
 
     :type u: list
     :param u:
