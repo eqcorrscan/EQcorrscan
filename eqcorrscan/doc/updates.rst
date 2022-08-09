@@ -1,6 +1,104 @@
 What's new
 ==========
 
+Version 0.4.4
+-------------
+* core.match_filter
+  - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
+    Fix: only update peak_cores if it isn't there already.
+* core.match_filter.tribe
+ - Detect now allows passing of pre-processed data
+* core.match_filter.template
+ - Remove duplicate detections from overlapping windows using `._uniq()`
+* core.lag_calc._xcorr_interp
+ - CC-interpolation replaced with resampling (more robust), old method
+   deprecated. Use new method with use_new_resamp_method=True as **kwarg.
+* core.lag_calc:
+ - Fixed bug where minimum CC defined via min_cc_from_mean_cc_factor was not
+   set correctly for negative correlation sums.
+* utils.correlate
+ - Fast Matched Filter now supported natively for FMF version >= 1.4.0
+ - Only full correlation stacks are returned now (e.g. where fewer than than
+   the full number of channels are in the stack at the end of the stack, zeros
+   are returned).
+* utils.mag_calc.relative_magnitude
+ - fixed bug where S-picks / traces were used for relative-magnitude calculation
+   against user's choice.
+ - implemented full magnitude bias-correction for CC and SNR
+* utils.mag_calc.relative_amplitude:
+ - returns dicts for SNR measurements
+* utils.catalog_to_dd.write_correlations
+ - Fixed bug on execution of parallel execution.
+ - Added parallel-options for catalog-dt measurements and for stream-preparation
+   before cross correlation-dt measurements.
+ - Default parallelization of dt-computation is now across events (loads CPUs
+   more efficiently), and there is a new option ``max_trace_workers` to use
+   the old parallelization strategy across traces.
+ - Now includes `all_horiz`-option that will correlate all matching horizontal
+   channels no matter to which of these the S-pick is linking.
+* utils.clustering
+ - Allow to handle indirect comparison of event-waveforms when (i.e., events
+   without matching traces which can be compared indirectly via a third event)
+ - Allows to set clustering method, metric, and sort_order from
+   scipy.cluster.hierarchy.linkage.
+* tribe, template, template_gen, archive_read, clustering: remove option to read
+  from seishub (deprecated in obspy).
+
+Version 0.4.3
+-------------
+* core.match_filter
+ - match_filter:
+   - Provide option of exporting the cross-correlation sums for additional later
+     analysis.
+* core.match_filter.party.write
+  - BUG-FIX: When `format='tar'` is selected, added a check for .tgz-file
+    suffix before checking the filename against an existing file. Previously,
+    when a filename without '.tgz'-suffix was supplied, then the file was
+    overwritten against the function's intention.
+  - Add option `overwrite=True` to allow overwriting of existing files.
+* core.match_filter.party.read
+  - BUG-FIX: Ensure wildcard reading works as expected: #453
+* core.match_filter.party.rethreshold:
+  - added option to rethreshold based on absolute values to keep relevant
+    detections with large negative detect_val.
+* core.lag_calc:
+  - Added option to set minimum CC threshold individually for detections based
+    on: min(detect_val / n_chans * min_cc_from_mean_cc_factor, min_cc).
+  - Added the ability of saving correlation data of the lag_calc.
+* core.template_gen:
+  - Added support for generating templates from any object with a
+    get_waveforms method. See #459.
+* utils.mag_calc.calc_b_value:
+  - Added useful information to doc-string regarding method and meaning of
+    residuals
+  - Changed the number of magnitudes used to an int (from a string!?)
+* utils.mag_calc.relative_magnitude:
+  - Refactor so that `min_cc` is used regardless of whether
+    `weight_by_correlation` is set. See issue #455.
+* utils.archive_read
+  - Add support for wildcard-comparisons in the list of requested stations and
+    channels.
+  - New option `arctype='SDS'` to read from a SeisComp Data Structure (SDS).
+    This option is also available in `utils.clustering.extract_detections` and
+    in `utils.archive_read._check_available_data`.
+* utils.catalog_to_dd
+  - Bug-fixes in #424:
+    - only P and S phases are used now (previously spurious amplitude picks
+      were included in correlations);
+    - Checks for length are done prior to correlations and more helpful error
+      outputs are provided.
+    - Progress is not reported within dt.cc computation
+  - `write_station` now supports writing elevations: #424.
+* utils.clustering
+  - For `cluster`, `distance_matrix` and `cross_chan_correlation`, implemented
+    full support for `shift_len != 0`. The latter two functions now return, in
+    addition to the distance-matrix, a shift-matrix (both functions) and a
+    shift-dictionary (for `distance_matrix`). New option for shifting streams
+    as a whole or letting traces shift individually
+    (`allow_individual_trace_shifts=True`).
+* utils.plotting
+  - Function added (twoD_seismplot) for plotting seismicity (#365).
+
 Version 0.4.2
 -------------
 * Add seed-ids to the _spike_test's message.
