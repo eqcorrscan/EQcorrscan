@@ -1,4 +1,6 @@
 ## Current
+
+## 0.4.4
 * core.match_filter
   - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
     Fix: only update peak_cores if it isn't there already.
