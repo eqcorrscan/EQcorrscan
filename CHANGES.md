@@ -1,6 +1,17 @@
 ## Current
+* core.match_filter
+  - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
+    Fix: only update peak_cores if it isn't there already.
 * core.match_filter.tribe
  - Detect now allows passing of pre-processed data
+* core.match_filter.template
+ - Remove duplicate detections from overlapping windows using `._uniq()`
+* core.lag_calc._xcorr_interp
+ - CC-interpolation replaced with resampling (more robust), old method
+   deprecated. Use new method with use_new_resamp_method=True as **kwarg.
+* core.lag_calc:
+ - Fixed bug where minimum CC defined via min_cc_from_mean_cc_factor was not
+   set correctly for negative correlation sums.
 * utils.correlate
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than
@@ -21,6 +32,13 @@
    the old parallelization strategy across traces.
  - Now includes `all_horiz`-option that will correlate all matching horizontal
    channels no matter to which of these the S-pick is linking.
+* utils.clustering
+ - Allow to handle indirect comparison of event-waveforms when (i.e., events
+   without matching traces which can be compared indirectly via a third event)
+ - Allows to set clustering method, metric, and sort_order from
+   scipy.cluster.hierarchy.linkage.
+* tribe, template, template_gen, archive_read, clustering: remove option to read
+  from seishub (deprecated in obspy).
 
 ## 0.4.3
 * core.match_filter

@@ -203,6 +203,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             n_groups += 1
     else:
         n_groups = 1
+    kwargs.update({'peak_cores': kwargs.get('peak_cores', process_cores)})
     for st_chunk in streams:
         chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
                                   max(tr.stats.endtime for tr in st_chunk))

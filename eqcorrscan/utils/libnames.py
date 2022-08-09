@@ -13,33 +13,10 @@ import os
 import ctypes
 import logging
 from distutils import sysconfig
+import importlib.machinery
 
 
 Logger = logging.getLogger(__name__)
-
-
-def _get_lib_name(lib):
-    """
-    Helper function to get an architecture and Python version specific library
-    filename.
-    """
-    # append any extension suffix defined by Python for current platform
-    ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
-    # in principle "EXT_SUFFIX" is what we want.
-    # "SO" seems to be deprecated on newer python
-    # but: older python seems to have empty "EXT_SUFFIX", so we fall back
-    if not ext_suffix:
-        try:
-            ext_suffix = sysconfig.get_config_var("SO")
-        except Exception as e:
-            Logger.warning(
-                "Empty 'EXT_SUFFIX' encountered while building CDLL "
-                "filename and fallback to 'SO' variable failed "
-                "(%s)." % str(e))
-            pass
-    if ext_suffix:
-        libname = lib + ext_suffix
-    return libname
 
 
 def _load_cdll(name):
@@ -51,10 +28,8 @@ def _load_cdll(name):
     :param name: Name of the library to load (e.g. 'mseed').
     :rtype: :class:`ctypes.CDLL`
     """
-    # our custom defined part of the extension file name
-    libname = _get_lib_name(name)
     libdir = os.path.join(os.path.dirname(__file__), 'lib')
-    libpath = os.path.join(libdir, libname)
+    # Try and cope with static FFTW libs
     static_fftw = os.path.join(libdir, 'libfftw3-3.dll')
     static_fftwf = os.path.join(libdir, 'libfftw3f-3.dll')
     try:
@@ -62,12 +37,23 @@ def _load_cdll(name):
         fftwf_lib = ctypes.CDLL(str(static_fftwf))  # noqa: F841
     except Exception:
         pass
-    try:
-        cdll = ctypes.CDLL(str(libpath), mode=ctypes.RTLD_LOCAL)
-    except Exception as e:
-        msg = 'Could not load shared library "%s".\n\n %s' % (libname, str(e))
-        raise ImportError(msg)
-    return cdll
+
+    # Cope with range of possible extensions for different python versions
+    errs = []
+    for ext in importlib.machinery.EXTENSION_SUFFIXES:
+        libpath = os.path.join(libdir, name + ext)
+        try:
+            cdll = ctypes.CDLL(str(libpath), mode=ctypes.RTLD_LOCAL)
+        except Exception as e:
+            msg = 'Could not load shared library "%s".\n\n %s' % (name, str(e))
+            errs.append(msg)
+            Logger.debug(msg)
+        else:
+            Logger.info(f"Loaded library from {libpath}")
+            return cdll
+    raise ImportError(
+        "Could not load shared library {0} due to "
+        "errors:\n{1}".format(name, "\n".join(errs)))
 
 
 if __name__ == '__main__':

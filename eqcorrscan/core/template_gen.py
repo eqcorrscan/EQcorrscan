@@ -24,7 +24,6 @@ import os
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
 from obspy.clients.fdsn import Client as FDSNClient
-from obspy.clients.seishub import Client as SeisHubClient
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
@@ -62,9 +61,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
 
     :type method: str
     :param method:
-        Template generation method, must be one of ('from_client',
-        'from_seishub', 'from_sac', 'from_meta_file'). - Each method requires
-        associated arguments, see note below.
+        Template generation method, must be one of ('from_client', 'from_sac',
+        'from_meta_file'). - Each method requires associated arguments, see
+        note below.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will not apply a lowcut.
     :type highcut: float
@@ -153,11 +152,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
-        - `from_seishub` requires:
-            :param str url: url to seishub database
-            :param `obspy.core.event.Catalog` catalog:
-                Catalog of events to generate template for
-            :param float data_pad: Pad length for data-downloads in seconds
         - `from_sac` requires:
             :param list sac_files:
                 osbpy.core.stream.Stream of sac waveforms, or list of paths to
@@ -237,13 +231,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
-    client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
-    assert method in ('from_client', 'from_seishub', 'from_meta_file',
-                      'from_sac')
+    client_map = {'from_client': 'fdsn'}
+    assert method in ('from_client', 'from_meta_file', 'from_sac')
     if not isinstance(swin, list):
         swin = [swin]
     process = True
-    if method in ['from_client', 'from_seishub']:
+    if method in ['from_client']:
         catalog = kwargs.get('catalog', Catalog())
         data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
@@ -262,9 +255,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     "with a get_waveforms method"
                 )
             available_stations = []
-        else:
-            client = SeisHubClient(kwargs.get('url', None), timeout=10)
-            available_stations = client.waveform.get_station_ids()
     elif method == 'from_meta_file':
         if isinstance(kwargs.get('meta_file'), Catalog):
             catalog = kwargs.get('meta_file')
@@ -301,7 +291,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     else:
         all_channels = False
     for sub_catalog in sub_catalogs:
-        if method in ['from_seishub', 'from_client']:
+        if method in ['from_client']:
             Logger.info("Downloading data")
             st = _download_from_client(
                 client=client, client_type=client_map[method],
@@ -507,7 +497,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 def _download_from_client(client, client_type, catalog, data_pad, process_len,
                           available_stations=[], all_channels=False):
     """
-    Internal function to handle downloading from either seishub or fdsn client
+    Internal function to handle downloading from fdsn client
     """
     st = Stream()
     catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
@@ -541,10 +531,6 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     dropped_pick_stations = 0
     for waveform_info in all_waveform_info:
         net, sta, chan, loc = waveform_info
-        if client_type == 'seishub' and sta not in available_stations:
-            Logger.error("Station not found in SeisHub DB")
-            dropped_pick_stations += 1
-            continue
         Logger.info('Downloading for start-time: {0} end-time: {1}'.format(
             starttime, endtime))
         Logger.debug('.'.join([net, sta, loc, chan]))
@@ -728,16 +714,24 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             station_picks = [pick for pick in picks_copy
                              if pick.waveform_id.station_code ==
                              tr.stats.station]
+            # Cope with missing phase_hints
+            if _swin != "all":
+                station_picks = [p for p in station_picks if p.phase_hint]
+
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'P']
                 if len(p_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint P "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S_all':
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
                 if len(s_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint S "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
@@ -760,6 +754,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                           if pick.phase_hint.upper()[0] == 'P' and
                           pick.waveform_id.channel_code == tr.stats.channel]
                 if len(p_pick) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint P "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
@@ -773,6 +770,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                               tr.stats.channel]
                 starttime.update({'picks': s_pick})
                 if len(starttime['picks']) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint S "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
             if not delayed:
                 starttime.update({'picks': [first_pick]})
