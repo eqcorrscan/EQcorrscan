@@ -1,4 +1,6 @@
 ## Current
+* utils.findpeaks.decluster
+  - Allow control of multithreading during decluster - also exposed in party.decluster
 
 ## 0.4.4
 * core.match_filter
