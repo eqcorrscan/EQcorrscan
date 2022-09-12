@@ -22,6 +22,8 @@ from eqcorrscan.utils.clustering import dist_mat_km
 
 Logger = logging.getLogger(__name__)
 
+UTILSLIB = _load_cdll("libutils")
+
 
 def is_prime(number):
     """
@@ -318,8 +320,6 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     :return: list of lists of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
-
     lengths = np.array([peak.shape[0] for peak in peaks], dtype=int)
     trig_int = int(trig_int)
     n = np.int32(len(peaks))
@@ -332,10 +332,10 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
     for var in [trig_int, lengths.max(), max_index]:
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
-            func = utilslib.multi_decluster
+            func = UTILSLIB.multi_decluster
         elif var == ctypes.c_longlong(var).value:
             long_type = ctypes.c_longlong
-            func = utilslib.multi_decluster_ll
+            func = UTILSLIB.multi_decluster_ll
         else:
             # Note, could use numpy.gcd to try and find greatest common
             # divisor and make numbers smaller
@@ -396,7 +396,8 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
 
 def decluster_distance_time(peaks, index, trig_int, catalog,
-                            hypocentral_separation, threshold=0):
+                            hypocentral_separation, threshold=0,
+                            num_threads=None):
     """
     Decluster based on time between peaks, and distance between events.
 
@@ -419,21 +420,22 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
         Maximum inter-event distance to decluster over in km
     :type threshold: float
     :param threshold: Minimum absolute peak value to retain it
+    :type num_threads: int
+    :param num_threads:
+        Number of threads to use for distance matrix calculation.
 
     :return: list of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
-
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
     for var in [index.max(), trig_int]:
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
-            func = utilslib.decluster_dist_time
+            func = UTILSLIB.decluster_dist_time
         elif var == ctypes.c_longlong(var).value:
             long_type = ctypes.c_longlong
-            func = utilslib.decluster_dist_time_ll
+            func = UTILSLIB.decluster_dist_time_ll
         else:
             raise OverflowError("Maximum index larger than internal long long")
 
@@ -454,7 +456,7 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     sorted_events = [catalog[i] for i in sorted_inds[::-1]]
-    distance_matrix = dist_mat_km(catalog=sorted_events)
+    distance_matrix = dist_mat_km(catalog=sorted_events, num_threads=num_threads)
 
     arr = np.ascontiguousarray(arr, dtype=np.float32)
     inds = np.ascontiguousarray(inds, dtype=long_type)
@@ -487,18 +489,16 @@ def decluster(peaks, index, trig_int, threshold=0):
 
     :return: list of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
-
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
     for var in [index.max(), trig_int]:
         if var == ctypes.c_long(var).value:
             long_type = ctypes.c_long
-            func = utilslib.decluster
+            func = UTILSLIB.decluster
         elif var == ctypes.c_longlong(var).value:
             long_type = ctypes.c_longlong
-            func = utilslib.decluster_ll
+            func = UTILSLIB.decluster_ll
         else:
             raise OverflowError("Maximum index larger than internal long long")
 
@@ -524,7 +524,6 @@ def decluster(peaks, index, trig_int, threshold=0):
         long_type(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
-
     peaks_out = list(zip(arr[out.astype(bool)], inds[out.astype(bool)]))
     return peaks_out
 
@@ -533,19 +532,17 @@ def _find_peaks_c(array, threshold):
     """
     Use a C func to find peaks in the array.
     """
-    utilslib = _load_cdll('libutils')
-
     length = array.shape[0]
-    utilslib.find_peaks.argtypes = [
+    UTILSLIB.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
                                flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_float,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(length, ),
                                flags='C_CONTIGUOUS')]
-    utilslib.find_peaks.restype = ctypes.c_int
+    UTILSLIB.find_peaks.restype = ctypes.c_int
     arr = np.ascontiguousarray(array, np.float32)
     out = np.ascontiguousarray(np.zeros((length, ), dtype=np.uint32))
-    ret = utilslib.find_peaks(arr, ctypes.c_long(length), threshold, out)
+    ret = UTILSLIB.find_peaks(arr, ctypes.c_long(length), threshold, out)
 
     if ret != 0:
         raise MemoryError("Internal error")
@@ -558,13 +555,11 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     """
     Wrapper for multi-find peaks C-func
     """
-    utilslib = _load_cdll('libutils')
-
     length = arrays.shape[1]
     n = np.int32(arrays.shape[0])
     thresholds = np.ascontiguousarray(thresholds, np.float32)
     arr = np.ascontiguousarray(arrays.flatten(), np.float32)
-    utilslib.multi_find_peaks.argtypes = [
+    UTILSLIB.multi_find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(n * length,),
                                flags='C_CONTIGUOUS'),
         ctypes.c_long, ctypes.c_int,
@@ -573,10 +568,10 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.uint32, shape=(n * length, ),
                                flags='C_CONTIGUOUS')]
-    utilslib.multi_find_peaks.restype = ctypes.c_int
+    UTILSLIB.multi_find_peaks.restype = ctypes.c_int
 
     out = np.ascontiguousarray(np.zeros((n * length, ), dtype=np.uint32))
-    ret = utilslib.multi_find_peaks(
+    ret = UTILSLIB.multi_find_peaks(
         arr, ctypes.c_long(length), n, thresholds, threads, out)
     # Copy data to avoid farking the users data
     if ret != 0:
