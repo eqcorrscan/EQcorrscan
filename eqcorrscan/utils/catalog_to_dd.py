@@ -402,12 +402,12 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         return differential_times
     return
 
-def _read_correlation_file(existing_correlations_filename, event_id_mapper=None):
+def _read_correlation_file(existing_corr_file, event_id_mapper=None):
     """
     Read in existing correlation file into a dictionary of existing pairs
 
-    :type existing_correlations_filename: str
-    :param existing_correlations_filename:
+    :type existing_corr_file: str
+    :param existing_corr_file:
         File path for existing correlations file.
 
     :rtype: dict
@@ -416,7 +416,7 @@ def _read_correlation_file(existing_correlations_filename, event_id_mapper=None)
     """  
     existing_pairs = {}
     counter = 0
-    with open(existing_correlations_filename, "r") as f:
+    with open(existing_corr_file, "r") as f:
         for line in f:
             cols = line.split()
             if cols[0] == "#":
@@ -459,14 +459,14 @@ def _read_correlation_file(existing_correlations_filename, event_id_mapper=None)
             #                   phase=in_phase))
     
     Logger.info(
-                f"{counter} existing correlation measurements from {existing_correlations_filename}")
+                f"{counter} existing correlation measurements from {existing_corr_file}")
     return existing_pairs
 
 def compute_differential_times(catalog, correlation, stream_dict=None,
                                event_id_mapper=None, max_sep=8., min_link=8,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
-                               max_workers=None, existing_correlations_filename=None, 
+                               max_workers=None, existing_corr_file=None, 
                                *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
@@ -509,8 +509,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     :param max_workers:
         Maximum number of workers for parallel processing. If None then all
         threads will be used - only used if correlation = True
-    :type existing_correlations_filename: str
-    :param existing_correlations_filename:
+    :type existing_corr_file: str
+    :param existing_corr_file:
         File path for existing correlations file.
 
     :rtype: dict
@@ -521,6 +521,11 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     .. note::
         The arguments min_cc, stream_dict, extract_len, pre_pick, shift_len
         and interpolate are only required if correlation=True.
+
+    .. note::
+        The existing_corr_file is only checked for event pairs, not stations 
+        calculated within pairs. It doesn't account for the addtion of new 
+        data to an existing event pair. 
     """
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
@@ -545,17 +550,19 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
     if correlation:
 		# importing exisitng correlation pairs if they exist
         differential_times = {}
-        if existing_correlations_filename is not None:
+        if existing_corr_file is not None:
             existing_pairs = _read_correlation_file(
-                                  existing_correlations_filename=existing_correlations_filename, 
+                                  existing_corr_file=existing_corr_file, 
                                   event_id_mapper=event_id_mapper)
+            ##TODO: implement checking whether there are stations missing
+            # from existing correlations
         additional_args.update(correlation_kwargs)
         n = len(catalog)
         for i, master in enumerate(catalog):
             master_id = master.resource_id.id
             sub_catalog = [ev for j, ev in enumerate(catalog)
                            if distance_filter[i][j]]
-            if existing_correlations_filename is not None and master_id in existing_pairs:
+            if existing_corr_file is not None and master_id in existing_pairs:
                 sub_catalog = [ev for j,ev in enumerate(sub_catalog)
                                if ev.resource_id.id not in existing_pairs[master_id]]
                 Logger.info(
@@ -650,7 +657,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
                        highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
                        interpolate=False, max_workers=None,
-                       parallel_process=False, existing_correlations_filename=None, 
+                       parallel_process=False, existing_corr_file=None, 
                        output_filename="dt.cc", *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
@@ -698,8 +705,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     :param parallel_process:
         Whether to process streams in parallel or not. Experimental, may use
         too much memory.
-    :type existing_correlations_filename: str
-    :param existing_correlations_filename:
+    :type existing_corr_file: str
+    :param existing_corr_file:
         File path for existing correlations file.
     :type output_filename: str
     :param output_filename:
@@ -747,14 +754,15 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
         interpolate=interpolate, 
-        existing_correlations_filename=existing_correlations_filename)
+        existing_corr_file=existing_corr_file)
     with open(output_filename, "w") as f:
-        if existing_correlations_filename is not None:
-            with open(existing_correlations_filename, "r") as in_f:
+        if existing_corr_file is not None:
+            with open(existing_corr_file, "r") as in_f:
                 for line in in_f:
                     f.write(line)
-        ## TODO: sort output by event numbers
-        ## TODO: check input existing correlations for those which wouldn't be calculated otherwise?
+        ## TODO: speed up saving existing correlations output (do I need to write out every line individually?)
+        ## TODO: sort output by event numbers (interleaving existing with new)
+        ## TODO: check existing correlations for those which wouldn't be calculated otherwise?
         for master_id, linked_events in correlation_times.items():
             for linked_event in linked_events:
                 f.write(linked_event.cc_string)
