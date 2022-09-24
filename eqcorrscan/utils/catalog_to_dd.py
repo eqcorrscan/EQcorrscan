@@ -878,7 +878,7 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,
         stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
-        interpolate=interpolate, all_horiz=all_horiz, , 
+        interpolate=interpolate, all_horiz=all_horiz, 
         existing_corr_file=existing_corr_file, **kwargs)
     with open(output_filename, "w") as f:
         if existing_corr_file is not None:
