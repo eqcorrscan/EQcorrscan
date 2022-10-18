@@ -351,7 +351,26 @@ class Tribe(object):
         """
         with tarfile.open(filename, "r:*") as arc:
             temp_dir = tempfile.mkdtemp()
-            arc.extractall(path=temp_dir, members=_safemembers(arc))
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(arc, path=temp_dir, members=_safemembers(arc))
             tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
             self._read_from_folder(dirname=tribe_dir)
         shutil.rmtree(temp_dir)

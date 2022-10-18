@@ -798,7 +798,26 @@ class Party(object):
             Logger.info(f"Reading from {_filename}")
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
-                arc.extractall(path=temp_dir, members=_safemembers(arc))
+                def is_within_directory(directory, target):
+                    
+                    abs_directory = os.path.abspath(directory)
+                    abs_target = os.path.abspath(target)
+                
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    
+                    return prefix == abs_directory
+                
+                def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                
+                    for member in tar.getmembers():
+                        member_path = os.path.join(path, member.name)
+                        if not is_within_directory(path, member_path):
+                            raise Exception("Attempted Path Traversal in Tar File")
+                
+                    tar.extractall(path, members, numeric_owner=numeric_owner) 
+                    
+                
+                safe_extract(arc, path=temp_dir, members=_safemembers(arc))
             # Read in the detections first, this way, if we read from multiple
             # files then we can just read in extra templates as needed.
             # Read in families here!
