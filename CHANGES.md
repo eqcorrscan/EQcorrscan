@@ -1,6 +1,9 @@
 ## Current
 * utils.findpeaks.decluster
   - Allow control of multithreading during decluster - also exposed in party.decluster
+* core.match_filter.template
+  - Templates with nan channels will be considered equal to other templates with shared
+    nan channels.
 
 ## 0.4.4
 * core.match_filter
