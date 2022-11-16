@@ -353,8 +353,11 @@ def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
     """
     # TODO: This is potentially quite a slow way to do this.
     for i, cccsum in enumerate(cccsums):
-        max_moveout = max(value[i] for key, value in pad_dict.items()
-                          if key in used_seed_ids[i])
+        moveouts = [value[i] for key, value in pad_dict.items()
+                    if key in used_seed_ids[i]]
+        max_moveout = 0
+        if len(moveouts):
+            max_moveout = max(moveouts)
         if max_moveout:
             cccsum[-max_moveout:] = 0.0
     return cccsums
