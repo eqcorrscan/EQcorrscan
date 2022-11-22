@@ -11,8 +11,8 @@ Functions to generate hypoDD input files from catalogs.
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
-from obspy.core import stream
-from multiprocessing import cpu_count, Pool
+from multiprocessing import cpu_count, Pool, shared_memory
+import uuid
 
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
@@ -221,14 +221,27 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate, max_workers=1, **kwargs):
+                             shift_len, interpolate, max_workers=1,
+                             shm_data_shape=None, shm_dtype=None, **kwargs):
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(
         f"Correlating {str(master.resource_id)} with {len(catalog)} events")
     differential_times_dict = dict()
+    # Assign trace data from shared memory
+    for (key, stream) in stream_dict.items():
+        for tr in stream:
+            if len(tr.data) == 0 and hasattr(tr, 'shared_memory_name'):
+                shm = shared_memory.SharedMemory(name=tr.shared_memory_name)
+                # Reconstructing numpy data array
+                sm_data = np.ndarray(
+                    shm_data_shape, dtype=shm_dtype, buffer=shm.buf)
+                tr.data = np.zeros_like(sm_data)
+                # Copy data into process memory
+                tr.data[:] = sm_data[:]
+
     master_stream = _prepare_stream(
-        stream=stream_dict[str(master.resource_id)], event=master,
+        stream=stream=stream_dict[str(master.resource_id)], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
     Logger.debug(f"The channels provided are: {available_seed_ids}")
@@ -465,12 +478,47 @@ def _prep_horiz_picks(catalog, stream_dict, event_id_mapper):
     return catalog
 
 
+def stream_dict_to_shared_mem(stream_dict):
+    """
+    """
+    shm_name_list = []
+    shm_data_shapes = []
+    shm_data_dtypes = []
+    for (key, stream) in stream_dict.items():
+        for tr in stream:
+            data_array = tr.data
+            # Create valid filename for shared memory from resource ID and trac
+            shm_name = str(key) + tr.id + str(tr.stats.starttime)
+            shm_name = shm_name.replace('/', '_').replace(':', '+')
+            # make the name filename unique
+            shm_name = shm_name + '_' + str(uuid.uuid4())
+            shm = shared_memory.SharedMemory(
+                name=shm_name, create=True, size=data_array.nbytes)
+            shm_name_list.append(shm_name)
+            # Now create a NumPy array backed by shared memory
+            shm_data_shape = data_array.shape
+            shm_data_dtype = data_array.dtype
+            shared_data_array = np.ndarray(
+                shm_data_shape, dtype=shm_data_dtype, buffer=shm.buf)
+            # Copy the original data into shared memory
+            shared_data_array[:] = data_array[:]
+            # tr.data = shared_data_array
+            tr.data = np.array([])
+            tr.shared_memory_name = shm_name
+            shm_data_shapes.append(shm_data_shape)
+            shm_data_dtypes.append(shm_data_dtype)
+    shm_data_shapes = list(set(shm_data_shapes))
+    shm_data_dtypes = list(set(shm_data_dtypes))
+    return stream_dict, shm_name_list, shm_data_shapes, shm_data_dtypes
+
+
 def compute_differential_times(catalog, correlation, stream_dict=None,
                                event_id_mapper=None, max_sep=8., min_link=8,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
                                all_horiz=False, max_workers=None,
-                               max_trace_workers=1, *args, **kwargs):
+                               max_trace_workers=1, use_shared_memory=False,
+                               *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -587,6 +635,18 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
             sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                              if master_filter[i]]
                             for master_filter in distance_filter)
+            # Move trace data into shared memory
+            if use_shared_memory:
+                shm_stream_dict, shm_name_list, shm_data_shapes, shm_dtypes = (
+                    stream_dict_to_shared_mem(stream_dict))
+                if len(shm_data_shapes) == 1 and len(shm_dtypes) == 1:
+                    shm_data_shape = shm_data_shapes[0]
+                    shm_dtype = shm_dtypes[0]
+                    additional_args.update({'stream_dict': shm_stream_dict})
+                    additional_args.update({'shm_data_shape': shm_data_shape})
+                    additional_args.update({'shm_dtype': shm_dtype})
+                else:
+                    use_shared_memory = False
             with pool_boy(Pool, n, cores=max_workers) as pool:
                 # Parallelize over events instead of traces
                 additional_args.update(dict(max_workers=1))
@@ -598,11 +658,19 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                                    sparse_catalog)
                     if str(master.resource_id) in additional_args[
                         "stream_dict"].keys()]
+                Logger.info('Submitted asynchronous jobs to workers.')
                 differential_times = {
                     master.resource_id: result.get()
                     for master, result in zip(sparse_catalog, results)
                     if str(master.resource_id) in additional_args[
                         "stream_dict"].keys()}
+                Logger.debug('Got results from workers.')
+                # Destroy shared memory
+                if use_shared_memory:
+                    for shm_name in shm_name_list:
+                        shm = shared_memory.SharedMemory(name=shm_name)
+                        shm.close()
+                        shm.unlink()
     else:
         sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                          if master_filter[i]]
