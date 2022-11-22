@@ -241,7 +241,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                 tr.data[:] = sm_data[:]
 
     master_stream = _prepare_stream(
-        stream=stream=stream_dict[str(master.resource_id)], event=master,
+        stream=stream_dict[str(master.resource_id)], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
     Logger.debug(f"The channels provided are: {available_seed_ids}")
