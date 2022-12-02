@@ -748,20 +748,24 @@ def _quick_copy_trace(trace):
     """
     Function to quickly copy a trace. Sets values in the traces' and trace
     header's dict directly, circumventing obspy's init functions.
-    Speedup: from 37 us to 11 us per trace - 3.36x faster
+    Speedup: from 37 us to 12 us per trace - 3x faster
+
+    Warning: do not use top copy traces with processing history or response
+    information.
     """
     new_trace = Trace()
     for key, value in trace.__dict__.items():
         if key == 'stats':
-            new_stats = Stats()
+            new_stats = new_trace.stats
             for key_2, value_2 in value.__dict__.items():
                 if isinstance(value_2, UTCDateTime):
                     new_stats.__dict__[key_2] = UTCDateTime(ns=value_2.ns)
                 else:
-                    new_stats.__dict__[key_2] = value_2  # copy.deepcopy(value_2)
-            new_trace.__dict__[key] = new_stats
+                    new_stats.__dict__[key_2] = value_2
         else:  # data needs to be deepcopied (and anything else, to be safe)
-            new_trace.__dict__[key] = copy.deepcopy(value)
+            # This can not yet handle copy of complex stats like response
+            # instance , processing history, etc.
+            new_trace.__dict__[key] = value # for scalars and strings
     return new_trace
 
 
@@ -769,6 +773,9 @@ def _quick_copy_stream(stream):
     """
     Function to quickly copy a stream that consists only of empty data traces.
     Speedup: from 112 us to 35 us per 3-trace stream - 3.2x faster
+
+    Warning: do not use top copy streams / traces with processing history or
+    response information.
 
     This is what takes longest (1 empty trace, total time to copy 27 us):
     copy header: 18 us (vs create new empty header: 683 ns)
@@ -784,7 +791,7 @@ def _quick_copy_stream(stream):
         new_traces.append(_quick_copy_trace(trace))
     return Stream(new_traces)
 
-# @profile
+
 def _prep_data_for_correlation(stream, templates, template_names=None,
                                force_stream_epoch=True):
     """
