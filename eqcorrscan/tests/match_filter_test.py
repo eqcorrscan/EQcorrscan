@@ -586,6 +586,19 @@ class TestMatchCopy(unittest.TestCase):
             self.assertEqual(t, copy_t)
         self.assertEqual(tribe, copied)
 
+    def test_tribe_copy_quick(self):
+        from robustraqn.templates_creation import _quick_tribe_copy
+        party = Party().read(
+            filename=os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                'test_data', 'test_party.tgz'))
+        tribe = Tribe(f.template for f in party.families)
+        copied = _quick_tribe_copy(tribe)
+        self.assertEqual(len(tribe), len(copied))
+        for t, copy_t in zip(tribe.templates, copied.templates):
+            self.assertEqual(t, copy_t)
+        self.assertEqual(tribe, copied)
+
 
 @pytest.mark.network
 class TestTribeConstruction(unittest.TestCase):

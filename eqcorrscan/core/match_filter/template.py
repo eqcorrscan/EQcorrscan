@@ -707,6 +707,38 @@ def group_templates(templates):
     return template_groups
 
 
+def quick_group_templates(templates):
+    """
+    Group templates into sets of similarly processed templates.
+
+    :type templates: List of Tribe of Templates
+    :return: List of Lists of Templates.
+    """
+    # Get the template's processing parameters and a unique list of
+    # parameter-combinations
+    processing_tuples = [
+        tuple(
+            [value for key, value in template.__dict__.items()
+             if key not in ['name', 'st', 'prepick', 'event', 'template_info']]
+            )
+        for template in templates]
+    # Convert to numpy array to efficiently search for rows with same values
+    processing_array = np.array(processing_tuples)
+    uniq_processing_parameters = sorted(list(set(processing_tuples)))
+    # sort templates into groups
+    template_groups = []
+    for parameter_combination in uniq_processing_parameters:
+        # find indices of rows with same parameters
+        template_indices_for_group = np.where(
+            (processing_array == np.array(parameter_combination)).all(axis=1))
+        new_group = list()
+        for template_index in template_indices_for_group[0]:
+            # use indices to sort templates into groups
+            new_group.append(templates[int(template_index)])
+        template_groups.append(new_group)
+    return template_groups
+
+
 if __name__ == "__main__":
     import doctest
 
