@@ -714,25 +714,26 @@ def quick_group_templates(templates):
     :type templates: List of Tribe of Templates
     :return: List of Lists of Templates.
     """
-    # Get the template's processing parameters and a unique list of
-    # parameter-combinations
+    # Get the template's processing parameters
     processing_tuples = [
         tuple(
             [value for key, value in template.__dict__.items()
              if key not in ['name', 'st', 'prepick', 'event', 'template_info']]
             )
         for template in templates]
-    # Convert to numpy array to efficiently search for rows with same values
-    processing_array = np.array(processing_tuples)
+    # Get list of unique parameter-tuples. Sort it so that the order in which
+    # the groups are processed is consistent across different runs.
     uniq_processing_parameters = sorted(list(set(processing_tuples)))
     # sort templates into groups
     template_groups = []
     for parameter_combination in uniq_processing_parameters:
-        # find indices of rows with same parameters
-        template_indices_for_group = np.where(
-            (processing_array == np.array(parameter_combination)).all(axis=1))
+        # find indices of tuples in list with same parameters
+        template_indices_for_group = [
+            j for j, param_tuple in enumerate(processing_tuples)
+            if param_tuple == parameter_combination]
+
         new_group = list()
-        for template_index in template_indices_for_group[0]:
+        for template_index in template_indices_for_group: #[0]:
             # use indices to sort templates into groups
             new_group.append(templates[int(template_index)])
         template_groups.append(new_group)
