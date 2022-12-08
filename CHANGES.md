@@ -1,4 +1,7 @@
 ## Current
+* core.match_filter
+  - 1.9x speed up for `family._uniq`.
+  - `detect`: 1000x speedup for retrieving unique detections for all templates.
 
 ## 0.4.4
 * core.match_filter
