@@ -1,4 +1,6 @@
 ## Current
+* core.match_filter.matched_filter
+  - 2.5x speed up for MAD threshold calculation with parallel median.
 
 ## 0.4.4
 * core.match_filter
