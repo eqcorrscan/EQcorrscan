@@ -729,21 +729,6 @@ def _fill_gaps(tr):
     return gaps, tr
 
 
-def _stream_quick_select(stream, seed_id):
-    """
-    4x quicker selection of traces in stream by full Seed-ID. Does not support
-    wildcards or selection by network/station/location/channel alone.
-    """
-    net, sta, loc, chan = seed_id.split('.')
-    stream = Stream(
-        [tr for tr in stream
-         if (tr.stats.network == net and
-             tr.stats.station == sta and
-             tr.stats.location == loc and
-             tr.stats.channel == chan)])
-    return stream
-
-
 def _quick_copy_trace(trace, deepcopy_data=True):
     """
     Function to quickly copy a trace. Sets values in the traces' and trace
