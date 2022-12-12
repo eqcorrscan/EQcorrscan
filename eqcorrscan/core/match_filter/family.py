@@ -297,7 +297,6 @@ class Family(object):
         """
         return len(self.detections)
 
-
     def _uniq(self):
         """
         Get list of unique detections.
