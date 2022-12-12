@@ -916,7 +916,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         stream_trace_id_dict = defaultdict(list)
         for n, tr in enumerate(template.traces):
             stream_trace_id_dict[tr.id].append(n)
-        
+
         for channel_number, _seed_id in enumerate(seed_ids):
             seed_id, channel_index = _seed_id
             # Select all traces with same seed_id, based on indices for

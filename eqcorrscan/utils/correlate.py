@@ -1128,7 +1128,6 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         temps_with_seed = [template[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
-        # stream_channel = stream.select(id=seed_id.split('_')[0])[0]
         stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
         # Normalize data to ensure no float overflow
         stream_data = stream_channel.data / (np.max(

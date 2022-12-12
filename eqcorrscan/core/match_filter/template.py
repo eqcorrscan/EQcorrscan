@@ -26,7 +26,6 @@ from eqcorrscan.core.match_filter.helpers import _test_event_similarity
 from eqcorrscan.core.match_filter.matched_filter import (
     _group_detect, MatchFilterError)
 from eqcorrscan.core import template_gen
-from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 Logger = logging.getLogger(__name__)
 

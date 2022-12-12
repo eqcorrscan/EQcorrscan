@@ -1,4 +1,7 @@
 ## Current
+* utils.pre_processing
+  - New function ``quick_trace_select` for a very efficient selection of trace
+    by seed ID without wildcards (4x speedup).
 
 ## 0.4.4
 * core.match_filter
