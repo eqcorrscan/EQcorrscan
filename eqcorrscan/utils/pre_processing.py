@@ -744,14 +744,22 @@ def _stream_quick_select(stream, seed_id):
     return stream
 
 
-def _quick_copy_trace(trace):
+def _quick_copy_trace(trace, deepcopy_data=True):
     """
     Function to quickly copy a trace. Sets values in the traces' and trace
     header's dict directly, circumventing obspy's init functions.
     Speedup: from 37 us to 12 us per trace - 3x faster
 
-    Warning: do not use top copy traces with processing history or response
-    information.
+    :type trace: :class:`obspy.core.trace.Trace`
+    :param trace: Stream to quickly copy
+    :type deepcopy_data: bool
+    :param deepcopy_data:
+        Whether to deepcopy trace data (with `deepcopy_data=False` expect up to
+        20 % speedup, but use only when you know that data trace contents will
+        not change or affect results). Warning: do not use this option to copy
+        traces with processing history or response information.
+    :rtype: :class:`obspy.core.trace.Trace`
+    return: trace
     """
     new_trace = Trace()
     for key, value in trace.__dict__.items():
@@ -762,33 +770,47 @@ def _quick_copy_trace(trace):
                     new_stats.__dict__[key_2] = UTCDateTime(ns=value_2.ns)
                 else:
                     new_stats.__dict__[key_2] = value_2
-        else:  # data needs to be deepcopied (and anything else, to be safe)
-            # This can not yet handle copy of complex stats like response
-            # instance , processing history, etc.
-            new_trace.__dict__[key] = value # for scalars and strings
+        elif deepcopy_data:
+            # data needs to be deepcopied (and anything else, to be safe)
+            new_trace.__dict__[key] = copy.deepcopy(value)
+        else:  # No deepcopy, e.g. for NaN-traces with no effect on results
+            new_trace.__dict__[key] = value
     return new_trace
 
 
-def _quick_copy_stream(stream):
+def _quick_copy_stream(stream, deepcopy_data=True):
     """
-    Function to quickly copy a stream that consists only of empty data traces.
-    Speedup: from 112 us to 35 us per 3-trace stream - 3.2x faster
+    Function to quickly copy a stream.
+    Speedup for simple trace:
+        from 112 us to 44 (35) us per 3-trace stream - 2.8x (3.2x) faster
 
-    Warning: do not use top copy streams / traces with processing history or
-    response information.
+    Warning: use `deepcopy_data=False` (saves extra ~20 % time) only when the
+             changing the data in the stream later does not change results
+             (e.g., for NaN-trace or when data array will not be changed).
 
     This is what takes longest (1 empty trace, total time to copy 27 us):
     copy header: 18 us (vs create new empty header: 683 ns)
-
     Two points that can speed up copying / creation:
         1. circumvent trace.__init__ and trace.__set_attr__ by setting value
            directly in trace's __dict__
         2. when setting trace header, circumvent that Stats(header) is called
            when header is already a Stats instance
+
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param stream: Stream to quickly copy
+    :type deepcopy_data: bool
+    :param deepcopy_data:
+        Whether to deepcopy data (with `deepcopy_data=False` expect up to 20 %
+        speedup, but use only when you know that data trace contents will not
+        change or affect results).
+
+    :rtype: :class:`obspy.core.stream.Stream`
+    return: stream
     """
     new_traces = list()
     for trace in stream:
-        new_traces.append(_quick_copy_trace(trace))
+        new_traces.append(
+            _quick_copy_trace(trace, deepcopy_data=deepcopy_data))
     return Stream(new_traces)
 
 
@@ -898,6 +920,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
 
     # Initialize nan template for speed.
     nan_channel = np.full(template_length, np.nan, dtype=np.float32)
+    nan_channel = np.require(nan_channel, requirements=['C_CONTIGUOUS'])
     nan_template = Stream()
     for _seed_id in seed_ids:
         net, sta, loc, chan = _seed_id[0].split('.')
@@ -959,7 +982,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         template = _out[template_name]
         template_starttime = min(tr.stats.starttime for tr in template)
         # out_template = nan_template.copy()
-        out_template = _quick_copy_stream(nan_template)
+        out_template = _quick_copy_stream(nan_template, deepcopy_data=False)
 
         # Select traces very quickly: assume that trace order does not change,
         # make dict of trace-ids and list of indices and use indices to select
