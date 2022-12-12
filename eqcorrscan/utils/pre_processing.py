@@ -12,11 +12,9 @@ the data using obspy modules (which also rely on scipy and numpy).
 import numpy as np
 import logging
 import datetime as dt
-from timeit import default_timer
 import copy
 
 from collections import Counter, defaultdict
-from joblib import Parallel, delayed
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
