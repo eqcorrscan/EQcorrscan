@@ -231,8 +231,6 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
                 full_peaks=full_peaks, **kwargs)
-            # detections_template_names = [detection.template_name
-            #                             for detection in detections]
             # Select detections very quickly: detection order does not
             # change, make dict of keys: template-names and values:
             # list of indices and use indices to select
