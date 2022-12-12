@@ -709,12 +709,16 @@ def match_filter(template_names, template_list, st, threshold,
     if str(threshold_type) == str("absolute"):
         thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
-        median_cores = min([cores, len(cccsums)])
-        if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it below
-            median_cores = 1
-        medians = Parallel(n_jobs=median_cores)(delayed(
-            _mad)(cccsum) for cccsum in cccsums)
-        thresholds = [threshold * median for median in medians]
+        if cores:
+            median_cores = min([cores, len(cccsums)])
+            if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
+                median_cores = 1
+            medians = Parallel(n_jobs=median_cores)(delayed(
+                _mad)(cccsum) for cccsum in cccsums)
+            thresholds = [threshold * median for median in medians]
+        else:
+            thresholds = [threshold * np.median(np.abs(cccsum))
+                          for cccsum in cccsums]
     else:
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     if peak_cores is None:
