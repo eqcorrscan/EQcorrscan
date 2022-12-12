@@ -480,6 +480,27 @@ def _prep_horiz_picks(catalog, stream_dict, event_id_mapper):
 
 def stream_dict_to_shared_mem(stream_dict):
     """
+    Move the data of streams from a dict of (key, obspy.stream) into shared
+    memory so that the data can be retrieved by multiple processes in parallel.
+    This can help speed up parallel execution because the initiation of each
+    worker process becomes cheaper (less data to transfer). For now this only
+    puts the numpy array in trace.data into shared memory (because it's easy).
+
+    :type stream_dict: dict of (key, `obspy.stream`)
+    :param stream_dict: dict of streams that should be moved to shared memory
+
+    :returns: stream_dict, shm_name_list, shm_data_shapes, shm_data_dtypes
+
+    :rtype: dict
+    :return: Dictionary streams that were moved to shared memory
+    :rtype: list
+    :return: List of names to the shared memory address for each trace.
+    :rtype: list
+    :return:
+        List of numpy-array shaped for each trace-data array in shared memory.
+    :rtype: list
+    :return: List of data types for each trace-data-array in shared memory.
+
     """
     shm_name_list = []
     shm_data_shapes = []
@@ -565,6 +586,11 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         Maximum number of workers for parallel correlation of traces insted of
         events. If None then all threads will be used (but can only be used
         when max_workers = 1).
+    :type use_shared_memory: bool
+    :param use_shared_memory:
+        Whether to move trace data arrays into shared memory for computing
+        trace correlations. Can speed up total execution time by ~20 % for
+        hypodd-correlations with a lot of clustered seismicity.
 
     :rtype: dict
     :return: Dictionary of differential times keyed by event id.
