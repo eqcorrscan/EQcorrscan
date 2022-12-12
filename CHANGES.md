@@ -1,4 +1,7 @@
 ## Current
+* utils.catalog_to_dd._prepare_stream
+  - Now more consistently slices templates to length = extract_len * samp_rate
+    so that user receives less warnings about insufficient data.
 
 ## 0.4.4
 * core.match_filter
