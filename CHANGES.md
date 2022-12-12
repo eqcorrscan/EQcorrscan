@@ -1,4 +1,7 @@
 ## Current
+* utils.catalog_to_dd.write_correlations
+  - New option `use_shared_memory` to speed up correlation of many events by
+    ca. 20 % by moving trace data into shared memory.
 
 ## 0.4.4
 * core.match_filter
