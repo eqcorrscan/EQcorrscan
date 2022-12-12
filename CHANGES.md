@@ -1,4 +1,6 @@
 ## Current
+* core.match_filter.template
+  - new quick_group_templates function for 50x quicker template grouping.
 
 ## 0.4.4
 * core.match_filter
