@@ -587,7 +587,7 @@ class TestMatchCopy(unittest.TestCase):
         self.assertEqual(tribe, copied)
 
     def test_tribe_copy_quick(self):
-        from robustraqn.templates_creation import _quick_tribe_copy
+        from eqcorrscan.core.match_filter.template import quick_group_templates
         party = Party().read(
             filename=os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
