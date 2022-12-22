@@ -25,7 +25,7 @@ from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
 
 from eqcorrscan.core.match_filter.template import (
-    Template, group_templates, quick_group_templates)
+    Template, quick_group_templates)
 from eqcorrscan.core.match_filter.party import Party
 from eqcorrscan.core.match_filter.helpers import (
     _safemembers, _par_read, get_waveform_client)
