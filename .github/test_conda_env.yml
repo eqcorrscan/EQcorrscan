@@ -3,21 +3,21 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - numpy>=1.12
-  - matplotlib>=1.3.0
-  - scipy>=1.7
+  - numpy
+  - matplotlib
+  - scipy
   - mock
   - obspy>=1.4.0
   - h5py
   - pyyaml
   - bottleneck
   - fftw
-  - pytest>=2.0.0
+  - pytest
   - pytest-cov
   - pytest-pep8
   - pytest-xdist
   - pytest-rerunfailures
-  - pytest-mpl<0.16.0
+  - pytest-mpl
   - codecov
   - pip
   - pip:
