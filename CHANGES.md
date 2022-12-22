@@ -1,6 +1,9 @@
 ## Current
 * core.match_filter.template
   - new quick_group_templates function for 50x quicker template grouping.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
