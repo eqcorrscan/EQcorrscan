@@ -7,7 +7,7 @@ dependencies:
   - matplotlib
   - scipy
   - mock
-  - obspy>=1.4.0
+  - obspy
   - h5py
   - pyyaml
   - bottleneck
