@@ -3,6 +3,9 @@
   - _prep_data_for_correlation: 3x speedup for filling NaN-traces in templates
   - new functions _quick_copy_trace and _quick_stream_copy for 3x quicker
     trace / stream copy.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
