@@ -733,7 +733,7 @@ def quick_group_templates(templates):
             if param_tuple == parameter_combination]
 
         new_group = list()
-        for template_index in template_indices_for_group: #[0]:
+        for template_index in template_indices_for_group:
             # use indices to sort templates into groups
             new_group.append(templates[int(template_index)])
         template_groups.append(new_group)
