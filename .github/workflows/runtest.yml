@@ -25,7 +25,7 @@ jobs:
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: Mambaforge
+          miniforge-variant: Mambaforge
           miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
@@ -95,7 +95,7 @@ jobs:
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: Mambaforge
+          miniforge-variant: Mambaforge
           miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
@@ -153,7 +153,7 @@ jobs:
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: Mambaforge
+          miniforge-variant: Mambaforge
           miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
