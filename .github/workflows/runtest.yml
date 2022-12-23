@@ -37,7 +37,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -v -e .
 
       - name: print package info
         shell: bash -l {0}
@@ -86,7 +86,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
       fail-fast: false
 
     steps:
@@ -144,7 +144,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
       fail-fast: false
 
     steps:
