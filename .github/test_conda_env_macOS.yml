@@ -5,6 +5,7 @@ dependencies:
   # - openmp>=4
   - clang
   - mkl
+  - libclang
   # - clangdev
   # - libcxx
   # - cctools
