@@ -7,7 +7,7 @@ dependencies:
   - openmp>=4
   - libcxx>=4
   - cctools
-  - clang
+  - clang=13
   - clang_osx-64
   - compiler-rt
   - libcxx
