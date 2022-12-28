@@ -4,7 +4,8 @@ channels:
   - defaults
 dependencies:
   # - openmp>=4
-  # - clang
+  - clang
+  - mkl
   # - clangdev
   # - libcxx
   # - cctools
