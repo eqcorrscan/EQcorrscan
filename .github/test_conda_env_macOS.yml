@@ -1,7 +1,6 @@
 name: eqcorrscan-test
 channels:
   - conda-forge
-  - defaults
 dependencies:
   # - openmp>=4
   - clang
@@ -11,7 +10,7 @@ dependencies:
   # - cctools
   # - clang_osx-64
   # - compiler-rt
-  # - llvm-openmp>=4.0.1
+  - llvm-openmp
   - numpy>=1.12
   - matplotlib>=1.3.0
   - scipy
