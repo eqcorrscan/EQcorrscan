@@ -6,8 +6,8 @@ dependencies:
   - openmp>=4
   - clang
   - clangdev
-  # - libcxx
-  # - cctools
+  - libcxx
+  - cctools
   # - clang_osx-64
   # - compiler-rt
   - llvm-openmp>=4.0.1
