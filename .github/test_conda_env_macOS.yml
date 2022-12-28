@@ -8,7 +8,7 @@ dependencies:
   - clangdev
   - libcxx
   - cctools
-  # - clang_osx-64
+  - clang_osx-64
   - compiler-rt
   - llvm-openmp>=4.0.1
   - numpy>=1.12
