@@ -6,11 +6,10 @@ dependencies:
   - clang
   - mkl
   - libclang
-  # - clangdev
-  - libcxx
-  # - cctools
+  - clangdev
+  - cctools
   # - clang_osx-64
-  # - compiler-rt
+  - compiler-rt
   - llvm-openmp
   - numpy>=1.12
   - matplotlib>=1.3.0
