@@ -2,6 +2,9 @@
 * core.match_filter
   - 30x speedup in handling detections (50x speedup in selecting detections,
     4x speedup in adding prepick time)
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
