@@ -15,7 +15,7 @@ import logging
 from timeit import default_timer
 
 import numpy as np
-from joblib import delayed, Parallel
+from concurrent.futures import ThreadPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
@@ -713,8 +713,9 @@ def match_filter(template_names, template_list, st, threshold,
             median_cores = min([cores, len(cccsums)])
             if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
                 median_cores = 1
-            medians = Parallel(n_jobs=median_cores)(delayed(
-                _mad)(cccsum) for cccsum in cccsums)
+            with ThreadPoolExecutor(max_workers=median_cores) as executor:  
+                # Because numpy releases GIL threading can use multiple cores
+                medians = executor.map(_mad, cccsums)
             thresholds = [threshold * median for median in medians]
         else:
             thresholds = [threshold * np.median(np.abs(cccsum))
