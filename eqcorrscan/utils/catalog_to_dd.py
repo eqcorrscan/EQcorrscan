@@ -208,8 +208,20 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
                 seed_id=seed_pick_id.seed_id))
             continue
         tr = tr[0]
-        if tr.stats.endtime - tr.stats.starttime != extract_len:
-            Logger.warning(f"Insufficient data for {tr.id}, discarding")
+
+        # If there is one sample too many after this remove the first one
+        # by convention
+        n_samples_intended = extract_len * tr.stats.sampling_rate
+        if len(tr.data) == n_samples_intended + 1:
+            tr.data = tr.data[1:len(tr.data)]
+        # if tr.stats.endtime - tr.stats.starttime != extract_len:
+        if tr.stats.npts < n_samples_intended:
+            Logger.warning(
+                "Insufficient data ({rlen} s) for {tr_id}, discarding. Check "
+                "that your traces are at least of length {length} s, with a "
+                "pre_pick time of at least {prepick} s!".format(
+                    rlen=tr.stats.endtime - tr.stats.starttime,
+                    tr_id=tr.id, length=extract_len, prepick=pre_pick))
             continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
