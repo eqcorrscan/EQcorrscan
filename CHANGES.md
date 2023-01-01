@@ -1,6 +1,9 @@
 ## Current
 * core.match_filter.matched_filter
   - 2.5x speed up for MAD threshold calculation with parallel median.
+* utils.catalog_to_dd._prepare_stream
+  - Now more consistently slices templates to length = extract_len * samp_rate
+    so that user receives less warnings about insufficient data.
 * utils.cluster.decluster_distance_time
   - Bug-fix: fix segmentation fault when declustering more than 46340 detections
     with hypocentral_separation.
