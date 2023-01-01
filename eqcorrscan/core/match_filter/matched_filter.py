@@ -713,7 +713,7 @@ def match_filter(template_names, template_list, st, threshold,
             median_cores = min([cores, len(cccsums)])
             if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
                 median_cores = 1
-            with ThreadPoolExecutor(max_workers=median_cores) as executor:  
+            with ThreadPoolExecutor(max_workers=median_cores) as executor:
                 # Because numpy releases GIL threading can use multiple cores
                 medians = executor.map(_mad, cccsums)
             thresholds = [threshold * median for median in medians]
