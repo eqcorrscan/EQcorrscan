@@ -13,6 +13,7 @@ with data and output the detections.
 """
 import logging
 from timeit import default_timer
+from collections import defaultdict
 
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -231,15 +232,28 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
                 full_peaks=full_peaks, **kwargs)
+            # Select detections very quickly: detection order does not
+            # change, make dict of keys: template-names and values:
+            # list of indices and use indices to select
+            detection_idx_dict = defaultdict(list)
+            for n, detection in enumerate(detections):
+                detection_idx_dict[detection.template_name].append(n)
+
             for template in template_group:
                 family = Family(template=template, detections=[])
-                for detection in detections:
-                    if detection.template_name == template.name:
+                fam_detections = [
+                    detections[idx]
+                    for idx in detection_idx_dict[family.template.name]]
+                for detection in fam_detections:
+                    if detection.event:
+                        # Add template prepick to the pick time (direct adding
+                        # to UTCDateTime.ns is quickest for many iterations).
                         for pick in detection.event.picks:
-                            pick.time += template.prepick
+                            pick.time.ns += int(round(template.prepick * 1e9))
                         for origin in detection.event.origins:
-                            origin.time += template.prepick
-                        family.detections.append(detection)
+                            origin.time.ns += int(round(
+                                template.prepick * 1e9))
+                    family.detections.append(detection)
                 party += family
     return party
 
