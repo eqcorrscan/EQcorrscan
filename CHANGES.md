@@ -2,6 +2,9 @@
 * core.match_filter
   - 1.9x speed up for `family._uniq`.
   - `detect`: 1000x speedup for retrieving unique detections for all templates.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
