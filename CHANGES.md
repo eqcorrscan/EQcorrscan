@@ -1,6 +1,9 @@
 ## Current
 * core.match_filter.matched_filter
   - 2.5x speed up for MAD threshold calculation with parallel median.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
