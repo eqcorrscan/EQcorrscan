@@ -2,6 +2,9 @@
 * utils.catalog_to_dd.write_correlations
   - New option `use_shared_memory` to speed up correlation of many events by
     ca. 20 % by moving trace data into shared memory.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
 
 ## 0.4.4
 * core.match_filter
