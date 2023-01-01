@@ -2,6 +2,9 @@
 * core.match_filter
   - 30x speedup in handling detections (50x speedup in selecting detections,
     4x speedup in adding prepick time)
+* utils.catalog_to_dd._prepare_stream
+  - Now more consistently slices templates to length = extract_len * samp_rate
+    so that user receives less warnings about insufficient data.
 * utils.cluster.decluster_distance_time
   - Bug-fix: fix segmentation fault when declustering more than 46340 detections
     with hypocentral_separation.
