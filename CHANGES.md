@@ -1,7 +1,17 @@
 ## Current
-* core.match_filter
-  - 1.9x speed up for `family._uniq`.
-  - `detect`: 1000x speedup for retrieving unique detections for all templates.
+* core.match_filter.detect
+  - 1000x speedup for retrieving unique detections for all templates.
+  - 30x speedup in handling detections (50x speedup in selecting detections,
+    4x speedup in adding prepick time)
+* core.match_filter.matched_filter
+  - 5x speed up for MAD threshold calculation with parallel (threaded) MAD 
+    calculation (#531).
+* utils.pre_processing
+  - New function ``quick_trace_select` for a very efficient selection of trace
+    by seed ID without wildcards (4x speedup).
+* utils.catalog_to_dd._prepare_stream
+  - Now more consistently slices templates to length = extract_len * samp_rate
+    so that user receives less warnings about insufficient data.
 * utils.cluster.decluster_distance_time
   - Bug-fix: fix segmentation fault when declustering more than 46340 detections
     with hypocentral_separation.

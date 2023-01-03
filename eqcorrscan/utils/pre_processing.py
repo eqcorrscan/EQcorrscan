@@ -13,7 +13,7 @@ import numpy as np
 import logging
 import datetime as dt
 
-from collections import Counter
+from collections import Counter, defaultdict
 from multiprocessing import Pool, cpu_count
 
 from obspy import Stream, Trace, UTCDateTime
@@ -728,6 +728,21 @@ def _fill_gaps(tr):
     return gaps, tr
 
 
+def _stream_quick_select(stream, seed_id):
+    """
+    4x quicker selection of traces in stream by full Seed-ID. Does not support
+    wildcards or selection by network/station/location/channel alone.
+    """
+    net, sta, loc, chan = seed_id.split('.')
+    stream = Stream(
+        [tr for tr in stream
+         if (tr.stats.network == net and
+             tr.stats.station == sta and
+             tr.stats.location == loc and
+             tr.stats.channel == chan)])
+    return stream
+
+
 def _prep_data_for_correlation(stream, templates, template_names=None,
                                force_stream_epoch=True):
     """
@@ -895,9 +910,20 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         template = _out[template_name]
         template_starttime = min(tr.stats.starttime for tr in template)
         out_template = nan_template.copy()
+
+        # Select traces very quickly: assume that trace order does not change,
+        # make dict of trace-ids and list of indices and use indices to select
+        stream_trace_id_dict = defaultdict(list)
+        for n, tr in enumerate(template.traces):
+            stream_trace_id_dict[tr.id].append(n)
+
         for channel_number, _seed_id in enumerate(seed_ids):
             seed_id, channel_index = _seed_id
-            template_channel = template.select(id=seed_id)
+            # Select all traces with same seed_id, based on indices for
+            # corresponding traces stored in stream_trace_id_dict
+            # Much quicker than: template_channel = template.select(id=seed_id)
+            template_channel = Stream([
+                template.traces[idx] for idx in stream_trace_id_dict[seed_id]])
             if len(template_channel) <= channel_index:
                 out_template[channel_number].data = nan_channel
                 out_template[channel_number].stats.starttime = \

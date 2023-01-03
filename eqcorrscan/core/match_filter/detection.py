@@ -23,6 +23,7 @@ from obspy.core.event import (
     Origin)
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 Logger = logging.getLogger(__name__)
 
@@ -284,7 +285,8 @@ class Detection(object):
                     new_pick.phase_hint = template_pick[0].phase_hint
                 else:
                     # Multiple picks for this trace in template
-                    similar_traces = template_st.select(id=tr.id)
+                    # similar_traces = template_st.select(id=tr.id)
+                    similar_traces = _stream_quick_select(template_st, tr.id)
                     similar_traces.sort()
                     _index = similar_traces.traces.index(tr)
                     try:

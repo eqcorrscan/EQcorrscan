@@ -148,8 +148,8 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertEqual(len(s_picks), len(sliced_stream["S"]))
         for stream in sliced_stream.values():
             for tr in stream:
-                self.assertEqual(
-                    tr.stats.endtime - tr.stats.starttime, extract_len)
+                self.assertEqual(tr.stats.npts,
+                                 extract_len * tr.stats.sampling_rate)
 
     def test_read_phase(self):
         """Function to test the phase reading function"""
