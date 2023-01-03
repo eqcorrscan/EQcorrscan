@@ -326,7 +326,8 @@ class Family(object):
         2
         """
         _detections = []
-        _detections = list(set(self.detections))
+        _detections = [_detections.append(d) for d in self.detections
+                       if not _detections.count(d)]
         self.detections = _detections
         return self
 
