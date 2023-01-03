@@ -987,9 +987,14 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
                 # out_template[channel_number].data = nan_channel  # quicker:
                 out_template[channel_number].__dict__['data'] = copy.deepcopy(
                     nan_channel)
-                out_template[channel_number].__dict__['npts'] = template_length
-                out_template[channel_number].__dict__['starttime'] = \
+                out_template[channel_number].stats.__dict__['npts'] = \
+                    template_length
+                out_template[channel_number].stats.__dict__['starttime'] = \
                     template_starttime
+                out_template[channel_number].stats.__dict__['endtime'] = \
+                    UTCDateTime(ns=int(
+                        round(template_starttime.ns
+                              + (template_length * samp_rate) * 1e9)))
             else:
                 out_template[channel_number] = template_channel[channel_index]
         # If a template-trace matches a NaN-trace in the stream , then set
