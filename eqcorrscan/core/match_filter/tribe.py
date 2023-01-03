@@ -24,7 +24,8 @@ import numpy as np
 from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
 
-from eqcorrscan.core.match_filter.template import Template, group_templates
+from eqcorrscan.core.match_filter.template import (
+    Template, quick_group_templates)
 from eqcorrscan.core.match_filter.party import Party
 from eqcorrscan.core.match_filter.helpers import (
     _safemembers, _par_read, get_waveform_client)
@@ -584,7 +585,8 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
-        template_groups = group_templates(self.templates)
+        # template_groups = group_templates(self.templates)
+        template_groups = quick_group_templates(self.templates)
         if len(template_groups) > 1 and pre_processed:
             raise NotImplementedError(
                 "Inconsistent template processing and pre-processed data - "

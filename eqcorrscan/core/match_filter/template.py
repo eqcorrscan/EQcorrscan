@@ -105,6 +105,15 @@ class Template(object):
                                                author=getpass.getuser())))
         self.event = event
 
+    @property
+    def _processing_parameters(self):
+        """
+        Internal function / attribute to return all processing parameters for
+        quick grouping of templates as tuple.
+        """
+        return (self.lowcut, self.highcut, self.samp_rate, self.filt_order,
+                self.process_length)
+
     def __repr__(self):
         """
         Print the template.
@@ -284,12 +293,9 @@ class Template(object):
         >>> template_a.same_processing(template_b)
         False
         """
-        for key in self.__dict__.keys():
-            if key in ['name', 'st', 'prepick', 'event', 'template_info']:
-                continue
-            if not self.__dict__[key] == other.__dict__[key]:
-                return False
-        return True
+        if self._processing_parameters == other._processing_parameters:
+            return True
+        return False
 
     def write(self, filename, format='tar'):
         """
@@ -704,6 +710,35 @@ def group_templates(templates):
     for group in template_groups:
         if len(group) == 0:
             template_groups.remove(group)
+    return template_groups
+
+
+def quick_group_templates(templates):
+    """
+    Group templates into sets of similarly processed templates.
+
+    :type templates: List of Tribe of Templates
+    :return: List of Lists of Templates.
+    """
+    # Get the template's processing parameters
+    processing_tuples = [template._processing_parameters
+                         for template in templates]
+    # Get list of unique parameter-tuples. Sort it so that the order in which
+    # the groups are processed is consistent across different runs.
+    uniq_processing_parameters = sorted(list(set(processing_tuples)))
+    # sort templates into groups
+    template_groups = []
+    for parameter_combination in uniq_processing_parameters:
+        # find indices of tuples in list with same parameters
+        template_indices_for_group = [
+            j for j, param_tuple in enumerate(processing_tuples)
+            if param_tuple == parameter_combination]
+
+        new_group = list()
+        for template_index in template_indices_for_group:
+            # use indices to sort templates into groups
+            new_group.append(templates[int(template_index)])
+        template_groups.append(new_group)
     return template_groups
 
 

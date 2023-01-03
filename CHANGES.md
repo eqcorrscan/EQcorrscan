@@ -1,4 +1,6 @@
 ## Current
+* core.match_filter.template
+  - new quick_group_templates function for 50x quicker template grouping.
 * core.match_filter
   - 30x speedup in handling detections (50x speedup in selecting detections,
     4x speedup in adding prepick time)
