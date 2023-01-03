@@ -608,7 +608,21 @@ class Tribe(object):
         if len(party) > 0:
             for family in party:
                 if family is not None:
-                    family.detections = family._uniq().detections
+                    # Slow uniq:
+                    # family.detections = family._uniq().detections
+                    # Very quick uniq:
+                    det_tuples = [
+                        (det.id, str(det.detect_time), det.detect_val)
+                        for det in family]
+                    # Retrieve the indices for the first occurrence of each
+                    # detection in the family (so only unique detections will
+                    # remain).
+                    uniq_det_tuples, uniq_det_indices = np.unique(
+                        det_tuples, return_index=True, axis=0)
+                    uniq_detections = []
+                    for uniq_det_index in uniq_det_indices:
+                        uniq_detections.append(family[uniq_det_index])
+                    family.detections = uniq_detections
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
