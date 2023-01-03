@@ -25,7 +25,7 @@ from eqcorrscan.core.match_filter.helpers import (
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.pre_processing import (
-    dayproc, shortproc, _prep_data_for_correlation)
+    dayproc, shortproc, _prep_data_for_correlation, _quick_copy_stream)
 
 Logger = logging.getLogger(__name__)
 
@@ -339,8 +339,8 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             kwargs.update({'endtime': _endtime})
         else:
             _endtime = kwargs['starttime'] + 86400
-        chunk_stream = stream.slice(starttime=kwargs['starttime'],
-                                    endtime=_endtime).copy()
+        chunk_stream = _quick_copy_stream(
+            stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
         Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
                      f"and {_endtime}")
         if len(chunk_stream) == 0:
@@ -688,8 +688,8 @@ def match_filter(template_names, template_list, st, threshold,
     if copy_data:
         # Copy the stream here because we will muck about with it
         Logger.info("Copying data to keep your input safe")
-        stream = st.copy()
-        templates = [t.copy() for t in template_list]
+        stream = _quick_copy_stream(st)
+        templates = [_quick_copy_stream(t) for t in template_list]
         _template_names = template_names.copy()  # This can be a shallow copy
     else:
         stream, templates, _template_names = st, template_list, template_names

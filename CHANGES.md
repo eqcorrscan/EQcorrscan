@@ -9,6 +9,7 @@
 * core.match_filter.template
   - new quick_group_templates function for 50x quicker template grouping.
 * utils.pre_processing
+  - `_prep_data_for_correlation`: 3x speedup for filling NaN-traces in templates
   - New function ``quick_trace_select` for a very efficient selection of trace
     by seed ID without wildcards (4x speedup).
 * utils.catalog_to_dd._prepare_stream
