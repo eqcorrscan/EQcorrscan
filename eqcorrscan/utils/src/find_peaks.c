@@ -25,8 +25,8 @@ int decluster_dist_time(float *arr, long *indexes, float *distances,
                         float dist_thresh, unsigned int *out){
     // Takes a sorted array, with indexes as the time between events, and the
     // distances as a distance matrix sorted in the same way.
-    long i, j, step;
-    int keep, distance_index;
+    long i, j, step, distance_index;
+    int keep;
 
     if (fabs(arr[0]) < thresh){return 0;}
 
@@ -57,8 +57,8 @@ int decluster_dist_time_ll(float *arr, long long *indexes, float *distances,
                            float dist_thresh, unsigned int *out){
     // Takes a sorted array, with indexes as the time between events, and the
     // distances as a distance matrix sorted in the same way.
-    long long i, j, step;
-    int keep, distance_index;
+    long long i, j, step, distance_index;
+    int keep;
 
     if (fabs(arr[0]) < thresh){return 0;}
 

@@ -833,8 +833,8 @@ def multi(stream):
     """
     stack = stream[0].data
     for tr in stream[1:]:
-        stack = np.dstack(np.array([stack, tr.data]))
-    multiplex = stack.reshape(stack.size, )
+        stack = np.vstack((stack, tr.data))
+    multiplex = stack.T.reshape(stack.size, )
     return multiplex
 
 
