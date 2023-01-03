@@ -32,6 +32,7 @@ from packaging import version
 
 from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils import FMF_INSTALLED
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 
 Logger = logging.getLogger(__name__)
@@ -1189,7 +1190,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         weights = np.array([_get_weight(template[i])
                             for template in templates])
         weight_dict.update({seed_id: weights})
-        stream_channel = stream.select(id=seed_id.split('_')[0])[0]
+        stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
         # Normalize data to ensure no float overflow
         stream_data = stream_channel.data / (np.max(
             np.abs(stream_channel.data)) / 1e5)
