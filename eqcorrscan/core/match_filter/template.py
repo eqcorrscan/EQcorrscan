@@ -105,6 +105,15 @@ class Template(object):
                                                author=getpass.getuser())))
         self.event = event
 
+    @property
+    def _processing_parameters(self):
+        """
+        Internal function / attribute to return all processing parameters for
+        quick grouping of templates as tuple.
+        """
+        return (self.lowcut, self.highcut, self.samp_rate, self.filt_order,
+                self.process_length, self.prepick)
+
     def __repr__(self):
         """
         Print the template.
@@ -715,12 +724,8 @@ def quick_group_templates(templates):
     :return: List of Lists of Templates.
     """
     # Get the template's processing parameters
-    processing_tuples = [
-        tuple(
-            [value for key, value in template.__dict__.items()
-             if key not in ['name', 'st', 'prepick', 'event', 'template_info']]
-            )
-        for template in templates]
+    processing_tuples = [template._processing_parameters
+                         for template in templates]
     # Get list of unique parameter-tuples. Sort it so that the order in which
     # the groups are processed is consistent across different runs.
     uniq_processing_parameters = sorted(list(set(processing_tuples)))
