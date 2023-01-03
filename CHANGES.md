@@ -1,11 +1,13 @@
 ## Current
+* core.match_filter.matched_filter
+  - 5x speed up for MAD threshold calculation with parallel (threaded) MAD 
+    calculation (#531).
 * core.match_filter.detect
   - 1000x speedup for retrieving unique detections for all templates.
   - 30x speedup in handling detections (50x speedup in selecting detections,
     4x speedup in adding prepick time)
-* core.match_filter.matched_filter
-  - 5x speed up for MAD threshold calculation with parallel (threaded) MAD 
-    calculation (#531).
+* core.match_filter.template
+  - new quick_group_templates function for 50x quicker template grouping.
 * utils.pre_processing
   - New function ``quick_trace_select` for a very efficient selection of trace
     by seed ID without wildcards (4x speedup).
