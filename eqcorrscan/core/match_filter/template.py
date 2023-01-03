@@ -112,7 +112,7 @@ class Template(object):
         quick grouping of templates as tuple.
         """
         return (self.lowcut, self.highcut, self.samp_rate, self.filt_order,
-                self.process_length, self.prepick)
+                self.process_length)
 
     def __repr__(self):
         """
@@ -293,12 +293,9 @@ class Template(object):
         >>> template_a.same_processing(template_b)
         False
         """
-        for key in self.__dict__.keys():
-            if key in ['name', 'st', 'prepick', 'event', 'template_info']:
-                continue
-            if not self.__dict__[key] == other.__dict__[key]:
-                return False
-        return True
+        if self._processing_parameters == other._processing_parameters:
+            return True
+        return False
 
     def write(self, filename, format='tar'):
         """
