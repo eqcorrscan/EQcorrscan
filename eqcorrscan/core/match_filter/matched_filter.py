@@ -13,8 +13,10 @@ with data and output the detections.
 """
 import logging
 from timeit import default_timer
+from collections import defaultdict
 
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
@@ -230,15 +232,28 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                 threshold=threshold, threshold_type=threshold_type,
                 trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
                 full_peaks=full_peaks, **kwargs)
+            # Select detections very quickly: detection order does not
+            # change, make dict of keys: template-names and values:
+            # list of indices and use indices to select
+            detection_idx_dict = defaultdict(list)
+            for n, detection in enumerate(detections):
+                detection_idx_dict[detection.template_name].append(n)
+
             for template in template_group:
                 family = Family(template=template, detections=[])
-                for detection in detections:
-                    if detection.template_name == template.name:
+                fam_detections = [
+                    detections[idx]
+                    for idx in detection_idx_dict[family.template.name]]
+                for detection in fam_detections:
+                    if detection.event:
+                        # Add template prepick to the pick time (direct adding
+                        # to UTCDateTime.ns is quickest for many iterations).
                         for pick in detection.event.picks:
-                            pick.time += template.prepick
+                            pick.time.ns += int(round(template.prepick * 1e9))
                         for origin in detection.event.origins:
-                            origin.time += template.prepick
-                        family.detections.append(detection)
+                            origin.time.ns += int(round(
+                                template.prepick * 1e9))
+                    family.detections.append(detection)
                 party += family
     return party
 
@@ -380,6 +395,13 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             "because it is shorter than a chunk of {2} s".format(
                 _endtime, stream[0].stats.endtime, process_length))
     return processed_streams
+
+
+def _mad(cccsum):
+    """
+    Internal helper to compute MAD-thresholds in parallel.
+    """
+    return np.median(np.abs(cccsum))
 
 
 def match_filter(template_names, template_list, st, threshold,
@@ -701,8 +723,17 @@ def match_filter(template_names, template_list, st, threshold,
     if str(threshold_type) == str("absolute"):
         thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
-        thresholds = [threshold * np.median(np.abs(cccsum))
-                      for cccsum in cccsums]
+        if cores:
+            median_cores = min([cores, len(cccsums)])
+            if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
+                median_cores = 1
+            with ThreadPoolExecutor(max_workers=median_cores) as executor:
+                # Because numpy releases GIL threading can use multiple cores
+                medians = executor.map(_mad, cccsums)
+            thresholds = [threshold * median for median in medians]
+        else:
+            thresholds = [threshold * np.median(np.abs(cccsum))
+                          for cccsum in cccsums]
     else:
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     if peak_cores is None:

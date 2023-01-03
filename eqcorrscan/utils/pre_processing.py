@@ -800,6 +800,21 @@ def _quick_copy_stream(stream, deepcopy_data=True):
     return Stream(new_traces)
 
 
+def _stream_quick_select(stream, seed_id):
+    """
+    4x quicker selection of traces in stream by full Seed-ID. Does not support
+    wildcards or selection by network/station/location/channel alone.
+    """
+    net, sta, loc, chan = seed_id.split('.')
+    stream = Stream(
+        [tr for tr in stream
+         if (tr.stats.network == net and
+             tr.stats.station == sta and
+             tr.stats.location == loc and
+             tr.stats.channel == chan)])
+    return stream
+
+
 def _prep_data_for_correlation(stream, templates, template_names=None,
                                force_stream_epoch=True):
     """
@@ -967,7 +982,6 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     for template_name in incomplete_templates:
         template = _out[template_name]
         template_starttime = min(tr.stats.starttime for tr in template)
-        # out_template = nan_template.copy()
         out_template = _quick_copy_stream(nan_template, deepcopy_data=False)
 
         # Select traces very quickly: assume that trace order does not change,
