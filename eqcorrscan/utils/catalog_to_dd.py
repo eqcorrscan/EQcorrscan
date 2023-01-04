@@ -520,14 +520,10 @@ def stream_dict_to_shared_mem(stream_dict):
     for (key, stream) in stream_dict.items():
         for tr in stream:
             data_array = tr.data
-            # Create valid filename for shared memory from resource ID and trac
-            shm_name = str(key) + tr.id + str(tr.stats.starttime)
-            shm_name = shm_name.replace('/', '_').replace(':', '+')
-            # make the name filename unique
-            shm_name = shm_name + '_' + str(uuid.uuid4())
+            # Let SharedMemory create suitable filename itself:
             shm = shared_memory.SharedMemory(
-                name=shm_name, create=True, size=data_array.nbytes)
-            shm_name_list.append(shm_name)
+                create=True, size=data_array.nbytes)
+            shm_name_list.append(shm.name)
             # Now create a NumPy array backed by shared memory
             shm_data_shape = data_array.shape
             shm_data_dtype = data_array.dtype
@@ -537,7 +533,7 @@ def stream_dict_to_shared_mem(stream_dict):
             shared_data_array[:] = data_array[:]
             # tr.data = shared_data_array
             tr.data = np.array([])
-            tr.shared_memory_name = shm_name
+            tr.shared_memory_name = shm.name
             shm_data_shapes.append(shm_data_shape)
             shm_data_dtypes.append(shm_data_dtype)
     shm_data_shapes = list(set(shm_data_shapes))
