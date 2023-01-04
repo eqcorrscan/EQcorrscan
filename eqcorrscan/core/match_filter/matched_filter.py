@@ -16,6 +16,7 @@ from timeit import default_timer
 from collections import defaultdict
 
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
@@ -24,7 +25,7 @@ from eqcorrscan.core.match_filter.helpers import (
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.pre_processing import (
-    dayproc, shortproc, _prep_data_for_correlation)
+    dayproc, shortproc, _prep_data_for_correlation, _quick_copy_stream)
 
 Logger = logging.getLogger(__name__)
 
@@ -338,8 +339,8 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             kwargs.update({'endtime': _endtime})
         else:
             _endtime = kwargs['starttime'] + 86400
-        chunk_stream = stream.slice(starttime=kwargs['starttime'],
-                                    endtime=_endtime).copy()
+        chunk_stream = _quick_copy_stream(
+            stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
         Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
                      f"and {_endtime}")
         if len(chunk_stream) == 0:
@@ -394,6 +395,13 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             "because it is shorter than a chunk of {2} s".format(
                 _endtime, stream[0].stats.endtime, process_length))
     return processed_streams
+
+
+def _mad(cccsum):
+    """
+    Internal helper to compute MAD-thresholds in parallel.
+    """
+    return np.median(np.abs(cccsum))
 
 
 def match_filter(template_names, template_list, st, threshold,
@@ -680,8 +688,8 @@ def match_filter(template_names, template_list, st, threshold,
     if copy_data:
         # Copy the stream here because we will muck about with it
         Logger.info("Copying data to keep your input safe")
-        stream = st.copy()
-        templates = [t.copy() for t in template_list]
+        stream = _quick_copy_stream(st)
+        templates = [_quick_copy_stream(t) for t in template_list]
         _template_names = template_names.copy()  # This can be a shallow copy
     else:
         stream, templates, _template_names = st, template_list, template_names
@@ -715,8 +723,17 @@ def match_filter(template_names, template_list, st, threshold,
     if str(threshold_type) == str("absolute"):
         thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
-        thresholds = [threshold * np.median(np.abs(cccsum))
-                      for cccsum in cccsums]
+        if cores:
+            median_cores = min([cores, len(cccsums)])
+            if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
+                median_cores = 1
+            with ThreadPoolExecutor(max_workers=median_cores) as executor:
+                # Because numpy releases GIL threading can use multiple cores
+                medians = executor.map(_mad, cccsums)
+            thresholds = [threshold * median for median in medians]
+        else:
+            thresholds = [threshold * np.median(np.abs(cccsum))
+                          for cccsum in cccsums]
     else:
         thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
     if peak_cores is None:
