@@ -834,7 +834,7 @@ class Party(object):
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
-                 horizontal_chans=['E', 'N', '1', '2', '3'],
+                 horizontal_chans=['E', 'N', '1', '2'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,

@@ -56,7 +56,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  plotdir=None, return_event=False, min_snr=None,
                  parallel=False, num_cores=False, save_progress=False,
                  skip_short_chans=False, vertical_chans=['Z'],
-                 horizontal_chans=['E', 'N', '1', '2', '3'], **kwargs):
+                 horizontal_chans=['E', 'N', '1', '2'], **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -599,7 +599,7 @@ def _rms(array):
 def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
                   plotdir=None, vertical_chans=['Z'],
-                  horizontal_chans=['E', 'N', '1', '2', '3']):
+                  horizontal_chans=['E', 'N', '1', '2']):
     """
     Master function to generate a multiplexed template for a single event.
 

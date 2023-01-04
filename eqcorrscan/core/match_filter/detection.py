@@ -352,7 +352,7 @@ class Detection(object):
 
     def extract_stream(self, stream, length, prepick, all_vert=False,
                        all_horiz=False, vertical_chans=['Z'],
-                       horizontal_chans=['E', 'N', '1', '2', '3']):
+                       horizontal_chans=['E', 'N', '1', '2']):
         """
         Extract a cut stream of a given length around the detection.
 
