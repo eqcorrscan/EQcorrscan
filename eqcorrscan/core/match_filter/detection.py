@@ -23,6 +23,7 @@ from obspy.core.event import (
     Origin)
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 Logger = logging.getLogger(__name__)
 
@@ -284,7 +285,8 @@ class Detection(object):
                     new_pick.phase_hint = template_pick[0].phase_hint
                 else:
                     # Multiple picks for this trace in template
-                    similar_traces = template_st.select(id=tr.id)
+                    # similar_traces = template_st.select(id=tr.id)
+                    similar_traces = _stream_quick_select(template_st, tr.id)
                     similar_traces.sort()
                     _index = similar_traces.traces.index(tr)
                     try:
@@ -348,7 +350,9 @@ class Detection(object):
         self.event = ev
         return self
 
-    def extract_stream(self, stream, length, prepick):
+    def extract_stream(self, stream, length, prepick, all_vert=False,
+                       all_horiz=False, vertical_chans=['Z'],
+                       horizontal_chans=['E', 'N', '1', '2']):
         """
         Extract a cut stream of a given length around the detection.
 
@@ -374,7 +378,17 @@ class Detection(object):
             pick = [
                 p for p in self.event.picks
                 if p.waveform_id.station_code == station and
-                p.waveform_id.channel_code == channel]
+                p.waveform_id.channel_code[0:-1] == channel[0:-1]]
+            # Allow picks to be transferred to other vertical/horizontal chans
+            if all_vert and channel[-1] in vertical_chans:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code[-1] in vertical_chans]
+            elif all_horiz and channel[-1] in horizontal_chans:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code[-1] in horizontal_chans]
+            else:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
                 Logger.info("No pick for {0}.{1}".format(station, channel))
                 continue
