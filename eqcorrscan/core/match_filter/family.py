@@ -305,7 +305,8 @@ class Family(object):
 
         .. rubric:: Example
 
-        >>> from eqcorrscan import Template, Detection
+        >>> from eqcorrscan import Template, Detection, Family
+        >>> from obspy import UTCDateTime
         >>> family = Family(
         ...     template=Template(name='a'), detections=[
         ...     Detection(template_name='a', detect_time=UTCDateTime(0),
@@ -507,8 +508,8 @@ class Family(object):
         return
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
-                 min_cc_from_mean_cc_factor=None,
-                 horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                 min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
@@ -793,7 +794,9 @@ class Family(object):
             processed_stream = stream.merge()
         return processed_stream.split()
 
-    def extract_streams(self, stream, length, prepick):
+    def extract_streams(self, stream, length, prepick, all_vert=False,
+                        all_horiz=False, vertical_chans=['Z'],
+                        horizontal_chans=['E', 'N', '1', '2']):
         """
         Generate a dictionary of cut streams around detections.
 
@@ -811,7 +814,9 @@ class Family(object):
         """
         # Splitting and merging to remove trailing and leading masks
         return {d.id: d.extract_stream(
-            stream=stream, length=length, prepick=prepick).split().merge()
+            stream=stream, length=length, prepick=prepick, all_vert=all_vert,
+            all_horiz=all_horiz, vertical_chans=vertical_chans,
+            horizontal_chans=horizontal_chans).split().merge()
             for d in self.detections}
 
 

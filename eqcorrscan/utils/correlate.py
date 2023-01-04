@@ -32,6 +32,7 @@ from packaging import version
 
 from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils import FMF_INSTALLED
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 
 Logger = logging.getLogger(__name__)
@@ -196,7 +197,7 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
         cccsums = np.sum(xcorrs, axis=0)
     else:
         cccsums = np.asarray(xcorrs).swapaxes(0, 1)
-    no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+    no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
@@ -248,7 +249,7 @@ def _general_serial(func):
                 cccsums = np.sum([cccsums, tr_cc], axis=0)
             else:
                 cccsums[:, chan_no] = tr_cc
-            no_chans += tr_chans.astype(np.int)
+            no_chans += tr_chans.astype(int)
             for chan, state in zip(chans, tr_chans):
                 if state:
                     chan.append(seed_id)
@@ -703,7 +704,7 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
             cccsums = np.sum([cccsums, tr_cc], axis=0)
         else:
             cccsums[:, chan_no] = tr_cc
-        no_chans += tr_chans.astype(np.int)
+        no_chans += tr_chans.astype(int)
         for chan, state in zip(chans, tr_chans):
             if state:
                 chan.append(seed_id)
@@ -758,7 +759,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
         stack=stack, *args, **kwargs)
-    no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+    no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
@@ -1061,7 +1062,7 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
 
     tr_chans = np.array([~np.isnan(template_dict[seed_id]).any(axis=1)
                          for seed_id in seed_ids])
-    no_chans = np.sum(np.array(tr_chans).astype(np.int), axis=0)
+    no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     # Note: FMF already returns the zeroed end of correlations - we don't
     # need to call _get_valid_correlation_sum
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
@@ -1127,7 +1128,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         temps_with_seed = [template[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
-        stream_channel = stream.select(id=seed_id.split('_')[0])[0]
+        stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
         # Normalize data to ensure no float overflow
         stream_data = stream_channel.data / (np.max(
             np.abs(stream_channel.data)) / 1e5)
