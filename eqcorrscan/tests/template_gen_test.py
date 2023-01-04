@@ -458,7 +458,8 @@ class TestEdgeGen(unittest.TestCase):
 
     def test_swin_all_and_all_horiz(self):
         template = _template_gen(self.picks, self.st.copy(), 10, swin='all',
-                                 all_horiz=True)
+                                 all_horiz=True,
+                                 horizontal_chans=['E', 'N', '1', '2', '3'])
         for pick in self.picks:
             if pick.phase_hint == 'S':
                 self.assertGreaterEqual(
