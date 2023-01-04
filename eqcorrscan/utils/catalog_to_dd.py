@@ -12,7 +12,6 @@ import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
 from multiprocessing import cpu_count, Pool, shared_memory
-import uuid
 
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
