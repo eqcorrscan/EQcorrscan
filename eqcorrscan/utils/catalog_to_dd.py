@@ -10,6 +10,7 @@ Functions to generate hypoDD input files from catalogs.
 """
 import numpy as np
 import logging
+import warnings
 from collections import namedtuple, defaultdict, Counter
 from obspy.core import stream
 from multiprocessing import cpu_count, Pool
@@ -233,7 +234,8 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate, max_workers=1, **kwargs):
+                             shift_len, interpolate, max_workers=1,
+                             *args, **kwargs):
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(
@@ -404,17 +406,20 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     return differential_times
 
 
-def _compute_dt(sparse_catalog, master, min_link, event_id_mapper):
+def _compute_dt(sparse_catalog, master, min_link,
+                event_id_mapper, check_full_seed):
     """
     Inner function to compute differential times between a catalog and a
     master event.
     """
     return [_make_event_pair(
         sparse_event=event, master=master, event_id_mapper=event_id_mapper,
-        min_link=min_link) for event in sparse_catalog]
+        min_link=min_link, check_full_seed=check_full_seed)
+        for event in sparse_catalog]
 
 
-def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
+def _make_event_pair(sparse_event, master, event_id_mapper, min_link,
+                     check_full_seed=False):
     """
     Make an event pair for a given event and master event.
     """
@@ -425,9 +430,14 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
         if master_pick.phase_hint and \
                 master_pick.phase_hint not in "PS":  # pragma: no cover
             continue
-        matched_picks = [p for p in sparse_event.picks
-                         if p.station == master_pick.station
-                         and p.phase_hint == master_pick.phase_hint]
+        if check_full_seed:
+            matched_picks = [p for p in sparse_event.picks
+                             if p.seed_id == master_pick.seed_id
+                             and p.phase_hint == master_pick.phase_hint]
+        else:
+            matched_picks = [p for p in sparse_event.picks
+                             if p.station == master_pick.station
+                             and p.phase_hint == master_pick.phase_hint]
         for matched_pick in matched_picks:
             differential_times.obs.append(
                 _DTObs(station=master_pick.station,
@@ -482,7 +492,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
                                all_horiz=False, max_workers=None,
-                               max_trace_workers=1, *args, **kwargs):
+                               max_trace_workers=1, check_full_seed=False,
+                               *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -547,6 +558,12 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         quicker for few events with many or very long traces and requires less
         memory.
     """
+    if not check_full_seed:
+        warnings.warn(
+            "Deprecation warning: check_full_seed will default to"
+            "True in a future release. Check the docs page here "
+            "for how this will affect you: "
+            "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
@@ -573,7 +590,10 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         sparse_catalog = _prep_horiz_picks(sparse_catalog, stream_dict,
                                            event_id_mapper)
 
-    additional_args = dict(min_link=min_link, event_id_mapper=event_id_mapper)
+    additional_args = dict(
+        min_link=min_link,
+        event_id_mapper=event_id_mapper,
+        check_full_seed=check_full_seed)
     if correlation:
         differential_times = {}
         additional_args.update(correlation_kwargs)

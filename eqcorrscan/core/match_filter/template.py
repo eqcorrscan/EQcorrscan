@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import logging
+import warnings
 
 import numpy as np
 from obspy import Stream
@@ -535,7 +536,8 @@ class Template(object):
                   length, prepick, swin="all", process_len=86400,
                   all_horiz=False, delayed=True, plot=False, plotdir=None,
                   min_snr=None, parallel=False, num_cores=False,
-                  skip_short_chans=False, **kwargs):
+                  skip_short_chans=False, check_full_seed=False,
+                  **kwargs):
         """
         Construct a template using a given method.
 
@@ -600,6 +602,13 @@ class Template(object):
             Whether to ignore channels that have insufficient length data or
             not. Useful when the quality of data is not known, e.g. when
             downloading old, possibly triggered data from a datacentre
+        :type check_full_seed: bool
+        :param check_full_seed:
+            If True, will check for duplicate traces against the full SEED id,
+            including Network, Station, Location and Channel. If False
+            (default), will check only against Station and Channel. This
+            behaviour was originally necessary to cope with some software
+            (i.e. SEISAN) not storing picks with full SEED info.
 
         .. note::
 
@@ -644,6 +653,12 @@ class Template(object):
         Tribe.construct instead.
 
         """
+        if not check_full_seed:
+            warnings.warn(
+                "Deprecation warning: check_full_seed will default to"
+                "True in a future release. Check the docs page here "
+                "for how this will affect you: "
+                "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
         if method in ['from_meta_file', 'from_client', 'multi_template_gen']:
             raise NotImplementedError('Method is not supported, '
                                       'use Tribe.construct instead.')

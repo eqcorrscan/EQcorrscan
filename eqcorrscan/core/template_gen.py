@@ -20,6 +20,7 @@ repeating events.
 import numpy as np
 import logging
 import os
+import warnings
 
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
@@ -56,7 +57,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  plotdir=None, return_event=False, min_snr=None,
                  parallel=False, num_cores=False, save_progress=False,
                  skip_short_chans=False, vertical_chans=['Z'],
-                 horizontal_chans=['E', 'N', '1', '2'], **kwargs):
+                 horizontal_chans=['E', 'N', '1', '2'],
+                 check_full_seed=False, **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -131,6 +133,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     :param horizontal_chans:
         List of channel endings for horizontal channels, on which S-picks are
         accepted.
+    :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check the trace header against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel. This behavior was
+        originally necessary to cope with some software (i.e. SEISAN) not
+        storing picks with full SEED info.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
@@ -244,6 +253,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
+    if not check_full_seed:
+        warnings.warn(
+            "Deprecation warning: check_full_seed will default to"
+            "True in a future release. Check the docs page here "
+            "for how this will affect you: "
+            "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
     client_map = {'from_client': 'fdsn'}
     assert method in ('from_client', 'from_meta_file', 'from_sac')
     if not isinstance(swin, list):
@@ -403,7 +418,8 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
                 all_vert=all_vert, all_horiz=all_horiz, delayed=delayed,
                 min_snr=min_snr, vertical_chans=vertical_chans,
-                horizontal_chans=horizontal_chans, plotdir=plotdir)
+                horizontal_chans=horizontal_chans, plotdir=plotdir,
+                check_full_seed=check_full_seed)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -599,7 +615,8 @@ def _rms(array):
 def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
                   plotdir=None, vertical_chans=['Z'],
-                  horizontal_chans=['E', 'N', '1', '2']):
+                  horizontal_chans=['E', 'N', '1', '2'],
+                  check_full_seed=False):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -656,6 +673,13 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
     :param horizontal_chans:
         List of channel endings for horizontal channels, on which S-picks are
         accepted.
+    :type check_full_seed: bool
+    :param check_full_seed:
+        If True, will check the trace header against the full SEED id,
+        including Network, Station, Location and Channel. If False (default),
+        will check only against Station and Channel. This behavior was
+        originally necessary to cope with some software (i.e. SEISAN) not
+        storing picks with full SEED info.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
@@ -736,11 +760,29 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
     starttimes = []
     for _swin in swin:
         for tr in st:
-            starttime = {'station': tr.stats.station,
-                         'channel': tr.stats.channel, 'picks': []}
-            station_picks = [pick for pick in picks_copy
-                             if pick.waveform_id.station_code ==
-                             tr.stats.station]
+            if check_full_seed:
+                starttime = {'network': tr.stats.network,
+                             'station': tr.stats.station,
+                             'location': tr.stats.location,
+                             'channel': tr.stats.channel,
+                             'picks': []}
+                station_picks = [pick for pick in picks_copy
+                                 if pick.waveform_id.network_code ==
+                                 tr.stats.network and
+                                 pick.waveform_id.station_code ==
+                                 tr.stats.station and
+                                 pick.waveform_id.location_code ==
+                                 tr.stats.location]
+            else:
+                Logger.warning(
+                    'Not checking full SEED id compatibility between' +
+                    ' picks and waveforms. Checking full net.sta.loc.chan ' +
+                    'compatibility will be default behavior in future release')
+                starttime = {'station': tr.stats.station,
+                             'channel': tr.stats.channel, 'picks': []}
+                station_picks = [pick for pick in picks_copy
+                                 if pick.waveform_id.station_code ==
+                                 tr.stats.station]
             # Cope with missing phase_hints
             if _swin != "all":
                 station_picks = [p for p in station_picks if p.phase_hint]
@@ -817,8 +859,16 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
     for _starttime in starttimes:
         Logger.info(f"Working on channel {_starttime['station']}."
                     f"{_starttime['channel']}")
-        tr = st.select(
-            station=_starttime['station'], channel=_starttime['channel'])[0]
+        if check_full_seed:
+            tr = st.select(
+                network=_starttime['network'],
+                station=_starttime['station'],
+                location=_starttime['location'],
+                channel=_starttime['channel'])[0]
+        else:
+            tr = st.select(
+                station=_starttime['station'],
+                channel=_starttime['channel'])[0]
         Logger.info(f"Found Trace {tr}")
         used_tr = False
         for pick in _starttime['picks']:

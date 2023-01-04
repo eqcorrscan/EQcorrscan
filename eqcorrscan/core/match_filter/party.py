@@ -18,6 +18,7 @@ import shutil
 import tarfile
 import tempfile
 import logging
+import warnings
 from os.path import join
 
 import numpy as np
@@ -838,7 +839,7 @@ class Party(object):
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
-                 **kwargs):
+                 check_full_seed=False, **kwargs):
         """
         Compute picks based on cross-correlation alignment.
 
@@ -911,6 +912,13 @@ class Party(object):
             If False (default), errors will be raised if data are excessively
             gappy or are mostly zeros. If True then no error will be raised,
             but an empty trace will be returned (and not used in detection).
+        :type check_full_seed: bool
+        :param check_full_seed:
+            If True, will check for duplicate traces against the full SEED id,
+            including Network, Station, Location and Channel. If False
+            (default), will check only against Station and Channel. This
+            behaviour was originally necessary to cope with some software
+            (i.e. SEISAN) not storing picks with full SEED info.
 
         :returns:
             Catalog of events with picks.  No origin information is included.
@@ -936,6 +944,12 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
+        if not check_full_seed:
+            warnings.warn(
+                "Deprecation warning: check_full_seed will default to"
+                "True in a future release. Check the docs page here "
+                "for how this will affect you: "
+                "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families
@@ -970,7 +984,8 @@ class Party(object):
                     export_cc=export_cc, cc_dir=cc_dir,
                     parallel=parallel, process_cores=process_cores,
                     ignore_bad_data=ignore_bad_data,
-                    ignore_length=ignore_length, **kwargs)
+                    ignore_length=ignore_length,
+                    check_full_seed=check_full_seed, **kwargs)
         return catalog
 
     @staticmethod

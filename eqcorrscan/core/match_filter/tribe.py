@@ -19,6 +19,7 @@ import shutil
 import tarfile
 import tempfile
 import logging
+import warnings
 
 import numpy as np
 from obspy import Catalog, Stream, read, read_events
@@ -933,7 +934,8 @@ class Tribe(object):
                   length, prepick, swin="all", process_len=86400,
                   all_horiz=False, delayed=True, plot=False, plotdir=None,
                   min_snr=None, parallel=False, num_cores=False,
-                  skip_short_chans=False, save_progress=False, **kwargs):
+                  skip_short_chans=False, save_progress=False,
+                  check_full_seed=False, **kwargs):
         """
         Generate a Tribe of Templates.
 
@@ -1004,6 +1006,13 @@ class Tribe(object):
         :param save_progress:
             Whether to save the resulting party at every data step or not.
             Useful for long-running processes.
+        :type check_full_seed: bool
+        :param check_full_seed:
+            If True, will check for duplicate traces against the full SEED id,
+            including Network, Station, Location and Channel. If False
+            (default), will check only against Station and Channel. This
+            behaviour was originally necessary to cope with some software
+            (i.e. SEISAN) not storing picks with full SEED info.
 
         .. note::
             *Method specific arguments:*
@@ -1032,6 +1041,12 @@ class Tribe(object):
 
         .. Note:: Templates will be named according to their start-time.
         """
+        if not check_full_seed:
+            warnings.warn(
+                "Deprecation warning: check_full_seed will default to"
+                "True in a future release. Check the docs page here "
+                "for how this will affect you: "
+                "https://eqcorrscan.readthedocs.io/en/latest/faq.html")
         templates, catalog, process_lengths = template_gen.template_gen(
             method=method, lowcut=lowcut, highcut=highcut, length=length,
             filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
@@ -1039,7 +1054,7 @@ class Tribe(object):
             process_len=process_len, all_horiz=all_horiz, plotdir=plotdir,
             delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
             num_cores=num_cores, skip_short_chans=skip_short_chans,
-            **kwargs)
+            check_full_seed=check_full_seed, **kwargs)
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()

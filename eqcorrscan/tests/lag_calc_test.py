@@ -93,7 +93,8 @@ class SyntheticTests(unittest.TestCase):
         shift_len = 0.2
         for family in self.party:
             detect_stream_dict = _prepare_data(
-                family=family, detect_data=self.data, shift_len=shift_len)
+                family=family, detect_data=self.data, shift_len=shift_len,
+                check_full_seed=False)
             self._prepare_data_checks(detect_stream_dict=detect_stream_dict,
                                       family=family, shift_len=shift_len)
 
@@ -103,7 +104,8 @@ class SyntheticTests(unittest.TestCase):
                   self.party[0][0].detect_time + 3)
         shift_len = 0.2
         detect_stream_dict = _prepare_data(
-            family=self.party[0], detect_data=data, shift_len=shift_len)
+            family=self.party[0], detect_data=data, shift_len=shift_len,
+            check_full_seed=False)
         self.assertEqual(len(detect_stream_dict), 1)
 
     def test_prepare_data_masked(self):
@@ -113,7 +115,8 @@ class SyntheticTests(unittest.TestCase):
         data.merge()
         shift_len = 0.2
         detect_stream_dict = _prepare_data(
-            family=self.party[0], detect_data=data, shift_len=shift_len)
+            family=self.party[0], detect_data=data, shift_len=shift_len,
+            check_full_seed=False)
         short_key = self.party[0][0].id
         for key, value in detect_stream_dict.items():
             detection = [d for d in self.party[0] if d.id == key][0]
