@@ -30,6 +30,8 @@ import numpy as np
 import math
 from packaging import version
 
+from obspy import UTCDateTime
+
 from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils import FMF_INSTALLED
 from eqcorrscan.utils.pre_processing import _stream_quick_select
@@ -1119,7 +1121,9 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     stream.sort(['network', 'station', 'location', 'channel'])
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
-        t_starts.append(min([tr.stats.starttime for tr in template]))
+        t_starts.append(
+            UTCDateTime(ns=min([tr.stats.starttime.__dict__['_UTCDateTime__ns']
+                                for tr in template])))
     stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
@@ -1142,12 +1146,14 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
                   (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
-                int(round(template[i].stats.sampling_rate *
-                          (template[i].stats.starttime -
-                           t_starts[j]))) - stream_offset
-                for j, template in zip(range(len(templates)), templates)]
+                int(round(
+                    template[i].stats.sampling_rate *
+                    (template[i].stats.starttime.__dict__['_UTCDateTime__ns'] -
+                     t_starts[j].__dict__['_UTCDateTime__ns']) / 1e9)) -
+                stream_offset
+                for j, template in enumerate(templates)]
         else:
-            pad_list = [0 for _ in range(len(templates))]
+            pad_list = [0 for _ in templates]
         pad_dict.update({seed_id: pad_list})
 
     return stream_dict, template_dict, pad_dict, seed_ids
