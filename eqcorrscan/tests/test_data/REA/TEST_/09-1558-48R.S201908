@@ -1,0 +1,52 @@
+ 2019 0809 1558 48.1 RQ 78.038   7.318 29.5  BER 11 .90 4.0wBER                1
+ GAP=103   BER  2.53       6.6    17.9 10.0  0.9089E+01 -0.5703E+02  0.1273E+01E
+ 2019-08-09-1558-47M.NNSN__038                                                 6
+ 643  SVALBARD REGION                                                          3
+ Calculated depth is uncertain, set to 10km                                    3
+ OLDACT:SPL 22-07-27 09:55 OP:fh   STATUS:               ID:20190809155848     3
+ Action:UPS 22-07-28 16:35 OP:fh   STATUS:               ID:20190809155848 S   3
+ OLDACT:ARX 22-08-01 11:49 OP:fh   STATUS:               ID:20190809155848 S   3
+ Action:SPL 22-08-01 11:49 OP:fh   STATUS:               ID:20190809155848 S   3
+ OLDACT:ARX 22-08-01 11:51 OP:fh   STATUS:               ID:20190809155848 S   3
+ Action:SPL 22-08-01 11:51 OP:fh   STATUS:               ID:20190809155848 S   3
+ Action:SPL 22-08-01 12:37 OP:fh   STATUS:               ID:20190809155848 S   I
+ OLDACT:ARX 22-08-01 12:37 OP:fh   STATUS:               ID:20190809155848 S   3
+ STAT COM NTLO IPHASE   W HHMM SS.SSS   PAR1  PAR2 AGA OPE  AIN  RES W  DIS CAZ7
+ OBIN3HH2      I          1559 10.890                                   161 219 
+ OBIN3HH1      ES         1559 27.290                      62.0-0.0510  161 219 
+ OBIN3HHH      ET         1600 25.130                      50.0-10.6 0  161 219 
+ OBIN1HDH      ET         1600 48.020                       0.0 2.13 0  177 315 
+ SPA0 HHZ       Pn        1559 18.190                      62.0 1.2810  209  81 
+ SPA0 HHZ       BAZ-Pn    1559 18.190  259.5  13.9              -11.    209  81 
+ SPA0 HHE       BAZ-Sn    1559 39.650  265.9  14.4               -4.    209  81 
+ SPA0 HHE       Sn        1559 39.650                      62.0 1.4510  209  81 
+ HOPENHHZ      EP         1559 48.940                      59.0 0.4110  465 103 
+ HOPENHHE      ES         1600 33.720                      59.0 0.4910  465 103 
+ HOPENHHZ       IAML      1600 35.510   39.1  0.24                      465 103 
+ NOR  BHZ      EP         1600 06.470                      59.0 0.3410  611 321 
+ NOR  BHE       Sn        1601 05.890                      62.0 0.8710  611 321 
+ DAG  BHZ      EP         1600 11.400                      59.0 1.4210  642 270 
+ DAG  BHE      ES         1601 10.810                      59.0 0.2610  642 270 
+ DBG  BHZ       Pn        1600 34.550                      62.0 0.0810  833 254 
+ DBG  BHE       Sn        1601 52.100                      62.0-1.0710  833 254 
+ ARA0 SHZ       Sn      4 1602 46.290                      62.0-3.41 0 1095 140 
+ ARA0 SHZ       BAZ-Sn  4 1602 46.290  335.2  19.0               -2.   1095 140 
+ KBS  HHZ IU10  IAML      1559 23.970  137.0  0.20                      142  44 
+ KBS  HHZ IU10 EP         1559 08.097      C       BER fh                       
+ KBS  HH1 IU10 ES         1559 21.879              BER fh                       
+ BRBA HHZ NO00  IAML      1559 31.610  124.1  0.24                      160  86 
+ BRBA HHZ NO00 EP         1559 10.715              BER fh                       
+ BRBA HHN NO00 ES         1559 26.341              BER fh                       
+ HSPB HHZ PL    IAML      1559 46.140   42.1  0.34                      229 116 
+ HSPB HHZ PL   EP         1559 19.781              BER fh                       
+ HSPB HHN PL   E          1559 37.345              BER fh                       
+ HSPB HHN PL   ES         1559 42.057              BER fh                       
+ OBIN1HHZ 5F00  IAML      1559 31.450  715.9  0.14                      177 315 
+ OBIN1HHZ 5F00  A         1559 31.450  715.9  0.14                      177 315 
+ OBIN1HHZ 5F00  IAML      1559 31.580 1010.2  0.14 BER fh               177 315 
+ OBIN1HHZ 5F00 IP         1559 11.951              BER fh                       
+ OBIN1HH2 5F00 ES         1559 30.318              BER fh                       
+ OBIN2HH2 5F00 ES         1559 01.118              BER fh                       
+ OBIN2HDH 5F00 E          1559 19.780                                  41.8 279 
+ OBIN2HDH 5F00 IP         1558 55.156              BER fh                       
+                                                                                
