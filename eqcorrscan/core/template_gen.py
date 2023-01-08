@@ -53,10 +53,11 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin="all", process_len=86400,
-                 all_horiz=False, delayed=True, plot=False, plotdir=None,
-                 return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, skip_short_chans=False,
-                 **kwargs):
+                 all_vert=False, all_horiz=False, delayed=True, plot=False,
+                 plotdir=None, return_event=False, min_snr=None,
+                 parallel=False, num_cores=False, save_progress=False,
+                 skip_short_chans=False, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'], **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -83,6 +84,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one of
@@ -120,18 +125,26 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         Whether to ignore channels that have insufficient length data or not.
         Useful when the quality of data is not known, e.g. when downloading
         old, possibly triggered data from a datacentre
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. warning::
         If there is no phase_hint included in picks, and swin=all, all channels
@@ -389,8 +402,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
-                plotdir=plotdir)
+                all_vert=all_vert, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr, vertical_chans=vertical_chans,
+                horizontal_chans=horizontal_chans, plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -583,9 +597,10 @@ def _rms(array):
     return np.sqrt(np.mean(np.square(array)))
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05,
+def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  plotdir=None):
+                  plotdir=None, vertical_chans=['Z'],
+                  horizontal_chans=['E', 'N', '1', '2']):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -608,6 +623,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param prepick:
         Length in seconds to extract before the pick time default is 0.05
         seconds.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one
@@ -631,18 +650,26 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. note::
         swin argument: Setting to `P` will return only data for channels
@@ -736,13 +763,18 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
-                if all_horiz and tr.stats.channel[-1] in ['1', '2', '3',
-                                                          'N', 'E']:
+                if all_vert and tr.stats.channel[-1] in vertical_chans:
+                    # Get all picks on vertical channels
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code[-1] in
+                        vertical_chans]
+                elif all_horiz and tr.stats.channel[-1] in horizontal_chans:
                     # Get all picks on horizontal channels
                     channel_pick = [
                         pick for pick in station_picks
                         if pick.waveform_id.channel_code[-1] in
-                        ['1', '2', '3', 'N', 'E']]
+                        horizontal_chans]
                 else:
                     channel_pick = [
                         pick for pick in station_picks
@@ -752,8 +784,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P' and
-                          pick.waveform_id.channel_code == tr.stats.channel]
+                          if pick.phase_hint.upper()[0] == 'P']
+                if not all_vert:
+                    p_pick = [pick for pick in p_pick
+                              if pick.waveform_id.channel_code ==
+                              tr.stats.channel]
                 if len(p_pick) == 0:
                     Logger.debug(
                         f"No picks with phase_hint P "
@@ -761,7 +796,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
-                if tr.stats.channel[-1] in ['Z', 'U']:
+                if tr.stats.channel[-1] in vertical_chans:
                     continue
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
