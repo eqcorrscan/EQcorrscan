@@ -1129,7 +1129,7 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     # pull common channels out of streams and templates and put in dicts
     for i, seed_id in enumerate(seed_ids):
-        temps_with_seed = [template[i].data for template in templates]
+        temps_with_seed = [template.traces[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
         stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
@@ -1143,12 +1143,13 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         # pad_list can become 0. 0-1 = -1; which is problematic.
         stream_offset = int(
             math.floor(stream_channel.stats.sampling_rate *
-                  (stream_channel.stats.starttime - stream_start)))
+                       (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
                 int(round(
-                    template[i].stats.sampling_rate *
-                    (template[i].stats.starttime.__dict__['_UTCDateTime__ns'] -
+                    template.traces[i].stats.__dict__['sampling_rate'] *
+                    (template.traces[i].stats.starttime.__dict__[
+                        '_UTCDateTime__ns'] -
                      t_starts[j].__dict__['_UTCDateTime__ns']) / 1e9)) -
                 stream_offset
                 for j, template in enumerate(templates)]
