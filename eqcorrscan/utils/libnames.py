@@ -49,7 +49,7 @@ def _load_cdll(name):
             errs.append(msg)
             Logger.debug(msg)
         else:
-            Logger.info(f"Loaded library from {libpath}")
+            Logger.debug(f"Loaded library from {libpath}")
             return cdll
     raise ImportError(
         "Could not load shared library {0} due to "

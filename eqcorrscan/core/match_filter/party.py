@@ -492,7 +492,7 @@ class Party(object):
 
     def decluster(self, trig_int, timing='detect', metric='avg_cor',
                   hypocentral_separation=None, min_chans=0,
-                  absolute_values=False):
+                  absolute_values=False, num_threads=None):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -529,6 +529,10 @@ class Party(object):
         :param absolute_values:
             Use the absolute value of the metric to choose the preferred
             detection.
+        :type num_threads: int
+        :param num_threads:
+            Number of threads to use for internal c-funcs if available.
+            Only valid if hypocentral_separation used.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -621,7 +625,8 @@ class Party(object):
             peaks_out = decluster_distance_time(
                 peaks=detect_vals, index=detect_times,
                 trig_int=trig_int * 10 ** 6, catalog=catalog,
-                hypocentral_separation=hypocentral_separation)
+                hypocentral_separation=hypocentral_separation,
+                num_threads=num_threads)
         else:
             peaks_out = decluster(
                 peaks=detect_vals, index=detect_times,
@@ -644,6 +649,7 @@ class Party(object):
                 template=template,
                 detections=[d for d in declustered_detections
                             if d.template_name == template_name]))
+        # TODO: this might be better changing the list of families in place.
         self.families = new_families
         return self
 

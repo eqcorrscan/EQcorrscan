@@ -14,6 +14,8 @@
     4x speedup in adding prepick time)
 * core.match_filter.template
   - new quick_group_templates function for 50x quicker template grouping.
+  - Templates with nan channels will be considered equal to other templates with shared
+  nan channels.
 * utils.pre_processing
   - `_prep_data_for_correlation`: 3x speedup for filling NaN-traces in templates
   - New function ``quick_trace_select` for a very efficient selection of trace
