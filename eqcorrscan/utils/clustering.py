@@ -27,8 +27,6 @@ from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
 from eqcorrscan.utils.libnames import _load_cdll
 
 
-UTILSLIB = _load_cdll('libutils')
-
 Logger = logging.getLogger(__name__)
 
 
@@ -914,7 +912,9 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     """
     from math import radians
 
-    UTILSLIB.remove_unclustered.argtypes = [
+    utilslib = _load_cdll('libutils')
+
+    utilslib.remove_unclustered.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
@@ -925,7 +925,7 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
         np.ctypeslib.ndpointer(dtype=np.uint8,
                                flags='C_CONTIGUOUS'),
         ctypes.c_float, ctypes.c_int]
-    UTILSLIB.remove_unclustered.restype = ctypes.c_int
+    utilslib.remove_unclustered.restype = ctypes.c_int
 
     # Initialize square matrix
     mask = np.ascontiguousarray(np.zeros(len(catalog), dtype=np.uint8))
@@ -948,7 +948,7 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     if num_threads == 0:
         num_threads = 1
 
-    ret = UTILSLIB.remove_unclustered(
+    ret = utilslib.remove_unclustered(
         latitudes, longitudes, depths, len(catalog), mask, distance_cutoff,
         num_threads)
 
@@ -975,7 +975,9 @@ def dist_mat_km(catalog, num_threads=None):
     :returns: distance matrix
     :rtype: :class:`numpy.ndarray`
     """
-    UTILSLIB.distance_matrix.argtypes = [
+    utilslib = _load_cdll('libutils')
+
+    utilslib.distance_matrix.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.float32,
@@ -986,7 +988,7 @@ def dist_mat_km(catalog, num_threads=None):
         np.ctypeslib.ndpointer(dtype=np.float32,
                                flags='C_CONTIGUOUS'),
         ctypes.c_int]
-    UTILSLIB.distance_matrix.restype = ctypes.c_int
+    utilslib.distance_matrix.restype = ctypes.c_int
 
     # Initialize square matrix
     dist_mat = np.zeros((len(catalog), len(catalog)), dtype=np.float32)
@@ -1007,7 +1009,7 @@ def dist_mat_km(catalog, num_threads=None):
     if num_threads == 0:
         num_threads = 1
 
-    ret = UTILSLIB.distance_matrix(
+    ret = utilslib.distance_matrix(
         latitudes, longitudes, depths, len(catalog), dist_mat, num_threads)
 
     if ret != 0:  # pragma: no cover
