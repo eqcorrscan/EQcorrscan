@@ -30,6 +30,8 @@ import numpy as np
 import math
 from packaging import version
 
+from obspy import UTCDateTime
+
 from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils import FMF_INSTALLED
 from eqcorrscan.utils.pre_processing import _stream_quick_select
@@ -354,8 +356,11 @@ def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
     """
     # TODO: This is potentially quite a slow way to do this.
     for i, cccsum in enumerate(cccsums):
-        max_moveout = max(value[i] for key, value in pad_dict.items()
-                          if key in used_seed_ids[i])
+        moveouts = [value[i] for key, value in pad_dict.items()
+                    if key in used_seed_ids[i]]
+        max_moveout = 0
+        if len(moveouts):
+            max_moveout = max(moveouts)
         if max_moveout:
             cccsum[-max_moveout:] = 0.0
     return cccsums
@@ -747,9 +752,25 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
+    max_threads = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
     num_cores_inner = kwargs.pop('cores', None)
     if num_cores_inner is None:
-        num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+        num_cores_inner = max_threads
+    num_cores_outer = kwargs.pop('cores_outer', 1)
+    if num_cores_outer > 1:
+        if num_cores_outer > len(stream):
+            Logger.info(
+                "More outer cores than channels, setting to {0}".format(
+                    len(stream)))
+            num_cores_outer = len(stream)
+        if num_cores_outer * num_cores_inner > max_threads:
+            Logger.info("More threads requested than exist, falling back to "
+                        "outer-loop parallelism")
+            num_cores_outer = min(max_threads, num_cores_outer)
+            if 2 * num_cores_outer < max_threads:
+                num_cores_inner = max_threads // num_cores_outer
+            else:
+                num_cores_inner = 1
 
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
@@ -758,7 +779,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        stack=stack, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -771,8 +792,17 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, stack=True, *args, **kwargs):
+def fftw_multi_normxcorr(
+    template_array,
+    stream_array,
+    pad_array,
+    seed_ids,
+    cores_inner,
+    cores_outer,
+    stack=True,
+    *args,
+    **kwargs
+):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -804,7 +834,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
-        ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
@@ -823,7 +853,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         fft-length
         used channels (stacked as per templates)
         pad array (stacked as per templates)
-        num thread inner
+        num threads inner
+        num threads outer
         variance warnings
         missed correlation warnings (usually due to gaps)
         stack option
@@ -843,10 +874,12 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     n_channels = len(seed_ids)
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
-    # In testing, 2**13 consistently comes out fastest - setting to
-    # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
-    fft_len = kwargs.get(
-        "fft_len", min(2 ** 13, next_fast_len(template_len + image_len - 1)))
+    fft_len = kwargs.get("fft_len")
+    if fft_len is None:
+        # In testing, 2**13 consistently comes out fastest - setting to
+        # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
+        # But this results in lots of chunks - 2 ** 17 is also good.
+        fft_len = min(2 ** 17, next_fast_len(template_len + image_len - 1))
     if fft_len < template_len:
         Logger.warning(
             f"FFT length of {fft_len} is shorter than the template, setting to"
@@ -886,7 +919,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np,
-        cores_inner, variance_warnings, missed_correlations, int(stack))
+        cores_inner, cores_outer, variance_warnings, missed_correlations,
+        int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret > 0:
@@ -1119,13 +1153,15 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     stream.sort(['network', 'station', 'location', 'channel'])
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
-        t_starts.append(min([tr.stats.starttime for tr in template]))
+        t_starts.append(
+            UTCDateTime(ns=min([tr.stats.starttime.__dict__['_UTCDateTime__ns']
+                                for tr in template])))
     stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     # pull common channels out of streams and templates and put in dicts
     for i, seed_id in enumerate(seed_ids):
-        temps_with_seed = [template[i].data for template in templates]
+        temps_with_seed = [template.traces[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
         stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
@@ -1139,15 +1175,18 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         # pad_list can become 0. 0-1 = -1; which is problematic.
         stream_offset = int(
             math.floor(stream_channel.stats.sampling_rate *
-                  (stream_channel.stats.starttime - stream_start)))
+                       (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
-                int(round(template[i].stats.sampling_rate *
-                          (template[i].stats.starttime -
-                           t_starts[j]))) - stream_offset
-                for j, template in zip(range(len(templates)), templates)]
+                int(round(
+                    template.traces[i].stats.__dict__['sampling_rate'] *
+                    (template.traces[i].stats.starttime.__dict__[
+                        '_UTCDateTime__ns'] -
+                     t_starts[j].__dict__['_UTCDateTime__ns']) / 1e9)) -
+                stream_offset
+                for j, template in enumerate(templates)]
         else:
-            pad_list = [0 for _ in range(len(templates))]
+            pad_list = [0 for _ in templates]
         pad_dict.update({seed_id: pad_list})
 
     return stream_dict, template_dict, pad_dict, seed_ids
