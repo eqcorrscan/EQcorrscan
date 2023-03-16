@@ -213,8 +213,8 @@ class TestCatalogMethods(unittest.TestCase):
                         cat_link = [pair for pair in diff_times_cat[master_id]
                                     if pair.event_id_2 == link.event_id_2][0]
                         if link.event_id_2 == link.event_id_1:
-                            # This is the event matched with itself, check that tt1
-                            # and tt2 are the same.
+                            # This is the event matched with itself, check
+                            # that tt1 and tt2 are the same.
                             for obs in link.obs:
                                 self.assertTrue(np.allclose(
                                     obs.tt1, obs.tt2, atol=0.000001))
