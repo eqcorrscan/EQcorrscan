@@ -10,6 +10,7 @@ Functions to cluster seismograms by a range of constraints.
 """
 import os
 import logging
+import ctypes
 from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
@@ -23,6 +24,8 @@ from eqcorrscan.utils.archive_read import read_data
 from eqcorrscan.utils.correlate import (
     get_array_xcorr, get_stream_xcorr, CorrelationError)
 from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
+from eqcorrscan.utils.libnames import _load_cdll
+
 
 Logger = logging.getLogger(__name__)
 
@@ -907,8 +910,6 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
     :returns: catalog
     :rtype: :class:`obspy.core.event.Catalog`
     """
-    import ctypes
-    from eqcorrscan.utils.libnames import _load_cdll
     from math import radians
 
     utilslib = _load_cdll('libutils')
@@ -974,9 +975,6 @@ def dist_mat_km(catalog, num_threads=None):
     :returns: distance matrix
     :rtype: :class:`numpy.ndarray`
     """
-    import ctypes
-    from eqcorrscan.utils.libnames import _load_cdll
-
     utilslib = _load_cdll('libutils')
 
     utilslib.distance_matrix.argtypes = [
