@@ -1000,7 +1000,7 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
             if len(template_channel) <= channel_index:
                 # out_template[channel_number].data = nan_channel  # quicker:
                 out_template.traces[channel_number].__dict__[
-                    'data'] = copy.deepcopy(nan_channel)
+                    'data'] = np.copy(nan_channel)
                 out_template.traces[channel_number].stats.__dict__[
                     'npts'] = template_length
                 out_template.traces[channel_number].stats.__dict__[
