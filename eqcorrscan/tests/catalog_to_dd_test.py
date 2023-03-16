@@ -127,7 +127,7 @@ class TestCatalogMethods(unittest.TestCase):
                 matched_pick = [
                     p for p in sparse_event.picks
                     if p.seed_id == pick.waveform_id.get_seed_string()
-                    and p.phase == pick.phase_hint]
+                    and p.phase_hint == pick.phase_hint]
                 self.assertEqual(len(matched_pick), 1)
                 self.assertEqual(
                     matched_pick[0].tt, pick.time - sparse_event.origin_time)
@@ -148,8 +148,8 @@ class TestCatalogMethods(unittest.TestCase):
         self.assertEqual(len(s_picks), len(sliced_stream["S"]))
         for stream in sliced_stream.values():
             for tr in stream:
-                self.assertEqual(
-                    tr.stats.endtime - tr.stats.starttime, extract_len)
+                self.assertEqual(tr.stats.npts,
+                                 extract_len * tr.stats.sampling_rate)
 
     def test_read_phase(self):
         """Function to test the phase reading function"""
@@ -196,34 +196,36 @@ class TestCatalogMethods(unittest.TestCase):
         short_cat = self.catalog[0:10]
         stream_dict = {event.resource_id.id: stream
                        for event, stream in zip(short_cat, self.streams)}
-        for interpolate in [True, False]:
-            diff_times, mapper = compute_differential_times(
-                catalog=short_cat, correlation=True, event_id_mapper=None,
-                max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
-                extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
-                interpolate=interpolate, include_master=True)
-            diff_times_cat, _ = compute_differential_times(
-                catalog=short_cat, correlation=False, event_id_mapper=mapper,
-                include_master=True)
-            self.assertEqual(len(diff_times), len(short_cat))
-            for master_id, linked in diff_times.items():
-                for link in linked:
-                    cat_link = [pair for pair in diff_times_cat[master_id]
-                                if pair.event_id_2 == link.event_id_2][0]
-                    if link.event_id_2 == link.event_id_1:
-                        # This is the event matched with itself, check that tt1
-                        # and tt2 are the same.
+        for weight_by_square in (True, False):
+            for interpolate in (True, False):
+                diff_times, mapper = compute_differential_times(
+                    catalog=short_cat, correlation=True, event_id_mapper=None,
+                    max_sep=8., min_link=0, min_cc=0.0,
+                    stream_dict=stream_dict, extract_len=2.0, pre_pick=0.5,
+                    shift_len=shift_len, interpolate=interpolate,
+                    include_master=True, weight_by_square=weight_by_square)
+                diff_times_cat, _ = compute_differential_times(
+                    catalog=short_cat, correlation=False,
+                    event_id_mapper=mapper, include_master=True)
+                self.assertEqual(len(diff_times), len(short_cat))
+                for master_id, linked in diff_times.items():
+                    for link in linked:
+                        cat_link = [pair for pair in diff_times_cat[master_id]
+                                    if pair.event_id_2 == link.event_id_2][0]
+                        if link.event_id_2 == link.event_id_1:
+                            # This is the event matched with itself, check
+                            # that tt1 and tt2 are the same.
+                            for obs in link.obs:
+                                self.assertTrue(np.allclose(
+                                    obs.tt1, obs.tt2, atol=0.000001))
                         for obs in link.obs:
-                            self.assertTrue(
-                                np.allclose(obs.tt1, obs.tt2, atol=0.000001))
-                    for obs in link.obs:
-                        cat_obs = [o for o in cat_link.obs
-                                   if o.station == obs.station and
-                                   o.phase == obs.phase][0]
-                        self.assertEqual(obs.tt1, cat_obs.tt1)
-                        self.assertLessEqual(
-                            abs(obs.tt2 - cat_obs.tt2), shift_len)
-                        self.assertLessEqual(obs.weight, 1.0)
+                            cat_obs = [o for o in cat_link.obs
+                                       if o.station == obs.station and
+                                       o.phase == obs.phase][0]
+                            self.assertEqual(obs.tt1, cat_obs.tt1)
+                            self.assertLessEqual(
+                                abs(obs.tt2 - cat_obs.tt2), shift_len)
+                            self.assertLessEqual(obs.weight, 1.0)
 
     def test_compute_correlations_strange_lengths(self):
         """ Check that streams with too short data are unused. PR #424 """
@@ -267,7 +269,14 @@ class TestCatalogMethods(unittest.TestCase):
     def test_write_catalog(self):
         # Contents checked elsewhere
         write_catalog(catalog=self.catalog, event_id_mapper=None,
-                      max_sep=8., min_link=8)
+                      max_sep=8., min_link=8, max_workers=1)
+        self.assertTrue(os.path.isfile("dt.ct"))
+        os.remove("dt.ct")
+
+    def test_write_catalog_parallel(self):
+        # Contents checked elsewhere
+        write_catalog(catalog=self.catalog, event_id_mapper=None,
+                      max_sep=8., min_link=8, max_workers=2)
         self.assertTrue(os.path.isfile("dt.ct"))
         os.remove("dt.ct")
 
@@ -282,6 +291,35 @@ class TestCatalogMethods(unittest.TestCase):
             max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
             extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
             interpolate=False)
+        self.assertTrue(os.path.isfile("dt.cc"))
+        os.remove('dt.cc')
+
+    def test_write_correlations_parallel_process(self):
+        # Contents checked elsewhere
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        stream_dict = {event.resource_id.id: stream
+                       for event, stream in zip(short_cat, self.streams)}
+        write_correlations(
+            catalog=short_cat, event_id_mapper=None,
+            max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+            extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+            interpolate=False, parallel_process=True, max_workers=2)
+        self.assertTrue(os.path.isfile("dt.cc"))
+        os.remove('dt.cc')
+
+    def test_write_correlations_parallel_trace_correlation(self):
+        # Contents checked elsewhere
+        shift_len = 2
+        short_cat = self.catalog[0:10]
+        stream_dict = {event.resource_id.id: stream
+                       for event, stream in zip(short_cat, self.streams)}
+        write_correlations(
+            catalog=short_cat, event_id_mapper=None,
+            max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
+            extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
+            interpolate=False, parallel_process=True, max_workers=1,
+            max_trace_workers=2)
         self.assertTrue(os.path.isfile("dt.cc"))
         os.remove('dt.cc')
 

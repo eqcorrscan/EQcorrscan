@@ -24,7 +24,6 @@ import os
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
 from obspy.clients.fdsn import Client as FDSNClient
-from obspy.clients.seishub import Client as SeisHubClient
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
@@ -53,18 +52,19 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin="all", process_len=86400,
-                 all_horiz=False, delayed=True, plot=False, plotdir=None,
-                 return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, skip_short_chans=False,
-                 **kwargs):
+                 all_vert=False, all_horiz=False, delayed=True, plot=False,
+                 plotdir=None, return_event=False, min_snr=None,
+                 parallel=False, num_cores=False, save_progress=False,
+                 skip_short_chans=False, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'], **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
     :type method: str
     :param method:
-        Template generation method, must be one of ('from_client',
-        'from_seishub', 'from_sac', 'from_meta_file'). - Each method requires
-        associated arguments, see note below.
+        Template generation method, must be one of ('from_client', 'from_sac',
+        'from_meta_file'). - Each method requires associated arguments, see
+        note below.
     :type lowcut: float
     :param lowcut: Low cut (Hz), if set to None will not apply a lowcut.
     :type highcut: float
@@ -83,6 +83,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one of
@@ -120,18 +124,26 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         Whether to ignore channels that have insufficient length data or not.
         Useful when the quality of data is not known, e.g. when downloading
         old, possibly triggered data from a datacentre
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. warning::
         If there is no phase_hint included in picks, and swin=all, all channels
@@ -150,11 +162,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             :param str client_id:
                 string passable by obspy to generate Client, or any object
                 with a `get_waveforms` method, including a Client instance.
-            :param `obspy.core.event.Catalog` catalog:
-                Catalog of events to generate template for
-            :param float data_pad: Pad length for data-downloads in seconds
-        - `from_seishub` requires:
-            :param str url: url to seishub database
             :param `obspy.core.event.Catalog` catalog:
                 Catalog of events to generate template for
             :param float data_pad: Pad length for data-downloads in seconds
@@ -237,13 +244,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
-    client_map = {'from_client': 'fdsn', 'from_seishub': 'seishub'}
-    assert method in ('from_client', 'from_seishub', 'from_meta_file',
-                      'from_sac')
+    client_map = {'from_client': 'fdsn'}
+    assert method in ('from_client', 'from_meta_file', 'from_sac')
     if not isinstance(swin, list):
         swin = [swin]
     process = True
-    if method in ['from_client', 'from_seishub']:
+    if method in ['from_client']:
         catalog = kwargs.get('catalog', Catalog())
         data_pad = kwargs.get('data_pad', 90)
         # Group catalog into days and only download the data once per day
@@ -262,9 +268,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                     "with a get_waveforms method"
                 )
             available_stations = []
-        else:
-            client = SeisHubClient(kwargs.get('url', None), timeout=10)
-            available_stations = client.waveform.get_station_ids()
     elif method == 'from_meta_file':
         if isinstance(kwargs.get('meta_file'), Catalog):
             catalog = kwargs.get('meta_file')
@@ -301,7 +304,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     else:
         all_channels = False
     for sub_catalog in sub_catalogs:
-        if method in ['from_seishub', 'from_client']:
+        if method in ['from_client']:
             Logger.info("Downloading data")
             st = _download_from_client(
                 client=client, client_type=client_map[method],
@@ -398,8 +401,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
-                plotdir=plotdir)
+                all_vert=all_vert, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr, vertical_chans=vertical_chans,
+                horizontal_chans=horizontal_chans, plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -507,7 +511,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 def _download_from_client(client, client_type, catalog, data_pad, process_len,
                           available_stations=[], all_channels=False):
     """
-    Internal function to handle downloading from either seishub or fdsn client
+    Internal function to handle downloading from fdsn client
     """
     st = Stream()
     catalog = Catalog(sorted(catalog, key=lambda e: e.origins[0].time))
@@ -541,10 +545,6 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
     dropped_pick_stations = 0
     for waveform_info in all_waveform_info:
         net, sta, chan, loc = waveform_info
-        if client_type == 'seishub' and sta not in available_stations:
-            Logger.error("Station not found in SeisHub DB")
-            dropped_pick_stations += 1
-            continue
         Logger.info('Downloading for start-time: {0} end-time: {1}'.format(
             starttime, endtime))
         Logger.debug('.'.join([net, sta, loc, chan]))
@@ -596,9 +596,10 @@ def _rms(array):
     return np.sqrt(np.mean(np.square(array)))
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05,
+def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  plotdir=None):
+                  plotdir=None, vertical_chans=['Z'],
+                  horizontal_chans=['E', 'N', '1', '2']):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -621,6 +622,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param prepick:
         Length in seconds to extract before the pick time default is 0.05
         seconds.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one
@@ -644,18 +649,26 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. note::
         swin argument: Setting to `P` will return only data for channels
@@ -728,26 +741,39 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
             station_picks = [pick for pick in picks_copy
                              if pick.waveform_id.station_code ==
                              tr.stats.station]
+            # Cope with missing phase_hints
+            if _swin != "all":
+                station_picks = [p for p in station_picks if p.phase_hint]
+
             if _swin == 'P_all':
                 p_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'P']
                 if len(p_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint P "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S_all':
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
                 if len(s_pick) == 0:
+                    Logger.debug(f"No picks with phase_hint S "
+                                 f"found for {tr.stats.station}")
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
-                if all_horiz and tr.stats.channel[-1] in ['1', '2', '3',
-                                                          'N', 'E']:
+                if all_vert and tr.stats.channel[-1] in vertical_chans:
+                    # Get all picks on vertical channels
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code[-1] in
+                        vertical_chans]
+                elif all_horiz and tr.stats.channel[-1] in horizontal_chans:
                     # Get all picks on horizontal channels
                     channel_pick = [
                         pick for pick in station_picks
                         if pick.waveform_id.channel_code[-1] in
-                        ['1', '2', '3', 'N', 'E']]
+                        horizontal_chans]
                 else:
                     channel_pick = [
                         pick for pick in station_picks
@@ -757,13 +783,19 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P' and
-                          pick.waveform_id.channel_code == tr.stats.channel]
+                          if pick.phase_hint.upper()[0] == 'P']
+                if not all_vert:
+                    p_pick = [pick for pick in p_pick
+                              if pick.waveform_id.channel_code ==
+                              tr.stats.channel]
                 if len(p_pick) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint P "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
-                if tr.stats.channel[-1] in ['Z', 'U']:
+                if tr.stats.channel[-1] in vertical_chans:
                     continue
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
@@ -773,6 +805,9 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                               tr.stats.channel]
                 starttime.update({'picks': s_pick})
                 if len(starttime['picks']) == 0:
+                    Logger.debug(
+                        f"No picks with phase_hint S "
+                        f"found for {tr.stats.station}.{tr.stats.channel}")
                     continue
             if not delayed:
                 starttime.update({'picks': [first_pick]})

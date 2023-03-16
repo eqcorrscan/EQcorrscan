@@ -21,6 +21,8 @@ from eqcorrscan.core.match_filter import (
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
 from eqcorrscan.core.match_filter.helpers import get_waveform_client
+from eqcorrscan.core.match_filter.template import quick_group_templates
+
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
@@ -1365,6 +1367,22 @@ class TestMatchObjectLight(unittest.TestCase):
         finally:
             if os.path.isfile('test_template.tgz'):
                 os.remove('test_template.tgz')
+
+    def test_template_grouping(self):
+        # PR #524
+        # Test that this works directly on the tribe - it should
+        tribe_len = len(self.tribe)
+        groups = quick_group_templates(self.tribe)
+        self.assertEqual(len(groups), 1)
+        # Add one copy of a template with a different processing length
+        t2 = self.tribe[0].copy()
+        t2.process_length -= 100
+        templates = [t2]
+        templates.extend(self.tribe.templates)
+        # Quick check that we haven't changed the tribe
+        self.assertEqual(len(self.tribe), tribe_len)
+        groups2 = quick_group_templates(templates)
+        self.assertEqual(len(groups2), 2)
 
     def test_party_io(self):
         """Test reading and writing party objects."""
