@@ -196,34 +196,36 @@ class TestCatalogMethods(unittest.TestCase):
         short_cat = self.catalog[0:10]
         stream_dict = {event.resource_id.id: stream
                        for event, stream in zip(short_cat, self.streams)}
-        for interpolate in [True, False]:
-            diff_times, mapper = compute_differential_times(
-                catalog=short_cat, correlation=True, event_id_mapper=None,
-                max_sep=8., min_link=0, min_cc=0.0, stream_dict=stream_dict,
-                extract_len=2.0, pre_pick=0.5, shift_len=shift_len,
-                interpolate=interpolate, include_master=True)
-            diff_times_cat, _ = compute_differential_times(
-                catalog=short_cat, correlation=False, event_id_mapper=mapper,
-                include_master=True)
-            self.assertEqual(len(diff_times), len(short_cat))
-            for master_id, linked in diff_times.items():
-                for link in linked:
-                    cat_link = [pair for pair in diff_times_cat[master_id]
-                                if pair.event_id_2 == link.event_id_2][0]
-                    if link.event_id_2 == link.event_id_1:
-                        # This is the event matched with itself, check that tt1
-                        # and tt2 are the same.
+        for weight_by_square in (True, False):
+            for interpolate in (True, False):
+                diff_times, mapper = compute_differential_times(
+                    catalog=short_cat, correlation=True, event_id_mapper=None,
+                    max_sep=8., min_link=0, min_cc=0.0,
+                    stream_dict=stream_dict, extract_len=2.0, pre_pick=0.5,
+                    shift_len=shift_len, interpolate=interpolate,
+                    include_master=True, weight_by_square=weight_by_square)
+                diff_times_cat, _ = compute_differential_times(
+                    catalog=short_cat, correlation=False,
+                    event_id_mapper=mapper, include_master=True)
+                self.assertEqual(len(diff_times), len(short_cat))
+                for master_id, linked in diff_times.items():
+                    for link in linked:
+                        cat_link = [pair for pair in diff_times_cat[master_id]
+                                    if pair.event_id_2 == link.event_id_2][0]
+                        if link.event_id_2 == link.event_id_1:
+                            # This is the event matched with itself, check
+                            # that tt1 and tt2 are the same.
+                            for obs in link.obs:
+                                self.assertTrue(np.allclose(
+                                    obs.tt1, obs.tt2, atol=0.000001))
                         for obs in link.obs:
-                            self.assertTrue(
-                                np.allclose(obs.tt1, obs.tt2, atol=0.000001))
-                    for obs in link.obs:
-                        cat_obs = [o for o in cat_link.obs
-                                   if o.station == obs.station and
-                                   o.phase == obs.phase][0]
-                        self.assertEqual(obs.tt1, cat_obs.tt1)
-                        self.assertLessEqual(
-                            abs(obs.tt2 - cat_obs.tt2), shift_len)
-                        self.assertLessEqual(obs.weight, 1.0)
+                            cat_obs = [o for o in cat_link.obs
+                                       if o.station == obs.station and
+                                       o.phase == obs.phase][0]
+                            self.assertEqual(obs.tt1, cat_obs.tt1)
+                            self.assertLessEqual(
+                                abs(obs.tt2 - cat_obs.tt2), shift_len)
+                            self.assertLessEqual(obs.weight, 1.0)
 
     def test_compute_correlations_strange_lengths(self):
         """ Check that streams with too short data are unused. PR #424 """
