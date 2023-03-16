@@ -57,7 +57,6 @@ class _StreamTestClient:
         return Catalog(events=[event])
 
 
-
 class TestTemplateGeneration(unittest.TestCase):
     """Test the reading a writing of pick info."""
     def test_sac_template_gen(self):
@@ -256,49 +255,6 @@ class TestTemplateGeneration(unittest.TestCase):
             self.assertLess(abs(tr.stats.starttime - (pick.time - 0.2)),
                             tr.stats.delta)
 
-    def test_seishub(self):
-        """Test the seishub method, use obspy default seishub client."""
-        import sys
-        if sys.version_info.major == 2:
-            from future.backports.urllib.request import URLError
-        else:
-            from urllib.request import URLError
-        t = UTCDateTime(2009, 9, 3)
-        test_cat = Catalog()
-        test_cat.append(Event())
-        test_cat[0].origins.append(Origin())
-        test_cat[0].origins[0].time = t
-        test_cat[0].origins[0].latitude = 45
-        test_cat[0].origins[0].longitude = 45
-        test_cat[0].origins[0].depth = 5000
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHZ', network_code='BW'),
-            phase_hint='PG', time=t + 2000))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHN', network_code='BW'),
-            phase_hint='SG', time=t + 2005))
-        test_cat[0].picks.append(Pick(
-            waveform_id=WaveformStreamID(
-                station_code='MANZ', channel_code='EHE', network_code='BW'),
-            phase_hint='SG', time=t + 2005.5))
-
-        test_url = "http://teide.geophysik.uni-muenchen.de:8080"
-
-        if sys.version_info.major == 3:
-            try:
-                template = template_gen(
-                    method="from_seishub", catalog=test_cat, url=test_url,
-                    lowcut=1.0, highcut=5.0, samp_rate=20, filt_order=4,
-                    length=3, prepick=0.5, swin='all', process_len=300)
-            except URLError:
-                pass
-        else:
-            pass
-        if 'template' in locals():
-            self.assertEqual(len(template), 3)
-
     def test_catalog_grouping(self):
         testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                     'test_data', 'REA', 'TEST_', '*.S??????')
@@ -408,6 +364,23 @@ class TestEdgeGen(unittest.TestCase):
         template = _template_gen(picks, self.st.copy(), 10)
         self.assertFalse(template)
 
+    def test_missing_phase_hints(self):
+        picks = copy.deepcopy(self.picks)
+        template = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertIn("WV03", {tr.stats.station for tr in template})
+        # Remove phase_hint for WV03 P pick
+        for pick in picks:
+            if pick.waveform_id.station_code == "WV03":
+                pick.phase_hint = None
+        template_2 = _template_gen(picks, self.st.copy(), 10, swin="P_all")
+        self.assertNotIn("WV03", {tr.stats.station for tr in template_2})
+        for tr in template:
+            if tr.stats.station == "WV03":
+                continue
+            # check that other than WV03 the template is the same
+            tr2 = template_2.select(id=tr.id)[0]
+            self.assertEqual(tr, tr2)
+
     def test_misc(self):
         template = _template_gen(self.picks, self.st.copy(), 10)
         self.assertEqual(len(template), len(self.picks))
@@ -485,7 +458,8 @@ class TestEdgeGen(unittest.TestCase):
 
     def test_swin_all_and_all_horiz(self):
         template = _template_gen(self.picks, self.st.copy(), 10, swin='all',
-                                 all_horiz=True)
+                                 all_horiz=True,
+                                 horizontal_chans=['E', 'N', '1', '2', '3'])
         for pick in self.picks:
             if pick.phase_hint == 'S':
                 self.assertGreaterEqual(
@@ -512,6 +486,57 @@ class TestEdgeGen(unittest.TestCase):
             client_id="GEONET", all_horiz=True, process_len=600,
             min_snr=5., skip_short_chans=True)
         self.assertEqual(len(templates), 0)
+
+
+class TestEdgeGenObs(unittest.TestCase):
+    @classmethod
+    # Extra test case with OBS data with hydrophone channels (HDH) and T-phases
+    def setUpClass(cls):
+        import eqcorrscan
+        cls.testing_path = os.path.dirname(eqcorrscan.__file__) + '/tests'
+        log = logging.getLogger(template_gen_module.__name__)
+        cls._log_handler = MockLoggingHandler(level='DEBUG')
+        log.addHandler(cls._log_handler)
+        cls.log_messages = cls._log_handler.messages
+        cls.st = read(os.path.join(
+            cls.testing_path, 'test_data', 'WAV', 'TEST_',
+            '2019-08-09-1558-47M.NNSN__038'))
+        # for tr in cls.st:
+        #     tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+        # Sfile in New Nordic format
+        event = read_events(os.path.join(
+            cls.testing_path, 'test_data', 'REA', 'TEST_',
+            '09-1558-48R.S201908'))[0]
+        cat = filter_picks(
+            Catalog([event]), stations=['KBS', 'OBIN1', 'OBIN2', 'SPA0',
+                                        'NOR', 'DAG', 'HOPEN', 'HSPB'])
+        cls.picks = cat[0].picks
+
+    def setUp(self):
+        self._log_handler.reset()
+
+    def test_swin_all_and_all_vert_and_all_horiz(self):
+        # Test that the hydrophone channel on an OBS is included in the
+        # creation of the vertical channel (P-arrival) template.
+        template = _template_gen(self.picks, self.st.copy(), 20, swin='all',
+                                 all_horiz=True, all_vert=True,
+                                 vertical_chans=['Z', 'H'])
+        for pick in self.picks:
+            if pick.phase_hint and pick.phase_hint[0] == 'P':
+                self.assertGreaterEqual(
+                    len(template.select(
+                        station=pick.waveform_id.station_code,
+                        channel='??[ZH]')), 1)
+            if pick.phase_hint and pick.phase_hint[0] == 'S':
+                self.assertGreaterEqual(
+                    len(template.select(
+                        station=pick.waveform_id.station_code,
+                        channel='??[NE12]')), 2)
+            if pick.phase_hint and pick.phase_hint[0] == 'T':
+                self.assertGreaterEqual(
+                    len(template.select(
+                        station=pick.waveform_id.station_code,
+                        channel='??[ZH]')), 2)
 
 
 class TestDayLong(unittest.TestCase):

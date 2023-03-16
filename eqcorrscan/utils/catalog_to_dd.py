@@ -208,8 +208,20 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
                 seed_id=seed_pick_id.seed_id))
             continue
         tr = tr[0]
-        if tr.stats.endtime - tr.stats.starttime != extract_len:
-            Logger.warning(f"Insufficient data for {tr.id}, discarding")
+
+        # If there is one sample too many after this remove the first one
+        # by convention
+        n_samples_intended = extract_len * tr.stats.sampling_rate
+        if len(tr.data) == n_samples_intended + 1:
+            tr.data = tr.data[1:len(tr.data)]
+        # if tr.stats.endtime - tr.stats.starttime != extract_len:
+        if tr.stats.npts < n_samples_intended:
+            Logger.warning(
+                "Insufficient data ({rlen} s) for {tr_id}, discarding. Check "
+                "that your traces are at least of length {length} s, with a "
+                "pre_pick time of at least {prepick} s!".format(
+                    rlen=tr.stats.endtime - tr.stats.starttime,
+                    tr_id=tr.id, length=extract_len, prepick=pre_pick))
             continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
@@ -221,7 +233,8 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate, max_workers=1):
+                             shift_len, interpolate, max_workers=1,
+                             weight_by_square=True, **kwargs):
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(
@@ -352,7 +365,8 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                         continue
                     correlation = ccc_out[i][j]
                     if interpolate:
-                        shift, cc_max = _xcorr_interp(correlation, dt=delta)
+                        shift, cc_max = _xcorr_interp(correlation, dt=delta,
+                                                      **kwargs)
                     else:
                         cc_max = np.amax(correlation)
                         shift = np.argmax(correlation) * delta
@@ -378,11 +392,14 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                             event_id_1=event_id_mapper[
                                 str(master.resource_id)],
                             event_id_2=event_id_mapper[used_event_id])
+                    weight = cc_max
+                    if weight_by_square:
+                        weight **= 2
                     diff_time.obs.append(
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2,
+                               tt2=tt2, weight=weight,
                                phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
@@ -469,7 +486,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
                                all_horiz=False, max_workers=None,
-                               max_trace_workers=1, *args, **kwargs):
+                               max_trace_workers=1, weight_by_square=True,
+                               *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -516,6 +534,10 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         Maximum number of workers for parallel correlation of traces insted of
         events. If None then all threads will be used (but can only be used
         when max_workers = 1).
+    :type weight_by_square: bool
+    :param weight_by_square:
+        Whether to compute correlation weights as the square of the maximum
+        correlation (True), or the maximum correlation (False).
 
     :rtype: dict
     :return: Dictionary of differential times keyed by event id.
@@ -533,12 +555,18 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         multiple events and may require more memory, but the latter can be
         quicker for few events with many or very long traces and requires less
         memory.
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
         pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate,
-        max_workers=max_workers)
+        max_workers=max_workers, weight_by_square=weight_by_square)
+    for key, value in kwargs.items():
+        correlation_kwargs.update({key: value})
     if correlation:
         for arg, name in correlation_kwargs.items():
             assert arg is not None, "{0} is required for correlation".format(
@@ -656,6 +684,10 @@ def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
         threads will be used.
 
     :returns: event_id_mapper
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     differential_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=False, event_id_mapper=event_id_mapper,
@@ -696,7 +728,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
                        highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
                        interpolate=False, all_horiz=False, max_workers=None,
-                       parallel_process=False, *args, **kwargs):
+                       parallel_process=False, weight_by_square=True,
+                       *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -743,6 +776,10 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     :param parallel_process:
         Whether to process streams in parallel or not. Experimental, may use
         too much memory.
+    :type weight_by_square: bool
+    :param weight_by_square:
+        Whether to compute correlation weights as the square of the maximum
+        correlation (True), or the maximum correlation (False).
 
     :rtype: dict
     :returns: event_id_mapper
@@ -751,6 +788,10 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         You can provide processed waveforms, or let this function filter your
         data for you.  Filtering is undertaken by detrending and bandpassing
         with a 8th order zerophase butterworth filter.
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     # Depreciated argument
     cc_thresh = kwargs.get("cc_thresh", None)
@@ -784,7 +825,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,
         stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
-        interpolate=interpolate, all_horiz=all_horiz, **kwargs)
+        interpolate=interpolate, all_horiz=all_horiz,
+        weight_by_square=weight_by_square, **kwargs)
     with open("dt.cc", "w") as f:
         for master_id, linked_events in correlation_times.items():
             for linked_event in linked_events:

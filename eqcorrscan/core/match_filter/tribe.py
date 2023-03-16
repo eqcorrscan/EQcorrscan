@@ -25,7 +25,8 @@ import numpy as np
 from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
 
-from eqcorrscan.core.match_filter.template import Template, group_templates
+from eqcorrscan.core.match_filter.template import (
+    Template, quick_group_templates)
 from eqcorrscan.core.match_filter.party import Party
 from eqcorrscan.core.match_filter.helpers import (
     _safemembers, _par_read, get_waveform_client)
@@ -586,7 +587,8 @@ class Tribe(object):
             length is the number of channels within this template.
         """
         party = Party()
-        template_groups = group_templates(self.templates)
+        # template_groups = group_templates(self.templates)
+        template_groups = quick_group_templates(self.templates)
         if len(template_groups) > 1 and pre_processed:
             raise NotImplementedError(
                 "Inconsistent template processing and pre-processed data - "
@@ -608,7 +610,21 @@ class Tribe(object):
         if len(party) > 0:
             for family in party:
                 if family is not None:
-                    family.detections = family._uniq().detections
+                    # Slow uniq:
+                    # family.detections = family._uniq().detections
+                    # Very quick uniq:
+                    det_tuples = [
+                        (det.id, str(det.detect_time), det.detect_val)
+                        for det in family]
+                    # Retrieve the indices for the first occurrence of each
+                    # detection in the family (so only unique detections will
+                    # remain).
+                    uniq_det_tuples, uniq_det_indices = np.unique(
+                        det_tuples, return_index=True, axis=0)
+                    uniq_detections = []
+                    for uniq_det_index in uniq_det_indices:
+                        uniq_detections.append(family[uniq_det_index])
+                    family.detections = uniq_detections
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -927,8 +943,8 @@ class Tribe(object):
         :type method: str
         :param method:
             Method of Tribe generation. Possible options are: `from_client`,
-            `from_seishub`, `from_meta_file`.  See below on the additional
-            required arguments for each method.
+            `from_meta_file`.  See below on the additional required arguments
+            for each method.
         :type lowcut: float
         :param lowcut:
             Low cut (Hz), if set to None will not apply a lowcut
@@ -999,11 +1015,6 @@ class Tribe(object):
                 :param str client_id:
                     string passable by obspy to generate Client, or any object
                     with a `get_waveforms` method, including a Client instance.
-                :param `obspy.core.event.Catalog` catalog:
-                    Catalog of events to generate template for
-                :param float data_pad: Pad length for data-downloads in seconds
-            - `from_seishub` requires:
-                :param str url: url to seishub database
                 :param `obspy.core.event.Catalog` catalog:
                     Catalog of events to generate template for
                 :param float data_pad: Pad length for data-downloads in seconds
