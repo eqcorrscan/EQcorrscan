@@ -516,6 +516,7 @@ def stream_dict_to_shared_mem(stream_dict):
     shm_name_list = []
     shm_data_shapes = []
     shm_data_dtypes = []
+    shm_references = []
     for (key, stream) in stream_dict.items():
         for tr in stream:
             data_array = tr.data
@@ -523,6 +524,7 @@ def stream_dict_to_shared_mem(stream_dict):
             shm = shared_memory.SharedMemory(
                 create=True, size=data_array.nbytes)
             shm_name_list.append(shm.name)
+            shm_references.append(shm)
             # Now create a NumPy array backed by shared memory
             shm_data_shape = data_array.shape
             shm_data_dtype = data_array.dtype
@@ -537,7 +539,8 @@ def stream_dict_to_shared_mem(stream_dict):
             shm_data_dtypes.append(shm_data_dtype)
     shm_data_shapes = list(set(shm_data_shapes))
     shm_data_dtypes = list(set(shm_data_dtypes))
-    return stream_dict, shm_name_list, shm_data_shapes, shm_data_dtypes
+    return (stream_dict, shm_name_list, shm_references, shm_data_shapes,
+            shm_data_dtypes)
 
 
 def compute_differential_times(catalog, correlation, stream_dict=None,
@@ -670,7 +673,8 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                             for master_filter in distance_filter)
             # Move trace data into shared memory
             if use_shared_memory:
-                shm_stream_dict, shm_name_list, shm_data_shapes, shm_dtypes = (
+                (shm_stream_dict, shm_name_list, shm_references,
+                 shm_data_shapes, shm_dtypes) = (
                     stream_dict_to_shared_mem(stream_dict))
                 if len(shm_data_shapes) == 1 and len(shm_dtypes) == 1:
                     shm_data_shape = shm_data_shapes[0]
