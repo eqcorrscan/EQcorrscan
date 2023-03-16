@@ -12,6 +12,8 @@
   - `_prep_data_for_correlation`: 3x speedup for filling NaN-traces in templates
   - New function ``quick_trace_select` for a very efficient selection of trace
     by seed ID without wildcards (4x speedup).
+* utils.correlate
+  - 25 % speedup for `_get_array_dicts` with quicker access to properties.
 * utils.catalog_to_dd
   - _prepare_stream
     - Now more consistently slices templates to length = extract_len * samp_rate
@@ -19,6 +21,8 @@
   - write_correlations
     - New option `use_shared_memory` to speed up correlation of many events by
       ca. 20 % by moving trace data into shared memory.
+    - Add ability to weight correlations by raw correlation rather than just
+      correlation squared.
 * utils.cluster.decluster_distance_time
   - Bug-fix: fix segmentation fault when declustering more than 46340 detections
     with hypocentral_separation.
