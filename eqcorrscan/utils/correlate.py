@@ -795,7 +795,9 @@ def fftw_multi_normxcorr(
     cores_inner,
     cores_outer,
     stack=True,
-    *args, **kwargs):
+    *args,
+    **kwargs
+):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
