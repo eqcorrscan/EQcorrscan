@@ -457,7 +457,8 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     sorted_events = [catalog[i] for i in sorted_inds[::-1]]
-    distance_matrix = dist_mat_km(catalog=sorted_events, num_threads=num_threads)
+    distance_matrix = dist_mat_km(
+        catalog=sorted_events, num_threads=num_threads)
 
     arr = np.ascontiguousarray(arr, dtype=np.float32)
     inds = np.ascontiguousarray(inds, dtype=long_type)

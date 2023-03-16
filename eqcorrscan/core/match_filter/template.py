@@ -167,7 +167,8 @@ class Template(object):
         This should also cope with nan channels:
         >>> import numpy as np
         >>> template_c = template_a.copy()
-        >>> template_c.st[0].data = np.full(template_c.st[0].stats.npts, np.nan)
+        >>> template_c.st[0].data = np.full(
+        ...    template_c.st[0].stats.npts, np.nan)
         >>> template_c == template_a
         False
         >>> template_d = template_c.copy()
@@ -218,7 +219,8 @@ class Template(object):
                 if self_is_stream and other_is_stream:
                     for tr, oth_tr in zip(self.st.sort(),
                                           other.st.sort()):
-                        if not np.array_equal(tr.data, oth_tr.data, equal_nan=True):
+                        if not np.array_equal(
+                                tr.data, oth_tr.data, equal_nan=True):
                             if verbose:
                                 print("Template data are not equal on "
                                       "{0}".format(tr.id))
