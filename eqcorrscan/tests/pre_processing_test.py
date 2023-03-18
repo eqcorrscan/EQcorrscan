@@ -37,13 +37,13 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_daylong_checks(self):
         """Test that the data are day-long."""
-        self.assertTrue(_check_daylong(self.st[0]))
+        self.assertTrue(_check_daylong(self.st[0].data))
         not_daylong = self.st[0].copy().trim(self.st[0].stats.starttime,
                                              self.st[0].stats.starttime + 3600)
         not_daylong.data = np.append(
             not_daylong.data, np.zeros(
                 3602 * int(self.st[0].stats.sampling_rate)))
-        self.assertFalse(_check_daylong(not_daylong))
+        self.assertFalse(_check_daylong(not_daylong.data))
 
     def test_shortproc(self):
         """Test the short-proc processing method."""
