@@ -120,7 +120,7 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
         elif endtime:
             for tr in st:
                 tr.trim(endtime=endtime)
-    return st, length, clip
+    return st, length, clip, starttime
 
 
 @lru_cache
@@ -162,9 +162,19 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     if highcut and lowcut:
         assert lowcut < highcut, f"Lowcut: {lowcut} is above highcut: {highcut}"
 
+    # Allow datetimes for starttime and endtime
+    if starttime and not isinstance(starttime, UTCDateTime):
+        starttime = UTCDateTime(starttime)
+    if starttime is False:
+        starttime = None
+    if endtime and not isinstance(endtime, UTCDateTime):
+        endtime = UTCDateTime(endtime)
+    if endtime is False:
+        endtime = None
+
     # Make sensible choices about workers and chunk sizes
     if parallel:
-        if num_cores is None:
+        if not num_cores:
             # We don't want to over-specify threads, we don't have IO bound tasks
             max_workers = min(len(st), os.cpu_count())
         else:
@@ -173,7 +183,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         max_workers = 1
     chunksize = len(st) // max_workers
 
-    st, length, clip = _sanitize_length(
+    st, length, clip, starttime = _sanitize_length(
         st=st, starttime=starttime, endtime=endtime, daylong=daylong)
 
     for tr in st:
@@ -240,12 +250,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         st, highcut=highcut, lowcut=lowcut, filt_order=filt_order,
         max_workers=max_workers, chunksize=chunksize)
 
-    # 7. Account for seisan channel naming
-    if seisan_chan_names:
-        for tr in st:
-            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
-
-    # 8. Reapply zeros after processing from 4
+    # 7. Reapply zeros after processing from 4
     for tr in st:
         # Pads default to (0., 0.), pads should only ever be positive.
         if sum(padded[tr.id]) == 0:
@@ -265,7 +270,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
              post_pad])
         Logger.debug(str(tr))
 
-    # 9. Recheck length
+    # 8. Recheck length
     for tr in st:
         if float(tr.stats.npts * tr.stats.delta) != length and clip:
             Logger.info(
@@ -283,15 +288,21 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 raise ValueError('Data are not required length for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
 
-    # 10. Re-insert gaps from 1 - TODO: If this is slow it could probably be threaded
+    # 9. Re-insert gaps from 1 - TODO: If this is slow it could probably be threaded
     for i, tr in enumerate(st):
         if gappy[tr.id]:
             st[i] = _zero_pad_gaps(tr, gaps[tr.id], fill_gaps=fill_gaps)
 
-    # 11. Clean up
+    # 10. Clean up
     for tr in st:
         if len(tr.data) == 0:
             st.remove(tr)
+
+    # 11. Account for seisan channel naming
+    if seisan_chan_names:
+        for tr in st:
+            tr.stats.channel = tr.stats.channel[0] + tr.stats.channel[-1]
+
     if tracein:
         st.merge()
         return st[0]
@@ -885,8 +896,8 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     Logger.warning("process is depreciated and will be removed in a "
                    "future version. Use multi_process instead")
     st = multi_process(
-        st=Stream(tr), lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
+        st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+        samp_rate=samp_rate, parallel=False, num_cores=1,
         starttime=starttime, endtime=None, daylong=True,
         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
