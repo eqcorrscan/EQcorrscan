@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
-    _spike_test, extract_from_stream)
+    _spike_test, extract_from_stream, _group_templates)
 
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.findpeaks import multi_find_peaks
@@ -200,11 +200,12 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     detections = []
     party = Party()
     if group_size is not None:
-        n_groups = int(len(templates) / group_size)
-        if n_groups * group_size < len(templates):
-            n_groups += 1
+        template_groups = _group_templates(
+            templates=templates, st_seed_ids={tr.id for tr in stream},
+            group_size=group_size, fill_groups=True)
     else:
-        n_groups = 1
+        template_groups = [templates]
+    n_groups = len(template_groups)
     kwargs.update({'peak_cores': kwargs.get('peak_cores', process_cores)})
     for st_chunk in streams:
         chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
@@ -216,15 +217,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             if len(tr) > len(st_chunk[0]):
                 tr.data = tr.data[0:len(st_chunk[0])]
         for i in range(n_groups):
-            if group_size is not None:
-                end_group = (i + 1) * group_size
-                start_group = i * group_size
-                if i == n_groups:
-                    end_group = len(templates)
-            else:
-                end_group = len(templates)
-                start_group = 0
-            template_group = [t for t in templates[start_group: end_group]]
+            template_group = template_groups[i]
             detections += match_filter(
                 template_names=[t.name for t in template_group],
                 template_list=[t.st for t in template_group], st=st_chunk,
