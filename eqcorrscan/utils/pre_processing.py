@@ -13,13 +13,11 @@ import os
 
 import numpy as np
 import logging
-import datetime as dt
 import copy
 
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache, partial
-from multiprocessing import Pool, cpu_count
 from scipy.signal import iirfilter, sosfilt, zpk2sos
 
 from obspy import Stream, Trace, UTCDateTime
@@ -183,8 +181,10 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         max_workers = 1
     chunksize = len(st) // max_workers
 
+    print(f"{starttime} {endtime} {daylong}")
     st, length, clip, starttime = _sanitize_length(
         st=st, starttime=starttime, endtime=endtime, daylong=daylong)
+    print(f"{starttime} {clip} {length}")
 
     for tr in st:
         if len(tr.data) == 0:
@@ -234,6 +234,12 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                     ignore_bad_data=ignore_bad_data)
         # Remove None traces that might be returned from length checking
         st.traces = [tr for tr in st if tr is not None]
+
+    # Check that we actually still have some data
+    if not _stream_has_data(st):
+        if tracein:
+            return st[0]
+        return st
 
     # 5. Resample
     ## ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
@@ -309,9 +315,25 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     return st
 
 
+def _empty_trace(tr):
+    """
+    Generate an empty trace with a basic header matching the input trace
+    """
+    bad_trace = Trace(
+        data=np.array([]), header={
+            "station": tr.stats.station, "channel": tr.stats.channel,
+            "network": tr.stats.network, "location": tr.stats.location,
+            "starttime": tr.stats.starttime,
+            "sampling_rate": tr.stats.sampling_rate})
+    return bad_trace
+
+
+def _stream_has_data(st):
+    return sum(tr.stats.npts for tr in st) > 0
+
+
 def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
     trace_length = tr.stats.endtime - tr.stats.starttime
-    padded = False
     if trace_length < 0.8 * length and not ignore_length:
         msg = f"Data for {tr.id} is {trace_length:.2f} seconds "\
               f"long, which is less than 80 percent of the desired "\
@@ -320,12 +342,11 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
             raise NotImplementedError(msg)
         else:
             Logger.warning(msg)
-            return None, (0., 0.)
+            return _empty_trace(tr), (0., 0.)
     # trim, then calculate length of any pads required
     pre_pad_secs = tr.stats.starttime - starttime
     post_pad_secs = (starttime + length) - tr.stats.endtime
     if pre_pad_secs > 0 or post_pad_secs > 0:
-        padded = True
         pre_pad = np.zeros(int(pre_pad_secs * tr.stats.sampling_rate))
         post_pad = np.zeros(int(post_pad_secs * tr.stats.sampling_rate))
         Logger.debug(str(tr))
@@ -350,7 +371,7 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
             raise ValueError(msg)
         else:
             Logger.warning(msg)
-            return None, (0., 0.)
+            return _empty_trace(tr), (0., 0.)
     Logger.debug(
         f'I now have {tr.stats.npts} data points after enforcing length')
     return tr, (pre_pad_secs, post_pad_secs)
@@ -393,7 +414,7 @@ def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None, chunksize=1
 
     sos = zpk2sos(z, p, k)
 
-    _filter = partial(sosfilt, sos)
+    _filter = partial(_zerophase_filter, sos)
 
     with ThreadPoolExecutor(max_workers) as executor:
         results = executor.map(
@@ -403,6 +424,11 @@ def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None, chunksize=1
         tr.data = r
 
     return st
+
+
+def _zerophase_filter(sos, data):
+    firstpass = sosfilt(sos, data)
+    return sosfilt(sos, firstpass[::-1])[::-1]
 
 
 def _multi_detrend(st, max_workers=None, chunksize=1):
@@ -857,8 +883,9 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     """
     Deprecated
     """
-    Logger.warning("Shortproc is depreciated and will be removed in a "
-                   "future version. Use multi_process instead")
+    Logger.warning("Shortproc was depreciated in 0.4.5 and will "
+                   "be removed in a future version. Use multi_process"
+                   " instead")
     st = multi_process(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
@@ -875,8 +902,8 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
     """
     Deprecated
     """
-    Logger.warning("dayproc is depreciated and will be removed in a "
-                   "future version. Use multi_process instead")
+    Logger.warning("dayproc was depreciated in 0.4.5 and will be "
+                   "removed in a future version. Use multi_process instead")
     st = multi_process(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
@@ -893,12 +920,24 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     """
     Deprecated
     """
-    Logger.warning("process is depreciated and will be removed in a "
-                   "future version. Use multi_process instead")
+    Logger.warning("process was depreciated in 0.4.5 and will be removed "
+                   "in a future version. Use multi_process instead")
+    if length == 86400:
+        daylong = True
+    else:
+        daylong = False
+
+    endtime = None
+    if clip:
+        if not starttime:
+            starttime = tr.stats.starttime
+        elif not isinstance(starttime, UTCDateTime):
+            starttime = UTCDateTime(starttime)
+        endtime = starttime + length
     st = multi_process(
         st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, parallel=False, num_cores=1,
-        starttime=starttime, endtime=None, daylong=True,
+        starttime=starttime, endtime=endtime, daylong=daylong,
         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
     return st

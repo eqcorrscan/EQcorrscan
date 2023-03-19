@@ -11,7 +11,104 @@ from copy import deepcopy
 from obspy import read, Trace, UTCDateTime, Stream
 
 from eqcorrscan.utils.pre_processing import (
-    process, dayproc, shortproc, _check_daylong, _prep_data_for_correlation)
+    process, dayproc, shortproc, _check_daylong, _prep_data_for_correlation,
+    _multi_detrend, _multi_resample, _multi_filter,
+)
+
+
+class TestMultiThreadMethods(unittest.TestCase):
+    """ Compare internal methods to obspy results. """
+    @classmethod
+    def setUpClass(cls):
+        cls.real_st = read(os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            'day_vols', 'Y2012', 'R086.01', '*'))
+        random_st = Stream([Trace(np.random.randn(86401)) for _ in range(9)])
+        for tr in random_st:
+            tr.stats.sampling_rate = 100
+        cls.random_st = random_st
+        short_st = read(os.path.join(
+            os.path.abspath(os.path.dirname(__file__)), 'test_data',
+            "WAV", "TEST_", "2013-09-11-2208-45.DFDPC_030_00"))
+        cls.short_st = Stream(
+            [tr for tr in short_st if tr.stats.sampling_rate == 200.0])
+        # At the moment processing info is not retained in EQcorrscan
+        cls.headers_to_compare = {
+            "network", "station", "location", "channel", "starttime",
+            "endtime", "sampling_rate", "delta", "npts", "calib"}
+
+    def test_resample(self):
+        samp_rates = [v / 10 for v in range(1, 10)]
+        for st in [self.real_st, self.random_st, self.short_st]:
+            for samp_frac in samp_rates:
+                samp_rate = st[0].stats.sampling_rate * samp_frac
+                acc_resample = _multi_resample(st.copy(), samp_rate)
+                obspy_resample = st.copy().resample(samp_rate)
+                # Order should not be changed so we can loop
+                for acc_tr, obspy_tr in zip(acc_resample, obspy_resample):
+                    for head in self.headers_to_compare:
+                        assert acc_tr.stats[head] == obspy_tr.stats[head]
+                    assert np.allclose(acc_tr.data, obspy_tr.data)
+
+    def test_detrend(self):
+        for st in [self.real_st, self.random_st, self.short_st]:
+            acc_detrend = _multi_detrend(st.copy())
+            obspy_detrend = st.copy().detrend()
+            # Order should not be changed so we can loop
+            for acc_tr, obspy_tr in zip(acc_detrend, obspy_detrend):
+                for head in self.headers_to_compare:
+                    assert acc_tr.stats[head] == obspy_tr.stats[head]
+                assert np.allclose(acc_tr.data, obspy_tr.data)
+
+    def test_bandpass(self):
+        lows = [v / 20 for v in range(1, 9)]
+        highs = [v / 20 for v in range(2, 10)]
+        for st in [self.real_st, self.random_st, self.short_st]:
+            for low, high in zip(lows, highs):
+                lowcut = st[0].stats.sampling_rate * low
+                highcut = st[0].stats.sampling_rate * high
+                acc_filter = _multi_filter(
+                    st.copy(), highcut=highcut, lowcut=lowcut, filt_order=4)
+                obspy_filter = st.copy().filter(
+                    "bandpass", freqmin=lowcut, freqmax=highcut, corners=4,
+                    zerophase=True)
+                # Order should not be changed so we can loop
+                for acc_tr, obspy_tr in zip(acc_filter, obspy_filter):
+                    for head in self.headers_to_compare:
+                        assert acc_tr.stats[head] == obspy_tr.stats[head]
+                    assert np.allclose(acc_tr.data, obspy_tr.data)
+
+    def test_lowpass(self):
+        highs = [v / 20 for v in range(2, 10)]
+        for st in [self.real_st, self.random_st, self.short_st]:
+            for high in highs:
+                highcut = st[0].stats.sampling_rate * high
+                acc_filter = _multi_filter(
+                    st.copy(), highcut=highcut, lowcut=None, filt_order=4)
+                obspy_filter = st.copy().filter(
+                    "lowpass", freq=highcut, corners=4,
+                    zerophase=True)
+                # Order should not be changed so we can loop
+                for acc_tr, obspy_tr in zip(acc_filter, obspy_filter):
+                    for head in self.headers_to_compare:
+                        assert acc_tr.stats[head] == obspy_tr.stats[head]
+                    assert np.allclose(acc_tr.data, obspy_tr.data)
+
+    def test_highpass(self):
+        lows = [v / 20 for v in range(1, 9)]
+        for st in [self.real_st, self.random_st, self.short_st]:
+            for low in lows:
+                lowcut = st[0].stats.sampling_rate * low
+                acc_filter = _multi_filter(
+                    st.copy(), lowcut=lowcut, highcut=None, filt_order=4)
+                obspy_filter = st.copy().filter(
+                    "highpass", freq=lowcut, corners=4,
+                    zerophase=True)
+                # Order should not be changed so we can loop
+                for acc_tr, obspy_tr in zip(acc_filter, obspy_filter):
+                    for head in self.headers_to_compare:
+                        assert acc_tr.stats[head] == obspy_tr.stats[head]
+                    assert np.allclose(acc_tr.data, obspy_tr.data)
 
 
 class TestPreProcessing(unittest.TestCase):
@@ -270,7 +367,7 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_masked_trace(self):
         """Test that processing a masked array works."""
-        tr = self.gappy_trace
+        tr = self.gappy_trace.copy()
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
                             filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=3600,
@@ -282,7 +379,7 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_masked_trace_no_fill(self):
         """Test that processing a masked array without filling gaps works."""
-        tr = self.gappy_trace
+        tr = self.gappy_trace.copy()
         processed = process(tr=tr, lowcut=0.1, highcut=0.4,
                             filt_order=3, samp_rate=1,
                             starttime=False, clip=False, length=3600,
@@ -293,7 +390,7 @@ class TestPreProcessing(unittest.TestCase):
 
     def test_masked_array_resample(self):
         """Test that processing and resampling a masked array works."""
-        tr = self.gappy_trace
+        tr = self.gappy_trace.copy()
         processed = process(tr=tr, lowcut=0.1, highcut=0.2,
                             filt_order=3, samp_rate=0.5,
                             starttime=False, clip=False, length=3600,
