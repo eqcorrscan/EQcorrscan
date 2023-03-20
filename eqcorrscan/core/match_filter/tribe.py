@@ -888,7 +888,7 @@ class Tribe(object):
             st.trim(starttime=starttime + (i * data_length) - pad,
                     endtime=starttime + ((i + 1) * data_length) + pad)
             for tr in st:
-                if not _check_daylong(tr):
+                if not _check_daylong(tr.data):
                     st.remove(tr)
                     Logger.warning(
                         "{0} contains more zeros than non-zero, "

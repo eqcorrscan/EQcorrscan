@@ -90,13 +90,12 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
             for tr in st:
                 if abs(tr.stats.starttime - (UTCDateTime(
                         tr.stats.starttime.date) + 86400)) < tr.stats.delta:
-                    # If the trace starts within 1 sample of the next day, use the
-                    # next day as the startdate
+                    # If the trace starts within 1 sample of the next day,
+                    # use the next day as the startdate
                     startdates.append((tr.stats.starttime + 86400).date)
                     Logger.warning(
-                        '{0} starts within 1 sample of the next day, using this '
-                        'time {1}'.format(
-                            tr.id, (tr.stats.starttime + 86400).date))
+                        f'{tr.id} starts within 1 sample of the next day, '
+                        f'using this time {(tr.stats.starttime + 86400).date}')
                 else:
                     startdates.append(tr.stats.starttime.date)
             # Check that all traces start on the same date...
@@ -158,7 +157,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     if highcut and highcut >= 0.5 * samp_rate:
         raise IOError('Highcut must be lower than the Nyquist')
     if highcut and lowcut:
-        assert lowcut < highcut, f"Lowcut: {lowcut} is above highcut: {highcut}"
+        assert lowcut < highcut, f"Lowcut: {lowcut} above highcut: {highcut}"
 
     # Allow datetimes for starttime and endtime
     if starttime and not isinstance(starttime, UTCDateTime):
@@ -173,7 +172,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # Make sensible choices about workers and chunk sizes
     if parallel:
         if not num_cores:
-            # We don't want to over-specify threads, we don't have IO bound tasks
+            # We don't want to over-specify threads, we don't have IO
+            # bound tasks
             max_workers = min(len(st), os.cpu_count())
         else:
             max_workers = min(len(st), num_cores)
@@ -181,10 +181,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         max_workers = 1
     chunksize = len(st) // max_workers
 
-    print(f"{starttime} {endtime} {daylong}")
     st, length, clip, starttime = _sanitize_length(
         st=st, starttime=starttime, endtime=endtime, daylong=daylong)
-    print(f"{starttime} {clip} {length}")
 
     for tr in st:
         if len(tr.data) == 0:
@@ -205,9 +203,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     qual = _simple_qc(st, max_workers=max_workers, chunksize=chunksize)
     for trace_id, _qual in qual.items():
         if not _qual:
-            msg = ("Data have more zeros than actual data, please check the raw",
-                   " data set-up and manually sort it: " + tr.stats.station + "." +
-                   tr.stats.channel)
+            msg = ("Data have more zeros than actual data, please check the "
+                   f"raw data set-up and manually sort it: {tr.id}")
             if not ignore_bad_data:
                 raise ValueError(msg)
             else:
@@ -279,9 +276,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 8. Recheck length
     for tr in st:
         if float(tr.stats.npts * tr.stats.delta) != length and clip:
-            Logger.info(
-                'Data for {0} are not of required length, will zero pad'.format(
-                    tr.id))
+            Logger.info(f'Data for {tr.id} are not of required length, will '
+                        f'zero pad')
             # Use obspy's trim function with zero padding
             tr = tr.trim(starttime, starttime + length, pad=True, fill_value=0,
                          nearest_sample=True)
@@ -294,7 +290,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 raise ValueError('Data are not required length for ' +
                                  tr.stats.station + '.' + tr.stats.channel)
 
-    # 9. Re-insert gaps from 1 - TODO: If this is slow it could probably be threaded
+    # 9. Re-insert gaps from 1
+    # TODO: If this is slow it could probably be threaded
     for i, tr in enumerate(st):
         if gappy[tr.id]:
             st[i] = _zero_pad_gaps(tr, gaps[tr.id], fill_gaps=fill_gaps)
@@ -364,9 +361,9 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
     # Cope with time precision.
     if abs((tr.stats.sampling_rate * length) -
            tr.stats.npts) > tr.stats.delta:
-        msg = f"Data sampling-rate * length ({tr.stats.sampling_rate} * {length}" \
-              f" = {tr.stats.sampling_rate * length}) does not match number of " \
-              f"samples ({tr.stats.npts}) for {tr.id}"
+        msg = (f"Data sampling-rate * length ({tr.stats.sampling_rate} *"
+               f" {length} = {tr.stats.sampling_rate * length}) does not "
+               f"match number of samples ({tr.stats.npts}) for {tr.id}")
         if not ignore_bad_data:
             raise ValueError(msg)
         else:
@@ -377,7 +374,8 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
     return tr, (pre_pad_secs, post_pad_secs)
 
 
-def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None, chunksize=1):
+def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None,
+                  chunksize=1):
     """ Zero-phase filtering of multi-channel data. """
     if not highcut and not lowcut:
         Logger.warning("No filters applied")
@@ -512,7 +510,8 @@ def _resample(data, delta, factor, sampling_rate, large_w):
     large_f = d_large_f * np.arange(0, n_large_f, dtype=np.int32)
 
     # Have to split into real and imaginary parts for interpolation.
-    y = np.interp(large_f, f, np.real(x)) + (1j * np.interp(large_f, f, np.imag(x)))
+    y = np.interp(large_f, f, np.real(x)) + (1j * np.interp(
+        large_f, f, np.imag(x)))
     # Try to reduce memory before doing the ifft
     del large_f, f, x
 
