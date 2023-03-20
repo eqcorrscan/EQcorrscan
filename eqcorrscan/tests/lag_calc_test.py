@@ -19,14 +19,13 @@ from eqcorrscan.core.lag_calc import (
 from eqcorrscan.core.match_filter import Detection, Family, Party, Template
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
-np.random.seed(999)
-
 
 class SyntheticTests(unittest.TestCase):
     """ Test lag-calc with synthetic data. """
     @classmethod
     def setUpClass(cls):
         print("Setting up class")
+        np.random.seed(999)
         samp_rate = 50
         t_length = .75
         # Make some synthetic templates
@@ -125,7 +124,7 @@ class SyntheticTests(unittest.TestCase):
     def test_family_picking(self):
         catalog_dict = xcorr_pick_family(
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
-            export_cc=False)
+            export_cc=True, cc_dir=".")
         for event in catalog_dict.values():
             self.assertEqual(len(event.picks), len(self.data))
             for pick in event.picks:
