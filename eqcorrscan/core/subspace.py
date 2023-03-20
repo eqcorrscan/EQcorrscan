@@ -786,7 +786,8 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
         tr.detrend('simple')
         tr = pre_processing.process(
             tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=sampling_rate, seisan_chan_names=False)
+            samp_rate=sampling_rate, seisan_chan_names=False, clip=False,
+            length=0)
     else:
         raise IOError('Multiple channels for {0}.{1} in a single design '
                       'stream.'.format(stachan[0], stachan[1]))

@@ -574,7 +574,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 "percent of the desired length, will not use".format(
                     tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600))
-        elif not pre_processing._check_daylong(tr):
+        elif not pre_processing._check_daylong(tr.data):
             Logger.warning(
                 "Data are mostly zeros, removing trace: {0}".format(tr.id))
         else:
