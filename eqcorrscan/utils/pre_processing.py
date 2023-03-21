@@ -193,10 +193,11 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
     gaps = dict()
-    for tr in st:
+    for i, tr in enumerate(st):
         if isinstance(tr.data, np.ma.MaskedArray):
             gappy[tr.id] = True
             gaps[tr.id], tr = _fill_gaps(tr)
+            st[i] = tr
 
     # 2. Check for zeros and cope with bad data
     ## ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
@@ -882,7 +883,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     """
     Deprecated
     """
-    Logger.warning("Shortproc was depreciated in 0.4.5 and will "
+    Logger.warning("Shortproc is depreciated after 0.4.4 and will "
                    "be removed in a future version. Use multi_process"
                    " instead")
     st = multi_process(
@@ -901,7 +902,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
     """
     Deprecated
     """
-    Logger.warning("dayproc was depreciated in 0.4.5 and will be "
+    Logger.warning("dayproc is depreciated after 0.4.4 and will be "
                    "removed in a future version. Use multi_process instead")
     st = multi_process(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
@@ -919,7 +920,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     """
     Deprecated
     """
-    Logger.warning("process was depreciated in 0.4.5 and will be removed "
+    Logger.warning("process is depreciated after 0.4.4 and will be removed "
                    "in a future version. Use multi_process instead")
     if length == 86400:
         daylong = True
@@ -940,7 +941,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
     return st
-
 
 
 if __name__ == "__main__":

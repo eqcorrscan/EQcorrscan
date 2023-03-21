@@ -414,6 +414,8 @@ class TestPreProcessing(unittest.TestCase):
         self.assertFalse(isinstance(processed.data, np.ma.MaskedArray))
         self.assertTrue(np.all(
             processed.trim(self.gap_starttime, self.gap_endtime).data) == 0)
+        # Check that there is actually data there!
+        self.assertEqual(np.isnan(processed.data).sum(), 0)
 
 
 class TestDataPrep(unittest.TestCase):
