@@ -1046,11 +1046,12 @@ class Tribe(object):
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
-            for tr in template:
-                if not np.any(tr.data.astype(np.float16)):
-                    Logger.warning('Data are zero in float16, missing data,'
-                                   ' will not use: {0}'.format(tr.id))
-                    template.remove(tr)
+            # Template-gen already does this check, no need to duplicate
+            # for tr in template:
+            #     if not np.any(tr.data.astype(np.float16)):
+            #         Logger.warning('Data are zero in float16, missing data,'
+            #                        ' will not use: {0}'.format(tr.id))
+            #         template.remove(tr)
             if len(template) == 0:
                 Logger.error('Empty Template')
                 continue

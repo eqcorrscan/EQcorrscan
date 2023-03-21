@@ -17,6 +17,8 @@ repeating events.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
+import warnings
+
 import numpy as np
 import logging
 import os
@@ -717,10 +719,14 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
-        if np.all(tr.data.astype(np.float16) == 0):
-            Logger.error("Trace is all zeros at float16 level, either gain or "
-                         "check. Not using in template: {0}".format(tr))
-            continue
+        # Catch RuntimeWarning for overflow in casting
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            if np.all(tr.data.astype(np.float16) == 0):
+                Logger.error(
+                    "Trace is all zeros at float16 level, either gain or "
+                    f"check. Not using in template: {tr}")
+                continue
         st_copy += tr
     st = st_copy
     if len(st) == 0:
