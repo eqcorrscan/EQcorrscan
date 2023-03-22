@@ -19,13 +19,12 @@ from eqcorrscan.core.lag_calc import (
 from eqcorrscan.core.match_filter import Detection, Family, Party, Template
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
-np.random.seed(999)
-
 
 class SyntheticTests(unittest.TestCase):
     """ Test lag-calc with synthetic data. """
     @classmethod
     def setUpClass(cls):
+        np.random.seed(999)
         print("Setting up class")
         samp_rate = 50
         t_length = .75
