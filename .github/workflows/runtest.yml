@@ -37,7 +37,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -v -e .
+          python -m pip install --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -107,7 +107,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          python -m pip install --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -174,7 +174,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          python -m pip install --no-deps
 
       - name: print package info
         shell: bash -l {0}
