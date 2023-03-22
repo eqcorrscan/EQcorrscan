@@ -261,7 +261,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             st[i] = tr
 
     # 2. Check for zeros and cope with bad data
-    ## ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
     qual = _simple_qc(st, max_workers=max_workers, chunksize=chunksize)
     for trace_id, _qual in qual.items():
         if not _qual:
@@ -274,7 +274,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 st.remove(st.select(id=trace_id))
 
     # 3. Detrend
-    ## ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_detrend(st, max_workers=max_workers, chunksize=chunksize)
 
     # 4. Check length and pad to length
@@ -301,7 +301,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         return st
 
     # 5. Resample
-    ## ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_resample(
         st, sampling_rate=samp_rate, max_workers=max_workers,
         chunksize=chunksize)
@@ -310,7 +310,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     st = _multi_detrend(st, max_workers=max_workers, chunksize=chunksize)
 
     # 6. Filter
-    ## ~3.25x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_filter(
         st, highcut=highcut, lowcut=lowcut, filt_order=filt_order,
         max_workers=max_workers, chunksize=chunksize)
