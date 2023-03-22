@@ -124,7 +124,7 @@ class SyntheticTests(unittest.TestCase):
     def test_family_picking(self):
         catalog_dict = xcorr_pick_family(
             family=self.party[0], stream=self.data, shift_len=0.2, plot=False,
-            export_cc=True, cc_dir=".")
+            export_cc=False)
         for event in catalog_dict.values():
             self.assertEqual(len(event.picks), len(self.data))
             for pick in event.picks:

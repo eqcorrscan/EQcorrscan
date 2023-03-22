@@ -63,6 +63,18 @@ def _check_daylong(data, threshold=0.5):
 
 
 def _simple_qc(st, max_workers=None, chunksize=1):
+    """
+    Multithreaded simple QC of data.
+
+    :param st: Stream of data to check
+    :type st: obspy.core.Stream
+    :param max_workers: Maximum number of threads to use
+    :type max_workers: int
+    :param chunksize: Number of traces to process per thread
+    :type chunksize: int
+
+    :return: dict of {tr.id: quality} where quality is bool
+    """
     qual = dict()
     with ThreadPoolExecutor(max_workers) as executor:
         for tr, _qual in zip(st, executor.map(
@@ -73,12 +85,19 @@ def _simple_qc(st, max_workers=None, chunksize=1):
 
 def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
     """
+    Check length and work out start, end, length and trimming criteria
 
-    :param st:
-    :param starttime:
-    :param endtime:
-    :param daylong:
-    :return:
+    :param st: Stream to check
+    :type st: obspy.core.Stream
+    :param starttime: Desired starttime - if None, will be evaluated from data
+    :type starttime: obspy.core.UTCDateTime
+    :param endtime: DEsired endtime - can be None
+    :type endtime: obspy.core.UTCDateTime
+    :param daylong: Whether data should be one-day long.
+    :type daylong: bool
+
+    :return: obspy.core.Stream, length[float], clip[bool],
+        starttime[obspy.core.UTCDateTime]
     """
     length, clip = None, False
 
@@ -122,6 +141,7 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
 
 @lru_cache
 def _get_window(window, npts):
+    """ Get window for resampling stabilisation. """
     from scipy.signal import get_window
     return np.fft.ifftshift(get_window(window, npts))
 
@@ -131,22 +151,63 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                   daylong=False, seisan_chan_names=False, fill_gaps=True,
                   ignore_length=False, ignore_bad_data=False):
     """
+    Apply standardised processing workflow to data for matched-filtering
 
-    :param st:
+    Steps:
+    1. Check length and continuity of data meets user-defined criteria
+    2. Fill remaining gaps in data with zeros and record gap positions
+    3. Detrend data (using a simple linear detrend to set start and end to 0)
+    4. Pad data to length
+    5. Resample in the frequency domain
+    6. Detrend dat (using a simple linear detrend to set start and end to 0)
+    7. Zerophase Butterworth filter
+    8. Re-check length
+    9. Re-apply zero-padding to gap locations recording in step 2 to remove
+       filtering and resampling artefacts
+
+    :param st: Stream to process
+    :type st: obspy.core.Stream
     :param lowcut:
+        Lowcut of butterworth filter in Hz. If set to None and highcut is
+        given a highpass filter will be applied. If both lowcut and highcut
+        are given, a bandpass filter will be applied. If lowcut and highcut
+        are both None, no filtering will be applied.
+    :type lowcut: float
     :param highcut:
-    :param filt_order:
-    :param samp_rate:
-    :param parallel:
-    :param num_cores:
-    :param starttime:
-    :param endtime:
+        Highcut of butterworth filter in Hz. If set to None and lowcut is
+        given a lowpass filter will be applied. If both lowcut and highcut
+        are given, a bandpass filter will be applied. If lowcut and highcut
+        are both None, no filtering will be applied.
+    :type highcut: float
+    :param filt_order: Filter order
+    :type filt_order: int
+    :param samp_rate: Desired sample rate of output data in Hz
+    :type samp_rate: float
+    :param parallel: Whether to process data in parallel (uses multi-threading)
+    :type parallel: bool
+    :param num_cores: Maximum number of cores to use for parallel processing
+    :type num_cores: int
+    :param starttime: Desired starttime of data
+    :type starttime: obspy.core.UTCDateTime
+    :param endtime: Desired endtime of data
+    :type endtime: obspy.core.UTCDateTime
     :param daylong:
+        Whether data should be considered to be one-day long. Setting this will
+        assume that your data should start as close to the start of a day
+        as possible given the sampling.
+    :type daylong: bool
     :param seisan_chan_names:
-    :param fill_gaps:
+        Whether to convert channel names to two-char seisan channel names
+    :type seisan_chan_names: bool
+    :param fill_gaps: Whether to fill-gaps in the data
+    :type fill_gaps: bool
     :param ignore_length:
-    :param ignore_bad_data:
-    :return:
+        Whether to ignore data that are not long enough.
+    :type ignore_length: bool
+    :param ignore_bad_data: Whether to ignore data that are excessively gappy
+    :type ignore_bad_data: bool
+
+    :return: Processed stream as obspy.core.Stream
     """
     if isinstance(st, Trace):
         tracein = True
@@ -193,10 +254,11 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
     gaps = dict()
-    for tr in st:
+    for i, tr in enumerate(st):
         if isinstance(tr.data, np.ma.MaskedArray):
             gappy[tr.id] = True
             gaps[tr.id], tr = _fill_gaps(tr)
+            st[i] = tr
 
     # 2. Check for zeros and cope with bad data
     ## ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
@@ -291,7 +353,6 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                                  tr.stats.station + '.' + tr.stats.channel)
 
     # 9. Re-insert gaps from 1
-    # TODO: If this is slow it could probably be threaded
     for i, tr in enumerate(st):
         if gappy[tr.id]:
             st[i] = _zero_pad_gaps(tr, gaps[tr.id], fill_gaps=fill_gaps)
@@ -330,6 +391,26 @@ def _stream_has_data(st):
 
 
 def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
+    """
+    Check that a trace meets the length requirements specified.
+
+    Data are padded if needed to meet the length requirement.
+
+    :param tr: Trace to check
+    :type tr: obspy.core.Trace
+    :param starttime: Desired starttime of data
+    :type starttime: obspy.core.UTCDateTime
+    :param length: Length in seconds required for data
+    :type length: float
+    :param ignore_length:
+        Whether to ignore data that do not meet length criteria
+    :type ignore_length: bool
+    :param ignore_bad_data:
+        Whether to ignore data that do not meet gappiness criteria
+    :type ignore_bad_data: bool
+
+    :return: obspy.core.Trace that meets criteria
+    """
     trace_length = tr.stats.endtime - tr.stats.starttime
     if trace_length < 0.8 * length and not ignore_length:
         msg = f"Data for {tr.id} is {trace_length:.2f} seconds "\
@@ -376,7 +457,24 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
 
 def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None,
                   chunksize=1):
-    """ Zero-phase filtering of multi-channel data. """
+    """
+    Multithreaded zero-phase butterworth filtering of multi-channel data.
+
+    :param st: Stream to filter
+    :type st: obspy.core.Stream
+    :param highcut: Highcut for butterworth filter in Hz
+    :type highcut: float
+    :param lowcut: Lowcut for butterworth filter in Hz
+    :type lowcut: float
+    :param filt_order: Filter order
+    :type filt_order: int
+    :param max_workers: Maximum number of threads to use
+    :type max_workers: int
+    :param chunksize: Number of traces to process per thread
+    :type chunksize: int
+
+    :return: obspy.core.Stream of filtered data
+    """
     if not highcut and not lowcut:
         Logger.warning("No filters applied")
         return st
@@ -425,6 +523,13 @@ def _multi_filter(st, highcut, lowcut, filt_order, max_workers=None,
 
 
 def _zerophase_filter(sos, data):
+    """
+    Simple zerophase implementation of sosfilt.
+
+    :param sos: Second-order-series of filters
+    :param data: Data to filter
+    :return: filtered data
+    """
     firstpass = sosfilt(sos, data)
     return sosfilt(sos, firstpass[::-1])[::-1]
 
@@ -434,8 +539,14 @@ def _multi_detrend(st, max_workers=None, chunksize=1):
     Multithreaded detrending using simple linear detrend between
     first and last values. Follows obspy "simple" detrend.
 
-    :param st:
-    :return:
+    :param st: Stream to detrend
+    :type st: obspy.core.Stream
+    :param max_workers: Maximum number of threads to use
+    :type max_workers: int
+    :param chunksize: Number of traces to process per thread
+    :type chunksize: int
+
+    :return: obspy.core.Stream of detrended data
     """
     for tr in st:
         tr.data = np.require(tr.data, np.float64)
@@ -452,7 +563,8 @@ def _detrend(data):
     Detrend signal simply by subtracting a line through the first and last
     point of the trace
 
-    :param data: Data to detrend, type numpy.ndarray.
+    :param data: Data to detrend
+    :type data: np.ndarray.
     :return: Nothing - works in place
     """
     ndat = data.shape[0]
@@ -463,11 +575,18 @@ def _detrend(data):
 
 def _multi_resample(st, sampling_rate, max_workers=None, chunksize=1):
     """
+    Threaded resampling of a stream of data to a consistent sampling-rate
 
-    :param st:
-    :param sampling_rate:
-    :param max_workers:
-    :return:
+    :param st: Stream to resample
+    :type st: obspy.core.Stream
+    :param sampling_rate: Sampling rate to resample to
+    :type sampling_rate: float
+    :param max_workers: Maximum number of threads to use
+    :type max_workers: int
+    :param chunksize: Number of traces to process per thread
+    :type chunksize: int
+
+    :return: obspy.core.Stream of resampled data
     """
     # Get the windows, and downsampling factors ahead of time
     to_resample = (
@@ -487,8 +606,20 @@ def _multi_resample(st, sampling_rate, max_workers=None, chunksize=1):
 
 def _resample(data, delta, factor, sampling_rate, large_w):
     """
-    Resample data in the frequency domain - adapted from obspy resample
+    Resample data in the frequency domain - adapted from obspy resample method
 
+    :param data: Data to resample
+    :type data: np.ndarray
+    :param delta: Sample interval in seconds
+    :type delta: float
+    :param factor: Factor to resample by
+    :type factor: float
+    :param sampling_rate: Desired sampling-rate
+    :type sampling_rate: float
+    :param large_w: Window to apply to spectra to stabalise resampling
+    :type large_w: np.ndarray
+
+    :return: np.ndarray of resampled data.
     """
     if factor == 1:
         # No resampling needed, don't waste time.
@@ -528,6 +659,8 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
     :param tr: A trace that has had the gaps padded
     :param gaps: List of dict of start-time and end-time as UTCDateTime objects
     :type gaps: list
+    :param fill_gaps: Whether to fill gaps with zeros, or leave them as gaps
+    :type fill_gaps: bool
 
     :return: :class:`obspy.core.stream.Trace`
     """
@@ -882,7 +1015,7 @@ def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     """
     Deprecated
     """
-    Logger.warning("Shortproc was depreciated in 0.4.5 and will "
+    Logger.warning("Shortproc is depreciated after 0.4.4 and will "
                    "be removed in a future version. Use multi_process"
                    " instead")
     st = multi_process(
@@ -901,7 +1034,7 @@ def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
     """
     Deprecated
     """
-    Logger.warning("dayproc was depreciated in 0.4.5 and will be "
+    Logger.warning("dayproc is depreciated after 0.4.4 and will be "
                    "removed in a future version. Use multi_process instead")
     st = multi_process(
         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
@@ -919,7 +1052,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     """
     Deprecated
     """
-    Logger.warning("process was depreciated in 0.4.5 and will be removed "
+    Logger.warning("process is depreciated after 0.4.4 and will be removed "
                    "in a future version. Use multi_process instead")
     if length == 86400:
         daylong = True
@@ -940,7 +1073,6 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
     return st
-
 
 
 if __name__ == "__main__":

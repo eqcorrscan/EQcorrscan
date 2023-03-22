@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
       fail-fast: false
 #      continue-on-error: true
 
@@ -37,7 +37,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -v -e .
+          pip install -v -e . --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -86,7 +86,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: ['3.10']
       fail-fast: false
 
     steps:
@@ -107,7 +107,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -e . --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -144,7 +144,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: ['3.9']
       fail-fast: false
 
     steps:
@@ -168,7 +168,7 @@ jobs:
           cd ..
           git clone https://github.com/beridel/fast_matched_filter.git
           cd fast_matched_filter
-          pip install -e .
+          pip install -e . --no-deps
           cd ../EQcorrscan
 
       - name: install eqcorrscan
