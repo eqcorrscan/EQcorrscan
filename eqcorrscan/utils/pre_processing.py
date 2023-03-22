@@ -154,16 +154,19 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     Apply standardised processing workflow to data for matched-filtering
 
     Steps:
-    1. Check length and continuity of data meets user-defined criteria
-    2. Fill remaining gaps in data with zeros and record gap positions
-    3. Detrend data (using a simple linear detrend to set start and end to 0)
-    4. Pad data to length
-    5. Resample in the frequency domain
-    6. Detrend dat (using a simple linear detrend to set start and end to 0)
-    7. Zerophase Butterworth filter
-    8. Re-check length
-    9. Re-apply zero-padding to gap locations recording in step 2 to remove
-       filtering and resampling artefacts
+
+        #. Check length and continuity of data meets user-defined criteria
+        #. Fill remaining gaps in data with zeros and record gap positions
+        #. Detrend data (using a simple linear detrend to set start and
+           end to 0)
+        #. Pad data to length
+        #. Resample in the frequency domain
+        #. Detrend dat (using a simple linear detrend to set start and
+           end to 0)
+        #. Zerophase Butterworth filter
+        #. Re-check length
+        #. Re-apply zero-padding to gap locations recording in step 2 to remove
+           filtering and resampling artefacts
 
     :param st: Stream to process
     :type st: obspy.core.Stream
