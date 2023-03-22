@@ -29,7 +29,7 @@ from obspy.clients.fdsn import Client as FDSNClient
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
-from eqcorrscan.core import EQcorrscanDeprecationWarning
+# from eqcorrscan.core import EQcorrscanDeprecationWarning
 
 
 Logger = logging.getLogger(__name__)
@@ -353,17 +353,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             if len(st) == 0:
                 Logger.info("No data")
                 continue
+            kwargs = dict(
+                st=st, lowcut=lowcut, highcut=highcut,
+                filt_order=filt_order, samp_rate=samp_rate,
+                parallel=parallel, num_cores=num_cores, daylong=daylong)
             if daylong:
-                st = pre_processing.dayproc(
-                    st=st, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, samp_rate=samp_rate,
-                    parallel=parallel, starttime=UTCDateTime(starttime),
-                    num_cores=num_cores)
-            else:
-                st = pre_processing.shortproc(
-                    st=st, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, parallel=parallel,
-                    samp_rate=samp_rate, num_cores=num_cores)
+                kwargs.update(dict(starttime=UTCDateTime(starttime)))
+            st = pre_processing.multi_process(**kwargs)
         data_start = min([tr.stats.starttime for tr in st])
         data_end = max([tr.stats.endtime for tr in st])
 
@@ -487,7 +483,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 
     #  Process the data if necessary
     if not pre_processed:
-        new_template = pre_processing.shortproc(
+        new_template = pre_processing.multi_process(
             st=new_template, lowcut=lowcut, highcut=highcut,
             filt_order=filt_order, samp_rate=samp_rate)
     # Loop through the stack and trim!

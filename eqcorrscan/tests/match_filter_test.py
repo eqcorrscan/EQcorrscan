@@ -213,7 +213,7 @@ class TestGeoNetCase(unittest.TestCase):
         st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         # This is slow?
         print('Processing continuous data')
-        cls.st = pre_processing.shortproc(
+        cls.st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
@@ -375,7 +375,7 @@ class TestNCEDCCases(unittest.TestCase):
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
         cls.unproc_st = st.copy()
-        cls.st = pre_processing.shortproc(
+        cls.st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
@@ -677,7 +677,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        st = pre_processing.shortproc(
+        st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
@@ -1595,7 +1595,7 @@ def test_match_filter(plot=False, extract_detections=False,
     for template in templates:
         for tr in template:
             tr.data += 1  # Make the synthetic data not be all zeros
-        pre_processing.shortproc(
+        pre_processing.multi_process(
             st=template, lowcut=1.0, highcut=4.0, filt_order=3, samp_rate=10.0,
             seisan_chan_names=True)
     template_names = list(string.ascii_lowercase)[0:len(templates)]

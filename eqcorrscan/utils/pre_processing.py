@@ -1008,71 +1008,71 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     return out_stream, out_templates
 
 
-def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
-              num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False, fill_gaps=True, ignore_length=False,
-              ignore_bad_data=False, fft_threads=1):
-    """
-    Deprecated
-    """
-    Logger.warning("Shortproc is depreciated after 0.4.4 and will "
-                   "be removed in a future version. Use multi_process"
-                   " instead")
-    st = multi_process(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
-        starttime=starttime, endtime=endtime, daylong=False,
-        seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-        ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
-    return st
-
-
-def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
-            parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False,
-            fft_threads=1):
-    """
-    Deprecated
-    """
-    Logger.warning("dayproc is depreciated after 0.4.4 and will be "
-                   "removed in a future version. Use multi_process instead")
-    st = multi_process(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
-        starttime=starttime, endtime=None, daylong=True,
-        seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-        ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
-    return st
-
-
-def process(tr, lowcut, highcut, filt_order, samp_rate,
-            starttime=False, clip=False, length=86400,
-            seisan_chan_names=False, ignore_length=False, fill_gaps=True,
-            ignore_bad_data=False, fft_threads=1):
-    """
-    Deprecated
-    """
-    Logger.warning("process is depreciated after 0.4.4 and will be removed "
-                   "in a future version. Use multi_process instead")
-    if length == 86400:
-        daylong = True
-    else:
-        daylong = False
-
-    endtime = None
-    if clip:
-        if not starttime:
-            starttime = tr.stats.starttime
-        elif not isinstance(starttime, UTCDateTime):
-            starttime = UTCDateTime(starttime)
-        endtime = starttime + length
-    st = multi_process(
-        st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=False, num_cores=1,
-        starttime=starttime, endtime=endtime, daylong=daylong,
-        seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-        ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
-    return st
+# def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
+#               num_cores=False, starttime=None, endtime=None,
+#               seisan_chan_names=False, fill_gaps=True, ignore_length=False,
+#               ignore_bad_data=False, fft_threads=1):
+#     """
+#     Deprecated
+#     """
+#     Logger.warning("Shortproc is depreciated after 0.4.4 and will "
+#                    "be removed in a future version. Use multi_process"
+#                    " instead")
+#     st = multi_process(
+#         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+#         samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
+#         starttime=starttime, endtime=endtime, daylong=False,
+#         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+#         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
+#     return st
+#
+#
+# def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
+#             parallel=True, num_cores=False, ignore_length=False,
+#             seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False,
+#             fft_threads=1):
+#     """
+#     Deprecated
+#     """
+#     Logger.warning("dayproc is depreciated after 0.4.4 and will be "
+#                    "removed in a future version. Use multi_process instead")
+#     st = multi_process(
+#         st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+#         samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
+#         starttime=starttime, endtime=None, daylong=True,
+#         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+#         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
+#     return st
+#
+#
+# def process(tr, lowcut, highcut, filt_order, samp_rate,
+#             starttime=False, clip=False, length=86400,
+#             seisan_chan_names=False, ignore_length=False, fill_gaps=True,
+#             ignore_bad_data=False, fft_threads=1):
+#     """
+#     Deprecated
+#     """
+#     Logger.warning("process is depreciated after 0.4.4 and will be removed "
+#                    "in a future version. Use multi_process instead")
+#     if length == 86400:
+#         daylong = True
+#     else:
+#         daylong = False
+#
+#     endtime = None
+#     if clip:
+#         if not starttime:
+#             starttime = tr.stats.starttime
+#         elif not isinstance(starttime, UTCDateTime):
+#             starttime = UTCDateTime(starttime)
+#         endtime = starttime + length
+#     st = multi_process(
+#         st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+#         samp_rate=samp_rate, parallel=False, num_cores=1,
+#         starttime=starttime, endtime=endtime, daylong=daylong,
+#         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
+#         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
+#     return st
 
 
 if __name__ == "__main__":
