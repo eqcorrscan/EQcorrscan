@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
-    _spike_test, extract_from_stream, _group_templates)
+    _spike_test, extract_from_stream)
 
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.findpeaks import multi_find_peaks
@@ -158,8 +158,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
+    # Avoid circular imports
     from eqcorrscan.core.match_filter.party import Party
     from eqcorrscan.core.match_filter.family import Family
+    from eqcorrscan.core.match_filter.template import group_templates_by_seedid
 
     master = templates[0]
     peak_cores = kwargs.get('peak_cores', process_cores)
@@ -200,7 +202,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     detections = []
     party = Party()
     if group_size is not None:
-        template_groups = _group_templates(
+        template_groups = group_templates_by_seedid(
             templates=templates, st_seed_ids={tr.id for tr in stream},
             group_size=group_size, fill_groups=True)
     else:

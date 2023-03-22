@@ -18,6 +18,8 @@ import re
 import shutil
 import logging
 
+from typing import List, Set
+
 import numpy as np
 from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
@@ -752,6 +754,73 @@ def quick_group_templates(templates):
             new_group.append(templates[int(template_index)])
         template_groups.append(new_group)
     return template_groups
+
+
+def group_templates_by_seedid(
+        templates: List[Template],
+        st_seed_ids: Set[str],
+        group_size: int,
+        fill_groups: bool = True
+) -> List[List[Template]]:
+    """
+    Group templates to reduce dissimilar traces
+
+    :param templates:
+        Templates to group together
+    :param st_seed_ids:
+        Seed ids in the stream to be matched with
+    :param group_size:
+        Maximum group size - will not exceed this size
+    :param fill_groups:
+        Whether to fill groups up to group size, or just use the
+        most similar groupings below group_size.
+
+    :return:
+        List of lists of templates grouped.
+    """
+    # Get overlapping seed ids so that we only group based on the
+    # channels we have in the data.
+    template_seed_ids = {
+        template.name:
+            {tr.id for tr in template.st}.intersection(st_seed_ids)
+        for template in templates}
+    # Get initial groups with matched traces - sort by length
+    sorted_templates = sorted(
+        template_seed_ids, key=lambda key: len(template_seed_ids[key]),
+        reverse=True)
+    groups, group = [], [sorted_templates[0]]
+    for i in range(1, len(sorted_templates)):
+        # Check that we don't exceed the maximum group size first
+        if len(group) >= group_size or template_seed_ids[sorted_templates[i]] != template_seed_ids[group[0]]:
+            groups.append(group)
+            group = [sorted_templates[i]]
+        else:
+            group.append(sorted_templates[i])
+    # Get the final group
+    groups.append(group)
+    if len(groups) > 1:
+        # Re-group to make the largest groups possible with minimal nan-traces
+        out_groups, out_group = [], groups[0]
+        for i in range(1, len(groups)):
+            if len(out_group) + len(groups[i]) <= group_size:
+                out_group.extend(groups[i])
+            elif fill_groups:
+                n_included = group_size - len(out_group)
+                out_group.extend(groups[i][0:n_included])
+                # This should now be a full group
+                out_groups.append(out_group)
+                out_group = groups[i][n_included:]
+            else:
+                out_groups.append(out_group)
+                out_group = groups[i]
+        # Get final group
+        out_groups.append(groups[i])
+    else:
+        out_groups = groups
+    # Convert from groups if template names to groups of templates
+    template_dict = {t.name: t for t in templates}
+    out_groups = [[template_dict[t] for t in out_group] for out_group in out_groups]
+    return out_groups
 
 
 if __name__ == "__main__":
