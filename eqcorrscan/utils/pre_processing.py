@@ -139,7 +139,7 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
     return st, length, clip, starttime
 
 
-@lru_cache
+@lru_cache(maxsize=5)
 def _get_window(window, npts):
     """ Get window for resampling stabilisation. """
     from scipy.signal import get_window
@@ -373,6 +373,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     return st
 
 
+@lru_cache(maxsize=50)
 def _empty_trace(tr):
     """
     Generate an empty trace with a basic header matching the input trace
