@@ -791,7 +791,9 @@ def group_templates_by_seedid(
     groups, group = [], [sorted_templates[0]]
     for i in range(1, len(sorted_templates)):
         # Check that we don't exceed the maximum group size first
-        if len(group) >= group_size or template_seed_ids[sorted_templates[i]] != template_seed_ids[group[0]]:
+        if len(group) >= group_size or (
+                template_seed_ids[sorted_templates[i]] !=
+                template_seed_ids[group[0]]):
             groups.append(group)
             group = [sorted_templates[i]]
         else:
@@ -819,7 +821,8 @@ def group_templates_by_seedid(
         out_groups = groups
     # Convert from groups if template names to groups of templates
     template_dict = {t.name: t for t in templates}
-    out_groups = [[template_dict[t] for t in out_group] for out_group in out_groups]
+    out_groups = [[template_dict[t] for t in out_group]
+                  for out_group in out_groups]
     return out_groups
 
 
