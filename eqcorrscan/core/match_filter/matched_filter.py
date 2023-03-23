@@ -204,7 +204,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     if group_size is not None:
         template_groups = group_templates_by_seedid(
             templates=templates, st_seed_ids={tr.id for tr in stream},
-            group_size=group_size, fill_groups=True)
+            group_size=group_size)
     else:
         template_groups = [templates]
     n_groups = len(template_groups)
