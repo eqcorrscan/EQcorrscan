@@ -139,7 +139,7 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
     return st, length, clip, starttime
 
 
-@lru_cache
+@lru_cache(maxsize=5)
 def _get_window(window, npts):
     """ Get window for resampling stabilisation. """
     from scipy.signal import get_window
@@ -154,16 +154,19 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     Apply standardised processing workflow to data for matched-filtering
 
     Steps:
-    1. Check length and continuity of data meets user-defined criteria
-    2. Fill remaining gaps in data with zeros and record gap positions
-    3. Detrend data (using a simple linear detrend to set start and end to 0)
-    4. Pad data to length
-    5. Resample in the frequency domain
-    6. Detrend dat (using a simple linear detrend to set start and end to 0)
-    7. Zerophase Butterworth filter
-    8. Re-check length
-    9. Re-apply zero-padding to gap locations recording in step 2 to remove
-       filtering and resampling artefacts
+
+        #. Check length and continuity of data meets user-defined criteria
+        #. Fill remaining gaps in data with zeros and record gap positions
+        #. Detrend data (using a simple linear detrend to set start and
+           end to 0)
+        #. Pad data to length
+        #. Resample in the frequency domain
+        #. Detrend dat (using a simple linear detrend to set start and
+           end to 0)
+        #. Zerophase Butterworth filter
+        #. Re-check length
+        #. Re-apply zero-padding to gap locations recording in step 2 to remove
+           filtering and resampling artefacts
 
     :param st: Stream to process
     :type st: obspy.core.Stream
@@ -261,7 +264,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             st[i] = tr
 
     # 2. Check for zeros and cope with bad data
-    ## ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
     qual = _simple_qc(st, max_workers=max_workers, chunksize=chunksize)
     for trace_id, _qual in qual.items():
         if not _qual:
@@ -274,7 +277,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 st.remove(st.select(id=trace_id))
 
     # 3. Detrend
-    ## ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_detrend(st, max_workers=max_workers, chunksize=chunksize)
 
     # 4. Check length and pad to length
@@ -301,7 +304,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         return st
 
     # 5. Resample
-    ## ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_resample(
         st, sampling_rate=samp_rate, max_workers=max_workers,
         chunksize=chunksize)
@@ -310,7 +313,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     st = _multi_detrend(st, max_workers=max_workers, chunksize=chunksize)
 
     # 6. Filter
-    ## ~3.25x speedup for 50 100 Hz daylong traces on 12 threads
+    # ~3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_filter(
         st, highcut=highcut, lowcut=lowcut, filt_order=filt_order,
         max_workers=max_workers, chunksize=chunksize)
@@ -373,6 +376,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     return st
 
 
+@lru_cache(maxsize=50)
 def _empty_trace(tr):
     """
     Generate an empty trace with a basic header matching the input trace
