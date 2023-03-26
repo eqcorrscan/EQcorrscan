@@ -377,16 +377,38 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
 
 
 @lru_cache(maxsize=50)
-def _empty_trace(tr):
+def _empty_trace(
+        network,
+        station,
+        location,
+        channel,
+        starttime,
+        sampling_rate
+):
     """
     Generate an empty trace with a basic header matching the input trace
+
+    :param network: Network code
+    :type network: str
+    :param station: Station code
+    :type station: str
+    :param location: Location code
+    :type location: str
+    :param channel: Channel code
+    :type channel: str
+    :param starttime: Start time of trace as datetime (NOT UTCDateTime)
+    :type starttime: datetime.datetime
+    :param sampling_rate: Sampling rate of data
+    :type sampling_rate: float
+
+    :returns: trace
     """
     bad_trace = Trace(
         data=np.array([]), header={
-            "station": tr.stats.station, "channel": tr.stats.channel,
-            "network": tr.stats.network, "location": tr.stats.location,
-            "starttime": tr.stats.starttime,
-            "sampling_rate": tr.stats.sampling_rate})
+            "station": station, "channel": channel,
+            "network": network, "location": location,
+            "starttime": starttime,
+            "sampling_rate": sampling_rate})
     return bad_trace
 
 
@@ -424,7 +446,10 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
             raise NotImplementedError(msg)
         else:
             Logger.warning(msg)
-            return _empty_trace(tr), (0., 0.)
+            return _empty_trace(tr.stats.network, tr.stats.station,
+                                tr.stats.location, tr.stats.channel,
+                                tr.stats.starttime.datetime,
+                                tr.stats.sampling_rate), (0., 0.)
     # trim, then calculate length of any pads required
     pre_pad_secs = tr.stats.starttime - starttime
     post_pad_secs = (starttime + length) - tr.stats.endtime
@@ -453,7 +478,10 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
             raise ValueError(msg)
         else:
             Logger.warning(msg)
-            return _empty_trace(tr), (0., 0.)
+            return _empty_trace(tr.stats.network, tr.stats.station,
+                                tr.stats.location, tr.stats.channel,
+                                tr.stats.starttime.datetime,
+                                tr.stats.sampling_rate), (0., 0.)
     Logger.debug(
         f'I now have {tr.stats.npts} data points after enforcing length')
     return tr, (pre_pad_secs, post_pad_secs)
