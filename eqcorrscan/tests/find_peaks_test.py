@@ -446,6 +446,14 @@ class TestPeakFindSpeeds:
                     print("Peak {0} in py but not in C".format(
                         serial_py_peaks[i][j]))
             assert diff_count <= 0.0001 * self.data_len
+        if self.DEBUG:
+            np.save("test_2d_array.npy", arr)
+            np.save("test_c_peaks_serial.npy", serial_c_peaks)
+            np.save("test_c_peaks_parallel.npy", parallel_c_peaks)
+            np.save("test_py_peaks_serial.npy", serial_py_peaks)
+            np.save("test_py_peaks_parallel.npy", parallel_py_peaks)
+
+
 
     def test_noisy_timings(self, noisy_multi_array):
         arr = noisy_multi_array.astype(np.float32)
