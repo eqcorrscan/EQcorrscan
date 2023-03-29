@@ -14,7 +14,6 @@ theory which can be found here: https://e-reports-ext.llnl.gov/pdf/335299.pdf
 """
 import numpy as np
 import logging
-import time
 import h5py
 import getpass
 import eqcorrscan
@@ -784,8 +783,8 @@ def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
     elif len(tr) == 1:
         tr = tr[0]
         tr.detrend('simple')
-        tr = pre_processing.process(
-            tr=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+        tr = pre_processing.multi_process(
+            st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
             samp_rate=sampling_rate, seisan_chan_names=False)
     else:
         raise IOError('Multiple channels for {0}.{1} in a single design '
