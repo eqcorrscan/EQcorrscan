@@ -26,6 +26,7 @@ class SyntheticTests(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(999)
         print("Setting up class")
+        np.random.seed(999)
         samp_rate = 50
         t_length = .75
         # Make some synthetic templates

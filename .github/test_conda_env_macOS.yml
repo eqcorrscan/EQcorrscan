@@ -33,6 +33,3 @@ dependencies:
   - pytest-rerunfailures
   - pytest-mpl<0.16.0
   - codecov
-  - pip
-  - pip:
-    - pyfftw
