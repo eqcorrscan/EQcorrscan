@@ -778,8 +778,15 @@ def group_templates_by_seedid(
     # Get overlapping seed ids so that we only group based on the
     # channels we have in the data. Use a tuple so that it hashes
     template_seed_ids = tuple(
-        (template.name, tuple({tr.id for tr in template.st}.intersection(st_seed_ids)))
+        (template.name, tuple(
+            {tr.id for tr in template.st}.intersection(st_seed_ids)))
         for template in templates)
+    # Don't use templates that don't have any overlap with the stream
+    template_seed_ids = tuple(
+        (t_name, t_chans) for t_name, t_chans in template_seed_ids
+        if len(t_chans))
+    Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
+                f"templates due to no matched channels")
     # We will need this dictionary at the end for getting the templates by id
     template_dict = {t.name: t for t in templates}
 
@@ -844,9 +851,16 @@ def _group_seed_ids(template_seed_ids, group_size):
     grouped[0], group_id = 1, 0
     group_ids[0] = group_id
     group_sid = group_sids[0]
+    group_len = len(groups[0])
     # Loop until all groups have been assigned a final group
     while grouped.sum() < n_original_groups:
-        if (group_ids == group_id).sum() >= group_size:
+        # Work out difference between groups
+        diffs = [(i, len(group_sid.symmetric_difference(other_sid)))
+                 for i, other_sid in enumerate(group_sids) if not grouped[i]]
+        diffs.sort(key=lambda tup: tup[1])
+        closest_group_id = diffs[0][0]
+
+        if group_len + len(groups[closest_group_id]) > group_size:
             # Max size reached, make new group
             group_id += 1
             # Take the next shortest ungrouped group
@@ -856,15 +870,14 @@ def _group_seed_ids(template_seed_ids, group_size):
             group_sid = group_sids[i]
             grouped[i] = 1
             group_ids[i] = group_id
-        # Work out difference between groups
-        diffs = [(i, len(group_sid.symmetric_difference(other_sid)))
-                 for i, other_sid in enumerate(group_sids) if not grouped[i]]
-        diffs.sort(key=lambda tup: tup[1])
-        # Add in closest
-        grouped[diffs[0][0]] = 1
-        group_ids[diffs[0][0]] = group_id
-        # Update the group seed isd to include the new ones
-        group_sid = group_sid.union(group_sids[diffs[0][0]])
+            group_len = len(groups[i])
+        else:
+            # Add in closest
+            grouped[closest_group_id] = 1
+            group_ids[closest_group_id] = group_id
+            # Update the group seed ids to include the new ones
+            group_sid = group_sid.union(group_sids[closest_group_id])
+            group_len += len(groups[closest_group_id])
 
     out_groups = []
     for group_id in set(group_ids):
