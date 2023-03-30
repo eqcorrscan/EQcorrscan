@@ -17,8 +17,6 @@ be padded after filtering if you decide not to use these routines (see notes in 
        :toctree: autogen
        :nosignatures:
 
-       dayproc
-       process
-       shortproc
+       multi_process
 
     .. comment to end block
