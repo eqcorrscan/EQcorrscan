@@ -21,11 +21,13 @@ from eqcorrscan.core.match_filter import (
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
 from eqcorrscan.core.match_filter.helpers import get_waveform_client
-from eqcorrscan.core.match_filter.template import quick_group_templates
+from eqcorrscan.core.match_filter.template import (
+    quick_group_templates, group_templates_by_seedid)
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.synth_seis import generate_synth_data
 
 
 class TestHelpers(unittest.TestCase):
@@ -1487,6 +1489,61 @@ class TestMatchObjectLight(unittest.TestCase):
                          get_catalog(added_family.detections))
         family.detections.append(additional_detection)
         self.assertEqual(family.catalog, get_catalog(family.detections))
+
+
+class TestTemplateGrouping(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        templates, data, _ = generate_synth_data(
+            nsta=10, ntemplates=20, nseeds=10, samp_rate=100.,
+            t_length=6., max_amp=10, max_lag=5., phaseout="all", jitter=0,
+            noise=True, same_phase=False)
+        templates = [Template(name=str(i), st=t)
+                     for i, t in enumerate(templates)]
+        cls.templates = templates
+        cls.st = data
+        cls.st_seed_ids = {tr.id for tr in data}
+
+    def check_all_grouped(self):
+        groups = group_templates_by_seedid(
+            templates=self.templates, st_seed_ids=self.st_seed_ids,
+            group_size=100)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]), len(self.templates))
+
+    def check_group_size_respected(self):
+        groups = group_templates_by_seedid(
+            templates=self.templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
+
+    def check_all_different_seeds(self):
+        edited_templates = []
+        rng = np.random.default_rng()
+        for template in self.templates:
+            template = template.copy()
+            choices = rng.choice(len(template.st), 5)
+            template.st = [tr for i, tr in enumerate(template.st)
+                           if i in choices]
+            edited_templates.append(template)
+        groups = group_templates_by_seedid(
+            templates=edited_templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
+
+    def check_unmatched_dropped(self):
+        edited_templates = [t.copy() for t in self.templates]
+        for tr in edited_templates[0].st:
+            tr.stats.channel = "ABC"
+
+        groups = group_templates_by_seedid(
+             templates=edited_templates, st_seed_ids=self.st_seed_ids,
+             group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]),
+                         len(self.templates) - 1)
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
