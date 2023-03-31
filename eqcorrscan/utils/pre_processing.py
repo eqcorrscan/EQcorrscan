@@ -459,7 +459,7 @@ def _length_check(tr, starttime, length, ignore_length, ignore_bad_data):
         Logger.debug(str(tr))
         Logger.info(
             f"Padding to length with {pre_pad_secs} s before "
-            f"and {post_pad} s at end")
+            f"and {post_pad_secs} s at end")
         tr.data = np.concatenate([pre_pad, tr.data, post_pad])
         # Use this rather than the expected pad because of rounding samples
         tr.stats.starttime -= len(pre_pad) * tr.stats.delta
