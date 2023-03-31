@@ -1504,21 +1504,21 @@ class TestTemplateGrouping(unittest.TestCase):
         cls.st = data
         cls.st_seed_ids = {tr.id for tr in data}
 
-    def check_all_grouped(self):
+    def test_all_grouped(self):
         groups = group_templates_by_seedid(
             templates=self.templates, st_seed_ids=self.st_seed_ids,
             group_size=100)
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), len(self.templates))
 
-    def check_group_size_respected(self):
+    def test_group_size_respected(self):
         groups = group_templates_by_seedid(
             templates=self.templates, st_seed_ids=self.st_seed_ids,
             group_size=10)
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
 
-    def check_all_different_seeds(self):
+    def test_all_different_seeds(self):
         edited_templates = []
         rng = np.random.default_rng()
         for template in self.templates:
@@ -1533,7 +1533,7 @@ class TestTemplateGrouping(unittest.TestCase):
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
 
-    def check_unmatched_dropped(self):
+    def test_unmatched_dropped(self):
         edited_templates = [t.copy() for t in self.templates]
         for tr in edited_templates[0].st:
             tr.stats.channel = "ABC"
