@@ -24,6 +24,7 @@ class SyntheticTests(unittest.TestCase):
     """ Test lag-calc with synthetic data. """
     @classmethod
     def setUpClass(cls):
+        np.random.seed(999)
         print("Setting up class")
         np.random.seed(999)
         samp_rate = 50
