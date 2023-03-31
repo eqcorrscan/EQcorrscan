@@ -118,14 +118,14 @@ def read_gappy_real_data():
     Super fugly"""
     from obspy.clients.fdsn import Client
     from obspy import UTCDateTime
-    from eqcorrscan.utils.pre_processing import shortproc
+    from eqcorrscan.utils.pre_processing import multi_process
 
     client = Client("GEONET")
     st = client.get_waveforms(
         network="NZ", station="DUWZ", location="20", channel="BNZ",
         starttime=UTCDateTime(2016, 12, 31, 23, 58, 56),
         endtime=UTCDateTime(2017, 1, 1, 0, 58, 56))
-    st = shortproc(
+    st = multi_process(
         st=st.merge(), lowcut=2, highcut=20, filt_order=4, samp_rate=50)
     return st
 
@@ -142,7 +142,7 @@ def read_real_multichannel_templates():
 def get_real_multichannel_data():
     from obspy.clients.fdsn import Client
     from obspy import UTCDateTime
-    from eqcorrscan.utils.pre_processing import shortproc
+    from eqcorrscan.utils.pre_processing import multi_process
 
     t1 = UTCDateTime("2016-01-04T12:00:00.000000Z")
     t2 = t1 + 600
@@ -150,7 +150,7 @@ def get_real_multichannel_data():
             ('NZ', 'HOWZ', '*', 'EHZ', t1, t2)]
     client = Client("GEONET")
     st = client.get_waveforms_bulk(bulk)
-    st = shortproc(
+    st = multi_process(
         st.merge(), lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
         starttime=t1, endtime=t2)
     return st

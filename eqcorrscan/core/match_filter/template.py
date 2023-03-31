@@ -18,6 +18,9 @@ import re
 import shutil
 import logging
 
+from typing import List, Set
+from functools import lru_cache
+
 import numpy as np
 from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
@@ -164,6 +167,17 @@ class Template(object):
         >>> template_a == template_b
         True
 
+        This should also cope with nan channels:
+        >>> import numpy as np
+        >>> template_c = template_a.copy()
+        >>> template_c.st[0].data = np.full(
+        ...    template_c.st[0].stats.npts, np.nan)
+        >>> template_c == template_a
+        False
+        >>> template_d = template_c.copy()
+        >>> template_d == template_c
+        True
+
 
         This will check all parameters of template including the data in the
         stream.
@@ -208,7 +222,8 @@ class Template(object):
                 if self_is_stream and other_is_stream:
                     for tr, oth_tr in zip(self.st.sort(),
                                           other.st.sort()):
-                        if not np.array_equal(tr.data, oth_tr.data):
+                        if not np.array_equal(
+                                tr.data, oth_tr.data, equal_nan=True):
                             if verbose:
                                 print("Template data are not equal on "
                                       "{0}".format(tr.id))
@@ -740,6 +755,136 @@ def quick_group_templates(templates):
             new_group.append(templates[int(template_index)])
         template_groups.append(new_group)
     return template_groups
+
+
+def group_templates_by_seedid(
+        templates: List[Template],
+        st_seed_ids: Set[str],
+        group_size: int,
+) -> List[List[Template]]:
+    """
+    Group templates to reduce dissimilar traces
+
+    :param templates:
+        Templates to group together
+    :param st_seed_ids:
+        Seed ids in the stream to be matched with
+    :param group_size:
+        Maximum group size - will not exceed this size
+
+    :return:
+        List of lists of templates grouped.
+    """
+    # Get overlapping seed ids so that we only group based on the
+    # channels we have in the data. Use a tuple so that it hashes
+    template_seed_ids = tuple(
+        (template.name, tuple(
+            {tr.id for tr in template.st}.intersection(st_seed_ids)))
+        for template in templates)
+    # Don't use templates that don't have any overlap with the stream
+    template_seed_ids = tuple(
+        (t_name, t_chans) for t_name, t_chans in template_seed_ids
+        if len(t_chans))
+    Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
+                f"templates due to no matched channels")
+    # We will need this dictionary at the end for getting the templates by id
+    template_dict = {t.name: t for t in templates}
+
+    # Pass off to cached function
+    out_groups = _group_seed_ids(
+        template_seed_ids=template_seed_ids, group_size=group_size)
+
+    # Convert from groups of template names to groups of templates
+    out_groups = [[template_dict[t] for t in out_group]
+                  for out_group in out_groups]
+    return out_groups
+
+
+@lru_cache(maxsize=2)
+def _group_seed_ids(template_seed_ids, group_size):
+    """ Cachable version of internals to avoid re-computing for every day. """
+    # Convert hashable tuple to dict for ease
+    template_seed_ids = {tup[0]: set(tup[1]) for tup in template_seed_ids}
+    # Get initial groups with matched traces - sort by length
+    sorted_templates = sorted(
+        template_seed_ids, key=lambda key: len(template_seed_ids[key]),
+        reverse=True)
+    # Group into matching sets of seed-ids - ideally all groups would have the
+    # same seed ids and no nan-traces
+    groups, group, group_sids, group_sid = (
+        [], [sorted_templates[0]], [], template_seed_ids[sorted_templates[0]])
+
+    for i in range(1, len(sorted_templates)):
+        # Check that we don't exceed the maximum group size first
+        if len(group) >= group_size or (
+                template_seed_ids[sorted_templates[i]] != group_sid):
+            groups.append(group)
+            group = [sorted_templates[i]]
+            group_sids.append(group_sid)
+            group_sid = template_seed_ids[sorted_templates[i]]
+        else:
+            group.append(sorted_templates[i])
+    # Get the final group
+    groups.append(group)
+    group_sids.append(group_sid)
+
+    # Check if all the groups are full
+    groups_full = sum([len(grp) == group_size for grp in groups])
+    if groups_full >= (len(template_seed_ids) // group_size) - 1:
+        return groups
+
+    # Smush together groups until group-size condition is met.
+    # Make list of group ids - compare ungrouped sids to intersection of sids
+    # in group - add most similar, then repeat. Start with least sids.
+
+    n_original_groups = len(groups)
+    grouped = np.zeros(n_original_groups, dtype=bool)
+    # Use -1 as no group given
+    group_ids = np.ones(n_original_groups, dtype=int) * -1
+
+    # Sort groups by length of seed-ids
+    order = np.argsort([len(sid) for sid in group_sids])
+    groups = [groups[i] for i in order]
+    group_sids = [group_sids[i] for i in order]
+
+    # Assign shortest group to the zeroth group
+    grouped[0], group_id = 1, 0
+    group_ids[0] = group_id
+    group_sid = group_sids[0]
+    group_len = len(groups[0])
+    # Loop until all groups have been assigned a final group
+    while grouped.sum() < n_original_groups:
+        # Work out difference between groups
+        diffs = [(i, len(group_sid.symmetric_difference(other_sid)))
+                 for i, other_sid in enumerate(group_sids) if not grouped[i]]
+        diffs.sort(key=lambda tup: tup[1])
+        closest_group_id = diffs[0][0]
+
+        if group_len + len(groups[closest_group_id]) > group_size:
+            # Max size reached, make new group
+            group_id += 1
+            # Take the next shortest ungrouped group
+            i = 0
+            while grouped[i]:
+                i += 1
+            group_sid = group_sids[i]
+            grouped[i] = 1
+            group_ids[i] = group_id
+            group_len = len(groups[i])
+        else:
+            # Add in closest
+            grouped[closest_group_id] = 1
+            group_ids[closest_group_id] = group_id
+            # Update the group seed ids to include the new ones
+            group_sid = group_sid.union(group_sids[closest_group_id])
+            group_len += len(groups[closest_group_id])
+
+    out_groups = []
+    for group_id in set(group_ids):
+        out_group = [t for i in range(n_original_groups)
+                     if group_ids[i] == group_id for t in groups[i]]
+        out_groups.append(out_group)
+    return out_groups
 
 
 if __name__ == "__main__":

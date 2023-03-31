@@ -25,7 +25,7 @@ from eqcorrscan.core.match_filter.helpers import (
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.pre_processing import (
-    dayproc, shortproc, _prep_data_for_correlation, _quick_copy_stream)
+    multi_process, _prep_data_for_correlation, _quick_copy_stream)
 
 Logger = logging.getLogger(__name__)
 
@@ -117,8 +117,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
         filter the continuous data.
     :type daylong: bool
     :param daylong:
-        Set to True to use the
-        :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
+        Set to True to assert that data should be day-long. This
         preforms additional checks and is more efficient for day-long data
         over other methods.
     :type parallel_process: bool
@@ -137,7 +136,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param cores: Number of workers for processing and correlation.
     :type ignore_length: bool
     :param ignore_length:
-        If using daylong=True, then dayproc will try check that the data
+        If using daylong=True, then processing will try check that the data
         are there for at least 80% of the day, if you don't want this check
         (which will raise an error if too much data are missing) then set
         ignore_length=True.  This is not recommended!
@@ -158,8 +157,10 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
     """
+    # Avoid circular imports
     from eqcorrscan.core.match_filter.party import Party
     from eqcorrscan.core.match_filter.family import Family
+    from eqcorrscan.core.match_filter.template import group_templates_by_seedid
 
     master = templates[0]
     peak_cores = kwargs.get('peak_cores', process_cores)
@@ -200,11 +201,12 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     detections = []
     party = Party()
     if group_size is not None:
-        n_groups = int(len(templates) / group_size)
-        if n_groups * group_size < len(templates):
-            n_groups += 1
+        template_groups = group_templates_by_seedid(
+            templates=templates, st_seed_ids={tr.id for tr in stream},
+            group_size=group_size)
     else:
-        n_groups = 1
+        template_groups = [templates]
+    n_groups = len(template_groups)
     kwargs.update({'peak_cores': kwargs.get('peak_cores', process_cores)})
     for st_chunk in streams:
         chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
@@ -216,15 +218,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
             if len(tr) > len(st_chunk[0]):
                 tr.data = tr.data[0:len(st_chunk[0])]
         for i in range(n_groups):
-            if group_size is not None:
-                end_group = (i + 1) * group_size
-                start_group = i * group_size
-                if i == n_groups:
-                    end_group = len(templates)
-            else:
-                end_group = len(templates)
-                start_group = 0
-            template_group = [t for t in templates[start_group: end_group]]
+            template_group = template_groups[i]
             detections += match_filter(
                 template_names=[t.name for t in template_group],
                 template_list=[t.st for t in template_group], st=st_chunk,
@@ -277,7 +271,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
     :param daylong: Whether to enforce day-length files or not.
     :type ignore_length: bool
     :param ignore_length:
-        If using daylong=True, then dayproc will try check that the data
+        If using daylong=True, then processing will try check that the data
         are there for at least 80% of the day, if you don't want this check
         (which will raise an error if too much data are missing) then set
         ignore_length=True.  This is not recommended!
@@ -307,7 +301,6 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             Logger.warning(
                 'Processing day-long data, but template was cut from %i s long'
                 ' data, will reduce correlations' % master.process_length)
-        func = dayproc
         process_length = 86400
         # Check that data all start on the same day, otherwise strange
         # things will happen...
@@ -320,7 +313,6 @@ def _group_process(template_group, parallel, cores, stream, daylong,
             starttime = stream.sort(['starttime'])[0].stats.starttime
     else:
         # We want to use shortproc to allow overlaps
-        func = shortproc
         starttime = stream.sort(['starttime'])[0].stats.starttime
     endtime = stream.sort(['endtime'])[-1].stats.endtime
     data_len_samps = round((endtime - starttime) * master.samp_rate) + 1
@@ -366,7 +358,7 @@ def _group_process(template_group, parallel, cores, stream, daylong,
         if len(chunk_stream) > 0:
             Logger.debug(
                 f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
-            _processed_stream = func(st=chunk_stream, **kwargs)
+            _processed_stream = multi_process(st=chunk_stream, **kwargs)
             # If data have more zeros then pre-processing will return a
             # trace of 0 length
             _processed_stream.traces = [
