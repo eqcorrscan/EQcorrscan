@@ -774,8 +774,6 @@ class Tribe(object):
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
         """
-        from obspy.clients.fdsn.client import FDSNException
-
         # This uses get_waveforms_bulk to get data - not all client types have
         # this, so we check and monkey patch here.
         if not hasattr(client, "get_waveforms_bulk"):
@@ -796,110 +794,21 @@ class Tribe(object):
             if max_delay > pad:
                 pad = max_delay
         download_groups = int(endtime - starttime) / data_length
-        template_channel_ids = []
-        for template in self.templates:
-            for tr in template.st:
-                if tr.stats.network not in [None, '']:
-                    chan_id = (tr.stats.network,)
-                else:
-                    chan_id = ('*',)
-                if tr.stats.station not in [None, '']:
-                    chan_id += (tr.stats.station,)
-                else:
-                    chan_id += ('*',)
-                if tr.stats.location not in [None, '']:
-                    chan_id += (tr.stats.location,)
-                else:
-                    chan_id += ('*',)
-                if tr.stats.channel not in [None, '']:
-                    if len(tr.stats.channel) == 2:
-                        chan_id += (tr.stats.channel[0] + '?' +
-                                    tr.stats.channel[-1],)
-                    else:
-                        chan_id += (tr.stats.channel,)
-                else:
-                    chan_id += ('*',)
-                template_channel_ids.append(chan_id)
-        template_channel_ids = list(set(template_channel_ids))
+
         if return_stream:
             stream = Stream()
         if int(download_groups) < download_groups:
             download_groups = int(download_groups) + 1
         else:
             download_groups = int(download_groups)
+
+        # Get data in advance
         for i in range(download_groups):
-            bulk_info = []
-            for chan_id in template_channel_ids:
-                bulk_info.append((
-                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
-                    starttime + (i * data_length) - (pad + buff),
-                    starttime + ((i + 1) * data_length) + (pad + buff)))
-            for retry_attempt in range(retries):
-                try:
-                    Logger.info("Downloading data")
-                    st = client.get_waveforms_bulk(bulk_info)
-                    Logger.info(
-                        "Downloaded data for {0} traces".format(len(st)))
-                    break
-                except FDSNException as e:
-                    if "Split the request in smaller" in " ".join(e.args):
-                        Logger.warning(
-                            "Datacentre does not support large requests: "
-                            "splitting request into smaller chunks")
-                        st = Stream()
-                        for _bulk in bulk_info:
-                            try:
-                                st += client.get_waveforms_bulk([_bulk])
-                            except Exception as e:
-                                Logger.error("No data for {0}".format(_bulk))
-                                Logger.error(e)
-                                continue
-                        Logger.info("Downloaded data for {0} traces".format(
-                            len(st)))
-                        break
-                except Exception as e:
-                    Logger.error(e)
-                    continue
-            else:
-                raise MatchFilterError(
-                    "Could not download data after {0} attempts".format(
-                        retries))
-            # Get gaps and remove traces as necessary
-            if min_gap:
-                gaps = st.get_gaps(min_gap=min_gap)
-                if len(gaps) > 0:
-                    Logger.warning("Large gaps in downloaded data")
-                    st.merge()
-                    gappy_channels = list(
-                        set([(gap[0], gap[1], gap[2], gap[3])
-                             for gap in gaps]))
-                    _st = Stream()
-                    for tr in st:
-                        tr_stats = (tr.stats.network, tr.stats.station,
-                                    tr.stats.location, tr.stats.channel)
-                        if tr_stats in gappy_channels:
-                            Logger.warning(
-                                "Removing gappy channel: {0}".format(tr))
-                        else:
-                            _st += tr
-                    st = _st
-                    st.split()
-            st.detrend("simple").merge()
-            st.trim(starttime=starttime + (i * data_length) - pad,
-                    endtime=starttime + ((i + 1) * data_length) + pad)
-            for tr in st:
-                if not _check_daylong(tr.data):
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} contains more zeros than non-zero, "
-                        "removed".format(tr.id))
-            for tr in st:
-                if tr.stats.endtime - tr.stats.starttime < \
-                   0.8 * data_length:
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} is less than 80% of the required length"
-                        ", removed".format(tr.id))
+            _starttime = starttime + (i * data_length) - pad
+            _endtime = starttime + ((i + 1) * data_length) + pad
+            st = self._get_detection_stream(
+                client=client, starttime=_starttime, endtime=_endtime,
+                retries=retries, min_gap=min_gap, buff=buff)
             if return_stream:
                 stream += st
             try:
@@ -1071,6 +980,104 @@ class Tribe(object):
             t.event = event
             self.templates.append(t)
         return self
+
+    @property
+    def _template_channel_ids(self):
+        template_channel_ids = set()
+        for template in self.templates:
+            for tr in template.st:
+                # Cope with missing info and convert to wildcards
+                n, s, l, c = tr.id.split('.')
+                if n in [None, '']:
+                    n = "*"
+                if s in [None, '']:
+                    s = "*"
+                if l in [None, '']:
+                    l = "*"
+                if c in [None, '']:
+                    c = "*"
+                # Cope with old seisan chans
+                if len(c) == 2:
+                    c = f"{c[0]}?{c[-1]}"
+                template_channel_ids.add((n, s, l, c))
+        return template_channel_ids
+
+    def _get_detection_stream(self, client, starttime, endtime, retries,
+                              min_gap, buff):
+        from obspy.clients.fdsn.client import FDSNException
+        
+        bulk_info = []
+        for chan_id in self._template_channel_ids:
+            bulk_info.append((
+                chan_id[0], chan_id[1], chan_id[2], chan_id[3],
+                starttime - buff, endtime + buff))
+
+        for retry_attempt in range(retries):
+            try:
+                Logger.info("Downloading data")
+                st = client.get_waveforms_bulk(bulk_info)
+                Logger.info(
+                    "Downloaded data for {0} traces".format(len(st)))
+                break
+            except FDSNException as e:
+                if "Split the request in smaller" in " ".join(e.args):
+                    Logger.warning(
+                        "Datacentre does not support large requests: "
+                        "splitting request into smaller chunks")
+                    st = Stream()
+                    for _bulk in bulk_info:
+                        try:
+                            st += client.get_waveforms_bulk([_bulk])
+                        except Exception as e:
+                            Logger.error("No data for {0}".format(_bulk))
+                            Logger.error(e)
+                            continue
+                    Logger.info("Downloaded data for {0} traces".format(
+                        len(st)))
+                    break
+            except Exception as e:
+                Logger.error(e)
+                continue
+        else:
+            raise MatchFilterError(
+                "Could not download data after {0} attempts".format(
+                    retries))
+        # Get gaps and remove traces as necessary
+        if min_gap:
+            gaps = st.get_gaps(min_gap=min_gap)
+            if len(gaps) > 0:
+                Logger.warning("Large gaps in downloaded data")
+                st.merge()
+                gappy_channels = list(
+                    set([(gap[0], gap[1], gap[2], gap[3])
+                         for gap in gaps]))
+                _st = Stream()
+                for tr in st:
+                    tr_stats = (tr.stats.network, tr.stats.station,
+                                tr.stats.location, tr.stats.channel)
+                    if tr_stats in gappy_channels:
+                        Logger.warning(
+                            "Removing gappy channel: {0}".format(tr))
+                    else:
+                        _st += tr
+                st = _st
+                st.split()
+        st.detrend("simple").merge()
+        st.trim(starttime=starttime, endtime=endtime)
+        for tr in st:
+            if not _check_daylong(tr.data):
+                st.remove(tr)
+                Logger.warning(
+                    "{0} contains more zeros than non-zero, "
+                    "removed".format(tr.id))
+        for tr in st:
+            if tr.stats.endtime - tr.stats.starttime < \
+                    0.8 * (endtime - starttime):
+                st.remove(tr)
+                Logger.warning(
+                    "{0} is less than 80% of the required length"
+                    ", removed".format(tr.id))
+        return st
 
 
 def read_tribe(fname):
