@@ -16,7 +16,7 @@ from timeit import default_timer
 from collections import defaultdict
 
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from obspy import Catalog, UTCDateTime, Stream
 
 from eqcorrscan.core.match_filter.helpers import (
@@ -73,7 +73,7 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                   xcorr_func=None, concurrency=None, cores=None,
                   ignore_length=False, ignore_bad_data=False,
                   overlap="calculate", full_peaks=False, process_cores=None,
-                  **kwargs):
+                  pool_executor=None, **kwargs):
     """
     Pre-process and compute detections for a group of templates.
 
@@ -153,6 +153,9 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     :param process_cores:
         Number of processes to use for pre-processing (if different to
         `cores`).
+    :type pool_executor: ProcessPoolExecutor
+    :param pool_executor:
+            Executor to conduct sequential steps in parallel.
 
     :return:
         :class:`eqcorrscan.core.match_filter.Party` of families of detections.
@@ -161,6 +164,11 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
     from eqcorrscan.core.match_filter.party import Party
     from eqcorrscan.core.match_filter.family import Family
     from eqcorrscan.core.match_filter.template import group_templates_by_seedid
+
+    shut_down_executor = False
+    if pool_executor is None:
+        pool_executor = ProcessPoolExecutor()
+        shut_down_executor = True
 
     master = templates[0]
     peak_cores = kwargs.get('peak_cores', process_cores)
@@ -249,6 +257,8 @@ def _group_detect(templates, stream, threshold, threshold_type, trig_int,
                                 template.prepick * 1e9))
                     family.detections.append(detection)
                 party += family
+    if shut_down_executor:
+        pool_executor.shutdown()
     return party
 
 
@@ -396,6 +406,7 @@ def _mad(cccsum):
     return np.median(np.abs(cccsum))
 
 
+# TODO: change match_filter to make a tribe and run tribe.detect to take advantage of parallelism
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plot=False, plotdir=None,
                  xcorr_func=None, concurrency=None, cores=None,
