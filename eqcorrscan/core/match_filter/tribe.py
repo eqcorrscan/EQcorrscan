@@ -603,6 +603,10 @@ class Tribe(object):
         """
         party = Party()
         # template_groups = group_templates(self.templates)
+        # TODO: Enforce that this will only run on similarly grouped templates
+        #  and suggest alternative approach to user. This will enable this func
+        #  to take a queue of input streams and carry on working on them as
+        #  they come.
         template_groups = quick_group_templates(self.templates)
         if len(template_groups) > 1 and pre_processed:
             raise NotImplementedError(
@@ -835,10 +839,11 @@ class Tribe(object):
             download_groups = int(download_groups)
 
         # Get data in advance
-        shut_down_executor = False
-        if pool_executor is None:
-            pool_executor = ProcessPoolExecutor()
-            shut_down_executor = True
+        # TODO: Turn this into queues, with out-queue containing streams and
+        #  going straight to .detect. The input queue should contain the
+        #  starttimes and endtimes of the download groups.
+        pool_executor = ProcessPoolExecutor()
+        shut_down_executor = True
         _starttime = starttime - pad
         _endtime = starttime + data_length + pad
         future_st = pool_executor.submit(
@@ -1135,6 +1140,9 @@ class Tribe(object):
                       process_cores, ignore_bad_data, arg_check,
                       **kwargs):
         """ Group detection part two... """
+        # TODO: If we stop tribes from being able to run differently processes
+        #  templates then this should all be within detect. This would simplify
+        #  the stream queue logic.
         # Argument handling
         if overlap is None:
             overlap = 0.0
@@ -1151,11 +1159,16 @@ class Tribe(object):
         peak_cores = kwargs.get('peak_cores', process_cores)
         if peak_cores:
             parallel = True
+        else:
+            parallel = False
 
         # 1. Process stream (this could/should be done before this method to
         #                    take advantage of the pool over multiple streams
         #                    e.g. client_detect) - make sure data are not
         #                    copied unneceseraily
+
+        # TODO: this should be taken care of by a Process with an in-queue
+        #  from detect and an out-queue that comes here.
         if not pre_processed:
             st_chunks = _group_process(
                 filt_order=self.templates[0].filt_order,
@@ -1168,7 +1181,8 @@ class Tribe(object):
                 stream=stream,
                 daylong=daylong,
                 ignore_length=ignore_length,
-                overlap=overlap)
+                overlap=overlap,
+                ignore_bad_data=ignore_bad_data)
         else:
             st_chunks = [stream]
 
@@ -1207,7 +1221,8 @@ class Tribe(object):
                     multichannel_normxcorr=multichannel_normxcorr,
                     output_queue=correlation_queue,
                     poison_queue=poison_queue
-                )
+                ),
+                name="correlator"
             )
             threshold_process = Process(
                 target=_threshold_processor,
@@ -1225,7 +1240,8 @@ class Tribe(object):
                     stream=plotting_st,  # Only required for plotting
                     output_queue=peaks_queue,
                     poison_queue=poison_queue,
-                )
+                ),
+                name="thresholder"
             )
             detector_process = Process(
                 target=_make_detections,
@@ -1235,7 +1251,8 @@ class Tribe(object):
                     delta=st_chunk[0].stats.delta,
                     output_queue=detection_queue,
                     poison_queue=poison_queue,
-                )
+                ),
+                name="detector"
             )
 
             # Start processes
@@ -1248,6 +1265,7 @@ class Tribe(object):
                 templates_queue.put(
                     [(t.name, _quick_copy_stream(t.st))
                      for t in template_group])
+            templates_queue.put(None)  # close off the queue
 
             # Get the results out of the end!
             detections = []
@@ -1258,15 +1276,21 @@ class Tribe(object):
                 detections.extend(group_out)
 
             # Close queues and processes
-            correlation_process.close()
-            threshold_process.close()
-            detector_process.close()
+            for p in [correlation_process, threshold_process, detector_process]:
+                Logger.info(f"Joining {p.name}")
+                p.join()
+                Logger.info(f"Closing {p.name}")
+                p.close()
 
-            poison_queue.close()
-            templates_queue.close()
-            correlation_queue.close()
-            peaks_queue.close()
-            detection_queue.close()
+            for q, q_name in [(poison_queue, 'poison'),
+                              (templates_queue, 'templates'),
+                              (correlation_queue, 'correlations'),
+                              (peaks_queue, 'peaks'),
+                              (detection_queue, 'detections')]:
+                Logger.info(f"Joining {q_name}")
+                q.join()
+                Logger.info(f"Closing {q_name}")
+                q.close()
 
             # post - add in threshold, threshold_type to all detections
             for detection in detections:

@@ -791,11 +791,11 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
         # Check that data all start on the same day, otherwise strange
         # things will happen...
         startdates = [starttime.date for starttime in starttimes]
-        if not len(set(starttimes)) == 1:
+        if not len(set(startdates)) == 1:
             Logger.warning('Data start on different days, setting to last day')
-            starttime = starttimes[-1]
+            starttime = UTCDateTime(startdates[-1])
         else:
-            starttime = starttimes[0]  # Can take any
+            starttime = UTCDateTime(startdates[0])  # Can take any
     else:
         # We want to use shortproc to allow overlaps
         starttime = starttimes[0]
