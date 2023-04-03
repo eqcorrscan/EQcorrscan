@@ -739,6 +739,145 @@ def _fill_gaps(tr):
     return gaps, tr
 
 
+def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
+                   parallel, cores, stream, daylong,
+                   ignore_length, ignore_bad_data, overlap):
+    """
+    Process and chunk data.
+
+    :type parallel: bool
+    :param parallel: Whether to use parallel processing or not
+    :type cores: int
+    :param cores: Number of cores to use, can be False to use all available.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param stream: Stream to process, will be left intact.
+    :type daylong: bool
+    :param daylong: Whether to enforce day-length files or not.
+    :type ignore_length: bool
+    :param ignore_length:
+        If using daylong=True, then processing will try check that the data
+        are there for at least 80% of the day, if you don't want this check
+        (which will raise an error if too much data are missing) then set
+        ignore_length=True.  This is not recommended!
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
+    :type overlap: float
+    :param overlap: Number of seconds to overlap chunks by.
+
+    :return: list of processed streams.
+    """
+    processed_streams = []
+    kwargs = {
+        'filt_order': filt_order,
+        'highcut': highcut, 'lowcut': lowcut,
+        'samp_rate': samp_rate, 'parallel': parallel,
+        'num_cores': cores, 'ignore_length': ignore_length,
+        'ignore_bad_data': ignore_bad_data}
+    # Processing always needs to be run to account for gaps - pre-process will
+    # check whether filtering and resampling needs to be done.
+
+    starttimes = sorted([tr.stats.starttime for tr in stream])
+    endtimes = sorted([tr.stats.endtime for tr in stream])
+
+    if daylong:
+        if process_length != 86400:
+            Logger.warning(
+                f'Processing day-long data, but template was cut from '
+                f'{process_length} s long data, will reduce correlations')
+        process_length = 86400
+        # Check that data all start on the same day, otherwise strange
+        # things will happen...
+        startdates = [starttime.date for starttime in starttimes]
+        if not len(set(starttimes)) == 1:
+            Logger.warning('Data start on different days, setting to last day')
+            starttime = starttimes[-1]
+        else:
+            starttime = starttimes[0]  # Can take any
+    else:
+        # We want to use shortproc to allow overlaps
+        starttime = starttimes[0]
+    endtime = endtimes[-1]
+    data_len_samps = round((endtime - starttime) * samp_rate) + 1
+    assert overlap < process_length, "Overlap must be less than process length"
+    chunk_len_samps = (process_length - overlap) * samp_rate
+    n_chunks = int(data_len_samps // chunk_len_samps)
+    Logger.info(f"Splitting these data in {n_chunks} chunks")
+    if n_chunks == 0:
+        Logger.error('Data must be process_length or longer, not computing')
+        return []
+
+    for i in range(n_chunks):
+        kwargs.update(
+            {'starttime': starttime + (i * (process_length - overlap))})
+        if not daylong:
+            _endtime = kwargs['starttime'] + process_length
+            kwargs.update({'endtime': _endtime})
+        else:
+            _endtime = kwargs['starttime'] + 86400
+
+        # This is where data should be copied and only here!
+        chunk_stream = _quick_copy_stream(
+            stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
+        Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
+                     f"and {_endtime}")
+        if len(chunk_stream) == 0:
+            Logger.warning(
+                f"No data between {kwargs['starttime']} and {_endtime}")
+            continue
+        # Enforce chunk npts
+        for tr in chunk_stream:
+            tr.data = tr.data[0:int(
+                process_length * tr.stats.sampling_rate)]
+        _chunk_stream_lengths = {
+            tr.id: tr.stats.endtime - tr.stats.starttime
+            for tr in chunk_stream}
+        for tr_id, chunk_length in _chunk_stream_lengths.items():
+            # Remove traces that are too short.
+            if not ignore_length and chunk_length <= .8 * process_length:
+                tr = chunk_stream.select(id=tr_id)[0]
+                chunk_stream.remove(tr)
+                Logger.warning(
+                    "Data chunk on {0} starting {1} and ending {2} is "
+                    "below 80% of the requested length, will not use"
+                    " this.".format(
+                        tr.id, tr.stats.starttime, tr.stats.endtime))
+        if len(chunk_stream) > 0:
+            Logger.debug(
+                f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
+            _processed_stream = multi_process(st=chunk_stream, **kwargs)
+            # If data have more zeros then pre-processing will return a
+            # trace of 0 length
+            _processed_stream.traces = [
+                tr for tr in _processed_stream if tr.stats.npts != 0]
+            if len(_processed_stream) == 0:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
+            # Pre-procesing does additional checks for zeros - we need to check
+            # again whether we actually have something useful from this.
+            processed_chunk_stream_lengths = [
+                tr.stats.endtime - tr.stats.starttime
+                for tr in _processed_stream]
+            if min(processed_chunk_stream_lengths) >= .8 * process_length:
+                processed_streams.append(_processed_stream)
+            else:
+                Logger.warning(
+                    f"Data quality insufficient between {kwargs['starttime']}"
+                    f" and {_endtime}")
+                continue
+
+    if _endtime < stream[0].stats.endtime:
+        Logger.warning(
+            "Last bit of data between {0} and {1} will go unused "
+            "because it is shorter than a chunk of {2} s".format(
+                _endtime, stream[0].stats.endtime, process_length))
+    return processed_streams
+
+
 def _quick_copy_trace(trace, deepcopy_data=True):
     """
     Function to quickly copy a trace. Sets values in the traces' and trace
