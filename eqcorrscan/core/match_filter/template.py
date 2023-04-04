@@ -26,8 +26,7 @@ from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
-from eqcorrscan.core.match_filter.matched_filter import (
-    _group_detect, MatchFilterError)
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.core import template_gen
 
 Logger = logging.getLogger(__name__)
@@ -531,11 +530,12 @@ class Template(object):
         .. Note::
             See tutorials for example.
         """
+        from eqcorrscan.core.match_filter.tribe import Tribe
         if kwargs.get("plotvar") is not None:
             Logger.warning("plotvar is depreciated, use plot instead")
             plot = kwargs.get("plotvar")
-        party = _group_detect(
-            templates=[self], stream=stream.copy(), threshold=threshold,
+        party = Tribe(templates=[self]).detect(
+            stream=stream, threshold=threshold,
             threshold_type=threshold_type, trig_int=trig_int, plotdir=plotdir,
             plot=plot, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,

@@ -1030,8 +1030,9 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         stream_data = np.zeros(stream_length, dtype=np.float32)
         stream_channel = stream.select(id=seed_id)
         if len(stream_channel) > 1:
-            raise NotImplementedError(
-                "Multiple channels in continuous data for {0}".format(seed_id))
+            msg = f"Multiple channels in continuous data for {seed_id}"
+            Logger.error(msg)
+            raise NotImplementedError(msg)
         stream_channel = stream_channel[0]
         if stream_channel.stats.npts == stream_length:
             stream_data = stream_channel.data
