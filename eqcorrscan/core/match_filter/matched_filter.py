@@ -12,20 +12,11 @@ with data and output the detections.
     (https://www.gnu.org/copyleft/lesser.html)
 """
 import logging
-from timeit import default_timer
-from collections import defaultdict
 
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from obspy import Catalog, UTCDateTime, Stream
+from obspy import Stream
 
-from eqcorrscan.core.match_filter.helpers import (
-    _spike_test, extract_from_stream)
-
-from eqcorrscan.utils.correlate import get_stream_xcorr
-from eqcorrscan.utils.findpeaks import multi_find_peaks
-from eqcorrscan.utils.pre_processing import (
-    multi_process, _prep_data_for_correlation, _quick_copy_stream)
+from eqcorrscan.core.match_filter.helpers import extract_from_stream
 
 Logger = logging.getLogger(__name__)
 
@@ -67,216 +58,13 @@ class MatchFilterError(Exception):
         return self.value
 
 
-def _group_detect(templates, stream, threshold, threshold_type, trig_int,
-                  plot=False, plotdir=None, group_size=None,
-                  pre_processed=False, daylong=False, parallel_process=True,
-                  xcorr_func=None, concurrency=None, cores=None,
-                  ignore_length=False, ignore_bad_data=False,
-                  overlap="calculate", full_peaks=False, process_cores=None,
-                  pool_executor=None, **kwargs):
-    """
-    Pre-process and compute detections for a group of templates.
-
-    Will process the stream object, so if running in a loop, you will want
-    to copy the stream before passing it to this function.
-
-    :type templates: list
-    :param templates: List of :class:`eqcorrscan.core.match_filter.Template`
-    :type stream: `obspy.core.stream.Stream`
-    :param stream: Continuous data to detect within using the Template.
-    :type threshold: float
-    :param threshold:
-        Threshold level, if using `threshold_type='MAD'` then this will be
-        the multiple of the median absolute deviation.
-    :type threshold_type: str
-    :param threshold_type:
-        The type of threshold to be used, can be MAD, absolute or
-        av_chan_corr.  See Note on thresholding below.
-    :type trig_int: float
-    :param trig_int:
-        Minimum gap between detections from one template in seconds.
-        If multiple detections occur within trig_int of one-another, the one
-        with the highest cross-correlation sum will be selected.
-    :type plot: bool
-    :param plot:
-        Turn plotting on or off.
-    :type plotdir: str
-    :param plotdir:
-        The path to save plots to. If `plotdir=None` (default) then the
-        figure will be shown on screen.
-    :type group_size: int
-    :param group_size:
-        Maximum number of templates to run at once, use to reduce memory
-        consumption, if unset will use all templates.
-    :type pre_processed: bool
-    :param pre_processed:
-        Set to True if `stream` has already undergone processing, in this
-        case eqcorrscan will only check that the sampling rate is correct.
-        Defaults to False, which will use the
-        :mod:`eqcorrscan.utils.pre_processing` routines to resample and
-        filter the continuous data.
-    :type daylong: bool
-    :param daylong:
-        Set to True to assert that data should be day-long. This
-        preforms additional checks and is more efficient for day-long data
-        over other methods.
-    :type parallel_process: bool
-    :param parallel_process:
-    :type xcorr_func: str or callable
-    :param xcorr_func:
-        A str of a registered xcorr function or a callable for implementing
-        a custom xcorr function. For more details see:
-        :func:`eqcorrscan.utils.correlate.register_array_xcorr`
-    :type concurrency: str
-    :param concurrency:
-        The type of concurrency to apply to the xcorr function. Options are
-        'multithread', 'multiprocess', 'concurrent'. For more details see
-        :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
-    :type cores: int
-    :param cores: Number of workers for processing and correlation.
-    :type ignore_length: bool
-    :param ignore_length:
-        If using daylong=True, then processing will try check that the data
-        are there for at least 80% of the day, if you don't want this check
-        (which will raise an error if too much data are missing) then set
-        ignore_length=True.  This is not recommended!
-    :type overlap: float
-    :param overlap:
-        Either None, "calculate" or a float of number of seconds to
-        overlap detection streams by.  This is to counter the effects of
-        the delay-and-stack in calculating cross-correlation sums. Setting
-        overlap = "calculate" will work out the appropriate overlap based
-        on the maximum lags within templates.
-    :type full_peaks: bool
-    :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks_compiled`
-    :type process_cores: int
-    :param process_cores:
-        Number of processes to use for pre-processing (if different to
-        `cores`).
-    :type pool_executor: ProcessPoolExecutor
-    :param pool_executor:
-            Executor to conduct sequential steps in parallel.
-
-    :return:
-        :class:`eqcorrscan.core.match_filter.Party` of families of detections.
-    """
-    # Avoid circular imports
-    from eqcorrscan.core.match_filter.party import Party
-    from eqcorrscan.core.match_filter.family import Family
-    from eqcorrscan.core.match_filter.template import group_templates_by_seedid
-
-    shut_down_executor = False
-    if pool_executor is None:
-        pool_executor = ProcessPoolExecutor()
-        shut_down_executor = True
-
-    master = templates[0]
-    peak_cores = kwargs.get('peak_cores', process_cores)
-    kwargs.update(dict(peak_cores=peak_cores))
-    # Check that they are all processed the same.
-    lap = 0.0
-    for template in templates:
-        starts = [t.stats.starttime for t in template.st.sort(['starttime'])]
-        if starts[-1] - starts[0] > lap:
-            lap = starts[-1] - starts[0]
-        if not template.same_processing(master):
-            raise MatchFilterError('Templates must be processed the same.')
-    if overlap is None:
-        overlap = 0.0
-    elif not isinstance(overlap, float) and str(overlap) == str("calculate"):
-        overlap = lap
-    elif not isinstance(overlap, float):
-        raise NotImplementedError(
-            "%s is not a recognised overlap type" % str(overlap))
-    if overlap >= master.process_length:
-        Logger.warning(
-                f"Overlap of {overlap} s is greater than process "
-                f"length ({master.process_length} s), ignoring overlap")
-        overlap = 0
-    if not pre_processed:
-        if process_cores is None:
-            process_cores = cores
-        streams = _group_process(
-            template_group=templates, parallel=parallel_process,
-            cores=process_cores, stream=stream, daylong=daylong,
-            ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
-            overlap=overlap)
-        for _st in streams:
-            Logger.debug(f"Processed stream:\n{_st.__str__(extended=True)}")
-    else:
-        Logger.warning('Not performing any processing on the continuous data.')
-        streams = [stream]
-    detections = []
-    party = Party()
-    if group_size is not None:
-        template_groups = group_templates_by_seedid(
-            templates=templates, st_seed_ids={tr.id for tr in stream},
-            group_size=group_size)
-    else:
-        template_groups = [templates]
-    n_groups = len(template_groups)
-    kwargs.update({'peak_cores': kwargs.get('peak_cores', process_cores)})
-    for st_chunk in streams:
-        chunk_start, chunk_end = (min(tr.stats.starttime for tr in st_chunk),
-                                  max(tr.stats.endtime for tr in st_chunk))
-        Logger.info(
-            f'Computing detections between {chunk_start} and {chunk_end}')
-        st_chunk.trim(starttime=chunk_start, endtime=chunk_end)
-        for tr in st_chunk:
-            if len(tr) > len(st_chunk[0]):
-                tr.data = tr.data[0:len(st_chunk[0])]
-        for i in range(n_groups):
-            template_group = template_groups[i]
-            detections += match_filter(
-                template_names=[t.name for t in template_group],
-                template_list=[t.st for t in template_group], st=st_chunk,
-                xcorr_func=xcorr_func, concurrency=concurrency,
-                threshold=threshold, threshold_type=threshold_type,
-                trig_int=trig_int, plot=plot, plotdir=plotdir, cores=cores,
-                full_peaks=full_peaks, **kwargs)
-            # Select detections very quickly: detection order does not
-            # change, make dict of keys: template-names and values:
-            # list of indices and use indices to select
-            detection_idx_dict = defaultdict(list)
-            for n, detection in enumerate(detections):
-                detection_idx_dict[detection.template_name].append(n)
-
-            for template in template_group:
-                family = Family(template=template, detections=[])
-                fam_detections = [
-                    detections[idx]
-                    for idx in detection_idx_dict[family.template.name]]
-                for detection in fam_detections:
-                    if detection.event:
-                        # Add template prepick to the pick time (direct adding
-                        # to UTCDateTime.ns is quickest for many iterations).
-                        for pick in detection.event.picks:
-                            pick.time.ns += int(round(template.prepick * 1e9))
-                        for origin in detection.event.origins:
-                            origin.time.ns += int(round(
-                                template.prepick * 1e9))
-                    family.detections.append(detection)
-                party += family
-    if shut_down_executor:
-        pool_executor.shutdown()
-    return party
-
-
-def _mad(cccsum):
-    """
-    Internal helper to compute MAD-thresholds in parallel.
-    """
-    return np.median(np.abs(cccsum))
-
-
-# TODO: change match_filter to make a tribe and run tribe.detect to take advantage of parallelism
+# Note: maintained for backwards compatability. All efforts now in tribes
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plot=False, plotdir=None,
                  xcorr_func=None, concurrency=None, cores=None,
-                 plot_format='png', output_cat=False, output_event=True,
+                 plot_format='png', output_cat=False,
                  extract_detections=False, arg_check=True, full_peaks=False,
-                 peak_cores=None, spike_test=True, copy_data=True,
-                 export_cccsums=False, **kwargs):
+                 peak_cores=None, export_cccsums=False, **kwargs):
     """
     Main matched-filter detection function.
 
@@ -465,41 +253,8 @@ def match_filter(template_names, template_list, st, threshold,
         each template. For example, if a template trace starts 0.1 seconds
         before the actual arrival of that phase, then the pick time generated
         by match_filter for that phase will be 0.1 seconds early.
-
-    .. Note::
-        xcorr_func can be used as follows:
-
-        .. rubric::xcorr_func argument example
-
-        >>> import obspy
-        >>> import numpy as np
-        >>> from eqcorrscan.core.match_filter.matched_filter import (
-        ...    match_filter)
-        >>> from eqcorrscan.utils.correlate import time_multi_normxcorr
-        >>> # define a custom xcorr function
-        >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
-        ...     # Just to keep example short call other xcorr function
-        ...     # in practice you would define your own function here
-        ...     print('calling custom xcorr function')
-        ...     return time_multi_normxcorr(templates, stream, pads)
-        >>> # generate some toy templates and stream
-        >>> random = np.random.RandomState(42)
-        >>> template = obspy.read()
-        >>> stream = obspy.read()
-        >>> for num, tr in enumerate(stream):  # iter st and embed templates
-        ...     data = tr.data
-        ...     tr.data = random.randn(6000) * 5
-        ...     tr.data[100: 100 + len(data)] = data
-        >>> # call match_filter ane ensure the custom function is used
-        >>> detections = match_filter(
-        ...     template_names=['1'], template_list=[template], st=stream,
-        ...     threshold=.5, threshold_type='absolute', trig_int=1,
-        ...     plotvar=False,
-        ...     xcorr_func=custom_normxcorr)  # doctest:+ELLIPSIS
-        calling custom xcorr function...
     """
-    from eqcorrscan.core.match_filter.detection import Detection
-    from eqcorrscan.utils.plotting import _match_filter_plot
+    from eqcorrscan.core.match_filter import Tribe, Template
 
     if "plotvar" in kwargs.keys():
         Logger.warning("plotvar is depreciated, use plot instead")
@@ -542,124 +297,50 @@ def match_filter(template_names, template_list, st, threshold,
                 if isinstance(tr.data, np.ma.core.MaskedArray):
                     raise MatchFilterError(
                         'Template contains masked array, split first')
-    if spike_test:
-        Logger.info("Checking for spikes in data")
-        _spike_test(st)
-    if cores is not None:
-        parallel = True
-    else:
-        parallel = False
-    if peak_cores is None:
-        peak_cores = cores
-    if copy_data:
-        # Copy the stream here because we will muck about with it
-        Logger.info("Copying data to keep your input safe")
-        stream = _quick_copy_stream(st)
-        templates = [_quick_copy_stream(t) for t in template_list]
-        _template_names = template_names.copy()  # This can be a shallow copy
-    else:
-        stream, templates, _template_names = st, template_list, template_names
 
-    Logger.info("Reshaping templates")
-    stream, templates, _template_names = _prep_data_for_correlation(
-        stream=stream, templates=templates, template_names=_template_names)
-    if len(templates) == 0:
-        raise IndexError("No matching data")
-    Logger.info('Starting the correlation run for these data')
-    for template in templates:
-        Logger.debug(template.__str__())
-    Logger.debug(stream.__str__())
-    multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
-    outtic = default_timer()
-    [cccsums, no_chans, chans] = multichannel_normxcorr(
-        templates=templates, stream=stream, cores=cores, **kwargs)
-    if len(cccsums[0]) == 0:
-        raise MatchFilterError('Correlation has not run, zero length cccsum')
-    outtoc = default_timer()
-    Logger.info('Looping over templates and streams took: {0:.4f}s'.format(
-        outtoc - outtic))
-    Logger.debug(
-        'The shape of the returned cccsums is: {0}'.format(cccsums.shape))
-    Logger.debug(
-        'This is from {0} templates correlated with {1} channels of '
-        'data'.format(len(templates), len(stream)))
-    detections = []
-    if output_cat:
-        det_cat = Catalog()
-    if str(threshold_type) == str("absolute"):
-        thresholds = [threshold for _ in range(len(cccsums))]
-    elif str(threshold_type) == str('MAD'):
-        if cores:
-            median_cores = min([cores, len(cccsums)])
-            if len(cccsums) * len(cccsums[0]) < 2e7:  # parallel not worth it
-                median_cores = 1
-            with ThreadPoolExecutor(max_workers=median_cores) as executor:
-                # Because numpy releases GIL threading can use multiple cores
-                medians = executor.map(_mad, cccsums)
-            thresholds = [threshold * median for median in medians]
-        else:
-            thresholds = [threshold * np.median(np.abs(cccsum))
-                          for cccsum in cccsums]
-    else:
-        thresholds = [threshold * no_chans[i] for i in range(len(cccsums))]
-    if peak_cores is None:
-        peak_cores = cores
-    outtic = default_timer()
-    all_peaks = multi_find_peaks(
-        arr=cccsums, thresh=thresholds, parallel=parallel,
-        trig_int=int(trig_int * stream[0].stats.sampling_rate),
-        full_peaks=full_peaks, cores=peak_cores)
-    outtoc = default_timer()
-    Logger.info("Finding peaks took {0:.4f}s".format(outtoc - outtic))
-    for i, cccsum in enumerate(cccsums):
-        if export_cccsums:
-            fname = (f"{_template_names[i]}-{stream[0].stats.starttime}-"
-                     f"{stream[0].stats.endtime}_cccsum.npy")
-            np.save(file=fname, arr=cccsum)
-            Logger.info(f"Saved correlation statistic to {fname}")
-        if np.abs(np.mean(cccsum)) > 0.05:
-            Logger.warning('Mean is not zero!  Check this!')
-        # Set up a trace object for the cccsum as this is easier to plot and
-        # maintains timing
-        if plot:
-            _match_filter_plot(
-                stream=stream, cccsum=cccsum, template_names=_template_names,
-                rawthresh=thresholds[i], plotdir=plotdir,
-                plot_format=plot_format, i=i)
-        if all_peaks[i]:
-            Logger.debug("Found {0} peaks for template {1}".format(
-                len(all_peaks[i]), _template_names[i]))
-            for peak in all_peaks[i]:
-                detecttime = (
-                    stream[0].stats.starttime +
-                    peak[1] / stream[0].stats.sampling_rate)
-                detection = Detection(
-                    template_name=_template_names[i], detect_time=detecttime,
-                    no_chans=no_chans[i], detect_val=peak[0],
-                    threshold=thresholds[i], typeofdet='corr', chans=chans[i],
-                    threshold_type=threshold_type, threshold_input=threshold)
-                if output_cat or output_event:
-                    detection._calculate_event(template_st=templates[i])
-                detections.append(detection)
-                if output_cat:
-                    det_cat.append(detection.event)
-        else:
-            Logger.debug("Found 0 peaks for template {0}".format(
-                _template_names[i]))
+    # Make a tribe and run tribe.detect
+    tribe = Tribe()
+    # Cope with naming issues
+    name_mapper = {template_name: f"template_{i}"
+                   for i, template_name in enumerate(template_names)}
+    for template, template_name in zip(template_list, template_names):
+        tribe += Template(
+            st=template, name=name_mapper[template_name],
+            process_length=(st[0].stats.endtime - st[0].stats.starttime),
+            prepick=0.0
+        )
+
+    # Data must be pre-processed
+    party = tribe.detect(
+        stream=st, threshold=threshold, threshold_type=threshold_type,
+        trig_int=trig_int, plot=plot, plotdir=plotdir, daylong=False,
+        parallel_process=False, xcorr_func=xcorr_func, concurrency=concurrency,
+        cores=cores, ignore_length=True, ignore_bad_data=True, group_size=None,
+        overlap="calculate", full_peaks=full_peaks, save_progress=False,
+        process_cores=None, pre_processed=True, check_processing=False,
+        return_stream=False, plot_format=plot_format,
+        peak_cores=peak_cores, export_cccsums=export_cccsums, **kwargs
+    )
+    detections = [d for f in party for d in f]
+
+    # Remap template names
+    name_mapper = {val: key for key, val in name_mapper.items()}
+    for d in detections:
+        d.template_name = name_mapper[d.template_name]
+
     Logger.info("Made {0} detections from {1} templates".format(
-        len(detections), len(templates)))
+        len(detections), len(tribe)))
     if extract_detections:
-        detection_streams = extract_from_stream(stream, detections)
-    del stream, templates
+        detection_streams = extract_from_stream(st, detections)
 
     if output_cat and not extract_detections:
-        return detections, det_cat
+        return detections, party.get_catalog()
     elif not extract_detections:
         return detections
     elif extract_detections and not output_cat:
         return detections, detection_streams
     else:
-        return detections, det_cat, detection_streams
+        return detections, party.get_catalog(), detection_streams
 
 
 if __name__ == "__main__":

@@ -649,6 +649,11 @@ class Tribe(object):
             st = JoinableQueue()
             st.put(stream)
             stream = st
+            stream.put(None)  # Close off queue
+
+        # Used for sanity checking seed id overlap
+        template_ids = set(
+            tr.id for template in self.templates for tr in template.st)
 
         full_st = Stream()
         while True:
@@ -656,14 +661,20 @@ class Tribe(object):
             if st is None:
                 Logger.info("Ran out for streams, stopping")
                 break
+            if len(st) == 0:
+                break
             Logger.info(f"Running with stream:\n{st}")
+
             # 1. Process stream (this could/should be done before this method to
             #                    take advantage of the pool over multiple streams
             #                    e.g. client_detect) - make sure data are not
             #                    copied unneceseraily
+            # Retain only channels that have matches in templates
+            st = Stream([tr for tr in st if tr.id in template_ids])
+            if len(st) == 0:
+                raise IndexError(
+                    "No matching channels between stream and templates")
 
-            # TODO: this should be taken care of by a Process with an in-queue
-            #  from detect and an out-queue that comes here.
             _spike_test(st)
             if not pre_processed:
                 st_chunks = _group_process(
@@ -680,7 +691,9 @@ class Tribe(object):
                     overlap=overlap,
                     ignore_bad_data=ignore_bad_data)
             else:
-                st_chunks = [stream]
+                st_chunks = [st]
+            sampling_rate = st_chunks[0][0].stats.sampling_rate
+            Logger.info(f"Stream has been split into {len(st_chunks)} chunks")
 
             # 2. Split templates into groups
             # TODO: If we knew in advance what stream we were getting we could
@@ -716,7 +729,7 @@ class Tribe(object):
                         export_cccsums=kwargs.get('export_cccsums', False),
                         multichannel_normxcorr=multichannel_normxcorr,
                         output_queue=correlation_queue,
-                        poison_queue=poison_queue
+                        poison_queue=poison_queue,
                     ),
                     name="correlator"
                 )
@@ -727,7 +740,7 @@ class Tribe(object):
                         threshold=threshold,
                         threshold_type=threshold_type,
                         trig_int=int(
-                            trig_int * st_chunk[0].stats.sampling_rate),
+                            trig_int * sampling_rate),
                         parallel=parallel,
                         full_peaks=full_peaks,
                         peak_cores=peak_cores or 1,
@@ -772,6 +785,11 @@ class Tribe(object):
                         break
                     detections.extend(group_out)
                     Logger.info(f"Made {len(group_out)} detections")
+
+                # Check for exceptions
+                if not poison_queue.empty():
+                    e = poison_queue.get()
+                    raise e
 
                 # Close queues and processes
                 for p in [correlation_process, threshold_process,
@@ -1386,10 +1404,6 @@ def _check_for_poison(poison_queue: JoinableQueue) -> bool:
         return False
     # Put the poison back in the queue for another process to check on
     Logger.info("Poisoned")
-    if isinstance(poison, Exception):
-        traceback.print_exc(poison)
-        # Don't print this traceback again
-        poison = "Dead"
     poison_queue.put(poison)
     return True
 
@@ -1457,7 +1471,7 @@ def _correlate_processor(
             i += 1
         except Exception as e:
             Logger.error(
-                f"Caught exception in correlator:\n {traceback.print_exc(e)}")
+                f"Caught exception in correlator:\n {e}")
             poison_queue.put(e)
     Logger.debug("Putting None into output queue.")
     output_queue.put(None)
