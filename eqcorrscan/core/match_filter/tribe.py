@@ -15,6 +15,7 @@ import copy
 import getpass
 import glob
 import os
+import pickle
 import shutil
 import tarfile
 import tempfile
@@ -369,6 +370,10 @@ class Tribe(object):
         >>> tribe_back == tribe
         True
         """
+        if filename.endswith(".pkl"):
+            with open(filename, "rb") as f:
+                self.__iadd__(pickle.load(f))
+            return self
         with tarfile.open(filename, "r:*") as arc:
             temp_dir = tempfile.mkdtemp()
             arc.extractall(path=temp_dir, members=_safemembers(arc))
@@ -809,7 +814,7 @@ class Tribe(object):
 
                 # post - add in threshold, threshold_type to all detections
                 for detection in detections:
-                    detection.threshold = threshold
+                    detection.threshold_input = threshold
                     detection.threshold_type = threshold_type
 
                 # Select detections very quickly: detection order does not
@@ -830,9 +835,11 @@ class Tribe(object):
                         template=template, detections=family_detections)
                     chunk_party += family
 
-
             if save_progress:
-                chunk_party.write("eqcorrscan_temporary_party")
+                Logger.info("Pickling party to disk")
+                with open("eqcorrscan_temporary_party.pkl", "wb") as f:
+                    pickle.dump(chunk_party, f)
+                # chunk_party.write("eqcorrscan_temporary_party")
             if party_queue:
                 if return_stream:
                     party_queue.put((chunk_party, st))
@@ -1184,10 +1191,6 @@ class Tribe(object):
             Whether to ignore channels that have insufficient length data or
             not. Useful when the quality of data is not known, e.g. when
             downloading old, possibly triggered data from a datacentre
-        :type save_progress: bool
-        :param save_progress:
-            Whether to save the resulting party at every data step or not.
-            Useful for long-running processes.
 
         .. note::
             *Method specific arguments:*

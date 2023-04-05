@@ -15,6 +15,7 @@ import copy
 import glob
 import os
 import shutil
+import pickle
 import tarfile
 import tempfile
 import logging
@@ -802,6 +803,12 @@ class Party(object):
             filenames = glob.glob(filename)
         for _filename in filenames:
             Logger.info(f"Reading from {_filename}")
+            # Cope with pickled files
+            if _filename.endswith('.pkl'):
+                with open(_filename, "rb") as _f:
+                    chunk_party = pickle.load(_f)
+                self.__iadd__(chunk_party)
+                continue
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
                 arc.extractall(path=temp_dir, members=_safemembers(arc))

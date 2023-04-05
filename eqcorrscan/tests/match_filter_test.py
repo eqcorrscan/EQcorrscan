@@ -694,7 +694,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        for f in ['eqcorrscan_temporary_party.tgz']:
+        for f in ['eqcorrscan_temporary_party.pkl']:
             if os.path.isfile(f):
                 os.remove(f)
 
@@ -770,8 +770,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plot=False, parallel_process=False,
             save_progress=True)
         self.assertEqual(len(party), 4)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
-        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
+        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.pkl"))
+        saved_party = Party().read("eqcorrscan_temporary_party.pkl")
         self.assertEqual(party, saved_party)
 
     @pytest.mark.serial
@@ -826,10 +826,10 @@ class TestMatchObjectHeavy(unittest.TestCase):
             client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plot=False, save_progress=True)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
-        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
+        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.pkl"))
+        saved_party = Party().read("eqcorrscan_temporary_party.pkl")
         self.assertEqual(party, saved_party)
-        os.remove("eqcorrscan_temporary_party.tgz")
+        os.remove("eqcorrscan_temporary_party.pkl")
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
