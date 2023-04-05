@@ -252,9 +252,9 @@ int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads
     }
     #ifdef N_THREADS
     if (threads > N_THREADS){
-        printf("Setting threads to %i\n", N_THREADS);
+//        printf("Setting threads to %i\n", N_THREADS);
         threads = N_THREADS;
-        printf("OMP thinks there are %i threads\n", omp_get_max_threads());
+//        printf("OMP thinks there are %i threads\n", omp_get_max_threads());
     }
     #else
     threads = 1;
@@ -263,7 +263,7 @@ int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
-        printf("Running for %i\n", i);
+//        printf("Running for %i\n", i);
         ret_val += find_peaks(&arr[start_inds[i]], len, thresholds[i], &peak_positions[start_inds[i]]);
     }
 
