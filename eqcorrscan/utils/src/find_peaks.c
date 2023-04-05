@@ -128,6 +128,15 @@ int multi_decluster_ll(float *arr, long long *indices,
         start_ind += lengths[i];
     }
 
+    #ifdef N_THREADS
+    if (threads > N_THREADS){
+        printf("Setting threads to %i\n", N_THREADS);
+        threads = N_THREADS;
+    }
+    #else
+    threads = 1;
+    #endif
+
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
         ret_val += decluster_ll(
@@ -182,6 +191,14 @@ int multi_decluster(float *arr, long *indices,
         start_inds[i] = start_ind;
         start_ind += lengths[i];
     }
+    #ifdef N_THREADS
+    if (threads > N_THREADS){
+        printf("Setting threads to %i\n", N_THREADS);
+        threads = N_THREADS;
+    }
+    #else
+    threads = 1;
+    #endif
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
@@ -233,9 +250,20 @@ int multi_find_peaks(float *arr, long len, int n, float *thresholds, int threads
         start_inds[i] = start_ind;
         start_ind += len;
     }
+    #ifdef N_THREADS
+    if (threads > N_THREADS){
+        printf("Setting threads to %i\n", N_THREADS);
+        threads = N_THREADS;
+        printf("OMP thinks there are %i threads\n", omp_get_max_threads());
+    }
+    #else
+    threads = 1;
+    #endif
+
 
     #pragma omp parallel for num_threads(threads)
     for (i = 0; i < n; ++i){
+        printf("Running for %i\n", i);
         ret_val += find_peaks(&arr[start_inds[i]], len, thresholds[i], &peak_positions[start_inds[i]]);
     }
 
