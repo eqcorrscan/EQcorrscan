@@ -94,12 +94,13 @@ class Party(object):
             raise NotImplementedError(
                 'Ambiguous add, only allowed Party or Family additions.')
         for oth_fam in families:
-            added = False
-            for fam in self.families:
-                if fam.template == oth_fam.template:
-                    fam += oth_fam
-                    added = True
-            if not added:
+            fam = self.select(oth_fam.template.name)
+            # This check is taken care of by Family.__iadd__
+            # assert fam.template == oth_fam.template, (
+            #     "Matching template names, but different templates")
+            if fam:
+                fam += oth_fam
+            else:
                 self.families.append(oth_fam)
         return self
 
@@ -295,6 +296,10 @@ class Party(object):
             length += len(family)
         return length
 
+    @property
+    def _template_dict(self):
+        return {family.template.name: family for family in self}
+
     def select(self, template_name):
         """
         Select a specific family from the party.
@@ -303,8 +308,7 @@ class Party(object):
         :param template_name: Template name of Family to select from a party.
         :returns: Family
         """
-        return [fam for fam in self.families
-                if fam.template.name == template_name][0]
+        return self._template_dict.get(template_name)
 
     def sort(self):
         """
