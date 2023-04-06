@@ -1,7 +1,6 @@
 LIBRARY libutils.pyd
 EXPORTS
     find_peaks
-    multi_find_peaks
     decluster
     decluster_ll
     decluster_dist_time

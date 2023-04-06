@@ -13,6 +13,7 @@ import logging
 import numpy as np
 
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor
 from scipy import ndimage
 
 from eqcorrscan.utils.correlate import pool_boy
@@ -233,11 +234,14 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
                     pool.apply_async(internal_func, param) for param in params]
                 peaks = [res.get() for res in results]
         else:
-            peaks = _multi_find_peaks_compiled(
-                arr, thresh, trig_int, full_peaks=full_peaks, cores=cores)
+            to_run = ((arr[i], thresh[i], trig_int) for i in range(len(thresh)))
+            with ThreadPoolExecutor(cores) as executor:
+                results = executor.map(lambda args: find_peaks_compiled(*args), to_run)
+            peaks = [r for r in results]
     return peaks
 
 
+# TODO: Remove this func and the C code.
 def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks,
                                cores):
     """
