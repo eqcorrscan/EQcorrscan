@@ -1494,15 +1494,31 @@ class TestMatchObjectLight(unittest.TestCase):
 class TestTemplateGrouping(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        templates, data, _ = generate_synth_data(
-            nsta=10, ntemplates=20, nseeds=10, samp_rate=100.,
-            t_length=6., max_amp=10, max_lag=5., phaseout="all", jitter=0,
-            noise=True, same_phase=False)
+        templates = []
+        station_names = [
+            'ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
+            'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
+            'MALC']
+        for i in range(20):
+            template = Stream()
+            for j in range(10):
+                for c in ["EHZ", "EHN", "EHE"]:
+                    tr = Trace(
+                        data=np.random.randn(600),
+                        header=dict(station=station_names[j],
+                                    channel=c, network="NZ", location="10",
+                                    sampling_rate=100.,
+                                    starttime=UTCDateTime() + (i * 1000)))
+                    template += tr
+            templates.append(template)
+        st = templates[0].copy()
+        for tr in st:
+            tr.data = np.random.randn(3600 * 100)
         templates = [Template(name=str(i), st=t)
                      for i, t in enumerate(templates)]
         cls.templates = templates
-        cls.st = data
-        cls.st_seed_ids = {tr.id for tr in data}
+        cls.st = st
+        cls.st_seed_ids = {tr.id for tr in st}
 
     def test_all_grouped(self):
         groups = group_templates_by_seedid(

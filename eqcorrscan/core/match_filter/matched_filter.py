@@ -307,7 +307,7 @@ def match_filter(template_names, template_list, st, threshold,
         tribe += Template(
             st=template, name=name_mapper[template_name],
             process_length=(st[0].stats.endtime - st[0].stats.starttime),
-            prepick=0.0
+            prepick=0.0, samp_rate=template[0].stats.sampling_rate,
         )
 
     # Data must be pre-processed
