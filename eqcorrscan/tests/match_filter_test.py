@@ -3,6 +3,8 @@ A series of test functions for the core functions in EQcorrscan.
 """
 import copy
 import os
+import shutil
+import glob
 import unittest
 import pytest
 
@@ -27,7 +29,6 @@ from eqcorrscan.core.match_filter.template import (
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
-from eqcorrscan.utils.synth_seis import generate_synth_data
 
 
 class TestHelpers(unittest.TestCase):
@@ -279,11 +280,12 @@ class TestGeoNetCase(unittest.TestCase):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
         # data
-        tribe = self.tribe.copy()
-        for template in tribe.templates:
-            template.process_length = 86400
-            template.st = Stream(template.st[0])
-            # Only run one channel templates
+        # TODO: This does nothing
+        # tribe = self.tribe.copy()
+        # for template in tribe.templates:
+        #     template.process_length = 86400
+        #     template.st = Stream(template.st[0])
+        #     # Only run one channel templates
         party = self.tribe.copy().client_detect(
             client=client, starttime=self.t1, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
@@ -770,9 +772,13 @@ class TestMatchObjectHeavy(unittest.TestCase):
             trig_int=6.0, daylong=False, plot=False, parallel_process=False,
             save_progress=True)
         self.assertEqual(len(party), 4)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.pkl"))
-        saved_party = Party().read("eqcorrscan_temporary_party.pkl")
+        # Get all the parties
+        party_files = glob.glob(".parties/????/???/*.pkl")
+        saved_party = Party()
+        for pf in party_files:
+            saved_party += Party().read(pf)
         self.assertEqual(party, saved_party)
+        shutil.rmtree(".parties")
 
     @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
@@ -826,10 +832,15 @@ class TestMatchObjectHeavy(unittest.TestCase):
             client=client, starttime=self.t1 + 2.75, endtime=self.t2,
             threshold=8.0, threshold_type='MAD', trig_int=6.0,
             daylong=False, plot=False, save_progress=True)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.pkl"))
-        saved_party = Party().read("eqcorrscan_temporary_party.pkl")
+        self.assertTrue(os.path.isdir(".parties"))
+
+        # Get all the parties
+        party_files = glob.glob(".parties/????/???/*.pkl")
+        saved_party = Party()
+        for pf in party_files:
+            saved_party += Party().read(pf)
         self.assertEqual(party, saved_party)
-        os.remove("eqcorrscan_temporary_party.pkl")
+        shutil.rmtree(".parties")
         compare_families(
             party=party, party_in=self.party, float_tol=0.05,
             check_event=False)
