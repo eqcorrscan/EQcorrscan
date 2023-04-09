@@ -98,7 +98,7 @@ class Party(object):
             # This check is taken care of by Family.__iadd__
             # assert fam.template == oth_fam.template, (
             #     "Matching template names, but different templates")
-            if fam:
+            if fam is not None:
                 fam += oth_fam
             else:
                 self.families.append(oth_fam)
