@@ -889,9 +889,11 @@ class Tribe(object):
 
         # Get the party back
         Logger.info("Waiting for party")
+        killed = False
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
+                Logger.error("Killed")
                 break
             try:
                 party = party_queue.get_nowait()
@@ -899,6 +901,14 @@ class Tribe(object):
                 continue
             # Once we get the party we are free to go
             break
+
+        # Check for exceptions
+        if killed:
+            internal_error = poison_queue.get()
+            Logger.error(f"Raising error {internal_error} in main process")
+            # Now we can raise the error
+            if internal_error:
+                self._on_error(internal_error)
 
         Logger.info("Ensuring all templates are in party")
         additional_families = []
@@ -908,14 +918,6 @@ class Tribe(object):
             additional_families.append(
                 Family(template=template, detections=[]))
         party.families.extend(additional_families)
-
-        # Check for exceptions
-        if not poison_queue.empty():
-            internal_error = poison_queue.get()
-            Logger.error(f"Raising error {internal_error} in main process")
-            # Now we can raise the error
-            if internal_error:
-                self._on_error(internal_error)
 
         # Shut down the processes and close the queues
         shutdown = kwargs.get("shutdown", True)  # Allow client_detect to take control
