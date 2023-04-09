@@ -24,7 +24,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import Callable, List
+from typing import List
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -46,8 +46,8 @@ from eqcorrscan.core import template_gen
 
 from eqcorrscan.utils.correlate import get_stream_xcorr
 from eqcorrscan.utils.pre_processing import (
-    _check_daylong, _group_process, _quick_copy_stream,
-    _prep_data_for_correlation)
+    _check_daylong, _quick_copy_stream, _prep_data_for_correlation,
+    _group_process)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.plotting import _match_filter_plot
 
@@ -70,6 +70,7 @@ class Tribe(object):
         # Managers for Processes and Queues to be killed on errors
         self._processes = dict()
         self._queues = dict()
+        self._timeout = 10
 
     def __repr__(self):
         """
@@ -453,10 +454,14 @@ class Tribe(object):
     def _close_processes(self, processes: dict = None):
         processes = processes or self._processes
         for p_name, p in processes.items():
-            Logger.info(f"Joining {p_name}")
-            p.join()
-            Logger.info(f"Closing {p_name}")
-            p.close()
+            try:
+                Logger.info(f"Joining {p_name}")
+                p.join(timeout=self._timeout)
+                Logger.info(f"Closing {p_name}")
+                p.close()
+            except Exception as e:
+                Logger.error(f"Failed to join due to {e}: terminating")
+                p.terminate()
         return
 
     def _close_queues(self, queues: dict = None):
@@ -468,8 +473,8 @@ class Tribe(object):
 
     def _on_error(self, error):
         """ Gracefully close all child processes and queues and raise error """
-        self._close_processes()
         self._close_queues()
+        self._close_processes()
         raise error
 
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
@@ -819,7 +824,6 @@ class Tribe(object):
                     Logger.info(
                         f"Prepping {len(templates)} templates for correlation")
                     # We need to copy the stream here.
-                    # TODO: This is the main bottleneck stopping us from constantly loading the gpu - could be in another process.
                     st, templates, template_names = _prep_data_for_correlation(
                         stream=_quick_copy_stream(stream), templates=templates,
                         template_names=template_names)
@@ -866,7 +870,8 @@ class Tribe(object):
                     all_peaks, thresholds = _thresholder(
                         cccsums=cccsums, no_chans=no_chans,
                         template_names=template_names, threshold=threshold,
-                        threshold_type=threshold_type, trig_int=trig_int,
+                        threshold_type=threshold_type,
+                        trig_int=int(trig_int * sampling_rate),
                         parallel=parallel, full_peaks=full_peaks,
                         peak_cores=peak_cores, plot=plot, stream=stream,
                         plotdir=plotdir, plot_format=plot_format)
@@ -889,7 +894,6 @@ class Tribe(object):
 
         # Get the party back
         Logger.info("Waiting for party")
-        killed = False
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
@@ -920,7 +924,8 @@ class Tribe(object):
         party.families.extend(additional_families)
 
         # Shut down the processes and close the queues
-        shutdown = kwargs.get("shutdown", True)  # Allow client_detect to take control
+        shutdown = kwargs.get("shutdown", True)
+        # Allow client_detect to take control
         if shutdown:
             self._close_queues()
             self._close_processes()
