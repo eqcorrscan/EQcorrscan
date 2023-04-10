@@ -28,7 +28,9 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import math
+
 from packaging import version
+from timeit import default_timer
 
 from obspy import UTCDateTime
 
@@ -959,27 +961,38 @@ def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
         raise ImportError(f"FMF version {fast_matched_filter.__version__} "
                           f"must be >= {MIN_FMF_VERSION}")
     # Demean
+    tic = default_timer()
     template_arr -= template_arr.mean(axis=-1, keepdims=True)
     data_arr -= data_arr.mean(axis=-1, keepdims=True)
+    toc = default_timer()
+    Logger.info(f"Removing mean took {toc - tic:.4f} s")
 
-    multipliers = []
-    for x in range(data_arr.shape[0]):
-        # Check that stream is non-zero and above variance threshold
-        if not np.all(data_arr[x] == 0) and np.var(data_arr[x]) < 1e-8:
-            # Apply gain
-            data_arr[x] *= MULTIPLIER
-            Logger.warning(f"Low variance found for {x}, applying gain "
-                           "to stabilise correlations")
-            multipliers.append(MULTIPLIER)
-        else:
-            multipliers.append(1)
+    # Stability checking
+    tic = default_timer()
+    # var is fairly slow, var = mean(abs(a - a.mean()) ** 2) - mean is zero,
+    # so we can skip a step
+    stability_issues = np.logical_and(
+        # data_arr.var(axis=1, keepdims=True) < 1e-8,
+        np.mean(np.abs(data_arr) ** 2, axis=1, keepdims=True) < 1e-8,
+        ~np.all(data_arr == 0, axis=1, keepdims=True))
+    multipliers = np.ones_like(stability_issues, dtype=float)
+    multipliers[stability_issues] = MULTIPLIER
+    if np.any(stability_issues):
+        Logger.warning(
+            f"Low variance found for channels {np.where(stability_issues)},"
+            f"applying gain to stabilise correlations")
+        data_arr *= multipliers
+    toc = default_timer()
+    Logger.info(f"Checking stability took {toc - tic:.4f} s")
 
+    Logger.info("Handing off to FMF")
     cccsums = fmf(
         templates=template_arr, weights=weights, moveouts=pads,
         data=data_arr, step=step, arch=arch, normalize="full")
+    Logger.info("FMF returned")
     # Remove gain
-    for x in range(data_arr.shape[0]):
-        data_arr[x] *= multipliers[x]
+    if np.any(stability_issues):
+        data_arr /= multipliers
 
     return cccsums
 
@@ -1080,6 +1093,7 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
 
+    tic = default_timer()
     # Reshape templates into [templates x traces x time]
     t_arr = np.array([template_dict[seed_id]
                       for seed_id in seed_ids]).swapaxes(0, 1)
@@ -1089,6 +1103,8 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
     # Weights should be shaped like pads
     weights = np.ones_like(pads)
+    toc = default_timer()
+    Logger.info(f"Reshaping for FMF took {toc - tic:.4f} s")
 
     cccsums = _run_fmf_xcorr(
         template_arr=t_arr, weights=weights, pads=pads,
@@ -1141,8 +1157,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-def _get_array_dicts(templates, stream, stack, copy_streams=True):
+def _get_array_dicts(templates, stream, stack, *args, **kwargs):
     """ prepare templates and stream, return dicts """
+    tic = default_timer()
     # Do some reshaping
     # init empty structures for data storage
     template_dict = {}
@@ -1188,6 +1205,9 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         else:
             pad_list = [0 for _ in templates]
         pad_dict.update({seed_id: pad_list})
+    toc = default_timer()
+    Logger.info(f"Making array dicts for {len(seed_ids)} seed ids "
+                f"took {toc - tic:.4f} s")
 
     return stream_dict, template_dict, pad_dict, seed_ids
 

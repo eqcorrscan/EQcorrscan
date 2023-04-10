@@ -18,6 +18,7 @@ import os
 import pickle
 import shutil
 import tarfile
+import time
 import tempfile
 import traceback
 import logging
@@ -995,6 +996,7 @@ class Tribe(object):
             try:
                 party = party_queue.get_nowait()
             except Empty:
+                time.sleep(0.1)  # Give some time for syncs
                 continue
             # Once we get the party we are free to go
             break
@@ -1744,7 +1746,8 @@ def _threshold(
     return all_peaks, thresholds
 
 
-def _detect(template_names, all_peaks, starttime, delta, no_chans, chans, thresholds):
+def _detect(
+    template_names, all_peaks, starttime, delta, no_chans, chans, thresholds):
     tic = default_timer()
     detections = []
     for i, template_name in enumerate(template_names):
@@ -2028,6 +2031,7 @@ def _detections_to_party(
         output_queue.put(chunk_file)
 
     output_queue.put(None)
+    return
 
 
 def _reconstruct_party(
