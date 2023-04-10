@@ -744,11 +744,20 @@ class Tribe(object):
             template_groups = _group(
                 st=st_chunk, templates=self.templates, group_size=group_size)
             for i, template_group in enumerate(template_groups):
+                templates = [_quick_copy_stream(t.st) for t in template_group]
+                template_names = [t.name for t in template_group]
+                Logger.info(
+                    f"Prepping {len(templates)} templates for correlation")
+
+                # We need to copy the stream here.
+                _st, templates, template_names = _prep_data_for_correlation(
+                    stream=_quick_copy_stream(st_chunk), templates=templates,
+                    template_names=template_names)
+
                 all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
-                    templates=[_quick_copy_stream(t.st)
-                               for t in template_group],
-                    template_names=[t.name for t in template_group],
-                    stream=st_chunk,
+                    templates=templates,
+                    template_names=template_names,
+                    stream=_st,
                     multichannel_normxcorr=multichannel_normxcorr,
                     cores=cores, i=i, export_cccsums=export_cccsums,
                     parallel=parallel, peak_cores=peak_cores,
@@ -758,7 +767,7 @@ class Tribe(object):
                     plot_format=plot_format, **kwargs)
 
                 detections = _detect(
-                    template_names=[t.name for t in template_group],
+                    template_names=template_names,
                     all_peaks=all_peaks, starttime=starttime,
                     delta=delta, no_chans=no_chans,
                     chans=chans, thresholds=thresholds)
@@ -803,6 +812,8 @@ class Tribe(object):
         processed_stream_queue = JoinableQueue(maxsize=1)
         # Templates queue cannot have a max size - grouping goes big
         templates_queue = JoinableQueue()
+        prepped_stream_queue = JoinableQueue(maxsize=1)
+        prepped_templates_queue = JoinableQueue(maxsize=1)
         peaks_queue = JoinableQueue()
         detection_queue = JoinableQueue()
         party_file_queue = JoinableQueue()
@@ -829,7 +840,7 @@ class Tribe(object):
                 output_queue=grouping_stream_queue,
                 poison_queue=poison_queue,
             ),
-            name="pre_processor"
+            name="PreProcessor"
         )
         grouping_process = Process(
             target=_grouping_processor,
@@ -841,7 +852,18 @@ class Tribe(object):
                 group_size=group_size,
                 poison_queue=poison_queue,
             ),
-            name="grouper"
+            name="Grouper"
+        )
+        prepper_process = Process(
+            target=_prepper,
+            kwargs=dict(
+                input_stream_queue=processed_stream_queue,
+                input_templates_queue=templates_queue,
+                output_stream_queue=prepped_stream_queue,
+                output_templates_queue=prepped_templates_queue,
+                poison_queue=poison_queue,
+            ),
+            name="Prepper"
         )
         detector_process = Process(
             target=_make_detections,
@@ -851,7 +873,7 @@ class Tribe(object):
                 output_queue=detection_queue,
                 poison_queue=poison_queue,
             ),
-            name="detector"
+            name="Detector"
         )
         detection_builder_process = Process(
             target=_detections_to_party,
@@ -864,7 +886,7 @@ class Tribe(object):
                 output_queue=party_file_queue,
                 poison_queue=poison_queue,
             ),
-            name="detection-builder"
+            name="DetectionBuilder"
         )
         party_builder_process = Process(
             target=_reconstruct_party,
@@ -874,7 +896,7 @@ class Tribe(object):
                 poison_queue=poison_queue,
                 clean=~save_progress,
             ),
-            name="party-builder"
+            name="PartyBuilder"
         )
 
         # Cope with old tribes
@@ -887,6 +909,7 @@ class Tribe(object):
         self._processes.update({
             "pre-processor": pre_processor_process,
             "grouper": grouping_process,
+            "prepper": prepper_process,
             "detector": detector_process,
             "detection-builder": detection_builder_process,
             "party_builder": party_builder_process,
@@ -897,6 +920,8 @@ class Tribe(object):
             "grouping_stream": grouping_stream_queue,
             "processed_stream": processed_stream_queue,
             "templates": templates_queue,
+            "prepped_stream": prepped_stream_queue,
+            "prepped_templates": prepped_templates_queue,
             "peaks": peaks_queue,
             "detections": detection_queue,
             "party_file": party_file_queue,
@@ -906,55 +931,57 @@ class Tribe(object):
         # Start your engines!
         pre_processor_process.start()
         grouping_process.start()
+        prepper_process.start()
         detector_process.start()
         detection_builder_process.start()
         party_builder_process.start()
 
-        # Loop over input streams
-        j = 0  # Keep track of streams
+        # Loop over input streams and template groups
+        prev_starttime, i = None, 0  # Keep track of template groups
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
                 break
-            stream = processed_stream_queue.get()
-            if stream is None:
-                Logger.info("Ran out of streams, exiting correlation")
-                break
-            Logger.info(f"Got stream\n{stream}")
-            starttime = stream[0].stats.starttime
-            Logger.info(f"Starting correlation from {starttime}")
-            i = 0  # Keep track of which template group is being run.
-            while True:
-                killed = _check_for_poison(poison_queue)
-                if killed:
+            try:
+                stream = prepped_stream_queue.get()
+                if stream is None:
+                    Logger.info("Ran out of streams, exiting correlation")
                     break
-                try:
-                    Logger.info("Getting templates")
-                    templates = templates_queue.get()
-                    # Work complete if None put into queue
-                    if templates is None:
-                        Logger.info(
-                            "Ran out of templates for stream, moving on.")
-                        break
-                    template_names, templates = zip(*templates)
+                Logger.info(f"Got stream\n{stream}")
+                starttime = stream[0].stats.starttime
+                prev_startime = prev_starttime or starttime
+                if starttime > prev_starttime:
+                    # New chunk - reset template group count
+                    i = 0
+                Logger.info(f"Starting correlation from {starttime}")
+                Logger.info("Getting templates")
+                templates = prepped_templates_queue.get()
+                # Work complete if None put into queue
+                if templates is None:
+                    Logger.info(
+                        "Ran out of templates for stream, moving on.")
+                    break
+                template_names, templates = zip(*templates)
 
-                    all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
-                        templates, template_names, stream,
-                        multichannel_normxcorr, cores, i,
-                        export_cccsums, parallel, peak_cores, threshold,
-                        threshold_type,
-                        trig_int, sampling_rate, full_peaks, plot, plotdir,
-                        plot_format, **kwargs
-                    )
-                    peaks_queue.put(
-                        (starttime, all_peaks, thresholds, no_chans, chans,
-                         template_names))
-                    i += 1
-                except Exception as e:
-                    Logger.error(
-                        f"Caught exception in correlator:\n {e}")
-                    poison_queue.put(e)
-            j += 1
+                all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
+                    templates=templates, template_names=template_names,
+                    stream=stream,
+                    multichannel_normxcorr=multichannel_normxcorr,
+                    cores=cores, i=i, export_cccsums=export_cccsums,
+                    parallel=parallel, peak_cores=peak_cores,
+                    threshold=threshold, threshold_type=threshold_type,
+                    trig_int=trig_int, sampling_rate=sampling_rate,
+                    full_peaks=full_peaks, plot=plot, plotdir=plotdir,
+                    plot_format=plot_format, **kwargs
+                )
+                peaks_queue.put(
+                    (starttime, all_peaks, thresholds, no_chans, chans,
+                     template_names))
+            except Exception as e:
+                Logger.error(
+                    f"Caught exception in correlator:\n {e}")
+                poison_queue.put(e)
+            i += 1
         Logger.debug("Putting None into peaks queue.")
         peaks_queue.put(None)
 
@@ -1604,23 +1631,12 @@ def _corr_and_peaks(
     export_cccsums, parallel, peak_cores, threshold, threshold_type,
     trig_int, sampling_rate, full_peaks, plot, plotdir, plot_format, **kwargs
 ):
-    Logger.info(
-        f"Prepping {len(templates)} templates for correlation")
-
-    # TODO: This could be in a separate process, but it can
-    #  make it hard to keep track of the order, and isn't a
-    #  major slowdown... Moving it would create one less thing
-    #  in the correlation block though.
-    # We need to copy the stream here.
-    st, templates, template_names = _prep_data_for_correlation(
-        stream=_quick_copy_stream(stream), templates=templates,
-        template_names=template_names)
 
     Logger.info(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
     cccsums, no_chans, chans = multichannel_normxcorr(
-        templates=templates, stream=st, cores=cores, **kwargs
+        templates=templates, stream=stream, cores=cores, **kwargs
     )
     if len(cccsums[0]) == 0:
         raise MatchFilterError(
@@ -1907,6 +1923,46 @@ def _grouping_processor(
             poison_queue.put(e)
 
     out_stream_queue.put(None)
+    return
+
+
+def _prepper(
+    input_stream_queue: JoinableQueue,
+    input_templates_queue: JoinableQueue,
+    output_stream_queue: JoinableQueue,
+    output_templates_queue: JoinableQueue,
+    poison_queue: JoinableQueue,
+):
+    while True:
+        killed = _check_for_poison(poison_queue)
+        if killed:
+            break
+        st = input_stream_queue.get()
+        if st is None:
+            break
+        while True:
+            killed = _check_for_poison(poison_queue)
+            if killed:
+                break
+            try:
+                template_group = input_templates_queue.get()
+                if template_group is None:
+                    break
+                template_names, templates = zip(*template_group)
+                Logger.info(
+                    f"Prepping {len(templates)} templates for correlation")
+
+                # We need to copy the stream here.
+                _st, templates, template_names = _prep_data_for_correlation(
+                    stream=_quick_copy_stream(st), templates=templates,
+                    template_names=template_names)
+                output_stream_queue.put(_st)
+                output_templates_queue.put(zip(template_names, templates))
+            except Exception as e:
+                Logger.error(f"Caught exception in Prepper: {e}")
+                poison_queue.put(e)
+    output_stream_queue.put(None)
+    output_templates_queue.put(None)
     return
 
 
