@@ -877,6 +877,12 @@ class Tribe(object):
             name="party-builder"
         )
 
+        # Cope with old tribes
+        if not hasattr(self, '_processes'):
+            self._processes = dict()
+        if not hasattr(self, '_queues'):
+            self._queues = dict()
+
         # Put these processes into the namespace
         self._processes.update({
             "pre-processor": pre_processor_process,
@@ -1200,6 +1206,11 @@ class Tribe(object):
             name="downloader"
         )
 
+        # Cope with old tribes
+        if not hasattr(self, '_processes'):
+            self._processes = dict()
+        if not hasattr(self, '_queues'):
+            self._queues = dict()
         # Put processes and queues into shared state
         self._processes.update({
             "downloader": downloader,
