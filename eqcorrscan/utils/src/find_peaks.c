@@ -193,8 +193,6 @@ int multi_decluster(float *arr, long *indices,
     }
     #ifdef N_THREADS
     if (threads > N_THREADS){
-//        printf("MULTI-DECLUSTER: Setting threads to %i. OMP found %i threads\n", N_THREADS, omp_get_max_threads());
-//        threads = N_THREADS;
         printf("MULTI-DECLUSTER\tMore threads requested than available (%i > %i). Caution\n", threads, N_THREADS);
 ;    }
     #else
