@@ -61,6 +61,8 @@ class Tribe(object):
     :type templates: List of Template
     :param templates: The templates within the Tribe.
     """
+    _timeout = 10
+
     def __init__(self, templates=None):
         self.templates = []
         if isinstance(templates, Template):
@@ -70,7 +72,6 @@ class Tribe(object):
         # Managers for Processes and Queues to be killed on errors
         self._processes = dict()
         self._queues = dict()
-        self._timeout = 10
 
     def __repr__(self):
         """
@@ -823,6 +824,11 @@ class Tribe(object):
                     template_names, templates = zip(*templates)
                     Logger.info(
                         f"Prepping {len(templates)} templates for correlation")
+
+                    # TODO: This could be in a separate process, but it can
+                    #  make it hard to keep track of the order, and isn't a
+                    #  major slowdown... Moving it would create one less thing
+                    #  in the correlation block though.
                     # We need to copy the stream here.
                     st, templates, template_names = _prep_data_for_correlation(
                         stream=_quick_copy_stream(stream), templates=templates,
@@ -867,6 +873,8 @@ class Tribe(object):
                         Logger.info(f"Finding peaks using {peak_cores} threads")
                     else:
                         Logger.info("Finding peaks in serial")
+                    # TODO: This is in the main process because transferring
+                    #  lots of large correlation sums in queues is slow
                     all_peaks, thresholds = _thresholder(
                         cccsums=cccsums, no_chans=no_chans,
                         template_names=template_names, threshold=threshold,
