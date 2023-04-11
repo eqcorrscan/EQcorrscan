@@ -827,6 +827,7 @@ def _group_seed_ids(template_seed_ids, group_size):
     # Get the final group
     groups.append(group)
     group_sids.append(group_sid)
+    Logger.info(f"{len(groups)} initial template groups")
 
     # Check if all the groups are full
     groups_full = sum([len(grp) == group_size for grp in groups])
@@ -853,6 +854,7 @@ def _group_seed_ids(template_seed_ids, group_size):
     group_sid = group_sids[0]
     group_len = len(groups[0])
     # Loop until all groups have been assigned a final group
+    Logger.info("Running similarity grouping")
     while grouped.sum() < n_original_groups:
         # Work out difference between groups
         diffs = [(i, len(group_sid.symmetric_difference(other_sid)))
@@ -878,6 +880,7 @@ def _group_seed_ids(template_seed_ids, group_size):
             # Update the group seed ids to include the new ones
             group_sid = group_sid.union(group_sids[closest_group_id])
             group_len += len(groups[closest_group_id])
+    Logger.info("Completed grouping")
 
     out_groups = []
     for group_id in set(group_ids):

@@ -10,7 +10,7 @@ from obspy.core.event import Catalog, Event, Origin
 
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
-    _multi_find_peaks_c, _find_peaks_c, decluster, decluster_distance_time)
+    _find_peaks_c, decluster, decluster_distance_time)
 from eqcorrscan.utils.timer import time_func
 
 
@@ -396,8 +396,9 @@ class TestPeakFindSpeeds:
                         print("Peak in parallel but not serial: {0}".format(
                             peak))
             # Test the first step
-            parallel_peak_vals, parallel_peak_indices = _multi_find_peaks_c(
-                arrays=arr, thresholds=threshold, threads=2)
+            parallel_peak_vals, parallel_peak_indices = multi_find_peaks(
+                arr=arr, thresh=threshold, cores=2,
+                internal_func=find_peaks_compiled)
             parallel_sorted = []
             parallel_peaks_sorted = []
             parallel_indices_sorted = []

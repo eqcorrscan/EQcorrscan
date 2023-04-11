@@ -13,6 +13,7 @@ import logging
 import numpy as np
 
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor
 from scipy import ndimage
 
 from eqcorrscan.utils.correlate import pool_boy
@@ -233,72 +234,12 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
                     pool.apply_async(internal_func, param) for param in params]
                 peaks = [res.get() for res in results]
         else:
-            peaks = _multi_find_peaks_compiled(
-                arr, thresh, trig_int, full_peaks=full_peaks, cores=cores)
+            to_run = ((arr[i], thresh[i], trig_int) for i in range(len(thresh)))
+            with ThreadPoolExecutor(cores) as executor:
+                results = executor.map(
+                    lambda args: find_peaks_compiled(*args), to_run)
+            peaks = [r for r in results]
     return peaks
-
-
-def _multi_find_peaks_compiled(arrays, thresholds, trig_int, full_peaks,
-                               cores):
-    """
-    Determine peaks in an array or arrays of data above a certain threshold.
-
-    :type arrays: numpy.ndarray
-    :param arrays: 2-D numpy array is required
-    :type thresholds: list
-    :param thresholds:
-        Minimum value for peaks.
-    :type trig_int: int
-    :param trig_int:
-        The minimum difference in samples between triggers, if multiple
-        peaks within this window this code will find the highest.
-    :type full_peaks: bool
-    :param full_peaks:
-        If True, will decluster within data-sections above the threshold,
-        rather than just taking the peak within that section. This will take
-        more time. This defaults to False for match_filter.
-    :type cores: int
-    :param cores: Number of threads to parallel across
-
-    :return: peaks: List of List of tuples of peak values and locations.
-    :rtype: list
-    """
-    if not full_peaks:
-        peak_vals, peak_indices = _multi_find_peaks_c(
-            arrays=arrays, thresholds=thresholds, threads=cores)
-        # Remove empty arrays
-        peak_mapper = {}
-        map_index = 0
-        _peak_vals = []
-        _peak_indices = []
-        _thresholds = []
-        for i in range(arrays.shape[0]):
-            if len(peak_vals[i]) > 0:
-                peak_mapper.update({i: map_index})
-                _peak_vals.append(peak_vals[i])
-                _peak_indices.append(peak_indices[i])
-                _thresholds.append(thresholds[i])
-                map_index += 1
-        peak_vals = _peak_vals
-        peak_indices = _peak_indices
-        thresholds = _thresholds
-    else:
-        peak_vals = arrays
-        peak_indices = [np.arange(arr.shape[0]) for arr in arrays]
-        peak_mapper = {i: i for i in range(len(peak_indices))}
-    if len(peak_indices) > 0:
-        peaks = _multi_decluster(
-            peaks=peak_vals, indices=peak_indices, trig_int=trig_int,
-            thresholds=thresholds, cores=cores)
-        peaks = [sorted(_peaks, key=lambda peak: peak[1], reverse=False)
-                 for _peaks in peaks]
-    out_peaks = []
-    for i in range(arrays.shape[0]):
-        if i in peak_mapper.keys():
-            out_peaks.append(peaks[peak_mapper[i]])
-        else:
-            out_peaks.append([])
-    return out_peaks
 
 
 def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
@@ -553,43 +494,6 @@ def _find_peaks_c(array, threshold):
 
     peaks_locations = np.nonzero(out)
     return array[peaks_locations], peaks_locations[0]
-
-
-def _multi_find_peaks_c(arrays, thresholds, threads):
-    """
-    Wrapper for multi-find peaks C-func
-    """
-    utilslib = _load_cdll("libutils")
-    length = arrays.shape[1]
-    n = np.int32(arrays.shape[0])
-    thresholds = np.ascontiguousarray(thresholds, np.float32)
-    arr = np.ascontiguousarray(arrays.flatten(), np.float32)
-    utilslib.multi_find_peaks.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float32, shape=(n * length,),
-                               flags='C_CONTIGUOUS'),
-        ctypes.c_long, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float32, shape=(n, ),
-                               flags='C_CONTIGUOUS'),
-        ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.uint32, shape=(n * length, ),
-                               flags='C_CONTIGUOUS')]
-    utilslib.multi_find_peaks.restype = ctypes.c_int
-
-    out = np.ascontiguousarray(np.zeros((n * length, ), dtype=np.uint32))
-    ret = utilslib.multi_find_peaks(
-        arr, ctypes.c_long(length), n, thresholds, threads, out)
-    # Copy data to avoid farking the users data
-    if ret != 0:
-        raise MemoryError("Internal error")
-    peaks = []
-    peak_locations = []
-    out = out.reshape(n, length)
-    for i in range(n):
-        peak_locs = np.nonzero(out[i])
-        peaks.append(arrays[i][peak_locs])
-        peak_locations.append(peak_locs[0])
-
-    return peaks, peak_locations
 
 
 def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):

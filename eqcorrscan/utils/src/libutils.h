@@ -66,8 +66,6 @@ int multi_decluster(float*, long*, long*, int, float*, long, unsigned int*, int)
 
 int findpeaks(float*, long, float, unsigned int*);
 
-int multi_find_peaks(float*, long, int, float*, int, unsigned int*);
-
 // multi_corr functions
 int running_mean_var(double*, double*, int*, float*, long, long);
 

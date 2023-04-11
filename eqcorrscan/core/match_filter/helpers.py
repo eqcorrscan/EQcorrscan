@@ -16,6 +16,8 @@ import tempfile
 import logging
 
 import numpy as np
+
+from concurrent.futures import ThreadPoolExecutor
 from obspy import Stream
 from obspy.core.event import Event
 
@@ -57,6 +59,15 @@ def get_waveform_client(waveform_client):
     return waveform_client
 
 
+def _tr_spike_test(data, percent, multiplier):
+    data_len = data.shape[0]
+    thresh = 2 * np.max(np.sort(
+        np.abs(data))[0:np.int64(percent * data_len)]) * multiplier
+    if (data > thresh).sum() > 0:
+        return True
+    return False
+
+
 def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     Check for very large spikes in data and raise an error if found.
@@ -70,13 +81,15 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
+    to_check = ((tr.data, percent, multiplier) for tr in stream)
     list_ids = []
-    for tr in stream:
-        if (tr.data > 2 * np.max(np.sort(
-                np.abs(tr.data))[0:int(percent * len(tr.data))]
-                                 ) * multiplier).sum() > 0:
-            list_ids.append(tr.id)
-    if list_ids != []:
+    with ThreadPoolExecutor() as executor:
+        for tr, spiked in zip(stream, executor.map(
+                lambda args: _tr_spike_test(*args), to_check)):
+            if spiked:
+                list_ids.append(tr.id)
+
+    if len(list_ids):
         ids = ', '.join(list_ids)
         msg = ('Spikes above ' + str(multiplier) +
                ' of the range of ' + str(percent) +
