@@ -764,13 +764,13 @@ class Tribe(object):
 
                 all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
                     templates=templates, template_names=template_names,
-                    stream=_st, scorr_func=xcorr_func, concurrency=concurrency,
+                    stream=_st, xcorr_func=xcorr_func, concurrency=concurrency,
                     cores=cores, i=i, export_cccsums=export_cccsums,
                     parallel=parallel, peak_cores=peak_cores,
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, prepped=False **kwargs)
+                    plot_format=plot_format, prepped=False, **kwargs)
 
                 detections = _detect(
                     template_names=template_names,
@@ -2019,7 +2019,7 @@ def _prepper(
 
                 if xcorr_func in (None, "fmf", "fftw"):
                     array_dict_tuple = _get_array_dicts(
-                        templates, st, stack=True)
+                        templates, _st, stack=True)
                     stream_dict, template_dict, pad_dict, \
                         seed_ids = array_dict_tuple
                     if xcorr_func == "fmf":
