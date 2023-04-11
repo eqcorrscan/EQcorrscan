@@ -45,7 +45,10 @@ from eqcorrscan.core.match_filter.helpers import (
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.core import template_gen
 
-from eqcorrscan.utils.correlate import get_stream_xcorr
+from eqcorrscan.utils.correlate import (
+    get_stream_xcorr, _get_array_dicts, _fmf_stabilisation, _stabalised_fmf,
+    _fmf_reshape, fftw_multi_normxcorr, _zero_invalid_correlation_sums,
+    _set_inner_outer_threading)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _quick_copy_stream, _prep_data_for_correlation,
     _group_process)
@@ -463,7 +466,11 @@ class Tribe(object):
                 Logger.error(f"Failed to join due to {e}: terminating")
                 p.terminate()
             Logger.info(f"Closing {p_name}")
-            p.close()
+            try:
+                p.close()
+            except Exception as e:
+                Logger.error(f"Failed to close {p_name} due to {e}, terminating")
+                p.terminate()
         return
 
     def _close_queues(self, queues: dict = None):
@@ -671,8 +678,8 @@ class Tribe(object):
 
         plot_format = inner_kwargs.pop("plot_format", "png")
         export_cccsums = inner_kwargs.pop('export_cccsums', False)
-        multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
-        peak_cores = inner_kwargs.pop('peak_cores', process_cores) or cpu_count()
+        peak_cores = inner_kwargs.pop('peak_cores',
+                                      process_cores) or cpu_count()
         if peak_cores == 1:
             parallel = False
         else:
@@ -692,7 +699,7 @@ class Tribe(object):
         args = (stream, template_ids, pre_processed, parallel_process,
                 process_cores, daylong, ignore_length, overlap, ignore_bad_data,
                 group_size, sampling_rate, threshold, threshold_type,
-                save_progress, multichannel_normxcorr, cores, export_cccsums,
+                save_progress, xcorr_func, concurrency, cores, export_cccsums,
                 parallel, peak_cores, trig_int, full_peaks, plot, plotdir,
                 plot_format,)
 
@@ -720,7 +727,7 @@ class Tribe(object):
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
         group_size, sampling_rate, threshold, threshold_type, save_progress,
-        multichannel_normxcorr, cores, export_cccsums, parallel, peak_cores,
+        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
         trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
@@ -756,16 +763,14 @@ class Tribe(object):
                     template_names=template_names)
 
                 all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
-                    templates=templates,
-                    template_names=template_names,
-                    stream=_st,
-                    multichannel_normxcorr=multichannel_normxcorr,
+                    templates=templates, template_names=template_names,
+                    stream=_st, scorr_func=xcorr_func, concurrency=concurrency,
                     cores=cores, i=i, export_cccsums=export_cccsums,
                     parallel=parallel, peak_cores=peak_cores,
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, **kwargs)
+                    plot_format=plot_format, prepped=False **kwargs)
 
                 detections = _detect(
                     template_names=template_names,
@@ -795,7 +800,7 @@ class Tribe(object):
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
         group_size, sampling_rate, threshold, threshold_type, save_progress,
-        multichannel_normxcorr, cores, export_cccsums, parallel, peak_cores,
+        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
         trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
@@ -813,8 +818,7 @@ class Tribe(object):
         processed_stream_queue = JoinableQueue(maxsize=1)
         # Templates queue cannot have a max size - grouping goes big
         templates_queue = JoinableQueue()
-        prepped_stream_queue = JoinableQueue(maxsize=1)
-        prepped_templates_queue = JoinableQueue(maxsize=1)
+        prepped_queue = JoinableQueue(maxsize=1)
         peaks_queue = JoinableQueue()
         detection_queue = JoinableQueue()
         party_file_queue = JoinableQueue()
@@ -860,9 +864,9 @@ class Tribe(object):
             kwargs=dict(
                 input_stream_queue=processed_stream_queue,
                 input_templates_queue=templates_queue,
-                output_stream_queue=prepped_stream_queue,
-                output_templates_queue=prepped_templates_queue,
+                output_queue=prepped_queue,
                 poison_queue=poison_queue,
+                xcorr_func=xcorr_func,
             ),
             name="Prepper"
         )
@@ -921,8 +925,7 @@ class Tribe(object):
             "grouping_stream": grouping_stream_queue,
             "processed_stream": processed_stream_queue,
             "templates": templates_queue,
-            "prepped_stream": prepped_stream_queue,
-            "prepped_templates": prepped_templates_queue,
+            "prepped": prepped_queue,
             "peaks": peaks_queue,
             "detections": detection_queue,
             "party_file": party_file_queue,
@@ -944,36 +947,41 @@ class Tribe(object):
             if killed:
                 break
             try:
-                stream = prepped_stream_queue.get()
-                if stream is None:
+                to_corr = prepped_queue.get()
+                if to_corr is None:
                     Logger.info("Ran out of streams, exiting correlation")
                     break
-                Logger.info(f"Got stream\n{stream}")
-                starttime = stream[0].stats.starttime
+                starttime, stream, template_names, templates, *extras = to_corr
+                inner_kwargs = copy.copy(kwargs)  # We will mess around with them
+                # Correlation specific handling to reduce single-threaded time
+                if xcorr_func == "fmf":
+                    # (starttime, d_arr, template_names, t_arr, weights, pads, chans, no_chans)
+                    weights, pads, chans, no_chans = extras
+                    inner_kwargs.update({
+                        'weights': weights, 'pads': pads, "no_chans": no_chans,
+                        "chans": chans, "prepped": True})
+                elif xcorr_func in (None, 'fftw'):
+                    pads, seed_ids = extras
+                    inner_kwargs.update({
+                        "pads": pads, "seed_ids": seed_ids, "prepped": True})
+
+                Logger.info(f"Got stream of {len(stream)} channels")
                 prev_startime = prev_starttime or starttime
                 if starttime > prev_starttime:
                     # New chunk - reset template group count
                     i = 0
                 Logger.info(f"Starting correlation from {starttime}")
-                Logger.info("Getting templates")
-                templates = prepped_templates_queue.get()
-                # Work complete if None put into queue
-                if templates is None:
-                    Logger.info(
-                        "Ran out of templates for stream, moving on.")
-                    break
-                template_names, templates = zip(*templates)
 
                 all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
                     templates=templates, template_names=template_names,
-                    stream=stream,
-                    multichannel_normxcorr=multichannel_normxcorr,
+                    stream=stream, xcorr_func=xcorr_func,
+                    concurrency=concurrency,
                     cores=cores, i=i, export_cccsums=export_cccsums,
                     parallel=parallel, peak_cores=peak_cores,
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, **kwargs
+                    plot_format=plot_format, **inner_kwargs
                 )
                 peaks_queue.put(
                     (starttime, all_peaks, thresholds, no_chans, chans,
@@ -981,7 +989,9 @@ class Tribe(object):
             except Exception as e:
                 Logger.error(
                     f"Caught exception in correlator:\n {e}")
+                traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
+                break  # We need to break in Main
             i += 1
         Logger.debug("Putting None into peaks queue.")
         peaks_queue.put(None)
@@ -1013,6 +1023,7 @@ class Tribe(object):
         shutdown = kwargs.get("shutdown", True)
         # Allow client_detect to take control
         if shutdown:
+            Logger.info("Shutting down")
             self._close_queues()
             self._close_processes()
         return party
@@ -1232,7 +1243,7 @@ class Tribe(object):
                 poison_queue=poison_queue,
                 full_stream_file=full_stream_file
             ),
-            name="downloader"
+            name="Downloader"
         )
 
         # Cope with old tribes
@@ -1262,10 +1273,7 @@ class Tribe(object):
 
         # Catch errors
         if concurrent_processing:
-            try:
-                party = self.detect(stream=stream_queue, **detector_kwargs)
-            except Exception as e:
-                self._on_error(e)
+            party = self.detect(stream=stream_queue, **detector_kwargs)
         else:
             # We have to get the stream here
             party = Party()
@@ -1629,17 +1637,63 @@ def _group(st, templates, group_size):
 
 
 def _corr_and_peaks(
-    templates, template_names, stream, multichannel_normxcorr, cores, i,
+    templates, template_names, stream, xcorr_func, concurrency, cores, i,
     export_cccsums, parallel, peak_cores, threshold, threshold_type,
-    trig_int, sampling_rate, full_peaks, plot, plotdir, plot_format, **kwargs
+    trig_int, sampling_rate, full_peaks, plot, plotdir, plot_format,
+    prepped=False, **kwargs
 ):
-
+    # Special cases for fmf and fftw to minimize reshaping time.
     Logger.info(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
-    cccsums, no_chans, chans = multichannel_normxcorr(
-        templates=templates, stream=stream, cores=cores, **kwargs
-    )
+    if prepped and xcorr_func == "fmf":
+        assert isinstance(templates, np.ndarray)
+        assert isinstance(stream, np.ndarray)
+        # These need to be passed from queues.
+        pads = kwargs.get('pads')
+        weights = kwargs.get('weights')
+        chans = kwargs.get("chans")
+        no_chans = kwargs.get("no_chans")
+        # We do not care about removing the gain from our data, we copied it.
+        multipliers = np.ones((len(stream), 1))
+        step = 1  # We only implement single-step correlations
+        if concurrency in ("multithread", "multiprocess"):
+            arch = "cpu"
+        else:
+            arch = "gpu"
+        cccsums = _stabalised_fmf(
+            template_arr=templates, data_arr=stream, weights=weights,
+            pads=pads, arch=arch, multipliers=multipliers, step=step)
+    elif prepped and xcorr_func in ("fftw", None):
+        assert isinstance(templates, dict)
+        assert isinstance(stream, dict)
+        pads = kwargs.pop('pads')
+        seed_ids = kwargs.pop("seed_ids")
+        num_cores_inner, num_cores_outer = _set_inner_outer_threading(
+            kwargs.get('cores', None), kwargs.get("cores_outer", None),
+            len(stream))
+
+        cccsums, tr_chans = fftw_multi_normxcorr(
+            template_array=templates, stream_array=stream,
+            pad_array=pads, seed_ids=seed_ids, cores_inner=num_cores_inner,
+            cores_outer=num_cores_outer, stack=True, **kwargs)
+        n_templates = len(cccsums)
+        # Post processing
+        no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
+        chans = [[] for _i in range(n_templates)]
+        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+            for chan, state in zip(chans, tr_chan):
+                if state:
+                    chan.append(seed_id)
+        cccsums = _zero_invalid_correlation_sums(cccsums, pads, chans)
+        chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
+                  for seed_id in _chans] for _chans in chans]
+    else:
+        # The default just uses stream xcorr funcs.
+        multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+        cccsums, no_chans, chans = multichannel_normxcorr(
+            templates=templates, stream=stream, cores=cores, **kwargs
+        )
     if len(cccsums[0]) == 0:
         raise MatchFilterError(
             f"Correlation has not run for group {i}, "
@@ -1673,8 +1727,8 @@ def _corr_and_peaks(
         Logger.info(f"Finding peaks using {peak_cores} threads")
     else:
         Logger.info("Finding peaks in serial")
-    # TODO: This is in the main process because transferring
-    #  lots of large correlation sums in queues is slow
+    # This is in the main process because transferring
+    #  lots of large correlation sums in queues is very slow
     all_peaks, thresholds = _threshold(
         cccsums=cccsums, no_chans=no_chans,
         template_names=template_names, threshold=threshold,
@@ -1886,6 +1940,7 @@ def _pre_processor(
             Logger.error(
                     f"Caught exception in processor:\n {e}")
             poison_queue.put(e)
+            traceback.print_tb(e.__traceback__)
     output_queue.put(None)
     return
 
@@ -1923,6 +1978,7 @@ def _grouping_processor(
         except Exception as e:
             Logger.error(
                     f"Caught exception in grouper:\n {e}")
+            traceback.print_tb(e.__traceback__)
             poison_queue.put(e)
 
     out_stream_queue.put(None)
@@ -1932,9 +1988,9 @@ def _grouping_processor(
 def _prepper(
     input_stream_queue: JoinableQueue,
     input_templates_queue: JoinableQueue,
-    output_stream_queue: JoinableQueue,
-    output_templates_queue: JoinableQueue,
+    output_queue: JoinableQueue,
     poison_queue: JoinableQueue,
+    xcorr_func: str = None,
 ):
     while True:
         killed = _check_for_poison(poison_queue)
@@ -1959,13 +2015,51 @@ def _prepper(
                 _st, templates, template_names = _prep_data_for_correlation(
                     stream=_quick_copy_stream(st), templates=templates,
                     template_names=template_names)
-                output_stream_queue.put(_st)
-                output_templates_queue.put(zip(template_names, templates))
+                starttime = _st[0].stats.starttime
+
+                if xcorr_func in (None, "fmf", "fftw"):
+                    array_dict_tuple = _get_array_dicts(
+                        templates, st, stack=True)
+                    stream_dict, template_dict, pad_dict, \
+                        seed_ids = array_dict_tuple
+                    if xcorr_func == "fmf":
+                        # Work out used channels here
+                        tr_chans = np.array(
+                            [~np.isnan(template_dict[seed_id]).any(axis=1)
+                             for seed_id in seed_ids])
+                        no_chans = np.sum(np.array(tr_chans).astype(int),
+                                          axis=0)
+                        chans = [[] for _i in range(len(templates))]
+                        for seed_id, tr_chan in zip(seed_ids, tr_chans):
+                            for chan, state in zip(chans, tr_chan):
+                                if state:
+                                    chan.append((seed_id.split('.')[1],
+                                                 seed_id.split('.')[-1].split(
+                                                     '_')[0]))
+                        # Reshape
+                        t_arr, d_arr, weights, pads = _fmf_reshape(
+                            template_dict=template_dict,
+                            stream_dict=stream_dict,
+                            pad_dict=pad_dict, seed_ids=seed_ids)
+                        # Stabilise
+                        t_arr, d_arr, multipliers = _fmf_stabilisation(
+                            template_arr=t_arr, data_arr=d_arr)
+                        # Put into queue
+                        output_queue.put(
+                            (starttime, d_arr, template_names, t_arr, weights,
+                             pads, chans, no_chans))
+                    else:
+                        output_queue.put((
+                            starttime, stream_dict, template_names,
+                            template_dict, pad_dict, seed_ids))
+                else:
+                    output_queue.put(
+                        (starttime, _st, template_names, templates))
             except Exception as e:
                 Logger.error(f"Caught exception in Prepper: {e}")
+                traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
-    output_stream_queue.put(None)
-    output_templates_queue.put(None)
+    output_queue.put(None)
     return
 
 
@@ -1997,6 +2091,7 @@ def _make_detections(
         except Exception as e:
             Logger.error(
                 f"Caught exception in detector:\n {traceback.print_exc(e)}")
+            traceback.print_tb(e.__traceback__)
             poison_queue.put(e)
     output_queue.put(None)
     return
@@ -2017,18 +2112,23 @@ def _detections_to_party(
         killed = _check_for_poison(poison_queue)
         if killed:
             break
-        detections = input_queue.get()
-        if detections is None:
-            break
-        chunk_start, detections = detections
-        chunk_file = _make_party(
-            detections=detections, threshold=threshold,
-            threshold_type=threshold_type, templates=templates,
-            chunk_start=chunk_start, chunk_id=chunk_id,
-            save_progress=save_progress)
-        chunk_id += 1
-        _chunk_files.append(chunk_file)
-        output_queue.put(chunk_file)
+        try:
+            detections = input_queue.get()
+            if detections is None:
+                break
+            chunk_start, detections = detections
+            chunk_file = _make_party(
+                detections=detections, threshold=threshold,
+                threshold_type=threshold_type, templates=templates,
+                chunk_start=chunk_start, chunk_id=chunk_id,
+                save_progress=save_progress)
+            chunk_id += 1
+            _chunk_files.append(chunk_file)
+            output_queue.put(chunk_file)
+        except Exception as e:
+            Logger.error(f"Caught exception in detection to party: {e}")
+            traceback.print_tb(e.__traceback__)
+            poison_queue.put(e)
 
     output_queue.put(None)
     return
@@ -2045,16 +2145,21 @@ def _reconstruct_party(
         killed = _check_for_poison(poison_queue)
         if killed:
             break
-        _chunk_file = input_queue.get()
-        if _chunk_file is None:
-            break
-        Logger.info(f"Adding party from {_chunk_file} to party")
-        with open(_chunk_file, "rb") as _f:
-            party += pickle.load(_f)
-        if clean:
-            os.remove(_chunk_file)
-        Logger.info(f"Added party from {_chunk_file}, party now "
-                    f"contains {len(party)} detections")
+        try:
+            _chunk_file = input_queue.get()
+            if _chunk_file is None:
+                break
+            Logger.info(f"Adding party from {_chunk_file} to party")
+            with open(_chunk_file, "rb") as _f:
+                party += pickle.load(_f)
+            if clean:
+                os.remove(_chunk_file)
+            Logger.info(f"Added party from {_chunk_file}, party now "
+                        f"contains {len(party)} detections")
+        except Exception as e:
+            Logger.error(f"Caught exception in party reconstructer {e}")
+            traceback.print_tb(e.__traceback__)
+            poison_queue.put(e)
     output_queue.put(party)
     output_queue.put(None)
     return
