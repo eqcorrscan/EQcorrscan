@@ -757,14 +757,17 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
+    inner_kwargs = copy.copy(kwargs)
     num_cores_inner, num_cores_outer = _set_inner_outer_threading(
-        kwargs.get('cores', None), kwargs.get("cores_outer", None), len(stream))
+        inner_kwargs.pop('cores', None),
+        inner_kwargs.pop("cores_outer", None),
+        len(stream))
 
     chans = [[] for _i in range(len(templates))]
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer, stack=stack, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **inner_kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
