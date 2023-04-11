@@ -806,53 +806,77 @@ class Tribe(object):
     ):
         """ Internal concurrent detect workflow. """
         party = Party()
+        _stream_in = False
         if isinstance(stream, Stream):
             st = JoinableQueue()
             st.put(stream)
+            sids = {tr.id for tr in stream}
+            grouping_sid_queue = JoinableQueue()
+            grouping_sid_queue.put(sids)
             stream = st
-            stream.put(None)  # Close off queue
+            # Close off queues
+            stream.put(None)
+            grouping_sid_queue.put(None)
+
+            _stream_in = True
 
         # Set up processes and queues
         poison_queue = kwargs.get('poison_queue', JoinableQueue())
-        grouping_stream_queue = JoinableQueue(maxsize=1)
-        processed_stream_queue = JoinableQueue(maxsize=1)
+
+        if not pre_processed:
+            grouping_sid_queue = JoinableQueue(maxsize=1)
+            processed_stream_queue = JoinableQueue(maxsize=1)
+        else:
+            if not _stream_in:
+                try:
+                    grouping_sid_queue = kwargs["grouping_sid_queue"]
+                except KeyError:
+                    raise NotImplementedError(
+                        "If passing a pre-processed stream queue you must "
+                        "also pass a grouping_sid_queue of seed ids in the "
+                        "streams")
+            processed_stream_queue = stream
+
         # Templates queue cannot have a max size - grouping goes big
         templates_queue = JoinableQueue()
+        # Prepped queue contains templates and stream (and extras)
         prepped_queue = JoinableQueue(maxsize=1)
+        # Output queues
         peaks_queue = JoinableQueue()
         detection_queue = JoinableQueue()
         party_file_queue = JoinableQueue()
         party_queue = JoinableQueue()
 
         # Set up processes
-        pre_processor_process = Process(
-            target=_pre_processor,
-            kwargs=dict(
-                stream_queue=stream,
-                template_ids=template_ids,
-                pre_processed=pre_processed,
-                filt_order=self.templates[0].filt_order,
-                highcut=self.templates[0].highcut,
-                lowcut=self.templates[0].lowcut,
-                samp_rate=self.templates[0].samp_rate,
-                process_length=self.templates[0].process_length,
-                parallel=parallel_process,
-                cores=process_cores,
-                daylong=daylong,
-                ignore_length=ignore_length,
-                overlap=overlap,
-                ignore_bad_data=ignore_bad_data,
-                output_queue=grouping_stream_queue,
-                poison_queue=poison_queue,
-            ),
-            name="PreProcessor"
-        )
+        if not pre_processed:
+            pre_processor_process = Process(
+                target=_pre_processor,
+                kwargs=dict(
+                    stream_queue=stream,
+                    template_ids=template_ids,
+                    pre_processed=pre_processed,
+                    filt_order=self.templates[0].filt_order,
+                    highcut=self.templates[0].highcut,
+                    lowcut=self.templates[0].lowcut,
+                    samp_rate=self.templates[0].samp_rate,
+                    process_length=self.templates[0].process_length,
+                    parallel=parallel_process,
+                    cores=process_cores,
+                    daylong=daylong,
+                    ignore_length=ignore_length,
+                    overlap=overlap,
+                    ignore_bad_data=ignore_bad_data,
+                    output_queue=processed_stream_queue,
+                    output_sid_queue=grouping_sid_queue,
+                    poison_queue=poison_queue,
+                ),
+                name="PreProcessor"
+            )
         grouping_process = Process(
             target=_grouping_processor,
             kwargs=dict(
-                stream_queue=grouping_stream_queue,
+                sid_queue=grouping_sid_queue,
                 templates_queue=templates_queue,
-                out_stream_queue=processed_stream_queue,
                 templates=self.templates,
                 group_size=group_size,
                 poison_queue=poison_queue,
@@ -912,7 +936,6 @@ class Tribe(object):
 
         # Put these processes into the namespace
         self._processes.update({
-            "pre-processor": pre_processor_process,
             "grouper": grouping_process,
             "prepper": prepper_process,
             "detector": detector_process,
@@ -922,8 +945,7 @@ class Tribe(object):
         self._queues.update({
             "poison": poison_queue,
             "stream": stream,
-            "grouping_stream": grouping_stream_queue,
-            "processed_stream": processed_stream_queue,
+            "grouping_sids": grouping_sid_queue,
             "templates": templates_queue,
             "prepped": prepped_queue,
             "peaks": peaks_queue,
@@ -931,9 +953,12 @@ class Tribe(object):
             "party_file": party_file_queue,
             "party": party_queue,
         })
+        if not pre_processed:
+            self._processes.update({"pre-processor": pre_processor_process})
+            self._queues.update({"processed_stream": processed_stream_queue})
+            pre_processor_process.start()
 
         # Start your engines!
-        pre_processor_process.start()
         grouping_process.start()
         prepper_process.start()
         detector_process.start()
@@ -1218,6 +1243,7 @@ class Tribe(object):
         time_queue = JoinableQueue()
         poison_queue = JoinableQueue()
         stream_queue = JoinableQueue(maxsize=1)
+        sid_queue = JoinableQueue(maxsize=1)
 
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
@@ -1228,7 +1254,7 @@ class Tribe(object):
             group_size=group_size, overlap=None, full_peaks=full_peaks,
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
-            poison_queue=poison_queue, shutdown=False,
+            poison_queue=poison_queue, shutdown=False, pre_processed=True,
             concurrent_processing=concurrent_processing)
 
         downloader = Process(
@@ -1239,9 +1265,14 @@ class Tribe(object):
                 retries=retries,
                 min_gap=min_gap,
                 buff=buff,
+                out_sid_queue=sid_queue,
                 out_queue=stream_queue,
                 poison_queue=poison_queue,
-                full_stream_file=full_stream_file
+                full_stream_file=full_stream_file,
+                pre_process=True, parallel_process=parallel_process,
+                process_cores=process_cores, daylong=daylong,
+                overlap=0.0, ignore_length=ignore_length,
+                ignore_bad_data=ignore_bad_data
             ),
             name="Downloader"
         )
@@ -1273,7 +1304,9 @@ class Tribe(object):
 
         # Catch errors
         if concurrent_processing:
-            party = self.detect(stream=stream_queue, **detector_kwargs)
+            party = self.detect(
+                stream=stream_queue, grouping_sid_queue=sid_queue,
+                **detector_kwargs)
         else:
             # We have to get the stream here
             party = Party()
@@ -1452,8 +1485,12 @@ class Tribe(object):
         return template_channel_ids
 
     def _get_detection_stream(self, client, time_queue, retries,
-                              min_gap, buff, out_queue, poison_queue,
-                              full_stream_file=None):
+                              min_gap, buff, out_queue, out_sid_queue,
+                              poison_queue, full_stream_file=None,
+                              pre_process=False, parallel_process=True,
+                              process_cores=None, daylong=False,
+                              overlap="calculate", ignore_length=False,
+                              ignore_bad_data=False):
         from obspy.clients.fdsn.client import FDSNException
 
         while True:
@@ -1536,7 +1573,25 @@ class Tribe(object):
                     Logger.warning(
                         "{0} is less than 80% of the required length"
                         ", removed".format(tr.id))
-            out_queue.put(st)
+            if pre_process:
+                template_ids = set(
+                    tr.id for template in self.templates for tr in template.st)
+                st_chunks = _pre_process(
+                    st=st, template_ids=template_ids, pre_processed=False,
+                    filt_order=self.templates[0].filt_order,
+                    highcut=self.templates[0].highcut,
+                    lowcut=self.templates[0].lowcut,
+                    samp_rate=self.templates[0].samp_rate,
+                    process_length=self.templates[0].process_length,
+                    parallel=parallel_process, cores=process_cores,
+                    daylong=daylong, ignore_length=ignore_length,
+                    overlap=overlap, ignore_bad_data=ignore_bad_data)
+                for chunk in st_chunks:
+                    out_sid_queue.put({tr.id for tr in chunk})
+                    out_queue.put(chunk)
+            else:
+                out_sid_queue.put({tr.id for tr in st})
+                out_queue.put(st)
             if full_stream_file:
                 # Open in append mode - we can just add more records to mseed
                 with open(full_stream_file, "ab") as _f:
@@ -1587,7 +1642,7 @@ def _mad(cccsum):
 #                               Detect steps
 ###############################################################################
 
-
+# TODO: Move these to matched_filter to make it easier to work on all the parts
 def _pre_process(
     st, template_ids, pre_processed, filt_order, highcut, lowcut, samp_rate,
     process_length, parallel, cores, daylong, ignore_length, ignore_bad_data,
@@ -1622,8 +1677,7 @@ def _pre_process(
     return st_chunks
 
 
-def _group(st, templates, group_size):
-    sids = {tr.id for tr in st}
+def _group(sids, templates, group_size):
     Logger.info(f"Grouping for {sids}")
     # Do the grouping
     if group_size is not None:
@@ -1812,6 +1866,9 @@ def _detect(
                      f"for template {template_name}")
         for peak in all_peaks[i]:
             detecttime = starttime + (peak[1] * delta)
+            if peak[0] > no_chans[i]:
+                Logger.error(f"Correlation sum {peak[0]} exceeds "
+                             f"bounds ({no_chans[i]}")
             detection = Detection(
                 template_name=template_name, detect_time=detecttime,
                 no_chans=no_chans[i], detect_val=peak[0],
@@ -1946,9 +2003,8 @@ def _pre_processor(
 
 
 def _grouping_processor(
-    stream_queue: JoinableQueue,
+    sid_queue: JoinableQueue,
     templates_queue: JoinableQueue,
-    out_stream_queue: JoinableQueue,
     group_size: int,
     templates: List,
     poison_queue: JoinableQueue,
@@ -1957,12 +2013,12 @@ def _grouping_processor(
         killed = _check_for_poison(poison_queue)
         if killed:
             break
-        st = stream_queue.get()
-        if st is None:
+        sids = sid_queue.get()
+        if sids is None:
             Logger.info("Ran out of streams for grouping, stopping grouper")
             break
         try:
-            template_groups = _group(st=st, templates=templates,
+            template_groups = _group(sids=sids, templates=templates,
                                      group_size=group_size)
             # Put template groups into the queue - we need to do the copy here.
             Logger.info(f"Grouped into {len(template_groups)} groups")
@@ -1971,17 +2027,13 @@ def _grouping_processor(
                     [(t.name, _quick_copy_stream(t.st))
                      for t in template_group])
             Logger.info("Put templates into queue")
-            templates_queue.put(None)  # close off the queue
-            # Put the stream into the output queue
-            out_stream_queue.put(st)
-            Logger.info("Put stream into queue")
+            templates_queue.put(None)
         except Exception as e:
             Logger.error(
                     f"Caught exception in grouper:\n {e}")
             traceback.print_tb(e.__traceback__)
             poison_queue.put(e)
-
-    out_stream_queue.put(None)
+    templates_queue.put(None)  # close off the queue
     return
 
 
@@ -2090,7 +2142,7 @@ def _make_detections(
                         f"took {default_timer() - toc:.4f} s")
         except Exception as e:
             Logger.error(
-                f"Caught exception in detector:\n {traceback.print_exc(e)}")
+                f"Caught exception in detector:\n {e}")
             traceback.print_tb(e.__traceback__)
             poison_queue.put(e)
     output_queue.put(None)
