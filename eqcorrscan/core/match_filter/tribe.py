@@ -750,7 +750,8 @@ class Tribe(object):
             starttime = st_chunk[0].stats.starttime
             delta = st_chunk[0].stats.delta
             template_groups = _group(
-                st=st_chunk, templates=self.templates, group_size=group_size)
+                sids={tr.id for tr in st_chunk},
+                templates=self.templates, group_size=group_size)
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -1573,6 +1574,10 @@ class Tribe(object):
                     Logger.warning(
                         "{0} is less than 80% of the required length"
                         ", removed".format(tr.id))
+            if len(st) == 0:
+                Logger.warning(f"No suitable data between {starttime} "
+                               f"and {endtime}, skipping")
+                continue
             if pre_process:
                 template_ids = set(
                     tr.id for template in self.templates for tr in template.st)
