@@ -18,14 +18,14 @@ import os
 import pickle
 import shutil
 import tarfile
-import time
 import tempfile
+import time
 import traceback
 import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List
+from typing import List, Union
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -65,7 +65,7 @@ class Tribe(object):
     :type templates: List of Template
     :param templates: The templates within the Tribe.
     """
-    _timeout = 10
+    _timeout = 1
 
     def __init__(self, templates=None):
         self.templates = []
@@ -807,19 +807,17 @@ class Tribe(object):
     ):
         """ Internal concurrent detect workflow. """
         party = Party()
-        _stream_in = False
-        if isinstance(stream, Stream):
-            st = JoinableQueue()
-            st.put(stream)
-            sids = {tr.id for tr in stream}
-            grouping_sid_queue = JoinableQueue()
-            grouping_sid_queue.put(sids)
-            stream = st
-            # Close off queues
-            stream.put(None)
-            grouping_sid_queue.put(None)
 
-            _stream_in = True
+        stream_input = None
+        if isinstance(stream, Stream):
+            stream_input = stream
+            st_queue = JoinableQueue(maxsize=2)
+            st_queue.put(stream)
+            # Close off queues
+            st_queue.put(None)
+
+            stream = st_queue
+            Logger.info(stream)
 
         # Set up processes and queues
         poison_queue = kwargs.get('poison_queue', JoinableQueue())
@@ -828,14 +826,18 @@ class Tribe(object):
             grouping_sid_queue = JoinableQueue(maxsize=1)
             processed_stream_queue = JoinableQueue(maxsize=1)
         else:
-            if not _stream_in:
+            if stream_input is None:
                 try:
                     grouping_sid_queue = kwargs["grouping_sid_queue"]
                 except KeyError:
                     raise NotImplementedError(
-                        "If passing a pre-processed stream queue you must "
+                        "If passing a queue of pre-processed streams you must "
                         "also pass a grouping_sid_queue of seed ids in the "
                         "streams")
+            else:
+                grouping_sid_queue = JoinableQueue(maxsize=2)
+                grouping_sid_queue.put({tr.id for tr in stream_input})
+                grouping_sid_queue.put(None)
             processed_stream_queue = stream
 
         # Templates queue cannot have a max size - grouping goes big
@@ -871,13 +873,13 @@ class Tribe(object):
                     output_sid_queue=grouping_sid_queue,
                     poison_queue=poison_queue,
                 ),
-                name="PreProcessor"
+                name="PreProcess"
             )
         grouping_process = Process(
             target=_grouping_processor,
             kwargs=dict(
-                sid_queue=grouping_sid_queue,
-                templates_queue=templates_queue,
+                sid_queue=grouping_sid_queue,  # Input queue
+                templates_queue=templates_queue,  # Output queue
                 templates=self.templates,
                 group_size=group_size,
                 poison_queue=poison_queue,
@@ -916,7 +918,7 @@ class Tribe(object):
                 output_queue=party_file_queue,
                 poison_queue=poison_queue,
             ),
-            name="DetectionBuilder"
+            name="DetectBuilder"
         )
         party_builder_process = Process(
             target=_reconstruct_party,
@@ -954,10 +956,13 @@ class Tribe(object):
             "party_file": party_file_queue,
             "party": party_queue,
         })
+
         if not pre_processed:
+            Logger.info("Starting preprocessor")
             self._processes.update({"pre-processor": pre_processor_process})
             self._queues.update({"processed_stream": processed_stream_queue})
             pre_processor_process.start()
+            Logger.info(pre_processor_process)
 
         # Start your engines!
         grouping_process.start()
@@ -967,7 +972,6 @@ class Tribe(object):
         party_builder_process.start()
 
         # Loop over input streams and template groups
-        prev_starttime, i = None, 0  # Keep track of template groups
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
@@ -977,7 +981,7 @@ class Tribe(object):
                 if to_corr is None:
                     Logger.info("Ran out of streams, exiting correlation")
                     break
-                starttime, stream, template_names, templates, *extras = to_corr
+                starttime, i, stream, template_names, templates, *extras = to_corr
                 inner_kwargs = copy.copy(kwargs)  # We will mess around with them
                 # Correlation specific handling to reduce single-threaded time
                 if xcorr_func == "fmf":
@@ -992,10 +996,6 @@ class Tribe(object):
                         "pads": pads, "seed_ids": seed_ids, "prepped": True})
 
                 Logger.info(f"Got stream of {len(stream)} channels")
-                prev_startime = prev_starttime or starttime
-                if starttime > prev_starttime:
-                    # New chunk - reset template group count
-                    i = 0
                 Logger.info(f"Starting correlation from {starttime}")
 
                 all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
@@ -1259,7 +1259,7 @@ class Tribe(object):
             concurrent_processing=concurrent_processing)
 
         downloader = Process(
-            target=self._get_detection_stream,
+            target=_get_detection_stream,
             kwargs=dict(
                 time_queue=time_queue,
                 client=client,
@@ -1273,7 +1273,13 @@ class Tribe(object):
                 pre_process=True, parallel_process=parallel_process,
                 process_cores=process_cores, daylong=daylong,
                 overlap=0.0, ignore_length=ignore_length,
-                ignore_bad_data=ignore_bad_data
+                ignore_bad_data=ignore_bad_data,
+                filt_order=self.templates[0].filt_order,
+                highcut=self.templates[0].highcut,
+                lowcut=self.templates[0].lowcut,
+                samp_rate=self.templates[0].samp_rate,
+                process_length=self.templates[0].process_length,
+                template_channel_ids=self._template_channel_ids(),
             ),
             name="Downloader"
         )
@@ -1464,145 +1470,26 @@ class Tribe(object):
             self.templates.append(t)
         return self
 
-    @property
-    def _template_channel_ids(self):
+    def _template_channel_ids(self, wildcards: bool = False):
         template_channel_ids = set()
         for template in self.templates:
             for tr in template.st:
                 # Cope with missing info and convert to wildcards
                 n, s, l, c = tr.id.split('.')
-                if n in [None, '']:
-                    n = "*"
-                if s in [None, '']:
-                    s = "*"
-                if l in [None, '']:
-                    l = "*"
-                if c in [None, '']:
-                    c = "*"
-                # Cope with old seisan chans
-                if len(c) == 2:
-                    c = f"{c[0]}?{c[-1]}"
+                if wildcards:
+                    if n in [None, '']:
+                        n = "*"
+                    if s in [None, '']:
+                        s = "*"
+                    if l in [None, '']:
+                        l = "*"
+                    if c in [None, '']:
+                        c = "*"
+                    # Cope with old seisan chans
+                    if len(c) == 2:
+                        c = f"{c[0]}?{c[-1]}"
                 template_channel_ids.add((n, s, l, c))
         return template_channel_ids
-
-    def _get_detection_stream(self, client, time_queue, retries,
-                              min_gap, buff, out_queue, out_sid_queue,
-                              poison_queue, full_stream_file=None,
-                              pre_process=False, parallel_process=True,
-                              process_cores=None, daylong=False,
-                              overlap="calculate", ignore_length=False,
-                              ignore_bad_data=False):
-        from obspy.clients.fdsn.client import FDSNException
-
-        while True:
-            killed = _check_for_poison(poison_queue)
-            if killed:
-                break
-            next_times = time_queue.get()
-            if next_times is None:
-                break
-            starttime, endtime = next_times
-            bulk_info = []
-            for chan_id in self._template_channel_ids:
-                bulk_info.append((
-                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
-                    starttime - buff, endtime + buff))
-
-            for retry_attempt in range(retries):
-                try:
-                    Logger.info(f"Downloading data between {starttime} and "
-                                f"{endtime}")
-                    st = client.get_waveforms_bulk(bulk_info)
-                    Logger.info(
-                        "Downloaded data for {0} traces".format(len(st)))
-                    break
-                except FDSNException as e:
-                    if "Split the request in smaller" in " ".join(e.args):
-                        Logger.warning(
-                            "Datacentre does not support large requests: "
-                            "splitting request into smaller chunks")
-                        st = Stream()
-                        for _bulk in bulk_info:
-                            try:
-                                st += client.get_waveforms_bulk([_bulk])
-                            except Exception as e:
-                                Logger.error("No data for {0}".format(_bulk))
-                                Logger.error(e)
-                                continue
-                        Logger.info("Downloaded data for {0} traces".format(
-                            len(st)))
-                        break
-                except Exception as e:
-                    Logger.error(e)
-                    continue
-            else:
-                raise MatchFilterError(
-                    "Could not download data after {0} attempts".format(
-                        retries))
-            # Get gaps and remove traces as necessary
-            if min_gap:
-                gaps = st.get_gaps(min_gap=min_gap)
-                if len(gaps) > 0:
-                    Logger.warning("Large gaps in downloaded data")
-                    st.merge()
-                    gappy_channels = list(
-                        set([(gap[0], gap[1], gap[2], gap[3])
-                             for gap in gaps]))
-                    _st = Stream()
-                    for tr in st:
-                        tr_stats = (tr.stats.network, tr.stats.station,
-                                    tr.stats.location, tr.stats.channel)
-                        if tr_stats in gappy_channels:
-                            Logger.warning(
-                                "Removing gappy channel: {0}".format(tr))
-                        else:
-                            _st += tr
-                    st = _st
-                    st.split()
-            st.detrend("simple").merge()
-            st.trim(starttime=starttime, endtime=endtime)
-            for tr in st:
-                if not _check_daylong(tr.data):
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} contains more zeros than non-zero, "
-                        "removed".format(tr.id))
-            for tr in st:
-                if tr.stats.endtime - tr.stats.starttime < \
-                        0.8 * (endtime - starttime):
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} is less than 80% of the required length"
-                        ", removed".format(tr.id))
-            if len(st) == 0:
-                Logger.warning(f"No suitable data between {starttime} "
-                               f"and {endtime}, skipping")
-                continue
-            if pre_process:
-                template_ids = set(
-                    tr.id for template in self.templates for tr in template.st)
-                st_chunks = _pre_process(
-                    st=st, template_ids=template_ids, pre_processed=False,
-                    filt_order=self.templates[0].filt_order,
-                    highcut=self.templates[0].highcut,
-                    lowcut=self.templates[0].lowcut,
-                    samp_rate=self.templates[0].samp_rate,
-                    process_length=self.templates[0].process_length,
-                    parallel=parallel_process, cores=process_cores,
-                    daylong=daylong, ignore_length=ignore_length,
-                    overlap=overlap, ignore_bad_data=ignore_bad_data)
-                for chunk in st_chunks:
-                    out_sid_queue.put({tr.id for tr in chunk})
-                    out_queue.put(chunk)
-            else:
-                out_sid_queue.put({tr.id for tr in st})
-                out_queue.put(st)
-            if full_stream_file:
-                # Open in append mode - we can just add more records to mseed
-                with open(full_stream_file, "ab") as _f:
-                    st.write(_f, format="MSEED")
-        out_queue.put(None)
-        return
 
 
 ###############################################################################
@@ -1654,7 +1541,9 @@ def _pre_process(
     overlap, **kwargs
 ):
     # Retain only channels that have matches in templates
+    Logger.info(template_ids)
     st = Stream([tr for tr in st if tr.id in template_ids])
+    Logger.info(f"Processing {(len(st))} channels")
     if len(st) == 0:
         raise IndexError(
             "No matching channels between stream and templates")
@@ -1893,7 +1782,8 @@ def _make_party(
         chunk_id, save_progress
 ):
     chunk_dir = ".parties/{chunk_start.year}/{chunk_start.julday:03d}"
-    chunk_file_str = os.path.join(chunk_dir, "chunk_party_{chunk_id}.pkl")
+    chunk_file_str = os.path.join(
+        chunk_dir, "chunk_party_{chunk_start}_{chunk_id}.pkl")
 
     # Get the results out of the end!
     Logger.info(f"Made {len(detections)} detections")
@@ -1950,14 +1840,154 @@ def _check_for_poison(poison_queue: JoinableQueue) -> bool:
     """
     Check if poison has been added to the queue.
     """
+    Logger.debug("Checking for poison")
     try:
         poison = poison_queue.get_nowait()
     except Empty:
         return False
     # Put the poison back in the queue for another process to check on
-    Logger.info("Poisoned")
+    Logger.error("Poisoned")
     poison_queue.put(poison)
     return True
+
+
+def _get_detection_stream(
+    template_channel_ids: List[tuple],
+    client,
+    time_queue: JoinableQueue,
+    retries: int,
+    min_gap: float,
+    buff: float,
+    out_queue: JoinableQueue,
+    out_sid_queue: JoinableQueue,
+    poison_queue: JoinableQueue,
+    full_stream_file: bool = None,
+    pre_process: bool = False,
+    parallel_process: bool = True,
+    process_cores: int = None,
+    daylong: bool = False,
+    overlap: Union[str, float] = "calculate",
+    ignore_length: bool = False,
+    ignore_bad_data: bool = False,
+    filt_order: int = None,
+    highcut: float = None,
+    lowcut: float = None,
+    samp_rate: float = None,
+    process_length: float = None
+):
+    from obspy.clients.fdsn.client import FDSNException
+
+    while True:
+        killed = _check_for_poison(poison_queue)
+        if killed:
+            break
+        try:
+            next_times = time_queue.get()
+            if next_times is None:
+                break
+            starttime, endtime = next_times
+            bulk_info = []
+            for chan_id in template_channel_ids:
+                bulk_info.append((
+                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
+                    starttime - buff, endtime + buff))
+
+            for retry_attempt in range(retries):
+                try:
+                    Logger.info(f"Downloading data between {starttime} and "
+                                f"{endtime}")
+                    st = client.get_waveforms_bulk(bulk_info)
+                    Logger.info(
+                        "Downloaded data for {0} traces".format(len(st)))
+                    break
+                except FDSNException as e:
+                    if "Split the request in smaller" in " ".join(e.args):
+                        Logger.warning(
+                            "Datacentre does not support large requests: "
+                            "splitting request into smaller chunks")
+                        st = Stream()
+                        for _bulk in bulk_info:
+                            try:
+                                st += client.get_waveforms_bulk([_bulk])
+                            except Exception as e:
+                                Logger.error("No data for {0}".format(_bulk))
+                                Logger.error(e)
+                                continue
+                        Logger.info("Downloaded data for {0} traces".format(
+                            len(st)))
+                        break
+                except Exception as e:
+                    Logger.error(e)
+                    continue
+            else:
+                raise MatchFilterError(
+                    "Could not download data after {0} attempts".format(
+                        retries))
+            # Get gaps and remove traces as necessary
+            if min_gap:
+                gaps = st.get_gaps(min_gap=min_gap)
+                if len(gaps) > 0:
+                    Logger.warning("Large gaps in downloaded data")
+                    st.merge()
+                    gappy_channels = list(
+                        set([(gap[0], gap[1], gap[2], gap[3])
+                             for gap in gaps]))
+                    _st = Stream()
+                    for tr in st:
+                        tr_stats = (tr.stats.network, tr.stats.station,
+                                    tr.stats.location, tr.stats.channel)
+                        if tr_stats in gappy_channels:
+                            Logger.warning(
+                                "Removing gappy channel: {0}".format(tr))
+                        else:
+                            _st += tr
+                    st = _st
+                    st.split()
+            st.detrend("simple").merge()
+            st.trim(starttime=starttime, endtime=endtime)
+            for tr in st:
+                if not _check_daylong(tr.data):
+                    st.remove(tr)
+                    Logger.warning(
+                        "{0} contains more zeros than non-zero, "
+                        "removed".format(tr.id))
+            for tr in st:
+                if tr.stats.endtime - tr.stats.starttime < \
+                        0.8 * (endtime - starttime):
+                    st.remove(tr)
+                    Logger.warning(
+                        "{0} is less than 80% of the required length"
+                        ", removed".format(tr.id))
+            if len(st) == 0:
+                Logger.warning(f"No suitable data between {starttime} "
+                               f"and {endtime}, skipping")
+                continue
+            if pre_process:
+                template_ids = set(['.'.join(sid) for sid in template_channel_ids])
+                st_chunks = _pre_process(
+                    st=st, template_ids=template_ids, pre_processed=False,
+                    filt_order=filt_order, highcut=highcut,
+                    lowcut=lowcut, samp_rate=samp_rate,
+                    process_length=process_length,
+                    parallel=parallel_process, cores=process_cores,
+                    daylong=daylong, ignore_length=ignore_length,
+                    overlap=overlap, ignore_bad_data=ignore_bad_data)
+                for chunk in st_chunks:
+                    out_sid_queue.put({tr.id for tr in chunk})
+                    out_queue.put(chunk)
+            else:
+                out_sid_queue.put({tr.id for tr in st})
+                out_queue.put(st)
+            if full_stream_file:
+                # Open in append mode - we can just add more records to mseed
+                with open(full_stream_file, "ab") as _f:
+                    st.write(_f, format="MSEED")
+        except Exception as e:
+            Logger.error(f"Caught exception {e} in downloader")
+            poison_queue.put(e)
+            break
+    out_queue.put(None)
+    return
 
 
 def _pre_processor(
@@ -1976,12 +2006,14 @@ def _pre_processor(
     overlap: float,
     ignore_bad_data: bool,
     output_queue: JoinableQueue,
+    output_sid_queue: JoinableQueue,
     poison_queue: JoinableQueue
 ):
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
             break
+        Logger.debug("Getting stream from queue")
         st = stream_queue.get()
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
@@ -1997,6 +2029,7 @@ def _pre_processor(
                 samp_rate, process_length, parallel, cores, daylong,
                 ignore_length, ignore_bad_data, overlap)
             for chunk in st_chunks:
+                output_sid_queue.put({tr.id for tr in chunk})
                 output_queue.put(chunk)
         except Exception as e:
             Logger.error(
@@ -2018,10 +2051,12 @@ def _grouping_processor(
         killed = _check_for_poison(poison_queue)
         if killed:
             break
+        Logger.debug("Getting sids from queue")
         sids = sid_queue.get()
         if sids is None:
             Logger.info("Ran out of streams for grouping, stopping grouper")
             break
+        Logger.info(f"Got {sids}")
         try:
             template_groups = _group(sids=sids, templates=templates,
                                      group_size=group_size)
@@ -2053,9 +2088,12 @@ def _prepper(
         killed = _check_for_poison(poison_queue)
         if killed:
             break
+        Logger.info("Getting stream from queue")
         st = input_stream_queue.get()
         if st is None:
+            Logger.info("Got None for stream, prepper complete")
             break
+        i = 0  # Template group id
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
@@ -2107,15 +2145,16 @@ def _prepper(
                              pads, chans, no_chans))
                     else:
                         output_queue.put((
-                            starttime, stream_dict, template_names,
+                            starttime, i, stream_dict, template_names,
                             template_dict, pad_dict, seed_ids))
                 else:
                     output_queue.put(
-                        (starttime, _st, template_names, templates))
+                        (starttime, i, _st, template_names, templates))
             except Exception as e:
                 Logger.error(f"Caught exception in Prepper: {e}")
                 traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
+            i += 1
     output_queue.put(None)
     return
 
