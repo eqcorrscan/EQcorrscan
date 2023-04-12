@@ -1320,6 +1320,7 @@ class Tribe(object):
             party = Party()
             while True:
                 st = stream_queue.get()
+                _sids = sid_queue.get()  # We don't need this, be we have to empty it
                 if st is None:
                     Logger.info("Ran out of streams")
                     break
