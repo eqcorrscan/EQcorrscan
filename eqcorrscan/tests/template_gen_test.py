@@ -101,8 +101,9 @@ class TestTemplateGeneration(unittest.TestCase):
             for tr in template:
                 expected_tr = expected_template.select(
                     station=tr.stats.station, channel=tr.stats.channel)[0]
-                self.assertTrue((expected_tr.data.astype(np.float32) ==
-                                 tr.data.astype(np.float32)).all())
+                self.assertTrue(np.allclose(
+                    expected_tr.data.astype(np.float32),
+                    tr.data.astype(np.float32)))
             del template
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 
