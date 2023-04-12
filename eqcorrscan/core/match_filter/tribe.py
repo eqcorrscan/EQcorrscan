@@ -981,7 +981,8 @@ class Tribe(object):
                 if to_corr is None:
                     Logger.info("Ran out of streams, exiting correlation")
                     break
-                starttime, i, stream, template_names, templates, *extras = to_corr
+                starttime, i, stream, template_names, templates,\
+                    *extras = to_corr
                 inner_kwargs = copy.copy(kwargs)  # We will mess around with them
                 # Correlation specific handling to reduce single-threaded time
                 if xcorr_func == "fmf":
@@ -1963,7 +1964,8 @@ def _get_detection_stream(
                                f"and {endtime}, skipping")
                 continue
             if pre_process:
-                template_ids = set(['.'.join(sid) for sid in template_channel_ids])
+                template_ids = set(['.'.join(sid)
+                                    for sid in template_channel_ids])
                 st_chunks = _pre_process(
                     st=st, template_ids=template_ids, pre_processed=False,
                     filt_order=filt_order, highcut=highcut,
@@ -2141,7 +2143,7 @@ def _prepper(
                             template_arr=t_arr, data_arr=d_arr)
                         # Put into queue
                         output_queue.put(
-                            (starttime, d_arr, template_names, t_arr, weights,
+                            (starttime, i, d_arr, template_names, t_arr, weights,
                              pads, chans, no_chans))
                     else:
                         output_queue.put((
