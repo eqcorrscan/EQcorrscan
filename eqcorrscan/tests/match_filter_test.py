@@ -7,6 +7,7 @@ import shutil
 import glob
 import unittest
 import pytest
+import logging
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
@@ -29,6 +30,9 @@ from eqcorrscan.core.match_filter.template import (
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
+
+
+Logger = logging.getLogger(__name__)
 
 
 class TestHelpers(unittest.TestCase):
@@ -1015,7 +1019,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.process_length = 86400
         # Aftershock sequence, with 1Hz data, lots of good correlations = high
         # MAD!
+        Logger.info(f"Downloaded {len(st)} traces - handing off to detect")
         for conc_proc in [True, False]:
+            Logger.info(f"Running conc_proc={conc_proc}")
             day_party = daylong_tribe.detect(
                 stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
                 daylong=True, plot=False, parallel_process=False,
