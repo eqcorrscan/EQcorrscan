@@ -1787,9 +1787,13 @@ def _make_party(
         detections, threshold, threshold_type, templates, chunk_start,
         chunk_id, save_progress
 ):
-    chunk_dir = ".parties/{chunk_start.year}/{chunk_start.julday:03d}"
+    chunk_dir = os.path.join(
+            ".parties", "{chunk_start.year}", 
+            "{chunk_start.julday:03d}")
     chunk_file_str = os.path.join(
-        chunk_dir, "chunk_party_{chunk_start}_{chunk_id}.pkl")
+        chunk_dir, 
+        "chunk_party_{chunk_start_str}"
+        "_{chunk_id}.pkl")
 
     # Get the results out of the end!
     Logger.info(f"Made {len(detections)} detections")
@@ -1828,7 +1832,9 @@ def _make_party(
         os.makedirs(chunk_dir.format(chunk_start=chunk_start))
 
     chunk_file = chunk_file_str.format(
-        chunk_start=chunk_start, chunk_id=chunk_id)
+        chunk_start_str=chunk_start.strftime("%Y-%m-%dT%H-%M-%S"),
+        chunk_start=chunk_start, 
+        chunk_id=chunk_id)
     with open(chunk_file, "wb") as _f:
         pickle.dump(chunk_party, _f)
     Logger.info("Completed party processing")

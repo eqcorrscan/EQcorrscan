@@ -49,8 +49,9 @@ class TestCoreMethods(unittest.TestCase):
     """
     Tests for internal _template_loop and normxcorr2 functions.
     """
+    # changed to overflowerror in 0.5.0
     def test_detection_assertion(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(OverflowError):
             Detection(
                 template_name='a', detect_time=UTCDateTime(), threshold=1.2,
                 threshold_input=8.0, threshold_type="MAD", typeofdet="corr",
