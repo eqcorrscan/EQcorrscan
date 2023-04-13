@@ -1262,8 +1262,7 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False, pre_processed=True,
-            concurrent_processing=concurrent_processing,
-            prep_pipe_prepper=prep_pipe_prepper)
+            concurrent_processing=concurrent_processing)
 
         downloader = Process(
             target=_get_detection_stream,
@@ -1892,20 +1891,25 @@ def _get_detection_stream(
     lowcut: float = None,
     samp_rate: float = None,
     process_length: float = None,
-    ready_pipe: Connection = None,
 ):
     from obspy.clients.fdsn.client import FDSNException
 
     while True:
         killed = _check_for_poison(poison_queue)
+        # Wait until output queue is empty to limit rate and memory use
+        tic = default_timer()
+        while out_queue.full():
+            # Keep on checking while we wait
+            killed = _check_for_poison(poison_queue)
+            if killed:
+                break
+            waited = default_timer() - tic
+            if waited > 5:
+                Logger.info("Waiting for output_queue to not be full")
+                tic = default_timer()
         if killed:
             break
         try:
-            if ready_pipe:
-                # Wait for the message to download...
-                msg = ready_pipe.recv()
-                if msg != "ready":
-                    raise NotImplementError(f"Expected ready from pipe, got {msg}")
             next_times = time_queue.get()
             if next_times is None:
                 break
@@ -2033,16 +2037,11 @@ def _pre_processor(
     output_queue: JoinableQueue,
     output_sid_queue: JoinableQueue,
     poison_queue: JoinableQueue,
-    ready_pipe: Connection = None,
 ):
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
             break
-        if ready_pipe:
-            msg = ready_pipe.recv()
-            if msg != "ready":
-                raise NotImplementedError(f"Expected ready from pipe, got {msg}")
         Logger.debug("Getting stream from queue")
         st = stream_queue.get()
         if st is None:
