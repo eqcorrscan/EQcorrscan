@@ -1243,14 +1243,11 @@ class Tribe(object):
             download_groups = int(download_groups) + 1
         else:
             download_groups = int(download_groups)
+        time_chunks = ((starttime + (i * data_length) - pad,
+                        starttime + ((i + 1) * data_length) + pad) 
+                       for i in range(download_groups)
 
-        # Get data in advance
-        time_queue = JoinableQueue()
-        poison_queue = JoinableQueue()
-        stream_queue = JoinableQueue(maxsize=1)
-        sid_queue = JoinableQueue(maxsize=1)
-
-        # TODO: Need a rate limiter - don't download new streams until the stream has exited the prep for correlation step. Pipes might be the answer
+        # TODO: Don't get data in advance for serial.
 
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
@@ -1263,6 +1260,29 @@ class Tribe(object):
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False, pre_processed=True,
             concurrent_processing=concurrent_processing)
+
+        if not concurrent_processing:
+            party = Party()
+            if return_st:
+                full_st = Stream()
+            for _starttime, _endtime in time_chunks:
+                st = _download_st(
+                    starttime=_starttime, endtime=_endtime, 
+                    template_channel_ids=self._template_channel_ids, 
+                    client=client, retries=retries)
+                party += self.detect(st=st, **detector_kwargs)
+                if return_st:
+                    full_st += st
+            if return_st:
+                return party, full_st
+            return party
+
+        # Get data in advance
+        time_queue = JoinableQueue()
+        poison_queue = JoinableQueue()
+        stream_queue = JoinableQueue(maxsize=1)
+        sid_queue = JoinableQueue(maxsize=1)
+
 
         downloader = Process(
             target=_get_detection_stream,
@@ -1306,34 +1326,17 @@ class Tribe(object):
         })
 
         # Fill time queue
-        for i in range(download_groups):
-            time_queue.put((starttime + (i * data_length) - pad,
-                            starttime + ((i + 1) * data_length) + pad))
+        for time_chunk in time_chunks:
+            time_queue.put(time_chunk)
         # Close off queue
         time_queue.put(None)
 
         # Start up processes
         downloader.start()
 
-        # Catch errors
-        if concurrent_processing:
-            party = self.detect(
-                stream=stream_queue, grouping_sid_queue=sid_queue,
-                **detector_kwargs)
-        else:
-            # We have to get the stream here
-            party = Party()
-            while True:
-                st = stream_queue.get()
-                try:
-                    _sids = sid_queue.get_nowait()
-                    # We don't need this, be we have to empty it
-                except Empty:
-                    pass
-                if st is None:
-                    Logger.info("Ran out of streams")
-                    break
-                party += self.detect(stream=st, **detector_kwargs)
+        party = self.detect(
+            stream=stream_queue, grouping_sid_queue=sid_queue,
+            **detector_kwargs)
 
         # Close and join processes
         self._close_processes()
@@ -1546,6 +1549,47 @@ def _mad(cccsum):
 ###############################################################################
 
 # TODO: Move these to matched_filter to make it easier to work on all the parts
+def _download_st(starttime, endtime, template_channel_ids, client, retries):
+    bulk_info = []
+    for chan_id in template_channel_ids:
+        bulk_info.append((
+            chan_id[0], chan_id[1], chan_id[2], chan_id[3],
+            starttime - buff, endtime + buff))
+
+    for retry_attempt in range(retries):
+        try:
+            Logger.info(f"Downloading data between {starttime} and "
+                        f"{endtime}")
+            st = client.get_waveforms_bulk(bulk_info)
+            Logger.info(
+                "Downloaded data for {0} traces".format(len(st)))
+            break
+        except FDSNException as e:
+            if "Split the request in smaller" in " ".join(e.args):
+                Logger.warning(
+                   "Datacentre does not support large requests: "
+                    "splitting request into smaller chunks")
+                st = Stream()
+                for _bulk in bulk_info:
+                    try:
+                        st += client.get_waveforms_bulk([_bulk])
+                    except Exception as e:
+                        Logger.error("No data for {0}".format(_bulk))
+                        Logger.error(e)
+                        continue
+                Logger.info("Downloaded data for {0} traces".format(
+                    len(st)))
+                break
+        except Exception as e:
+            Logger.error(e)
+            continue
+    else:
+        raise MatchFilterError(
+            "Could not download data after {0} attempts".format(
+                retries))
+    return st
+
+
 def _pre_process(
     st, template_ids, pre_processed, filt_order, highcut, lowcut, samp_rate,
     process_length, parallel, cores, daylong, ignore_length, ignore_bad_data,
@@ -1914,43 +1958,9 @@ def _get_detection_stream(
             if next_times is None:
                 break
             starttime, endtime = next_times
-            bulk_info = []
-            for chan_id in template_channel_ids:
-                bulk_info.append((
-                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
-                    starttime - buff, endtime + buff))
 
-            for retry_attempt in range(retries):
-                try:
-                    Logger.info(f"Downloading data between {starttime} and "
-                                f"{endtime}")
-                    st = client.get_waveforms_bulk(bulk_info)
-                    Logger.info(
-                        "Downloaded data for {0} traces".format(len(st)))
-                    break
-                except FDSNException as e:
-                    if "Split the request in smaller" in " ".join(e.args):
-                        Logger.warning(
-                            "Datacentre does not support large requests: "
-                            "splitting request into smaller chunks")
-                        st = Stream()
-                        for _bulk in bulk_info:
-                            try:
-                                st += client.get_waveforms_bulk([_bulk])
-                            except Exception as e:
-                                Logger.error("No data for {0}".format(_bulk))
-                                Logger.error(e)
-                                continue
-                        Logger.info("Downloaded data for {0} traces".format(
-                            len(st)))
-                        break
-                except Exception as e:
-                    Logger.error(e)
-                    continue
-            else:
-                raise MatchFilterError(
-                    "Could not download data after {0} attempts".format(
-                        retries))
+            st = _download_st(starttime, endtime, template_channel_ids, client, retries)
+            
             # Get gaps and remove traces as necessary
             if min_gap:
                 gaps = st.get_gaps(min_gap=min_gap)
