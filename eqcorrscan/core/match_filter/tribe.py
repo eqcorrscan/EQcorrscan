@@ -1245,10 +1245,12 @@ class Tribe(object):
             download_groups = int(download_groups)
         time_chunks = ((starttime + (i * data_length) - pad,
                         starttime + ((i + 1) * data_length) + pad) 
-                       for i in range(download_groups)
+                       for i in range(download_groups))
 
         # TODO: Don't get data in advance for serial.
 
+        poison_queue = JoinableQueue()
+        
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
             trig_int=trig_int, plot=plot, plotdir=plotdir,
@@ -1258,28 +1260,27 @@ class Tribe(object):
             group_size=group_size, overlap=None, full_peaks=full_peaks,
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
-            poison_queue=poison_queue, shutdown=False, pre_processed=True,
+            poison_queue=poison_queue, shutdown=False,
             concurrent_processing=concurrent_processing)
 
         if not concurrent_processing:
             party = Party()
-            if return_st:
+            if return_stream:
                 full_st = Stream()
             for _starttime, _endtime in time_chunks:
                 st = _download_st(
                     starttime=_starttime, endtime=_endtime, 
-                    template_channel_ids=self._template_channel_ids, 
+                    buff=buff, template_channel_ids=self._template_channel_ids(), 
                     client=client, retries=retries)
-                party += self.detect(st=st, **detector_kwargs)
-                if return_st:
+                party += self.detect(stream=st, pre_processed=False, **detector_kwargs)
+                if return_stream:
                     full_st += st
-            if return_st:
+            if return_stream:
                 return party, full_st
             return party
 
         # Get data in advance
         time_queue = JoinableQueue()
-        poison_queue = JoinableQueue()
         stream_queue = JoinableQueue(maxsize=1)
         sid_queue = JoinableQueue(maxsize=1)
 
@@ -1336,7 +1337,7 @@ class Tribe(object):
 
         party = self.detect(
             stream=stream_queue, grouping_sid_queue=sid_queue,
-            **detector_kwargs)
+            pre_processed=True, **detector_kwargs)
 
         # Close and join processes
         self._close_processes()
@@ -1549,7 +1550,7 @@ def _mad(cccsum):
 ###############################################################################
 
 # TODO: Move these to matched_filter to make it easier to work on all the parts
-def _download_st(starttime, endtime, template_channel_ids, client, retries):
+def _download_st(starttime, endtime, buff, template_channel_ids, client, retries):
     bulk_info = []
     for chan_id in template_channel_ids:
         bulk_info.append((
@@ -1959,7 +1960,7 @@ def _get_detection_stream(
                 break
             starttime, endtime = next_times
 
-            st = _download_st(starttime, endtime, template_channel_ids, client, retries)
+            st = _download_st(starttime, endtime, buff, template_channel_ids, client, retries)
             
             # Get gaps and remove traces as necessary
             if min_gap:
