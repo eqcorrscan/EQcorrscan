@@ -2097,6 +2097,8 @@ def _prepper(
             break
         Logger.info("Getting stream from queue")
         st = input_stream_queue.get()
+        # To limit rate we need to repopulate input_strean_queue
+        input_stream_queue.put("hold")
         if st is None:
             Logger.info("Got None for stream, prepper complete")
             break
@@ -2162,6 +2164,13 @@ def _prepper(
                 traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
             i += 1
+        # Release the input_stream_queue
+        try:
+            bob = input_streaam_queue.get_nowait()
+        except Empty:
+            Logger.error("Input stream was empty, expected hold")
+        if bob != "hold":
+            Logger.error("Input stream contained something! expected hold...")
     output_queue.put(None)
     return
 
