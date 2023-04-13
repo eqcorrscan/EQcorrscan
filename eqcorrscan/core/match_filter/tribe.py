@@ -29,7 +29,8 @@ from typing import List, Union
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process, JoinableQueue, cpu_count
+from multiprocessing import Process, JoinableQueue, cpu_count, Pipe
+from multiprocessing.connection import Connection
 from queue import Empty
 
 from obspy import Catalog, Stream, read, read_events
@@ -51,7 +52,7 @@ from eqcorrscan.utils.correlate import (
     _set_inner_outer_threading)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _quick_copy_stream, _prep_data_for_correlation,
-    _group_process)
+    _group_process, _quick_copy_trace)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.plotting import _match_filter_plot
 
@@ -815,7 +816,7 @@ class Tribe(object):
             st_queue.put(stream)
             # Close off queues
             st_queue.put(None)
-
+            
             stream = st_queue
             Logger.info(stream)
 
@@ -841,7 +842,7 @@ class Tribe(object):
             processed_stream_queue = stream
 
         # Templates queue cannot have a max size - grouping goes big
-        templates_queue = JoinableQueue()
+        template_names_queue = JoinableQueue()
         # Prepped queue contains templates and stream (and extras)
         prepped_queue = JoinableQueue(maxsize=1)
         # Output queues
@@ -849,6 +850,7 @@ class Tribe(object):
         detection_queue = JoinableQueue()
         party_file_queue = JoinableQueue()
         party_queue = JoinableQueue()
+
 
         # Set up processes
         if not pre_processed:
@@ -879,7 +881,7 @@ class Tribe(object):
             target=_grouping_processor,
             kwargs=dict(
                 sid_queue=grouping_sid_queue,  # Input queue
-                templates_queue=templates_queue,  # Output queue
+                template_names_queue=template_names_queue,  # Output queue
                 templates=self.templates,
                 group_size=group_size,
                 poison_queue=poison_queue,
@@ -890,7 +892,8 @@ class Tribe(object):
             target=_prepper,
             kwargs=dict(
                 input_stream_queue=processed_stream_queue,
-                input_templates_queue=templates_queue,
+                input_template_names_queue=template_names_queue,
+                templates=self.templates,
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
                 xcorr_func=xcorr_func,
@@ -949,7 +952,7 @@ class Tribe(object):
             "poison": poison_queue,
             "stream": stream,
             "grouping_sids": grouping_sid_queue,
-            "templates": templates_queue,
+            "template_names": template_names_queue,
             "prepped": prepped_queue,
             "peaks": peaks_queue,
             "detections": detection_queue,
@@ -1247,6 +1250,8 @@ class Tribe(object):
         stream_queue = JoinableQueue(maxsize=1)
         sid_queue = JoinableQueue(maxsize=1)
 
+        # TODO: Need a rate limiter - don't download new streams until the stream has exited the prep for correlation step. Pipes might be the answer
+
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
             trig_int=trig_int, plot=plot, plotdir=plotdir,
@@ -1257,7 +1262,8 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False, pre_processed=True,
-            concurrent_processing=concurrent_processing)
+            concurrent_processing=concurrent_processing,
+            prep_pipe_prepper=prep_pipe_prepper)
 
         downloader = Process(
             target=_get_detection_stream,
@@ -1885,7 +1891,8 @@ def _get_detection_stream(
     highcut: float = None,
     lowcut: float = None,
     samp_rate: float = None,
-    process_length: float = None
+    process_length: float = None,
+    ready_pipe: Connection = None,
 ):
     from obspy.clients.fdsn.client import FDSNException
 
@@ -1894,6 +1901,11 @@ def _get_detection_stream(
         if killed:
             break
         try:
+            if ready_pipe:
+                # Wait for the message to download...
+                msg = ready_pipe.recv()
+                if msg != "ready":
+                    raise NotImplementError(f"Expected ready from pipe, got {msg}")
             next_times = time_queue.get()
             if next_times is None:
                 break
@@ -2020,12 +2032,17 @@ def _pre_processor(
     ignore_bad_data: bool,
     output_queue: JoinableQueue,
     output_sid_queue: JoinableQueue,
-    poison_queue: JoinableQueue
+    poison_queue: JoinableQueue,
+    ready_pipe: Connection = None,
 ):
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
             break
+        if ready_pipe:
+            msg = ready_pipe.recv()
+            if msg != "ready":
+                raise NotImplementedError(f"Expected ready from pipe, got {msg}")
         Logger.debug("Getting stream from queue")
         st = stream_queue.get()
         if st is None:
@@ -2055,7 +2072,7 @@ def _pre_processor(
 
 def _grouping_processor(
     sid_queue: JoinableQueue,
-    templates_queue: JoinableQueue,
+    template_names_queue: JoinableQueue,
     group_size: int,
     templates: List,
     poison_queue: JoinableQueue,
@@ -2076,60 +2093,68 @@ def _grouping_processor(
             # Put template groups into the queue - we need to do the copy here.
             Logger.info(f"Grouped into {len(template_groups)} groups")
             for template_group in template_groups:
-                templates_queue.put(
-                    [(t.name, _quick_copy_stream(t.st))
-                     for t in template_group])
+                template_names_queue.put(
+                    # [(t.name, _quick_copy_stream(t.st))
+                    [t.name for t in template_group])
             Logger.info("Put templates into queue")
-            templates_queue.put(None)
+            template_names_queue.put(None)
         except Exception as e:
             Logger.error(
                     f"Caught exception in grouper:\n {e}")
             traceback.print_tb(e.__traceback__)
             poison_queue.put(e)
-    templates_queue.put(None)  # close off the queue
+    template_names_queue.put(None)  # close off the queue
     return
 
 
 def _prepper(
     input_stream_queue: JoinableQueue,
-    input_templates_queue: JoinableQueue,
+    input_template_names_queue: JoinableQueue,
+    templates: List,
     output_queue: JoinableQueue,
     poison_queue: JoinableQueue,
     xcorr_func: str = None,
 ):
+    # Make dicts for quick lookup
+    input_template_dict = {t.name: t.st for t in templates}
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
             break
         Logger.info("Getting stream from queue")
         st = input_stream_queue.get()
-        # To limit rate we need to repopulate input_strean_queue
-        input_stream_queue.put("hold")
         if st is None:
             Logger.info("Got None for stream, prepper complete")
             break
+        st_dict = {tr.id: tr for tr in st}
         i = 0  # Template group id
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
                 break
             try:
-                template_group = input_templates_queue.get()
-                if template_group is None:
+                template_names = input_template_names_queue.get()
+                if template_names is None:
                     break
-                template_names, templates = zip(*template_group)
+                template_streams = [_quick_copy_stream(input_template_dict[tname]) 
+                                    for tname in template_names]
+                # template_names, templates = zip(*template_group)
                 Logger.info(
-                    f"Prepping {len(templates)} templates for correlation")
+                    f"Prepping {len(template_streams)} templates for correlation")
+                template_sids = {tr.id for st in template_streams for tr in st}
 
-                # We need to copy the stream here.
-                _st, templates, template_names = _prep_data_for_correlation(
-                    stream=_quick_copy_stream(st), templates=templates,
+                # We need to copy the stream here, but we only need the channels we need
+                _st, template_streams, template_names = _prep_data_for_correlation(
+                    stream=Stream([_quick_copy_trace(st_dict[sid]) 
+                                   for sid in template_sids 
+                                   if sid in st_dict.keys()]), 
+                    templates=template_streams,
                     template_names=template_names)
                 starttime = _st[0].stats.starttime
 
                 if xcorr_func in (None, "fmf", "fftw"):
                     array_dict_tuple = _get_array_dicts(
-                        templates, _st, stack=True)
+                        template_streams, _st, stack=True)
                     stream_dict, template_dict, pad_dict, \
                         seed_ids = array_dict_tuple
                     if xcorr_func == "fmf":
@@ -2170,13 +2195,6 @@ def _prepper(
                 traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
             i += 1
-        # Release the input_stream_queue
-        try:
-            bob = input_streaam_queue.get_nowait()
-        except Empty:
-            Logger.error("Input stream was empty, expected hold")
-        if bob != "hold":
-            Logger.error("Input stream contained something! expected hold...")
     output_queue.put(None)
     return
 
