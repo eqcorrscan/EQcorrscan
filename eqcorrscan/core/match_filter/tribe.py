@@ -2019,8 +2019,8 @@ def _get_detection_stream(
             if killed:
                 break
             waited = default_timer() - tic
-            if waited > 5:
-                Logger.info("Waiting for output_queue to not be full")
+            if waited > 60:
+                Logger.debug("Waiting for output_queue to not be full")
                 tic = default_timer()
         if killed:
             break
