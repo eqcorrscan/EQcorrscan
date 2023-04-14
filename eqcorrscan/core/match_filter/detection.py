@@ -95,7 +95,7 @@ class Detection(object):
         if event is not None:
             event.resource_id = self.id
         if self.typeofdet == 'corr':
-            if abs(self.detect_val) > self.no_chans + self._precision:
+            if abs(self.detect_val) > self.no_chans * (1 + self._precision):
                 msg = (f"Correlation detection at {self.detect_val} exceeds "
                        f"boundedness ({self.no_chans}")
                 if strict:
