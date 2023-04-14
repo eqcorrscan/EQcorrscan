@@ -134,11 +134,13 @@ class TestSynthData(unittest.TestCase):
 
     def test_missing_data(self):
         # Test case where there are non-matching streams in the template
-        test_match_filter(stream_excess=True)
+        for conc_proc in [True, False]:
+            test_match_filter(stream_excess=True, conc_proc=conc_proc)
 
     def test_extra_templates(self):
         # Test case where there are non-matching streams in the data
-        test_match_filter(template_excess=True)
+        for conc_proc in [True, False]:
+            test_match_filter(template_excess=True, conc_proc=conc_proc)
 
     def test_onesamp_diff(self):
         """Tests to check that traces in stream are set to same length."""
@@ -155,9 +157,11 @@ class TestSynthData(unittest.TestCase):
         templates[0][0].stats.station = 'A'
         templates[0][1].stats.sampling_rate = 40
         templates[0][1].stats.station = 'B'
-        match_filter(template_names=['1'], template_list=templates, st=stream,
-                     threshold=8, threshold_type='MAD', trig_int=1,
-                     plot=False)
+        for conc_proc in [True, False]:
+            match_filter(template_names=['1'], template_list=templates,
+                         st=stream, threshold=8, threshold_type='MAD',
+                         trig_int=1, plot=False,
+                         concurrent_processing=conc_proc)
 
     def test_half_samp_diff(self):
         """
@@ -179,9 +183,11 @@ class TestSynthData(unittest.TestCase):
         templates[0][0].stats.station = 'A'
         templates[0][1].stats.sampling_rate = 40
         templates[0][1].stats.station = 'B'
-        match_filter(template_names=['1'], template_list=templates, st=stream,
-                     threshold=8, threshold_type='MAD', trig_int=1,
-                     plot=False)
+        for conc_proc in [True, False]:
+            match_filter(template_names=['1'], template_list=templates,
+                         st=stream, threshold=8, threshold_type='MAD',
+                         trig_int=1, plot=False,
+                         concurrent_processing=conc_proc)
 
 
 @pytest.mark.network
@@ -235,13 +241,15 @@ class TestGeoNetCase(unittest.TestCase):
         templates = copy.deepcopy(self.templates)
         # Do this to test an extra condition in match_filter
         templates[0].remove(templates[0].select(station='CNGZ')[0])
-        detections = match_filter(template_names=self.template_names,
-                                  template_list=templates, st=self.st,
-                                  threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plot=False, plotdir='.',
-                                  cores=1)
-        self.assertEqual(len(detections), 1)
-        self.assertEqual(detections[0].no_chans, 6)
+        for conc_proc in [False, True]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            detections = match_filter(
+                template_names=self.template_names, template_list=templates,
+                st=self.st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.', cores=1,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 1)
+            self.assertEqual(detections[0].no_chans, 6)
 
     def test_duplicate_cont_data(self):
         """ Check that error is raised if duplicate channels are present in
@@ -249,36 +257,44 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(NotImplementedError):
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=st, threshold=8.0,
-                         threshold_type='MAD', trig_int=6.0, plot=False,
-                         plotdir='.', cores=1)
+        for conc_proc in [False, True]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            with self.assertRaises(NotImplementedError):
+                match_filter(template_names=self.template_names,
+                             template_list=self.templates, st=st, threshold=8.0,
+                             threshold_type='MAD', trig_int=6.0, plot=False,
+                             plotdir='.', cores=1,
+                             concurrent_processing=conc_proc)
 
     def test_missing_cont_channel(self):
         """ Remove one channel from continuous data and check that everything
         still works. """
         st = self.st.copy()
         st.remove(st[-1])
-        detections, det_cat = match_filter(
-            template_names=self.template_names, template_list=self.templates,
-            st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plot=False, plotdir='.', cores=1, output_cat=True)
-        self.assertEqual(len(detections), 1)
-        self.assertEqual(detections[0].no_chans, 5)
-        self.assertEqual(len(detections), len(det_cat))
+        for conc_proc in [False, True]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            detections, det_cat = match_filter(
+                template_names=self.template_names, template_list=self.templates,
+                st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                plot=False, plotdir='.', cores=1, output_cat=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 1)
+            self.assertEqual(detections[0].no_chans, 5)
+            self.assertEqual(len(detections), len(det_cat))
 
     def test_no_matching_data(self):
         """ No matching data between continuous and templates."""
         st = self.st.copy()
         for tr, staname in zip(st, ['a', 'b', 'c', 'd', 'e']):
             tr.stats.station = staname
-        with self.assertRaises(IndexError):
-            match_filter(
-                template_names=self.template_names,
-                template_list=self.templates, st=st, threshold=8.0,
-                threshold_type='MAD', trig_int=6.0, plot=False,
-                plotdir='.', cores=1)
+        for conc_proc in [False, True]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            with self.assertRaises(IndexError):
+                match_filter(
+                    template_names=self.template_names,
+                    template_list=self.templates, st=st, threshold=8.0,
+                    threshold_type='MAD', trig_int=6.0, plot=False,
+                    plotdir='.', cores=1, concurrent_processing=conc_proc)
 
     @pytest.mark.flaky(reruns=2)
     def test_geonet_tribe_detect(self):
@@ -291,11 +307,13 @@ class TestGeoNetCase(unittest.TestCase):
         #     template.process_length = 86400
         #     template.st = Stream(template.st[0])
         #     # Only run one channel templates
-        party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
-            threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plot=False)
-        self.assertEqual(len(party), 16)
+        for conc_proc in [False, True]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            party = self.tribe.copy().client_detect(
+                client=client, starttime=self.t1, endtime=self.t2,
+                threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                daylong=False, plot=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 16)
 
 
 class TestGappyData(unittest.TestCase):
@@ -322,26 +340,30 @@ class TestGappyData(unittest.TestCase):
         self.assertEqual(len(gaps), 1)
         start_gap = gaps[0][4]
         end_gap = gaps[0][5]
-        party = self.tribe.client_detect(
-            client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=0.6,
-            threshold_type="absolute", trig_int=2, plot=False,
-            parallel_process=False, cores=1)
-        for family in party:
-            print(family)
-            for detection in family:
-                self.assertFalse(
-                    start_gap <= detection.detect_time <= end_gap)
-        for family in party:
-            self.assertTrue(len(family) in [5, 1])
+        for conc_proc in [True, False]:
+            party = self.tribe.client_detect(
+                client=self.client, starttime=self.starttime,
+                endtime=self.endtime, threshold=0.6,
+                threshold_type="absolute", trig_int=2, plot=False,
+                parallel_process=False, cores=1,
+                concurrent_processing=conc_proc)
+            for family in party:
+                print(family)
+                for detection in family:
+                    self.assertFalse(
+                        start_gap <= detection.detect_time <= end_gap)
+            for family in party:
+                self.assertTrue(len(family) in [5, 1])
 
     def test_gappy_data_removal(self):
-        party = self.tribe.client_detect(
-            client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=8,
-            threshold_type="MAD", trig_int=2, plot=False,
-            parallel_process=False, min_gap=1)
-        self.assertEqual(len(party), 0)
+        for conc_proc in [True, False]:
+            party = self.tribe.client_detect(
+                client=self.client, starttime=self.starttime,
+                endtime=self.endtime, threshold=8,
+                threshold_type="MAD", trig_int=2, plot=False,
+                parallel_process=False, min_gap=1,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 0)
 
 
 @pytest.mark.network
@@ -393,14 +415,16 @@ class TestNCEDCCases(unittest.TestCase):
 
     def test_detection_extraction(self):
         # Test outputting the streams works
-        detections, detection_streams = \
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=self.st,
-                         threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plot=False, plotdir='.',
-                         cores=1, extract_detections=True)
-        self.assertEqual(len(detections), 4)
-        self.assertEqual(len(detection_streams), len(detections))
+        for conc_proc in [True, False]:
+            detections, detection_streams = match_filter(
+                template_names=self.template_names,
+                template_list=self.templates, st=self.st,
+                threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.',
+                cores=1, extract_detections=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 4)
+            self.assertEqual(len(detection_streams), len(detections))
 
     def test_normxcorr(self):
         # Test a known issue with early normalisation methods
@@ -416,15 +440,17 @@ class TestNCEDCCases(unittest.TestCase):
         self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.04))
 
     def test_catalog_extraction(self):
-        detections, det_cat, detection_streams = \
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=self.st,
-                         threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plot=False, plotdir='.',
-                         cores=1, extract_detections=True, output_cat=True)
-        self.assertEqual(len(detections), 4)
-        self.assertEqual(len(detection_streams), len(detections))
-        self.assertEqual(len(detection_streams), len(det_cat))
+        for conc_proc in [True, False]:
+            detections, det_cat, detection_streams = match_filter(
+                template_names=self.template_names,
+                template_list=self.templates, st=self.st,
+                threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.',
+                cores=1, extract_detections=True, output_cat=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 4)
+            self.assertEqual(len(detection_streams), len(detections))
+            self.assertEqual(len(detection_streams), len(det_cat))
 
     def test_same_detections_individual_and_parallel(self):
         """
@@ -1672,7 +1698,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
 
 def test_match_filter(plot=False, extract_detections=False,
                       threshold_type='MAD', threshold=10,
-                      template_excess=False, stream_excess=False):
+                      template_excess=False, stream_excess=False,
+                      conc_proc=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
@@ -1717,7 +1744,7 @@ def test_match_filter(plot=False, extract_detections=False,
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
         plot=plot, plotdir='.', cores=1, output_cat=False,
-        extract_detections=extract_detections)
+        extract_detections=extract_detections, concurrent_processing=conc_proc)
     if extract_detections:
         detection_streams = detections[1]
         detections = detections[0]
