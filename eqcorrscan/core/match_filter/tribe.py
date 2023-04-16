@@ -21,6 +21,7 @@ import tarfile
 import tempfile
 import time
 import traceback
+import uuid
 import logging
 import numpy as np
 
@@ -76,6 +77,8 @@ class Tribe(object):
         # Managers for Processes and Queues to be killed on errors
         self._processes = dict()
         self._queues = dict()
+        # Assign unique ids
+        self.__unique_ids()
 
     def __repr__(self):
         """
@@ -125,6 +128,8 @@ class Tribe(object):
             self.templates.append(other)
         else:
             raise TypeError('Must be either Template or Tribe')
+        # Assign unique ids
+        self.__unique_ids()
         return self
 
     def __eq__(self, other):
@@ -208,6 +213,19 @@ class Tribe(object):
             except IndexError:
                 Logger.warning('Template: %s not in tribe' % index)
                 return []
+
+    def __unique_ids(self):
+        """ Check that template names are unique. """
+        template_names = set(t.name for t in self.templates)
+        if len(template_names) < len(self.templates):
+            all_template_names = [t.name for t in self.templates]
+            non_unique_names = [name for name in all_template_names
+                                if all_template_names.count(name) > 1]
+            raise NotImplementedError(
+                "Multiple templates found with the same name. Template names "
+                "must be unique. Non-unique templates: "
+                f"{', '.join(non_unique_names)}")
+        return
 
     def sort(self):
         """
@@ -388,6 +406,8 @@ class Tribe(object):
             tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
             self._read_from_folder(dirname=tribe_dir)
         shutil.rmtree(temp_dir)
+        # Assign unique ids
+        self.__unique_ids()
         return self
 
     def _read_from_folder(self, dirname):
@@ -671,8 +691,11 @@ class Tribe(object):
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
         """
-        # We should not need to copy the stream, it is copied in
-        # chunks by _group_process
+        # Check that template names are unique
+        self.__unique_ids()
+        # We should not need to copy the stream, it is copied in chunks by
+        # _group_process
+
         # Argument handling
         if overlap is None:
             overlap = 0.0
@@ -887,6 +910,7 @@ class Tribe(object):
                 ),
                 name="PreProcess"
             )
+        # TODO: Need to ensure template names are unique.
         grouping_process = Process(
             target=_grouping_processor,
             kwargs=dict(
@@ -898,6 +922,9 @@ class Tribe(object):
             ),
             name="Grouper"
         )
+        # TODO: Can this be merged with the grouping process to avoid copying
+        #  all the templates twice? Or/and can we make a template db of
+        #  pickled templates on disk that these processes can reference?
         prepper_process = Process(
             target=_prepper,
             kwargs=dict(
@@ -920,6 +947,7 @@ class Tribe(object):
             ),
             name="Detector"
         )
+        # TODO: Use on disk db of pickled templates?
         detection_builder_process = Process(
             target=_detections_to_party,
             kwargs=dict(

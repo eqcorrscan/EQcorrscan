@@ -1112,6 +1112,14 @@ class TestMatchObjectLight(unittest.TestCase):
             plot_grouped=True, rate=True, show=False, return_figure=True)
         return fig
 
+    def test_tribe_detect_duplicated_template_names(self):
+        tribe = self.tribe.copy()
+        duplicated_template = tribe[0].copy()
+        # Remove some traces to make it actually different
+        duplicated_template.st = duplicated_template.st[0:-2]
+        with self.assertRaises(NotImplementedError):
+            tribe += duplicated_template
+
     def test_party_io_list(self):
         """Test reading and writing party objects."""
         if os.path.isfile('test_party_list.tgz'):
