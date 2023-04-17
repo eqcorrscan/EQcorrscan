@@ -789,14 +789,22 @@ def group_templates_by_seedid(
                 f"templates due to no matched channels")
     # We will need this dictionary at the end for getting the templates by id
     template_dict = {t.name: t for t in templates}
+    # group_size can be None, in which case we don't actually need to group
+    if (group_size is not None) and (group_size < len(template_seed_ids)):
+        # Pass off to cached function
+        out_groups = _group_seed_ids(
+            template_seed_ids=template_seed_ids, group_size=group_size)
 
-    # Pass off to cached function
-    out_groups = _group_seed_ids(
-        template_seed_ids=template_seed_ids, group_size=group_size)
-
-    # Convert from groups of template names to groups of templates
-    out_groups = [[template_dict[t] for t in out_group]
-                  for out_group in out_groups]
+        # Convert from groups of template names to groups of templates
+        out_groups = [[template_dict[t] for t in out_group]
+                      for out_group in out_groups]
+    else:
+        Logger.info(f"Group size ({group_size}) larger than n templates"
+                    f" ({len(template_seed_ids)}), no grouping performed")
+        out_groups = [[template_dict[t[0]] for t in template_seed_ids]]
+    assert sum(len(grp) for grp in out_groups) == len(template_seed_ids), (
+        "Something went wrong internally with grouping - we don't have the "
+        "right number of templates. Please report this bug")
     return out_groups
 
 
