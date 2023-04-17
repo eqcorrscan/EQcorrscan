@@ -211,6 +211,9 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     :type ignore_bad_data: bool
 
     :return: Processed stream as obspy.core.Stream
+
+    :Note: Works in place on your data, copy before giving to this function if
+           you want to reuse your input data.
     """
     if isinstance(st, Trace):
         tracein = True
@@ -697,15 +700,10 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
     :return: :class:`obspy.core.stream.Trace`
     """
     start_in, end_in = (tr.stats.starttime, tr.stats.endtime)
+    tr = Stream([tr])  # convert to stream to use cutout method
     for gap in gaps:
-        stream = Stream()
-        if gap['starttime'] > tr.stats.starttime:
-            stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
-        if gap['endtime'] < tr.stats.endtime:
-            # Note this can happen when gaps are calculated for a trace that
-            # is longer than `length`, e.g. gaps are calculated pre-trim.
-            stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
-        tr = stream.merge()[0]
+        tr.cutout(gap['starttime'], gap['endtime']).merge()
+    tr = tr.merge()[0]
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
@@ -819,8 +817,15 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
             _endtime = kwargs['starttime'] + 86400
 
         # This is where data should be copied and only here!
-        chunk_stream = _quick_copy_stream(
-            stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
+        if n_chunks > 1:
+            chunk_stream = _quick_copy_stream(
+                stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
+            # Reduce memory by removing data that we don't need anymore
+            stream.trim(starttime=_endtime - overlap)
+        else:
+            # If we only have one chunk, lets just use those data!
+            chunk_stream = stream.trim(
+                starttime=kwargs['starttime'], endtime=_endtime)
         Logger.debug(f"Processing chunk {i} between {kwargs['starttime']} "
                      f"and {_endtime}")
         if len(chunk_stream) == 0:
