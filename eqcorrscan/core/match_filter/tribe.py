@@ -1257,7 +1257,7 @@ class Tribe(object):
                        for i in range(download_groups))
 
         poison_queue = Queue()
-        
+
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
             trig_int=trig_int, plot=plot, plotdir=plotdir,
@@ -1276,7 +1276,7 @@ class Tribe(object):
                 full_st = Stream()
             for _starttime, _endtime in time_chunks:
                 st = _download_st(
-                    starttime=_starttime, endtime=_endtime, 
+                    starttime=_starttime, endtime=_endtime,
                     buff=buff, min_gap=min_gap,
                     template_channel_ids=self._template_channel_ids(),
                     client=client, retries=retries)
@@ -2015,8 +2015,6 @@ def _get_detection_stream(
     samp_rate: float = None,
     process_length: float = None,
 ):
-    from obspy.clients.fdsn.client import FDSNException
-
     while True:
         killed = _check_for_poison(poison_queue)
         # Wait until output queue is empty to limit rate and memory use

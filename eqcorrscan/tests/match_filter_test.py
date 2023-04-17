@@ -261,9 +261,9 @@ class TestGeoNetCase(unittest.TestCase):
             Logger.info(f"Running for conc_proc={conc_proc}")
             with self.assertRaises(NotImplementedError):
                 match_filter(template_names=self.template_names,
-                             template_list=self.templates, st=st, threshold=8.0,
-                             threshold_type='MAD', trig_int=6.0, plot=False,
-                             plotdir='.', cores=1,
+                             template_list=self.templates, st=st,
+                             threshold=8.0, threshold_type='MAD',
+                             trig_int=6.0, plot=False, plotdir='.', cores=1,
                              concurrent_processing=conc_proc)
 
     def test_missing_cont_channel(self):
