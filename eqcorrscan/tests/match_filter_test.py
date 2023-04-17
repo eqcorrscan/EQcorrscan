@@ -274,7 +274,8 @@ class TestGeoNetCase(unittest.TestCase):
         for conc_proc in [False, True]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             detections, det_cat = match_filter(
-                template_names=self.template_names, template_list=self.templates,
+                template_names=self.template_names,
+                template_list=self.templates,
                 st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
                 plot=False, plotdir='.', cores=1, output_cat=True,
                 concurrent_processing=conc_proc)
@@ -810,8 +811,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, parallel_process=False,
-                save_progress=True, concurrent_processing=conc_proc)
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, save_progress=True,
+                concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             # Get all the parties
             party_files = glob.glob(".parties/????/???/*.pkl")
@@ -834,9 +836,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, parallel_process=False,
-                xcorr_func='fftw', concurrency='concurrent',
-                concurrent_processing=conc_proc)
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, xcorr_func='fftw',
+                concurrency='concurrent', concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
@@ -935,7 +937,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
                     pick_corrs = sorted(ev.picks, key=lambda p: p.time)
                     pick_corrs = [float(p.comments[0].text.split("=")[-1])
                                   for p in pick_corrs]
-                    chained_ev_pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                    chained_ev_pick_corrs = sorted(
+                        ev.picks, key=lambda p: p.time)
                     chained_ev_pick_corrs = [
                         float(p.comments[0].text.split("=")[-1])
                         for p in chained_ev_pick_corrs]

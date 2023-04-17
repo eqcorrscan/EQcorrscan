@@ -19,7 +19,6 @@ import pickle
 import shutil
 import tarfile
 import tempfile
-import time
 import traceback
 import uuid
 import logging
@@ -52,7 +51,7 @@ from eqcorrscan.utils.correlate import (
     _set_inner_outer_threading)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _quick_copy_stream, _prep_data_for_correlation,
-    _group_process, _quick_copy_trace)
+    _group_process)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
 from eqcorrscan.utils.plotting import _match_filter_plot
 
@@ -499,7 +498,11 @@ class Tribe(object):
                 tribes.append(new_tribe)
         return tribes
 
-    def _close_processes(self, terminate: bool = False, processes: dict = None):
+    def _close_processes(
+        self,
+        terminate: bool = False,
+        processes: dict = None
+    ):
         processes = processes or self._processes
         for p_name, p in processes.items():
             if terminate:
@@ -516,7 +519,8 @@ class Tribe(object):
             try:
                 p.close()
             except Exception as e:
-                Logger.error(f"Failed to close {p_name} due to {e}, terminating")
+                Logger.error(
+                    f"Failed to close {p_name} due to {e}, terminating")
                 p.terminate()
         Logger.info("Finished closing processes")
         return
@@ -756,11 +760,11 @@ class Tribe(object):
             tr.id for template in self.templates for tr in template.st)
 
         args = (stream, template_ids, pre_processed, parallel_process,
-                process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-                group_size, sampling_rate, threshold, threshold_type,
-                save_progress, xcorr_func, concurrency, cores, export_cccsums,
-                parallel, peak_cores, trig_int, full_peaks, plot, plotdir,
-                plot_format,)
+                process_cores, daylong, ignore_length, overlap,
+                ignore_bad_data, group_size, sampling_rate, threshold,
+                threshold_type, save_progress, xcorr_func, concurrency, cores,
+                export_cccsums, parallel, peak_cores, trig_int, full_peaks,
+                plot, plotdir, plot_format,)
 
         if concurrent_processing:
             party = self._detect_concurrent(*args, **inner_kwargs)
@@ -865,16 +869,11 @@ class Tribe(object):
         **kwargs
     ):
         """ Internal concurrent detect workflow. """
-        party = Party()
-
-        stream_input = None
         if isinstance(stream, Stream):
-            stream_input = stream
             st_queue = Queue(maxsize=2)
             st_queue.put(stream)
-            # Close off queues
+            # Close off queue
             st_queue.put(None)
-            
             stream = st_queue
 
         # To reduce load copying templates between processes we dump them to
@@ -1254,7 +1253,7 @@ class Tribe(object):
         else:
             download_groups = int(download_groups)
         time_chunks = ((starttime + (i * data_length) - pad,
-                        starttime + ((i + 1) * data_length) + pad) 
+                        starttime + ((i + 1) * data_length) + pad)
                        for i in range(download_groups))
 
         poison_queue = Queue()
@@ -1469,12 +1468,6 @@ class Tribe(object):
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
-            # Template-gen already does this check, no need to duplicate
-            # for tr in template:
-            #     if not np.any(tr.data.astype(np.float16)):
-            #         Logger.warning('Data are zero in float16, missing data,'
-            #                        ' will not use: {0}'.format(tr.id))
-            #         template.remove(tr)
             if len(template) == 0:
                 Logger.error('Empty Template')
                 continue
@@ -1500,20 +1493,20 @@ class Tribe(object):
         for template in self.templates:
             for tr in template.st:
                 # Cope with missing info and convert to wildcards
-                n, s, l, c = tr.id.split('.')
+                net, sta, loc, chan = tr.id.split('.')
                 if wildcards:
-                    if n in [None, '']:
-                        n = "*"
-                    if s in [None, '']:
-                        s = "*"
-                    if l in [None, '']:
-                        l = "*"
-                    if c in [None, '']:
-                        c = "*"
+                    if net in [None, '']:
+                        net = "*"
+                    if sta in [None, '']:
+                        sta = "*"
+                    if loc in [None, '']:
+                        loc = "*"
+                    if chan in [None, '']:
+                        chan = "*"
                     # Cope with old seisan chans
-                    if len(c) == 2:
-                        c = f"{c[0]}?{c[-1]}"
-                template_channel_ids.add((n, s, l, c))
+                    if len(chan) == 2:
+                        chan = f"{chan[0]}?{chan[-1]}"
+                template_channel_ids.add((net, sta, loc, chan))
         return template_channel_ids
 
 
@@ -1589,7 +1582,7 @@ def _download_st(
             if "Split the request in smaller" in " ".join(e.args):
                 Logger.warning(
                    "Datacentre does not support large requests: "
-                    "splitting request into smaller chunks")
+                   "splitting request into smaller chunks")
                 st = Stream()
                 for _bulk in bulk_info:
                     try:
@@ -1914,10 +1907,10 @@ def _make_party(
     save_progress
 ):
     chunk_dir = os.path.join(
-            ".parties", "{chunk_start.year}", 
+            ".parties", "{chunk_start.year}",
             "{chunk_start.julday:03d}")
     chunk_file_str = os.path.join(
-        chunk_dir, 
+        chunk_dir,
         "chunk_party_{chunk_start_str}"
         "_{chunk_id}.pkl")
 
@@ -1969,7 +1962,7 @@ def _make_party(
 
     chunk_file = chunk_file_str.format(
         chunk_start_str=chunk_start.strftime("%Y-%m-%dT%H-%M-%S"),
-        chunk_start=chunk_start, 
+        chunk_start=chunk_start,
         chunk_id=chunk_id)
     with open(chunk_file, "wb") as _f:
         pickle.dump(chunk_party, _f)
@@ -2200,9 +2193,8 @@ def _prepper(
 
                 # template_names, templates = zip(*template_group)
                 Logger.info(
-                    f"Prepping {len(template_streams)} templates for correlation")
-                template_sids = {tr.id for st in template_streams for tr in st}
-
+                    f"Prepping {len(template_streams)} "
+                    f"templates for correlation")
                 # We can just load in a fresh copy of the stream!
                 _st, template_streams, template_names = \
                     _prep_data_for_correlation(

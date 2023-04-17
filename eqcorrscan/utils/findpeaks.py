@@ -234,7 +234,8 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
                     pool.apply_async(internal_func, param) for param in params]
                 peaks = [res.get() for res in results]
         else:
-            to_run = ((arr[i], thresh[i], trig_int) for i in range(len(thresh)))
+            to_run = ((arr[i], thresh[i], trig_int)
+                      for i in range(len(thresh)))
             with ThreadPoolExecutor(cores) as executor:
                 results = executor.map(
                     lambda args: find_peaks_compiled(*args), to_run)
