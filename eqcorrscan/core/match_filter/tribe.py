@@ -2072,7 +2072,7 @@ def _get_detection_stream(
             if full_stream_file:
                 # Open in append mode - we can just add more records to mseed
                 with open(full_stream_file, "ab") as _f:
-                    st.write(_f, format="MSEED")
+                    st.split().write(_f, format="MSEED")
             if not pre_process:
                 st_chunks = [st]
             else:
@@ -2097,7 +2097,7 @@ def _get_detection_stream(
                     ".streams",
                     f"chunk_stream_{len(chunk)}_"
                     f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
-                chunk.write(chunk_file, format="MSEED")
+                chunk.split().write(chunk_file, format="MSEED")
                 out_queue.put(chunk_file)
                 del chunk
         except Exception as e:
@@ -2153,7 +2153,7 @@ def _pre_processor(
                     ".streams",
                     f"chunk_stream_{len(chunk)}_"
                     f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
-                chunk.write(chunk_file, format="MSEED")
+                chunk.split().write(chunk_file, format="MSEED")
                 output_queue.put(chunk_file)
                 del chunk
         except Exception as e:
@@ -2194,7 +2194,7 @@ def _prepper(
             st_file = tempfile.NamedTemporaryFile().name
             Logger.info(f"Writing temporary stream file to {st_file}")
             try:
-                st.write(st_file, format="MSEED")
+                st.split().write(st_file, format="MSEED")
             except Exception as e:
                 Logger.error(
                     f"Could not write temporary file {st_file} due to {e}")
@@ -2243,7 +2243,7 @@ def _prepper(
                 # We can just load in a fresh copy of the stream!
                 _st, template_streams, template_names = \
                     _prep_data_for_correlation(
-                        stream=read(st_file),
+                        stream=read(st_file).merge(),
                         templates=template_streams,
                         template_names=template_names)
                 starttime = _st[0].stats.starttime
@@ -2254,6 +2254,7 @@ def _prepper(
                     stream_dict, template_dict, pad_dict, \
                         seed_ids = array_dict_tuple
                     if xcorr_func == "fmf":
+                        Logger.info("Prepping data for FMF")
                         # Work out used channels here
                         tr_chans = np.array(
                             [~np.isnan(template_dict[seed_id]).any(axis=1)
@@ -2280,12 +2281,14 @@ def _prepper(
                             (starttime, i, d_arr, template_names, t_arr,
                              weights, pads, chans, no_chans))
                     else:
+                        Logger.info("Prepping data for FFTW")
                         output_queue.put((
                             starttime, i, stream_dict, template_names,
                             template_dict, pad_dict, seed_ids))
                 else:
+                    Logger.info("Prepping data for standard correlation")
                     output_queue.put(
-                        (starttime, i, _st, template_names, templates))
+                        (starttime, i, _st, template_names, template_streams))
             except Exception as e:
                 Logger.error(f"Caught exception in Prepper: {e}")
                 traceback.print_tb(e.__traceback__)
