@@ -2096,7 +2096,7 @@ def _get_detection_stream(
                 chunk_file = os.path.join(
                     ".streams",
                     f"chunk_stream_{len(chunk)}_"
-                    f"{_start.strftime('%Y-%m-%dT%H:%M:%S')}.ms")
+                    f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
                 chunk.write(chunk_file, format="MSEED")
                 out_queue.put(chunk_file)
                 del chunk
@@ -2152,7 +2152,7 @@ def _pre_processor(
                 chunk_file = os.path.join(
                     ".streams",
                     f"chunk_stream_{len(chunk)}_"
-                    f"{_start.strftime('%Y-%m-%dT%H:%M:%S')}.ms")
+                    f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
                 chunk.write(chunk_file, format="MSEED")
                 output_queue.put(chunk_file)
                 del chunk
