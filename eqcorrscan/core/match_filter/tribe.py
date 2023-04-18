@@ -1268,9 +1268,9 @@ class Tribe(object):
                 pad = max_delay
         download_groups = int(endtime - starttime) / data_length
 
-        full_stream_file = None
+        full_stream_dir = None
         if return_stream:
-            full_stream_file = tempfile.NamedTemporaryFile().name
+            full_stream_dir = tempfile.mkdtemp()
         if int(download_groups) < download_groups:
             download_groups = int(download_groups) + 1
         else:
@@ -1329,7 +1329,7 @@ class Tribe(object):
                 buff=buff,
                 out_queue=stream_queue,
                 poison_queue=poison_queue,
-                full_stream_file=full_stream_file,
+                full_stream_dir=full_stream_dir,
                 pre_process=True, parallel_process=parallel_process,
                 process_cores=process_cores, daylong=daylong,
                 overlap=0.0, ignore_length=ignore_length,
@@ -1376,8 +1376,8 @@ class Tribe(object):
         self._close_queues()
 
         if return_stream:
-            full_st = read(full_stream_file)
-            os.remove(full_stream_file)
+            full_st = read(os.path.join(full_stream_dir, "*"))
+            shutil.rmtree(full_stream_dir)
             return party, full_st
         return party
 
@@ -1569,6 +1569,23 @@ def _mad(cccsum):
     Internal helper to compute MAD-thresholds in parallel.
     """
     return np.median(np.abs(cccsum))
+
+
+def _pickle_stream(stream: Stream, filename: str):
+    Logger.info(f"Pickling stream of {len(stream)} traces to {filename}")
+    with open(filename, "wb") as f:
+        pickle.dump(stream, f)
+    Logger.info(f"Pickled to {filename}")
+    return
+
+
+def _unpickle_stream(filename: str) -> Stream:
+    Logger.info(f"Unpickling from {filename}")
+    with open(filename, "rb") as f:
+        stream = pickle.load(f)
+    assert isinstance(stream, Stream)
+    Logger.info(f"Unpickled stream of {len(stream)} traces from {filename}")
+    return stream
 
 
 ###############################################################################
@@ -2025,7 +2042,7 @@ def _get_detection_stream(
     buff: float,
     out_queue: Queue,
     poison_queue: Queue,
-    full_stream_file: bool = None,
+    full_stream_dir: str = None,
     pre_process: bool = False,
     parallel_process: bool = True,
     process_cores: int = None,
@@ -2069,10 +2086,13 @@ def _get_detection_stream(
                                f"and {endtime}, skipping")
                 continue
             # Try to reduce memory consumption by getting rid of st if we can
-            if full_stream_file:
-                # Open in append mode - we can just add more records to mseed
-                with open(full_stream_file, "ab") as _f:
-                    st.split().write(_f, format="MSEED")
+            if full_stream_dir:
+                for tr in st:
+                    tr.split().write(os.path.join(
+                        full_stream_dir, 
+                        f"full_trace_{tr.id}_"
+                        f"{tr.stats.starttime.strftime('%y-%m-%dT%H-%M-%S')}.ms"),
+                            format="MSEED")
             if not pre_process:
                 st_chunks = [st]
             else:
@@ -2092,12 +2112,11 @@ def _get_detection_stream(
             for chunk in st_chunks:
                 if not os.path.isdir(".streams"):
                     os.makedirs(".streams")
-                _start = chunk[0].stats.starttime
                 chunk_file = os.path.join(
                     ".streams",
-                    f"chunk_stream_{len(chunk)}_"
-                    f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
-                chunk.split().write(chunk_file, format="MSEED")
+                    f"chunk_{len(chunk)}_"
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                _pickle_stream(chunk, chunk_file)
                 out_queue.put(chunk_file)
                 del chunk
         except Exception as e:
@@ -2148,13 +2167,13 @@ def _pre_processor(
             for chunk in st_chunks:
                 if not os.path.isdir(".streams"):
                     os.makedirs(".streams")
-                _start = chunk[0].stats.starttime
+                chunk_files = []
                 chunk_file = os.path.join(
                     ".streams",
-                    f"chunk_stream_{len(chunk)}_"
-                    f"{_start.strftime('%Y-%m-%dT%H-%M-%S')}.ms")
-                chunk.split().write(chunk_file, format="MSEED")
-                output_queue.put(chunk_file)
+                    f"chunk_{len(chunk)}_"
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                _pickle_stream(chunk, chunk_file)
+                output_queue.put(chunk_file) 
                 del chunk
         except Exception as e:
             Logger.error(
@@ -2189,12 +2208,13 @@ def _prepper(
             Logger.info("Got None for stream, prepper complete")
             break
         if isinstance(st_file, Stream):
+            Logger.info("Stream provided")
             st = st_file
             # Write temporary cache of file
             st_file = tempfile.NamedTemporaryFile().name
             Logger.info(f"Writing temporary stream file to {st_file}")
             try:
-                st.split().write(st_file, format="MSEED")
+                _pickle_stream(st, st_file)
             except Exception as e:
                 Logger.error(
                     f"Could not write temporary file {st_file} due to {e}")
@@ -2202,7 +2222,7 @@ def _prepper(
                 break
         Logger.info(f"Reading stream from {st_file}")
         try:
-            st = read(st_file, headonly=True)
+            st = _unpickle_stream(st_file)
         except Exception as e:
             Logger.error(f"Error reading {st_file}: {e}")
             poison_queue.put(e)
@@ -2243,7 +2263,7 @@ def _prepper(
                 # We can just load in a fresh copy of the stream!
                 _st, template_streams, template_names = \
                     _prep_data_for_correlation(
-                        stream=read(st_file).merge(),
+                        stream=_unpickle_stream(st_file).merge(),
                         templates=template_streams,
                         template_names=template_names)
                 starttime = _st[0].stats.starttime

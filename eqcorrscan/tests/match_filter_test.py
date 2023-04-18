@@ -241,7 +241,7 @@ class TestGeoNetCase(unittest.TestCase):
         templates = copy.deepcopy(self.templates)
         # Do this to test an extra condition in match_filter
         templates[0].remove(templates[0].select(station='CNGZ')[0])
-        for conc_proc in [False, True]:
+        for conc_proc in [True, False]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             detections = match_filter(
                 template_names=self.template_names, template_list=templates,
@@ -257,7 +257,7 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        for conc_proc in [False, True]:
+        for conc_proc in [True, False]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             with self.assertRaises(NotImplementedError):
                 match_filter(template_names=self.template_names,
@@ -271,7 +271,7 @@ class TestGeoNetCase(unittest.TestCase):
         still works. """
         st = self.st.copy()
         st.remove(st[-1])
-        for conc_proc in [False, True]:
+        for conc_proc in [True, False]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             detections, det_cat = match_filter(
                 template_names=self.template_names,
@@ -288,7 +288,7 @@ class TestGeoNetCase(unittest.TestCase):
         st = self.st.copy()
         for tr, staname in zip(st, ['a', 'b', 'c', 'd', 'e']):
             tr.stats.station = staname
-        for conc_proc in [False, True]:
+        for conc_proc in [True, False]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             with self.assertRaises(IndexError):
                 match_filter(
@@ -308,7 +308,7 @@ class TestGeoNetCase(unittest.TestCase):
         #     template.process_length = 86400
         #     template.st = Stream(template.st[0])
         #     # Only run one channel templates
-        for conc_proc in [False, True]:
+        for conc_proc in [True, False]:
             Logger.info(f"Running for conc_proc={conc_proc}")
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1, endtime=self.t2,
