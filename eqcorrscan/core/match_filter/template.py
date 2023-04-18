@@ -775,6 +775,10 @@ def group_templates_by_seedid(
     :return:
         List of lists of templates grouped.
     """
+    all_template_sids = {tr.id for template in templates for tr in template.st}
+    if len(all_template_sids.intersection(st_seed_ids)) == 0:
+        Logger.warning(f"No matches between stream ({st_seed_ids} and "
+                       f"templates ({all_template_sids}")
     # Get overlapping seed ids so that we only group based on the
     # channels we have in the data. Use a tuple so that it hashes
     template_seed_ids = tuple(

@@ -1132,7 +1132,7 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     assert set(seed_ids)
 
     t_arr, d_arr, weights, pads = _fmf_reshape(
-        template_dict=template_dict, stream_dict=stream_dict, 
+        template_dict=template_dict, stream_dict=stream_dict,
         pad_dict=pad_dict, seed_ids=seed_ids)
 
     cccsums = _run_fmf_xcorr(
