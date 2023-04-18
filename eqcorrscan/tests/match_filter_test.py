@@ -1166,9 +1166,18 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_tribe_add(self):
         """Test add method"""
         added = self.tribe.copy()
-        self.assertEqual(len(added + added[0]), 5)
+        # Check that we can't add same named templates
+        with self.assertRaises(NotImplementedError):
+            bob = added + added[0]
+        with self.assertRaises(NotImplementedError):
+            added += added[0]
+        # Check that addition works for differently named templates
+        different = added.copy()
+        for template in different:
+            template.name += "_a"
+        self.assertEqual(len(added + different[0]), 5)
         self.assertEqual(len(added), 4)
-        added += added[-1]
+        added += different[-1]
         self.assertEqual(len(added), 5)
 
     def test_tribe_remove(self):

@@ -121,14 +121,13 @@ class Tribe(object):
         >>> print(tribe)
         Tribe of 3 templates
         """
+        self.__unique_ids(other)
         if isinstance(other, Tribe):
             self.templates += other.templates
         elif isinstance(other, Template):
             self.templates.append(other)
         else:
             raise TypeError('Must be either Template or Tribe')
-        # Assign unique ids
-        self.__unique_ids()
         return self
 
     def __eq__(self, other):
@@ -213,13 +212,21 @@ class Tribe(object):
                 Logger.warning('Template: %s not in tribe' % index)
                 return []
 
-    def __unique_ids(self):
+    def __unique_ids(self, other=None):
         """ Check that template names are unique. """
-        template_names = set(t.name for t in self.templates)
-        if len(template_names) < len(self.templates):
-            all_template_names = [t.name for t in self.templates]
-            non_unique_names = [name for name in all_template_names
-                                if all_template_names.count(name) > 1]
+        template_names = [t.name for t in self.templates]
+        if other:
+            assert isinstance(other, (Template, Tribe)), (
+                "Can only test against tribes or templates")
+            if isinstance(other, Template):
+                template_names.append(other.name)
+            else:
+                template_names.extend([t.name for t in other])
+
+        unique_names = set(template_names)
+        if len(unique_names) < len(template_names):
+            non_unique_names = [name for name in unique_names
+                                if template_names.count(name) > 1]
             raise NotImplementedError(
                 "Multiple templates found with the same name. Template names "
                 "must be unique. Non-unique templates: "
@@ -797,8 +804,14 @@ class Tribe(object):
         """ Internal serial detect workflow. """
         party = Party()
 
+        assert isinstance(stream, Stream), (
+            f"Serial detection requires stream to be a stream, not"
+            f" a {type(stream)}")
+
+        # We need to copy data here to keep the users input safe.
         st_chunks = _pre_process(
-            st=stream, template_ids=template_ids, pre_processed=pre_processed,
+            st=stream.copy(), template_ids=template_ids,
+            pre_processed=pre_processed,
             filt_order=self.templates[0].filt_order,
             highcut=self.templates[0].highcut,
             lowcut=self.templates[0].lowcut,
@@ -870,11 +883,17 @@ class Tribe(object):
     ):
         """ Internal concurrent detect workflow. """
         if isinstance(stream, Stream):
+            Logger.info("Copying stream to keep your original data safe")
             st_queue = Queue(maxsize=2)
-            st_queue.put(stream)
+            st_queue.put(stream.copy())
             # Close off queue
             st_queue.put(None)
             stream = st_queue
+        else:
+            # Note that if a queue has been passed we do not try to keep
+            # data safe
+            Logger.warning("Streams in queue will be edited in-place, you "
+                           "should not re-use them")
 
         # To reduce load copying templates between processes we dump them to
         # disk and pass the dictionary of files
@@ -982,6 +1001,7 @@ class Tribe(object):
         while True:
             killed = _check_for_poison(poison_queue)
             if killed:
+                Logger.info("Killed in main loop")
                 break
             try:
                 to_corr = prepped_queue.get()
@@ -1045,7 +1065,8 @@ class Tribe(object):
             if not save_progress:
                 os.remove(pf)
         if not save_progress:
-            shutil.rmtree(".parties")
+            if os.path.isdir(".parties"):
+                shutil.rmtree(".parties")
 
         # Check for exceptions
         if killed:
@@ -1054,7 +1075,8 @@ class Tribe(object):
             # Now we can raise the error
             if internal_error:
                 # Clean the template db
-                shutil.rmtree(template_dir)
+                if os.path.isdir(template_dir):
+                    shutil.rmtree(template_dir)
                 self._on_error(internal_error)
 
         # Shut down the processes and close the queues
@@ -1064,7 +1086,8 @@ class Tribe(object):
             Logger.info("Shutting down")
             self._close_queues()
             self._close_processes()
-        shutil.rmtree(template_dir)
+        if os.path.isdir(template_dir):
+            shutil.rmtree(template_dir)
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -1552,7 +1575,7 @@ def _mad(cccsum):
 #                               Detect steps
 ###############################################################################
 
-# TODO: Move these to matched_filter to make it easier to work on all the parts
+# TODO: Move these to matched_filter.helpers to make it easier to work on all the parts
 def _download_st(
     starttime,
     endtime,
@@ -1682,6 +1705,7 @@ def _group(sids, templates, group_size):
         st_seed_ids=sids,
         group_size=group_size)
     if len(template_groups) == 1 and len(template_groups[0]) == 0:
+        Logger.error("No matching ids between stream and templates")
         raise IndexError("No matching ids between stream and templates")
     return template_groups
 
@@ -2157,19 +2181,37 @@ def _prepper(
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
+            Logger.info("Killed in prepper")
             break
         Logger.info("Getting stream from queue")
         st_file = input_stream_queue.get()
         if st_file is None:
             Logger.info("Got None for stream, prepper complete")
             break
+        if isinstance(st_file, Stream):
+            st = st_file
+            # Write temporary cache of file
+            st_file = tempfile.NamedTemporaryFile().name
+            Logger.info(f"Writing temporary stream file to {st_file}")
+            try:
+                st.write(st_file, format="MSEED")
+            except Exception as e:
+                Logger.error(
+                    f"Could not write temporary file {st_file} due to {e}")
+                poison_queue.put(e)
+                break
         Logger.info(f"Reading stream from {st_file}")
-        st = read(st_file, headonly=True)
+        try:
+            st = read(st_file, headonly=True)
+        except Exception as e:
+            Logger.error(f"Error reading {st_file}: {e}")
+            poison_queue.put(e)
+            break
         st_sids = {tr.id for tr in st}
         if len(st_sids) < len(st):
             _sids = [tr.id for tr in st]
             _duplicate_sids = {
-                sid for sid in st_sids.keys() if _sids.count(sid) > 1}
+                sid for sid in st_sids if _sids.count(sid) > 1}
             poison_queue.put(NotImplementedError(
                 f"Multiple channels in continuous data for "
                 f"{', '.join(_duplicate_sids)}"))
@@ -2177,8 +2219,13 @@ def _prepper(
         # Do the grouping for this stream
         Logger.info(f"Grouping {len(templates)} templates into groups "
                     f"of {group_size} templates")
-        template_groups = _group(sids=st_sids, templates=templates,
-                                 group_size=group_size)
+        try:
+            template_groups = _group(sids=st_sids, templates=templates,
+                                     group_size=group_size)
+        except Exception as e:
+            Logger.error(e)
+            poison_queue.put(e)
+            break
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
             killed = _check_for_poison(poison_queue)
@@ -2244,8 +2291,8 @@ def _prepper(
                 traceback.print_tb(e.__traceback__)
                 poison_queue.put(e)
             i += 1
+        Logger.info(f"Removing temporary {st_file}")
         os.remove(st_file)
-    shutil.rmtree(".streams")
     output_queue.put(None)
     return
 
