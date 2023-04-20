@@ -401,6 +401,24 @@ def get_array_xcorr(name_or_func=None):
     return func.array_xcorr
 
 
+# TODO: I have a C-func for this which is probably faster
+def running_mean_std(stream, window_length):
+    import bottleneck
+
+    # Currently have to use float64 as bottleneck runs into issues with other
+    # types: https://github.com/kwgoodman/bottleneck/issues/164
+    stream = stream.astype(np.float64)
+    # Set up normalizers
+    stream_mean_array = bottleneck.move_mean(
+        stream, window_length)[window_length - 1:]
+    stream_std_array = bottleneck.move_std(
+        stream, window_length)[window_length - 1:]
+
+    # because stream_std_array is in denominator or res, nan all 0s
+    stream_std_array[stream_std_array == 0] = np.nan
+
+    return stream_mean_array, stream_std_array
+
 # ----------------------- registered array_xcorr functions
 
 
@@ -419,42 +437,86 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
-    import bottleneck
-
     # Generate a template mask
     used_chans = ~np.isnan(templates).any(axis=1)
-    # Currently have to use float64 as bottleneck runs into issues with other
-    # types: https://github.com/kwgoodman/bottleneck/issues/164
-    stream = stream.astype(np.float64)
-    templates = templates.astype(np.float64)
+
+    # stream = stream.astype(np.float64)
+    # templates = templates.astype(np.float64)
     template_length = templates.shape[1]
+    n_templates = templates.shape[0]
     stream_length = len(stream)
     assert stream_length > template_length, "Template must be shorter than " \
                                             "stream"
-    fftshape = next_fast_len(template_length + stream_length - 1)
-    # Set up normalizers
-    stream_mean_array = bottleneck.move_mean(
-        stream, template_length)[template_length - 1:]
-    stream_std_array = bottleneck.move_std(
-        stream, template_length)[template_length - 1:]
-    # because stream_std_array is in denominator or res, nan all 0s
-    stream_std_array[stream_std_array == 0] = np.nan
+    fft_len = kwargs.get("fft_len")
+    next_fastest = next_fast_len(template_length + stream_length - 1)
+    if fft_len is None:
+        # In testing, 2**13 consistently comes out fastest for pyfftw - this
+        # may not be the case here?
+        fft_len = min(2 ** 13, next_fastest)
+    if fft_len < template_length:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(fft_len, next_fastest))
+        fft_len = next_fastest
+    if fft_len is None:
+        fft_len = next_fastest
+
+    stream_mean_array, stream_std_array = running_mean_std(
+        stream, window_length=template_length)
+
+    # TODO: Here would be where we could move things to the GPU - note that
+    #  stream could be moved all at once, or in chunks
+
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
         templates.std(axis=-1, keepdims=True) * template_length))
     norm_sum = norm.sum(axis=-1, keepdims=True)
-    stream_fft = np.fft.rfft(stream, fftshape)
-    template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
-    res = np.fft.irfft(template_fft * stream_fft,
-                       fftshape)[:, 0:template_length + stream_length - 1]
-    res = ((_centered(res, (templates.shape[0],
-                            stream_length - template_length + 1))) -
-           norm_sum * stream_mean_array) / stream_std_array
-    res[np.isnan(res)] = 0.0
+
+    # Work out chunks
+    if fft_len >= stream_length:
+        n_chunks = 1
+        chunk_len = stream_length
+        step_len = chunk_len
+    else:
+        chunk_len = fft_len
+        step_len = fft_len - (template_length - 1)
+        n_chunks = int((stream_length - chunk_len) / step_len) + (
+            (stream_length - chunk_len) % step_len > 0)
+        if n_chunks * step_len < stream_length:
+            n_chunks += 1
+
+    # Compute template ffts
+    template_fft = np.fft.rfft(np.flip(norm, axis=-1), fft_len, axis=-1)
+
+    # Pre-allocate correlation array
+    # TODO: Should corrs be on the cpu memory?
+    corrs = np.zeros((n_templates, stream_length - template_length + 1),
+                     dtype=float)
+    for chunk in range(n_chunks):
+        offset = chunk * step_len
+        if offset + chunk_len > stream_length:
+            # Final chunk
+            chunk_len = stream_length - offset
+        stream_chunk = stream[offset: offset + chunk_len]
+        mean_chunk = stream_mean_array[
+            offset: offset + (chunk_len - template_length + 1)]
+        std_chunk = stream_std_array[
+            offset: offset + (chunk_len - template_length + 1)]
+
+        stream_fft = np.fft.rfft(stream_chunk, fft_len)
+        res = np.fft.irfft(
+            template_fft * stream_fft, fft_len)[:, 0:template_length + chunk_len - 1]
+        res = _centered(res, (n_templates, chunk_len - template_length + 1))
+        res -= (norm_sum * mean_chunk)
+        res /= std_chunk
+        res[np.isnan(res)] = 0.0
+
+        # TODO: Move back to the CPU here to save memory?
+        corrs[:, offset: offset + res.shape[1]] = res
 
     for i, pad in enumerate(pads):
-        res[i] = np.append(res[i], np.zeros(pad))[pad:]
-    return res.astype(np.float32), used_chans
+        corrs[i] = np.append(corrs[i], np.zeros(pad))[pad:]
+    return corrs, used_chans
 
 
 def _centered(arr, newshape):
