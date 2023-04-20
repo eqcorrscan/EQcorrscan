@@ -437,16 +437,16 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
     """
-    # Generate a template mask
-    used_chans = ~np.isnan(templates).any(axis=1)
 
-    # stream = stream.astype(np.float64)
-    # templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     n_templates = templates.shape[0]
     stream_length = len(stream)
     assert stream_length > template_length, "Template must be shorter than " \
                                             "stream"
+
+    stream_mean_array, stream_std_array = running_mean_std(
+        stream, window_length=template_length)
+
     fft_len = kwargs.get("fft_len")
     next_fastest = next_fast_len(template_length + stream_length - 1)
     if fft_len is None:
@@ -460,12 +460,6 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
         fft_len = next_fastest
     if fft_len is None:
         fft_len = next_fastest
-
-    stream_mean_array, stream_std_array = running_mean_std(
-        stream, window_length=template_length)
-
-    # TODO: Here would be where we could move things to the GPU - note that
-    #  stream could be moved all at once, or in chunks
 
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
@@ -489,7 +483,6 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fft_len, axis=-1)
 
     # Pre-allocate correlation array
-    # TODO: Should corrs be on the cpu memory?
     corrs = np.zeros((n_templates, stream_length - template_length + 1),
                      dtype=float)
     for chunk in range(n_chunks):
@@ -511,11 +504,121 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
         res /= std_chunk
         res[np.isnan(res)] = 0.0
 
-        # TODO: Move back to the CPU here to save memory?
         corrs[:, offset: offset + res.shape[1]] = res
 
     for i, pad in enumerate(pads):
         corrs[i] = np.append(corrs[i], np.zeros(pad))[pad:]
+    # Generate a template mask
+    used_chans = ~np.isnan(templates).any(axis=1)
+    return corrs, used_chans
+
+
+@register_array_xcorr('cupy')
+def cupy_normxcorr(templates, stream, pads, *args, **kwargs):
+    """
+    Compute the normalized cross-correlation using numpy and bottleneck.
+
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
+    """
+    try:
+        import cupy as cp
+    except ImportError as e:
+        Logger.error("cupy not installed")
+        print("If you want to use cupy correlations you must install cupy")
+        raise e
+
+    # Generate a template mask
+    used_chans = ~np.isnan(templates).any(axis=1)
+
+    template_length = templates.shape[1]
+    n_templates = templates.shape[0]
+    stream_length = len(stream)
+    assert stream_length > template_length, "Template must be shorter than " \
+                                            "stream"
+
+    stream_mean_array, stream_std_array = running_mean_std(
+        stream, window_length=template_length)
+
+    fft_len = kwargs.get("fft_len")
+    next_fastest = next_fast_len(template_length + stream_length - 1)
+    if fft_len is None:
+        # In testing, 2**13 consistently comes out fastest for pyfftw - this
+        # may not be the case here?
+        fft_len = min(2 ** 13, next_fastest)
+    if fft_len < template_length:
+        Logger.warning(
+            "FFT length of {0} is shorter than the template, setting to "
+            "{1}".format(fft_len, next_fast_len(template_length)))
+        fft_len = next_fast_len(template_length)
+    if fft_len is None:
+        fft_len = next_fastest
+
+    # Normalize and flip the templates
+    norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
+            templates.std(axis=-1, keepdims=True) * template_length))
+    norm_sum = norm.sum(axis=-1, keepdims=True)
+
+    # Move data to the gpu
+    norm = cp.asarray(norm)
+    norm_sum = cp.asarray(norm_sum)
+    stream = cp.asarray(stream)
+    stream_std_array = cp.asarray(stream_std_array)
+    stream_mean_array = cp.asarray(stream_mean_array)
+
+    # Work out chunks
+    if fft_len >= stream_length:
+        n_chunks = 1
+        chunk_len = stream_length
+        step_len = chunk_len
+    else:
+        chunk_len = fft_len
+        step_len = fft_len - (template_length - 1)
+        n_chunks = int((stream_length - chunk_len) / step_len) + (
+                (stream_length - chunk_len) % step_len > 0)
+        if n_chunks * step_len < stream_length:
+            n_chunks += 1
+
+    # Compute template ffts
+    template_fft = cp.fft.rfft(cp.flip(norm, axis=-1), fft_len, axis=-1)
+
+    # Pre-allocate correlation array - keep corrs on RAM to reduce VRAM use
+    corrs = cp.zeros((n_templates, stream_length - template_length + 1),
+                     dtype=float)
+    for chunk in range(n_chunks):
+        offset = chunk * step_len
+        if offset + chunk_len > stream_length:
+            # Final chunk
+            chunk_len = stream_length - offset
+        stream_chunk = stream[offset: offset + chunk_len]
+        mean_chunk = stream_mean_array[
+                     offset: offset + (chunk_len - template_length + 1)]
+        std_chunk = stream_std_array[
+                    offset: offset + (chunk_len - template_length + 1)]
+
+        stream_fft = cp.fft.rfft(stream_chunk, fft_len)
+        res = cp.fft.irfft(
+            template_fft * stream_fft,
+            fft_len)[:, template_length - 1:chunk_len]
+        res -= (norm_sum * mean_chunk)
+        res /= std_chunk
+        res[cp.isnan(res)] = 0.0
+
+        # TODO: This is slow! - moving from gpu should be done while the next chunk runs
+        corrs[:, offset: offset + res.shape[1]] = res
+
+    for i, pad in enumerate(pads):
+        corrs[i] = cp.append(corrs[i], cp.zeros(pad))[pad:]
+    # Move back to cpu
+    corrs = cp.asnumpy(corrs)
+
     return corrs, used_chans
 
 
