@@ -505,8 +505,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
 
         stream_fft = np.fft.rfft(stream_chunk, fft_len)
         res = np.fft.irfft(
-            template_fft * stream_fft, fft_len)[:, 0:template_length + chunk_len - 1]
-        res = _centered(res, (n_templates, chunk_len - template_length + 1))
+            template_fft * stream_fft,
+            fft_len)[:, template_length - 1:chunk_len]
         res -= (norm_sum * mean_chunk)
         res /= std_chunk
         res[np.isnan(res)] = 0.0
