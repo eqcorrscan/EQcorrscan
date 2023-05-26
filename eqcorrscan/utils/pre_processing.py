@@ -658,6 +658,9 @@ def _resample(data, delta, factor, sampling_rate, large_w):
         return data
     # Need to work with numpy objects to release the GIL
     npts = data.shape[0]
+    if npts == 0:
+        Logger.debug("Data of zero length found. Not resampling")
+        return data
     df = np.float32(1.0) / (npts * delta)
     num = np.int32(npts / factor)
     d_large_f = np.float32(1.0) / num * sampling_rate
