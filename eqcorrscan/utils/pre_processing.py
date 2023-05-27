@@ -562,6 +562,9 @@ def _zerophase_filter(sos, data):
     :param data: Data to filter
     :return: filtered data
     """
+    if len(data) == 0:
+        Logger.debug("No data, no filtering")
+        return data
     firstpass = sosfilt(sos, data)
     return sosfilt(sos, firstpass[::-1])[::-1]
 
