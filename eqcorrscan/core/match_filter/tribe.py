@@ -466,11 +466,12 @@ class Tribe(object):
                       if t.split(os.sep)[-1] == template.name + '.ms']
             if len(t_file) == 0:
                 Logger.error('No waveform for template: ' + template.name)
-                templates.remove(template)
                 continue
             elif len(t_file) > 1:
                 Logger.warning('Multiple waveforms found, using: ' + t_file[0])
             template.st = read(t_file[0])
+        # Remove templates that do not have streams
+        templates = [t for t in templates if t.st is not None]
         self.templates.extend(templates)
         return
 
@@ -1663,19 +1664,29 @@ def _download_st(
             st.split()
     st.detrend("simple").merge()
     st.trim(starttime=starttime, endtime=endtime)
-    for tr in st:
-        if not _check_daylong(tr.data):
-            st.remove(tr)
-            Logger.warning(
-                "{0} contains more zeros than non-zero, "
-                "removed".format(tr.id))
-    for tr in st:
-        if tr.stats.endtime - tr.stats.starttime < \
-                0.8 * (endtime - starttime):
-            st.remove(tr)
-            Logger.warning(
-                "{0} is less than 80% of the required length"
-                ", removed".format(tr.id))
+
+    st_ids = [tr.id for tr in st]
+    # Remove traces that do not meet zero criteria
+    st.traces = [tr for tr in st if _check_daylong(tr.data)]
+    if len(st) < len(st_ids):
+        lost_ids = " ".join([tr_id for tr_id in st_ids
+                             if tr_id not in [tr.id for tr in st]])
+        Logger.warning(
+            f"Removed data for {lost_ids} due to more zero datapoints "
+            f"than non-zero.")
+
+    st_ids = [tr.id for tr in st]
+    # Remove short traces
+    st.traces = [
+        tr for tr in st
+        if tr.stats.endtime - tr.stats.starttime > 0.8 * (endtime - starttime)]
+    if len(st) < len(st_ids):
+        lost_ids = " ".join([tr_id for tr_id in st_ids
+                             if tr_id not in [tr.id for tr in st]])
+        Logger.warning(
+            f"Removed data for {lost_ids} due to less than 80% of the "
+            f"required length.")
+
     return st
 
 
