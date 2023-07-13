@@ -1791,7 +1791,7 @@ def _corr_and_peaks(
             f"zero length cccsum")
     toc = default_timer()
     Logger.info(
-        f"Correlations for group {i} of {len(templates)} "
+        f"Correlations for group {i} of {len(template_names)} "
         f"templates took {toc - tic:.4f} s")
     Logger.debug(
         f"The shape of the returned cccsums in group {i} "
@@ -2195,7 +2195,12 @@ def _prepper(
     if isinstance(templates, dict):
         # We have been passed a db of template files on disk
         Logger.info("Deserializing templates from disk")
-        templates = _read_template_db(templates)
+        try:
+            templates = _read_template_db(templates)
+        except Exception as e:
+            Logger.error(f"Could not read from db due to {e}")
+            poison_queue.put(e)
+            return
 
     while True:
         killed = _check_for_poison(poison_queue)
