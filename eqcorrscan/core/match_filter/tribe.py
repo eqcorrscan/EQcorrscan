@@ -19,6 +19,7 @@ import pickle
 import shutil
 import tarfile
 import tempfile
+import time
 import traceback
 import uuid
 import logging
@@ -1005,9 +1006,12 @@ class Tribe(object):
                 Logger.info("Killed in main loop")
                 break
             try:
-                to_corr = prepped_queue.get()
+                to_corr = _get_and_check(prepped_queue, poison_queue)
                 if to_corr is None:
                     Logger.info("Ran out of streams, exiting correlation")
+                    break
+                elif isinstance(to_corr, Poison):
+                    Logger.info("Killed in main loop")
                     break
                 starttime, i, stream, template_names, templates,\
                     *extras = to_corr
@@ -1058,8 +1062,11 @@ class Tribe(object):
             if killed:
                 Logger.error("Killed")
                 break
-            pf = party_file_queue.get()
+            pf = _get_and_check(party_file_queue, poison_queue)
             if pf is None:
+                break
+            if isinstance(pf, Poison):
+                Logger.error("Killed")
                 break
             with open(pf, "rb") as f:
                 party += pickle.load(f)
@@ -1936,16 +1943,23 @@ def _detect(
 
 
 def _load_template(t_file):
-    with open(t_file, "rb") as f:
-        t = pickle.load(f)
+    try:
+        with open(t_file, "rb") as f:
+            t = pickle.load(f)
+    except Exception as e:
+        Logger.warning(f"Could not read template from {t_file} due to {e}")
+        return None
     return t
 
 
 def _read_template_db(template_file_dict: dict) -> List:
     with ThreadPoolExecutor() as executor:
         templates = executor.map(_load_template, template_file_dict.values())
-    templates = [t for t in templates]
+    templates = [t for t in templates if t]
     Logger.info(f"Deserialized {len(templates)} templates")
+    if len(templates) < len(template_file_dict):
+        Logger.warning(f"Expected {len(template_file_dict)} templates, "
+                       f"but found {len(templates)}")
     return templates
 
 
@@ -2029,7 +2043,40 @@ def _make_party(
 ###############################################################################
 
 
-def _check_for_poison(poison_queue: Queue) -> bool:
+class Poison(Exception):
+    def __init__(self, value):
+        """
+        Poison Exception.
+        """
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return self.value
+
+
+def _get_and_check(queue: Queue, poison_queue: Queue, step: float=0.5):
+    """
+    Get from a queue and check for poison - returns Poisoned if poisoned.
+
+    :param queue: Queue to get something from
+    :param poison_queue: Queue to check for poison
+
+    :return: Item from queue or Poison.
+    """
+    while True:
+        poison = _check_for_poison(poison_queue)
+        if poison:
+            return poison
+        if queue.empty():
+            time.sleep(step)
+        else:
+            return queue.get_nowait()
+
+
+def _check_for_poison(poison_queue: Queue) -> Union[Poison, None]:
     """
     Check if poison has been added to the queue.
     """
@@ -2037,11 +2084,11 @@ def _check_for_poison(poison_queue: Queue) -> bool:
     try:
         poison = poison_queue.get_nowait()
     except Empty:
-        return False
+        return
     # Put the poison back in the queue for another process to check on
     Logger.error("Poisoned")
     poison_queue.put(poison)
-    return True
+    return Poison(poison)
 
 
 def _get_detection_stream(
@@ -2083,8 +2130,11 @@ def _get_detection_stream(
         if killed:
             break
         try:
-            next_times = time_queue.get()
+            next_times = _get_and_check(time_queue, poison_queue)
             if next_times is None:
+                break
+            if isinstance(next_times, Poison):
+                Logger.error("Killed")
                 break
             starttime, endtime = next_times
 
@@ -2161,9 +2211,12 @@ def _pre_processor(
         if killed:
             break
         Logger.debug("Getting stream from queue")
-        st = stream_queue.get()
+        st = _get_and_check(stream_queue, poison_queue)
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
+            break
+        elif isinstance(st, Poison):
+            Logger.error("Killed")
             break
         if len(st) == 0:
             break
@@ -2219,9 +2272,12 @@ def _prepper(
             Logger.info("Killed in prepper")
             break
         Logger.info("Getting stream from queue")
-        st_file = input_stream_queue.get()
+        st_file = _get_and_check(input_stream_queue, poison_queue)
         if st_file is None:
             Logger.info("Got None for stream, prepper complete")
+            break
+        elif isinstance(st_file, Poison):
+            Logger.error("Killed")
             break
         if isinstance(st_file, Stream):
             Logger.info("Stream provided")
@@ -2352,9 +2408,12 @@ def _make_detections(
         if killed:
             break
         try:
-            next_item = input_queue.get()
+            next_item = _get_and_check(input_queue, poison_queue)
             if next_item is None:
                 Logger.info("_make_detections got None, stopping")
+                break
+            elif isinstance(next_item, Poison):
+                Logger.error("Killed")
                 break
             starttime, all_peaks, thresholds, no_chans, \
                 chans, template_names = next_item
@@ -2391,8 +2450,11 @@ def _reconstruct_party(
         if killed:
             break
         try:
-            _chunk_file = input_queue.get()
+            _chunk_file = _get_and_check(input_queue, poison_queue)
             if _chunk_file is None:
+                break
+            elif isinstance(_chunk_file, Poison):
+                Logger.error("Killed")
                 break
             Logger.info(f"Adding party from {_chunk_file} to party")
             with open(_chunk_file, "rb") as _f:
