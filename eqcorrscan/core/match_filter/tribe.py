@@ -1265,27 +1265,25 @@ class Tribe(object):
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each group")
 
+        # Hard-coded buffer for downloading data, often data downloaded is
+        # not the correct length
         buff = 300
-        # Apply a buffer, often data downloaded is not the correct length
         data_length = max([t.process_length for t in self.templates])
-        pad = 0
-        for template in self.templates:
-            max_delay = (template.st.sort(['starttime'])[-1].stats.starttime -
-                         template.st.sort(['starttime'])[0].stats.starttime)
-            if max_delay > pad:
-                pad = max_delay
-        download_groups = int(endtime - starttime) / data_length
+        # Calculate overlap
+        overlap = max(_moveout(template.st) for template in self.templates)
+        assert overlap < data_length, (
+            f"Overlap of {overlap} s is larger than the length of data to "
+            f"be downloaded: {data_length} s - this won't work.")
+
+        # Work out start and end times of chunks to download
+        chunk_start, time_chunks = starttime, []
+        while chunk_start < endtime:
+            time_chunks.append((chunk_start, chunk_start + data_length))
+            chunk_start += data_length - overlap
 
         full_stream_dir = None
         if return_stream:
             full_stream_dir = tempfile.mkdtemp()
-        if int(download_groups) < download_groups:
-            download_groups = int(download_groups) + 1
-        else:
-            download_groups = int(download_groups)
-        time_chunks = ((starttime + (i * data_length) - pad,
-                        starttime + ((i + 1) * data_length) + pad)
-                       for i in range(download_groups))
 
         poison_queue = Queue()
 
