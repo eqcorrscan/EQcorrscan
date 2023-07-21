@@ -89,3 +89,16 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 This package is written  and maintained by the EQcorrscan developers,
 and is distributed under the LGPL GNU License, 
 Copyright EQcorrscan developers 2018.
+
+
+# Funding
+
+![RCET](eqcorrscan/doc/RCET_logo_transparent.png)
+
+Continued development of the EQcorrscan package is directly supported by the 
+[RCET](https://www.rcet.science/), Rapid Characterisation of Earthquakes and Tsunami
+programme funded by the New Zealand Ministry of Business, Innovation and Employment
+Endeavour fund.
+
+Development is indirectly funded by grants from [Toku Tū Ake: EQC](https://www.eqc.govt.nz/)
+and a [Rutherford Discovery Fellowship](https://www.royalsociety.org.nz/what-we-do/funds-and-opportunities/rutherford-discovery-fellowships/rutherford-discovery-fellowship-recipients/calum-chamberlain/).

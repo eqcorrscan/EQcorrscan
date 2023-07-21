@@ -18,6 +18,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+import traceback
 import logging
 
 import numpy as np
@@ -296,8 +297,9 @@ class Tribe(object):
             if t.event is not None:
                 # Check that the name in the comment matches the template name
                 for comment in t.event.comments:
-                    if comment.text and comment.text.startswith(
-                            "eqcorrscan_template_"):
+                    if not comment.text:
+                        comment.text = "eqcorrscan_template_{0}".format(t.name)
+                    elif comment.text.startswith("eqcorrscan_template_"):
                         comment.text = "eqcorrscan_template_{0}".format(t.name)
                 tribe_cat.append(t.event)
         if len(tribe_cat) > 0:
@@ -886,7 +888,7 @@ class Tribe(object):
             st.trim(starttime=starttime + (i * data_length) - pad,
                     endtime=starttime + ((i + 1) * data_length) + pad)
             for tr in st:
-                if not _check_daylong(tr):
+                if not _check_daylong(tr.data):
                     st.remove(tr)
                     Logger.warning(
                         "{0} contains more zeros than non-zero, "
@@ -917,6 +919,7 @@ class Tribe(object):
                 Logger.critical(
                     'Error, routine incomplete, returning incomplete Party')
                 Logger.error('Error: {0}'.format(e))
+                traceback.print_exc()
                 if return_stream:
                     return party, stream
                 else:
@@ -1043,11 +1046,12 @@ class Tribe(object):
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
-            for tr in template:
-                if not np.any(tr.data.astype(np.float16)):
-                    Logger.warning('Data are zero in float16, missing data,'
-                                   ' will not use: {0}'.format(tr.id))
-                    template.remove(tr)
+            # Template-gen already does this check, no need to duplicate
+            # for tr in template:
+            #     if not np.any(tr.data.astype(np.float16)):
+            #         Logger.warning('Data are zero in float16, missing data,'
+            #                        ' will not use: {0}'.format(tr.id))
+            #         template.remove(tr)
             if len(template) == 0:
                 Logger.error('Empty Template')
                 continue

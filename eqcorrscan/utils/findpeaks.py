@@ -318,7 +318,7 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
     :return: list of lists of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
+    utilslib = _load_cdll("libutils")
 
     lengths = np.array([peak.shape[0] for peak in peaks], dtype=int)
     trig_int = int(trig_int)
@@ -396,7 +396,8 @@ def _multi_decluster(peaks, indices, trig_int, thresholds, cores):
 
 
 def decluster_distance_time(peaks, index, trig_int, catalog,
-                            hypocentral_separation, threshold=0):
+                            hypocentral_separation, threshold=0,
+                            num_threads=None):
     """
     Decluster based on time between peaks, and distance between events.
 
@@ -419,11 +420,13 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
         Maximum inter-event distance to decluster over in km
     :type threshold: float
     :param threshold: Minimum absolute peak value to retain it
+    :type num_threads: int
+    :param num_threads:
+        Number of threads to use for distance matrix calculation.
 
     :return: list of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
-
+    utilslib = _load_cdll("libutils")
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
@@ -454,7 +457,8 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
     arr = peaks[sorted_inds[::-1]]
     inds = index[sorted_inds[::-1]]
     sorted_events = [catalog[i] for i in sorted_inds[::-1]]
-    distance_matrix = dist_mat_km(catalog=sorted_events)
+    distance_matrix = dist_mat_km(
+        catalog=sorted_events, num_threads=num_threads)
 
     arr = np.ascontiguousarray(arr, dtype=np.float32)
     inds = np.ascontiguousarray(inds, dtype=long_type)
@@ -487,8 +491,7 @@ def decluster(peaks, index, trig_int, threshold=0):
 
     :return: list of tuples of (value, sample)
     """
-    utilslib = _load_cdll('libutils')
-
+    utilslib = _load_cdll("libutils")
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
@@ -524,7 +527,6 @@ def decluster(peaks, index, trig_int, threshold=0):
         long_type(trig_int), out)
     if ret != 0:
         raise MemoryError("Issue with c-routine, returned %i" % ret)
-
     peaks_out = list(zip(arr[out.astype(bool)], inds[out.astype(bool)]))
     return peaks_out
 
@@ -533,8 +535,7 @@ def _find_peaks_c(array, threshold):
     """
     Use a C func to find peaks in the array.
     """
-    utilslib = _load_cdll('libutils')
-
+    utilslib = _load_cdll("libutils")
     length = array.shape[0]
     utilslib.find_peaks.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length, ),
@@ -558,8 +559,7 @@ def _multi_find_peaks_c(arrays, thresholds, threads):
     """
     Wrapper for multi-find peaks C-func
     """
-    utilslib = _load_cdll('libutils')
-
+    utilslib = _load_cdll("libutils")
     length = arrays.shape[1]
     n = np.int32(arrays.shape[0])
     thresholds = np.ascontiguousarray(thresholds, np.float32)

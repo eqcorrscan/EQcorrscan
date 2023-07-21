@@ -21,11 +21,13 @@ from eqcorrscan.core.match_filter import (
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
 from eqcorrscan.core.match_filter.helpers import get_waveform_client
-from eqcorrscan.core.match_filter.template import quick_group_templates
+from eqcorrscan.core.match_filter.template import (
+    quick_group_templates, group_templates_by_seedid)
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
+from eqcorrscan.utils.synth_seis import generate_synth_data
 
 
 class TestHelpers(unittest.TestCase):
@@ -213,7 +215,7 @@ class TestGeoNetCase(unittest.TestCase):
         st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
         # This is slow?
         print('Processing continuous data')
-        cls.st = pre_processing.shortproc(
+        cls.st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             num_cores=1)
         cls.st.trim(cls.t1 + (4 * 3600), cls.t1 + (5 * 3600)).sort()
@@ -375,7 +377,7 @@ class TestNCEDCCases(unittest.TestCase):
         st = client.get_waveforms_bulk(bulk_info)
         st.merge(fill_value='interpolate')
         cls.unproc_st = st.copy()
-        cls.st = pre_processing.shortproc(
+        cls.st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=50.0,
             num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
@@ -677,7 +679,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             method='from_meta_file', catalog=catalog, st=st.copy(),
             lowcut=0.1, highcut=0.45, samp_rate=1.0, filt_order=4,
             length=20.0, prepick=0.15, swin='all', process_len=process_len)
-        st = pre_processing.shortproc(
+        st = pre_processing.multi_process(
             st, lowcut=2.0, highcut=9.0, filt_order=4, samp_rate=20.0,
             num_cores=1, starttime=st[0].stats.starttime,
             endtime=st[0].stats.starttime + process_len)
@@ -1489,6 +1491,61 @@ class TestMatchObjectLight(unittest.TestCase):
         self.assertEqual(family.catalog, get_catalog(family.detections))
 
 
+class TestTemplateGrouping(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        templates, data, _ = generate_synth_data(
+            nsta=10, ntemplates=20, nseeds=10, samp_rate=100.,
+            t_length=6., max_amp=10, max_lag=5., phaseout="all", jitter=0,
+            noise=True, same_phase=False)
+        templates = [Template(name=str(i), st=t)
+                     for i, t in enumerate(templates)]
+        cls.templates = templates
+        cls.st = data
+        cls.st_seed_ids = {tr.id for tr in data}
+
+    def test_all_grouped(self):
+        groups = group_templates_by_seedid(
+            templates=self.templates, st_seed_ids=self.st_seed_ids,
+            group_size=100)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]), len(self.templates))
+
+    def test_group_size_respected(self):
+        groups = group_templates_by_seedid(
+            templates=self.templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
+
+    def test_all_different_seeds(self):
+        edited_templates = []
+        rng = np.random.default_rng()
+        for template in self.templates:
+            template = template.copy()
+            choices = rng.choice(len(template.st), 5)
+            template.st = [tr for i, tr in enumerate(template.st)
+                           if i in choices]
+            edited_templates.append(template)
+        groups = group_templates_by_seedid(
+            templates=edited_templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]), len(self.templates))
+
+    def test_unmatched_dropped(self):
+        edited_templates = [t.copy() for t in self.templates]
+        for tr in edited_templates[0].st:
+            tr.stats.channel = "ABC"
+
+        groups = group_templates_by_seedid(
+             templates=edited_templates, st_seed_ids=self.st_seed_ids,
+             group_size=10)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(len(groups[0]) + len(groups[1]),
+                         len(self.templates) - 1)
+
+
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
     party.sort()
     party_in.sort()
@@ -1595,7 +1652,7 @@ def test_match_filter(plot=False, extract_detections=False,
     for template in templates:
         for tr in template:
             tr.data += 1  # Make the synthetic data not be all zeros
-        pre_processing.shortproc(
+        pre_processing.multi_process(
             st=template, lowcut=1.0, highcut=4.0, filt_order=3, samp_rate=10.0,
             seisan_chan_names=True)
     template_names = list(string.ascii_lowercase)[0:len(templates)]
