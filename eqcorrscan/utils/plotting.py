@@ -321,10 +321,10 @@ def peaks_plot(data, starttime, samp_rate, peaks=None, **kwargs):
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.plot(t, data, 'k')
-    ax1.scatter(peaks[0][1] / (samp_rate * 3600), abs(peaks[0][0]),
+    ax1.scatter(peaks[0][1] / (samp_rate * 3600), peaks[0][0],
                 color='r', label='Peaks')
     for peak in peaks:
-        ax1.scatter(peak[1] / (samp_rate * 3600), abs(peak[0]), color='r')
+        ax1.scatter(peak[1] / (samp_rate * 3600), peak[0], color='r')
     ax1.legend()
     ax1.set_xlabel("Time after %s [hr]" % starttime.isoformat())
     ax1.axis('tight')
