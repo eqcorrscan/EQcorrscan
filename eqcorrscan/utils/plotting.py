@@ -1954,7 +1954,6 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
             ax = fig.add_subplot(len(traces), 1, i + 1, sharex=ax)
         ax1, ax2 = _spec_trace(tr, cmap=cmap, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
-        ax.set_yticks([])
         if i < len(traces) - 1:
             plt.setp(ax1.get_xticklabels(), visible=False)
         if isinstance(traces, list):
