@@ -537,6 +537,8 @@ class Tribe(object):
     def _close_queues(self, queues: dict = None):
         queues = queues or self._queues
         for q_name, q in queues.items():
+            if q._closed:
+                continue
             Logger.info(f"Emptying {q_name}")
             while True:
                 try:
@@ -1265,27 +1267,29 @@ class Tribe(object):
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each group")
 
+        # Hard-coded buffer for downloading data, often data downloaded is
+        # not the correct length
         buff = 300
-        # Apply a buffer, often data downloaded is not the correct length
         data_length = max([t.process_length for t in self.templates])
-        pad = 0
-        for template in self.templates:
-            max_delay = (template.st.sort(['starttime'])[-1].stats.starttime -
-                         template.st.sort(['starttime'])[0].stats.starttime)
-            if max_delay > pad:
-                pad = max_delay
-        download_groups = int(endtime - starttime) / data_length
+
+        # Calculate overlap
+        overlap = max(_moveout(template.st) for template in self.templates)
+        assert overlap < data_length, (
+            f"Overlap of {overlap} s is larger than the length of data to "
+            f"be downloaded: {data_length} s - this won't work.")
+
+        # Work out start and end times of chunks to download
+        chunk_start, time_chunks = starttime, []
+        while chunk_start < endtime:
+            time_chunks.append((chunk_start, chunk_start + data_length + 20))
+            chunk_start += data_length - overlap
+
+        for time_chunk in time_chunks:
+            print(time_chunk)
 
         full_stream_dir = None
         if return_stream:
             full_stream_dir = tempfile.mkdtemp()
-        if int(download_groups) < download_groups:
-            download_groups = int(download_groups) + 1
-        else:
-            download_groups = int(download_groups)
-        time_chunks = ((starttime + (i * data_length) - pad,
-                        starttime + ((i + 1) * data_length) + pad)
-                       for i in range(download_groups))
 
         poison_queue = Queue()
 
@@ -1669,7 +1673,6 @@ def _download_st(
                     _st += tr
             st = _st
             st.split()
-    st.detrend("simple").merge()
     st.trim(starttime=starttime, endtime=endtime)
 
     st_ids = [tr.id for tr in st]
@@ -2146,6 +2149,9 @@ def _get_detection_stream(
                 Logger.warning(f"No suitable data between {starttime} "
                                f"and {endtime}, skipping")
                 continue
+            Logger.info(f"Downloaded stream of {len(st)} traces:")
+            for tr in st:
+                Logger.info(tr)
             # Try to reduce memory consumption by getting rid of st if we can
             if full_stream_dir:
                 for tr in st:
@@ -2171,6 +2177,9 @@ def _get_detection_stream(
                 # We don't need to hold on to st!
                 del st
             for chunk in st_chunks:
+                Logger.info(f"After processing stream has {len(chunk)} traces:")
+                for tr in chunk:
+                    Logger.info(tr)
                 if not os.path.isdir(".streams"):
                     os.makedirs(".streams")
                 chunk_file = os.path.join(
