@@ -288,7 +288,12 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 raise ValueError(msg)
             else:
                 # Remove bad traces from the stream
-                st.remove(st.select(id=trace_id))
+                try:
+                    st.remove(st.select(id=trace_id))
+                except ValueError:
+                    Logger.info(
+                        f"{trace_id} not found in {set(tr.id for tr in st)},"
+                        f" ignoring")
 
     # 3. Detrend
     # ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
