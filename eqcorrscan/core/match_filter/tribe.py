@@ -26,7 +26,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List, Union
+from typing import List, Union, Iterable
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -807,6 +807,7 @@ class Tribe(object):
     ):
         """ Internal serial detect workflow. """
         party = Party()
+        groups = kwargs.get("groups", None)
 
         assert isinstance(stream, Stream), (
             f"Serial detection requires stream to be a stream, not"
@@ -831,7 +832,7 @@ class Tribe(object):
             delta = st_chunk[0].stats.delta
             template_groups = _group(
                 sids={tr.id for tr in st_chunk},
-                templates=self.templates, group_size=group_size)
+                templates=self.templates, group_size=group_size, groups=groups)
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -898,6 +899,7 @@ class Tribe(object):
             # data safe
             Logger.warning("Streams in queue will be edited in-place, you "
                            "should not re-use them")
+        groups = kwargs.get("groups", None)
 
         # To reduce load copying templates between processes we dump them to
         # disk and pass the dictionary of files
@@ -950,6 +952,7 @@ class Tribe(object):
             kwargs=dict(
                 input_stream_queue=processed_stream_queue,
                 group_size=group_size,
+                groups=groups,
                 templates=template_db,
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
@@ -1736,8 +1739,19 @@ def _pre_process(
     return st_chunks
 
 
-def _group(sids, templates, group_size):
+def _group(sids, templates, group_size, groups):
     Logger.info(f"Grouping for {sids}")
+    if groups:
+        Logger.info("Using pre-computed groups")
+        t_dict = {t.name: t for t in templates}
+        template_groups = []
+        for grp in groups:
+            template_group = [
+                t_dict.get(t_name) for t_name in grp
+                if t_name in t_dict.keys()]
+            if len(template_group):
+                template_groups.append(template_group)
+        return template_groups
     template_groups = group_templates_by_seedid(
         templates=templates,
         st_seed_ids=sids,
@@ -2261,6 +2275,7 @@ def _prepper(
     input_stream_queue: Queue,
     templates: Union[List, dict],
     group_size: int,
+    groups: Iterable[Iterable[str]],
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
@@ -2322,7 +2337,7 @@ def _prepper(
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size)
+                                     group_size=group_size, groups=groups)
         except Exception as e:
             Logger.error(e)
             poison_queue.put(e)
