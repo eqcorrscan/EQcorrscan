@@ -754,6 +754,8 @@ class Tribe(object):
         export_cccsums = inner_kwargs.pop('export_cccsums', False)
         peak_cores = inner_kwargs.pop('peak_cores',
                                       process_cores) or cpu_count()
+        groups = inner_kwargs.pop("groups", None)
+
         if peak_cores == 1:
             parallel = False
         else:
@@ -764,7 +766,7 @@ class Tribe(object):
                 "Inconsistent template processing parameters found, this is no"
                 " longer supported. Split your tribe using "
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
-                "and re-run for each group")
+                "and re-run for each grouped tribe")
         sampling_rate = self.templates[0].samp_rate
         # Used for sanity checking seed id overlap
         template_ids = set(
@@ -772,7 +774,7 @@ class Tribe(object):
 
         args = (stream, template_ids, pre_processed, parallel_process,
                 process_cores, daylong, ignore_length, overlap,
-                ignore_bad_data, group_size, sampling_rate, threshold,
+                ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
                 export_cccsums, parallel, peak_cores, trig_int, full_peaks,
                 plot, plotdir, plot_format,)
@@ -800,14 +802,13 @@ class Tribe(object):
     def _detect_serial(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal serial detect workflow. """
         party = Party()
-        groups = kwargs.get("groups", None)
 
         assert isinstance(stream, Stream), (
             f"Serial detection requires stream to be a stream, not"
@@ -881,9 +882,9 @@ class Tribe(object):
     def _detect_concurrent(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal concurrent detect workflow. """
@@ -899,7 +900,6 @@ class Tribe(object):
             # data safe
             Logger.warning("Streams in queue will be edited in-place, you "
                            "should not re-use them")
-        groups = kwargs.get("groups", None)
 
         # To reduce load copying templates between processes we dump them to
         # disk and pass the dictionary of files
@@ -1270,6 +1270,8 @@ class Tribe(object):
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each group")
 
+        groups = kwargs.get("groups", None)
+
         # Hard-coded buffer for downloading data, often data downloaded is
         # not the correct length
         buff = 300
@@ -1306,7 +1308,7 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing)
+            concurrent_processing=concurrent_processing, groups=groups)
 
         if not concurrent_processing:
             party = Party()
