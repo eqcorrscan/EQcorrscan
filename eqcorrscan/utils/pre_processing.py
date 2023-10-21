@@ -685,11 +685,11 @@ def _resample(data, delta, factor, sampling_rate, large_w, _id):
     # Need to work with numpy objects to release the GIL
     npts = data.shape[0]
     Logger.debug(f"Running resample for {_id} with {npts} data points")
-    Logger.info(f"{_id}: delta={delta}, factor={factor}, "
+    Logger.debug(f"{_id}: delta={delta}, factor={factor}, "
                 f"sampling_rate out={sampling_rate}")
-    Logger.info(f"Sanity check data for {_id}, start and "
+    Logger.debug(f"Sanity check data for {_id}, start and "
                 f"end: {data[0]} -- {data[-1]}")
-    Logger.info(f"dtype for {_id}: {data.dtype}")
+    Logger.debug(f"dtype for {_id}: {data.dtype}")
     _floater = np.float32
     data = data.astype(_floater)
     df = _floater(1.0) / (npts * delta)
