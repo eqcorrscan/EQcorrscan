@@ -26,7 +26,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List, Union
+from typing import List, Union, Iterable
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -754,6 +754,8 @@ class Tribe(object):
         export_cccsums = inner_kwargs.pop('export_cccsums', False)
         peak_cores = inner_kwargs.pop('peak_cores',
                                       process_cores) or cpu_count()
+        groups = inner_kwargs.pop("groups", None)
+
         if peak_cores == 1:
             parallel = False
         else:
@@ -764,7 +766,7 @@ class Tribe(object):
                 "Inconsistent template processing parameters found, this is no"
                 " longer supported. Split your tribe using "
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
-                "and re-run for each group")
+                "and re-run for each grouped tribe")
         sampling_rate = self.templates[0].samp_rate
         # Used for sanity checking seed id overlap
         template_ids = set(
@@ -772,7 +774,7 @@ class Tribe(object):
 
         args = (stream, template_ids, pre_processed, parallel_process,
                 process_cores, daylong, ignore_length, overlap,
-                ignore_bad_data, group_size, sampling_rate, threshold,
+                ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
                 export_cccsums, parallel, peak_cores, trig_int, full_peaks,
                 plot, plotdir, plot_format,)
@@ -800,9 +802,9 @@ class Tribe(object):
     def _detect_serial(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal serial detect workflow. """
@@ -831,7 +833,7 @@ class Tribe(object):
             delta = st_chunk[0].stats.delta
             template_groups = _group(
                 sids={tr.id for tr in st_chunk},
-                templates=self.templates, group_size=group_size)
+                templates=self.templates, group_size=group_size, groups=groups)
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -880,9 +882,9 @@ class Tribe(object):
     def _detect_concurrent(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal concurrent detect workflow. """
@@ -950,6 +952,7 @@ class Tribe(object):
             kwargs=dict(
                 input_stream_queue=processed_stream_queue,
                 group_size=group_size,
+                groups=groups,
                 templates=template_db,
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
@@ -1074,9 +1077,6 @@ class Tribe(object):
                 party += pickle.load(f)
             if not save_progress:
                 os.remove(pf)
-        if not save_progress:
-            if os.path.isdir(".parties"):
-                shutil.rmtree(".parties")
 
         # Check for exceptions
         if killed:
@@ -1267,6 +1267,8 @@ class Tribe(object):
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each group")
 
+        groups = kwargs.get("groups", None)
+
         # Hard-coded buffer for downloading data, often data downloaded is
         # not the correct length
         buff = 300
@@ -1303,7 +1305,7 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing)
+            concurrent_processing=concurrent_processing, groups=groups)
 
         if not concurrent_processing:
             party = Party()
@@ -1736,8 +1738,19 @@ def _pre_process(
     return st_chunks
 
 
-def _group(sids, templates, group_size):
+def _group(sids, templates, group_size, groups):
     Logger.info(f"Grouping for {sids}")
+    if groups:
+        Logger.info("Using pre-computed groups")
+        t_dict = {t.name: t for t in templates}
+        template_groups = []
+        for grp in groups:
+            template_group = [
+                t_dict.get(t_name) for t_name in grp
+                if t_name in t_dict.keys()]
+            if len(template_group):
+                template_groups.append(template_group)
+        return template_groups
     template_groups = group_templates_by_seedid(
         templates=templates,
         st_seed_ids=sids,
@@ -2261,6 +2274,7 @@ def _prepper(
     input_stream_queue: Queue,
     templates: Union[List, dict],
     group_size: int,
+    groups: Iterable[Iterable[str]],
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
@@ -2322,7 +2336,7 @@ def _prepper(
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size)
+                                     group_size=group_size, groups=groups)
         except Exception as e:
             Logger.error(e)
             poison_queue.put(e)
