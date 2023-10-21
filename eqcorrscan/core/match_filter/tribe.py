@@ -1077,9 +1077,6 @@ class Tribe(object):
                 party += pickle.load(f)
             if not save_progress:
                 os.remove(pf)
-        if not save_progress:
-            if os.path.isdir(".parties"):
-                shutil.rmtree(".parties")
 
         # Check for exceptions
         if killed:
