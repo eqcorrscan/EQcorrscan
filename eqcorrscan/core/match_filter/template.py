@@ -312,6 +312,68 @@ class Template(object):
             return True
         return False
 
+    def _check_trace_length(self):
+        """
+        Check that the traces wihtin the template have all the same length.
+        It can happen that template traces read from an mseed file are
+        incorrectly merged to double (x3, x4?) the length: Thease traces need 
+        to be split to their intended length.
+
+        Note: see https://github.com/eqcorrscan/EQcorrscan/issues/497
+        """
+        template_lenghts_npts = set([tr.stats.npts for tr in self.st])
+        # If all traces are the same length, then all should be good
+        if len(template_lenghts_npts) == 1:
+            return self
+        else:
+            Logger.info(
+                'Template %s: Found template traces that are too long '
+                '(mseed read issue), splitting traces.', self.name)
+        # assume correct length to be the shortest
+        real_length_npts = min(template_lenghts_npts)
+        real_length_s = real_length_npts / self.samp_rate
+        for length_npts in template_lenghts_npts:
+            # Some traces can be ok, do nothing with these
+            if length_npts == real_length_npts:
+                continue
+            # When the problem arises from miniseed-segments being incorrectly
+            # merged during reading, then the resulting trace should be exactly
+            # twice (even rarer: 3x, 4x..) as long as the original template
+            # length.
+            elif (length_npts % real_length_npts == 0 and
+                    length_npts > real_length_npts):
+                extra_traces = []
+                for tr in self.st:
+                    if tr.stats.npts == length_npts:
+                        # Need to split most likely only in the middle, but
+                        # in extreme cases it may need 3 or 4 splits.
+                        n_splits = range(
+                            2, int(length_npts / real_length_npts) + 1)
+                        for n_split in n_splits:
+                            new_starttime = (tr.stats.starttime +
+                                             (n_split - 1) * real_length_s)
+                            new_endtime = new_starttime + real_length_s
+                            # save new traces to add in the end
+                            new_tr = tr.copy().trim(starttime=new_starttime,
+                                                    endtime=new_endtime)
+                            extra_traces.append(new_tr)
+                        # Shorten the long trace that is already in stream
+                        # but pay attention to + 1 sample problems.
+                        starttime = tr.stats.starttime
+                        endtime = starttime + real_length_s - tr.stats.delta
+                        tr.trim(starttime=starttime, endtime=endtime,
+                                nearest_sample=False)
+            # Lengths that differ by a non-multiple could be different bug.
+            else:
+                msg = (
+                    'A template stream contains traces with differing ' +
+                    'lengths (' + str(template_lenghts_npts) + ' samples).' +
+                    'This should not happen. Please report this as a bug.')
+                raise NotImplementedError(msg)
+        for tr in extra_traces:
+            self.st += tr
+        return self
+
     def write(self, filename, format='tar'):
         """
         Write template.

@@ -392,6 +392,7 @@ class Tribe(object):
             elif len(t_file) > 1:
                 Logger.warning('Multiple waveforms found, using: ' + t_file[0])
             template.st = read(t_file[0])
+            template = template._check_trace_length()
         self.templates.extend(templates)
         return
 
