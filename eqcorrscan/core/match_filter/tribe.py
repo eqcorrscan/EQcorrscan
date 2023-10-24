@@ -234,6 +234,11 @@ class Tribe(object):
                 f"{', '.join(non_unique_names)}")
         return
 
+    @property
+    def _stream_dir(self):
+        """ Location for temporary streams """
+        return f".streams_{os.getpid()}"
+
     def sort(self):
         """
         Sort the tribe, sorts by template name.
@@ -877,6 +882,8 @@ class Tribe(object):
             Logger.info(f"Added party from {_chunk_file}, party now "
                         f"contains {len(party)} detections")
 
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
         return party
 
     def _detect_concurrent(
@@ -928,6 +935,7 @@ class Tribe(object):
                 target=_pre_processor,
                 kwargs=dict(
                     stream_queue=stream,
+                    temp_stream_dir=self._stream_dir,
                     template_ids=template_ids,
                     pre_processed=pre_processed,
                     filt_order=self.templates[0].filt_order,
@@ -1087,6 +1095,8 @@ class Tribe(object):
                 # Clean the template db
                 if os.path.isdir(template_dir):
                     shutil.rmtree(template_dir)
+                if os.path.isdir(self._stream_dir):
+                    shutil.rmtree(self._stream_dir)
                 self._on_error(internal_error)
 
         # Shut down the processes and close the queues
@@ -1098,6 +1108,8 @@ class Tribe(object):
             self._close_processes()
         if os.path.isdir(template_dir):
             shutil.rmtree(template_dir)
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -1343,6 +1355,7 @@ class Tribe(object):
                 buff=buff,
                 out_queue=stream_queue,
                 poison_queue=poison_queue,
+                temp_stream_dir=self._stream_dir,
                 full_stream_dir=full_stream_dir,
                 pre_process=True, parallel_process=parallel_process,
                 process_cores=process_cores, daylong=daylong,
@@ -1994,7 +2007,9 @@ def _make_party(
     chunk_file_str = os.path.join(
         chunk_dir,
         "chunk_party_{chunk_start_str}"
-        "_{chunk_id}.pkl")
+        "_{chunk_id}_{pid}.pkl")
+    # Process ID included in chunk file to avoid multiple processes writing
+    # and reading and removing the same files.
 
     # Get the results out of the end!
     Logger.info(f"Made {len(detections)} detections")
@@ -2045,7 +2060,7 @@ def _make_party(
     chunk_file = chunk_file_str.format(
         chunk_start_str=chunk_start.strftime("%Y-%m-%dT%H-%M-%S"),
         chunk_start=chunk_start,
-        chunk_id=chunk_id)
+        chunk_id=chunk_id, pid=os.getpid())
     with open(chunk_file, "wb") as _f:
         pickle.dump(chunk_party, _f)
     Logger.info("Completed party processing")
@@ -2116,6 +2131,7 @@ def _get_detection_stream(
     buff: float,
     out_queue: Queue,
     poison_queue: Queue,
+    temp_stream_dir: str,
     full_stream_dir: str = None,
     pre_process: bool = False,
     parallel_process: bool = True,
@@ -2193,12 +2209,14 @@ def _get_detection_stream(
                 Logger.info(f"After processing stream has {len(chunk)} traces:")
                 for tr in chunk:
                     Logger.info(tr)
-                if not os.path.isdir(".streams"):
-                    os.makedirs(".streams")
+                if not os.path.isdir(temp_stream_dir):
+                    os.makedirs(temp_stream_dir)
                 chunk_file = os.path.join(
-                    ".streams",
+                    temp_stream_dir,
                     f"chunk_{len(chunk)}_"
-                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}"
+                    f"_{os.getpid()}.pkl")
+                # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
                 out_queue.put(chunk_file)
                 del chunk
@@ -2212,6 +2230,7 @@ def _get_detection_stream(
 
 def _pre_processor(
     stream_queue: Queue,
+    temp_stream_dir: str,
     template_ids: set,
     pre_processed: bool,
     filt_order: int,
@@ -2251,13 +2270,15 @@ def _pre_processor(
                 samp_rate, process_length, parallel, cores, daylong,
                 ignore_length, ignore_bad_data, overlap)
             for chunk in st_chunks:
-                if not os.path.isdir(".streams"):
-                    os.makedirs(".streams")
+                if not os.path.isdir(temp_stream_dir):
+                    os.makedirs(temp_stream_dir)
                 chunk_files = []
                 chunk_file = os.path.join(
-                    ".streams",
+                    temp_stream_dir,
                     f"chunk_{len(chunk)}_"
-                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}"
+                    f"_{os.getpid()}.pkl")
+                # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
                 output_queue.put(chunk_file) 
                 del chunk
