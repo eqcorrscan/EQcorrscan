@@ -150,9 +150,13 @@ class SubspaceTestingMethods(unittest.TestCase):
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
+                print(f"{key} is not equal")
                 if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
+                    print("Differences:")
+                    print(item - other_item)
+                    print(f"Max difference: {np.max(np.abs(item - other_item))}")
                 self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
                                             atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
@@ -189,6 +193,9 @@ class SubspaceTestingMethods(unittest.TestCase):
                 if not np.allclose(np.abs(item), np.abs(other_item)):
                     print(item)
                     print(other_item)
+                    print("Differences:")
+                    print(item - other_item)
+                    print(f"Max difference: {np.max(np.abs(item - other_item))}")
                 self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
                                             atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
