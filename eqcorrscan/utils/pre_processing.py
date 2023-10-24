@@ -686,11 +686,14 @@ def _resample(data, delta, factor, sampling_rate, large_w, _id):
     npts = data.shape[0]
     Logger.debug(f"Running resample for {_id} with {npts} data points")
     Logger.debug(f"{_id}: delta={delta}, factor={factor}, "
-                f"sampling_rate out={sampling_rate}")
+                 f"sampling_rate out={sampling_rate}")
     Logger.debug(f"Sanity check data for {_id}, start and "
-                f"end: {data[0]} -- {data[-1]}")
+                 f"end: {data[0]} -- {data[-1]}")
     Logger.debug(f"dtype for {_id}: {data.dtype}")
-    _floater = np.float32
+    if data.dtype == np.dtype('float64'):
+        _floater = np.float64  # Retain double-precision
+    else:
+        _floater = np.float32  # Use single-precision where possible to reduce memory
     data = data.astype(_floater)
     df = _floater(1.0) / (npts * delta)
     num = np.int32(npts / factor)
