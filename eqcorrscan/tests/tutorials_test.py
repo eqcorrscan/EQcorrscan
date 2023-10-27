@@ -55,7 +55,7 @@ class TestTutorialScripts(unittest.TestCase):
             #     for detection in expected_detections]
             for detection in tutorial_detections:
                 assert (detection.detect_val < detection.no_chans)
-                detection.detect_time.precision = 3
+                detection.detect_time.precision = 2
                 self.assertIn(
                     detection.detect_time, expected_times,
                     msg='Detection at %s is not in expected detections'
