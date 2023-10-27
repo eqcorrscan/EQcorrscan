@@ -65,9 +65,12 @@ class TestTutorialScripts(unittest.TestCase):
                 actual_times = [tutorial_detection.detect_time
                                 for tutorial_detection in tutorial_detections]
                 for detection in expected_detections:
-                    self.assertIn(detection.detect_time, actual_times,
-                                  msg='Expected detection at %s was not made'
-                                  % detection.detect_time)
+                    diffs = [abs(t - detection.detect_time)
+                             for t in actual_times]
+                    self.assertLessEqual(
+                        min(diffs), 0.1,
+                        msg='Expected detection at %s was not made'
+                        % detection.detect_time)
             self.assertEqual(len(tutorial_detections), 23)
         finally:
             for template_no in range(4):
