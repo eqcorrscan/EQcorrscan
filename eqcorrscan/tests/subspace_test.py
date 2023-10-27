@@ -140,6 +140,10 @@ class SubspaceTestingMethods(unittest.TestCase):
                 os.path.join(os.path.abspath(
                     os.path.dirname(__file__)), 'test_data', 'subspace',
                     'master_detector_multi_unaligned.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(
+        #             os.path.dirname(__file__)), 'test_data', 'subspace',
+        #             'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -179,6 +183,10 @@ class SubspaceTestingMethods(unittest.TestCase):
             os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
                 'test_data', 'subspace', 'master_detector_unaligned.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(
+        #         os.path.abspath(os.path.dirname(__file__)),
+        #         'test_data', 'subspace', 'master_detector_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -220,6 +228,10 @@ class SubspaceTestingMethods(unittest.TestCase):
             os.path.join(os.path.abspath(
                 os.path.dirname(__file__)), 'test_data', 'subspace',
                 'master_detector_multi.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(
+        #         os.path.dirname(__file__)), 'test_data', 'subspace',
+        #         'master_detector_multi.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -256,6 +268,9 @@ class SubspaceTestingMethods(unittest.TestCase):
         comparison_detector = subspace.read_detector(
             os.path.join(os.path.abspath(os.path.dirname(__file__)),
                          'test_data', 'subspace', 'master_detector.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        #                'test_data', 'subspace', 'master_detector.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
