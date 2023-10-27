@@ -1,7 +1,9 @@
 matplotlib
+mock
+# Note that mock is replaced by unittest.mock now, and we should update the test code to use this
 nbsphinx
 sphinx>=1.5.1
 sphinx_bootstrap_theme
 # have to pin otherwise RTD fails
 # see https://github.com/readthedocs/readthedocs.org/issues/7492
-Pygments==2.7.4
+Pygments==2.15.0
