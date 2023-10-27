@@ -409,7 +409,7 @@ class Detector(object):
             self.name = f['data'].attrs['name'].decode('ascii')
         return self
 
-    def plot(self, stachans='all', size=(10, 7), show=True):
+    def plot(self, stachans='all', size=(10, 7), show=True, *args, **kwargs):
         """
         Plot the output basis vectors for the detector at the given dimension.
 
@@ -434,7 +434,7 @@ class Detector(object):
             for example.
         """
         return subspace_detector_plot(detector=self, stachans=stachans,
-                                      size=size, show=show)
+                                      size=size, show=show, *args, **kwargs)
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,
@@ -683,7 +683,6 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
     :return: List of delays
     :rtype: list
     """
-    from multiprocessing import Pool, cpu_count
     processed_streams = []
     if not stachans:
         input_stachans = list(set([(tr.stats.station, tr.stats.channel)
@@ -700,33 +699,26 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                 raise IOError(
                     'All channels of all streams must be the same length')
     for st in streams:
-        if not parallel:
-            processed_stream = Stream()
-            for stachan in input_stachans:
-                dummy, tr = _internal_process(
-                    st=st, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, sampling_rate=sampling_rate,
-                    first_length=first_length, stachan=stachan)
+        processed = pre_processing.multi_process(
+            st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
+            samp_rate=sampling_rate, seisan_chan_names=False)
+        # Add in empty channels if needed and sort
+        processed_stream = Stream()
+        for stachan in input_stachans:
+            tr = processed.select(station=stachan[0], channel=stachan[1])
+            if len(tr) == 0:
+                tr = Trace(np.zeros(int(first_length * sampling_rate)))
+                tr.stats.station = stachan[0]
+                tr.stats.channel = stachan[1]
+                tr.stats.sampling_rate = sampling_rate
+                tr.stats.starttime = st[0].stats.starttime
+                # Do this to make more sensible plots
+                Logger.warning('Padding stream with zero trace for ' +
+                               'station ' + stachan[0] + '.' + stachan[1])
                 processed_stream += tr
-            processed_streams.append(processed_stream)
-        else:
-            pool = Pool(processes=min(cores, cpu_count()))
-            results = [pool.apply_async(
-                _internal_process, (st,),
-                {'lowcut': lowcut, 'highcut': highcut,
-                 'filt_order': filt_order, 'sampling_rate': sampling_rate,
-                 'first_length': first_length, 'stachan': stachan,
-                 'i': i}) for i, stachan in enumerate(input_stachans)]
-            pool.close()
-            try:
-                processed_stream = [p.get() for p in results]
-            except KeyboardInterrupt as e:  # pragma: no cover
-                pool.terminate()
-                raise e
-            pool.join()
-            processed_stream.sort(key=lambda tup: tup[0])
-            processed_stream = Stream([p[1] for p in processed_stream])
-            processed_streams.append(processed_stream)
+            processed_stream += tr
+        assert [(tr.stats.station, tr.stats.channel) for tr in processed_stream] == input_stachans
+        processed_streams.append(processed_stream)
         if no_missed and multiplex:
             for tr in processed_stream:
                 if np.count_nonzero(tr.data) == 0:
@@ -766,30 +758,6 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                 tr.data /= norm
         output_streams.append(st)
     return output_streams, input_stachans
-
-
-def _internal_process(st, lowcut, highcut, filt_order, sampling_rate,
-                      first_length, stachan, i=0):
-    tr = st.select(station=stachan[0], channel=stachan[1])
-    if len(tr) == 0:
-        tr = Trace(np.zeros(int(first_length * sampling_rate)))
-        tr.stats.station = stachan[0]
-        tr.stats.channel = stachan[1]
-        tr.stats.sampling_rate = sampling_rate
-        tr.stats.starttime = st[0].stats.starttime  # Do this to make more
-        # sensible plots
-        Logger.warning('Padding stream with zero trace for ' +
-                       'station ' + stachan[0] + '.' + stachan[1])
-    elif len(tr) == 1:
-        tr = tr[0]
-        tr.detrend('simple')
-        tr = pre_processing.multi_process(
-            st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-            samp_rate=sampling_rate, seisan_chan_names=False)
-    else:
-        raise IOError('Multiple channels for {0}.{1} in a single design '
-                      'stream.'.format(stachan[0], stachan[1]))
-    return i, tr
 
 
 def read_detector(filename):

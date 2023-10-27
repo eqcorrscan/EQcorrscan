@@ -118,7 +118,7 @@ jobs:
       - name: run network tests
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "network" --cov-report=xml
+          py.test -n 2 -m "network and not superslow" --cov-report=xml
       - name: run tutorials
         if: always()
         shell: bash -l {0}
