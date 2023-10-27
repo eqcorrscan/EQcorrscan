@@ -3,7 +3,6 @@ A series of test functions for the core functions in EQcorrscan.
 """
 import copy
 import os
-import shutil
 import glob
 import unittest
 import pytest

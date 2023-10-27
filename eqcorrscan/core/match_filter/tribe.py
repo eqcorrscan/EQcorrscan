@@ -1688,6 +1688,8 @@ def _download_st(
                     _st += tr
             st = _st
             st.split()
+    # Merge traces after gap checking
+    st = st.merge()
     st.trim(starttime=starttime, endtime=endtime)
 
     st_ids = [tr.id for tr in st]
