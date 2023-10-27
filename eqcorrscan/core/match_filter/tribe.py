@@ -1298,9 +1298,6 @@ class Tribe(object):
             time_chunks.append((chunk_start, chunk_start + data_length + 20))
             chunk_start += data_length - overlap
 
-        for time_chunk in time_chunks:
-            print(time_chunk)
-
         full_stream_dir = None
         if return_stream:
             full_stream_dir = tempfile.mkdtemp()
