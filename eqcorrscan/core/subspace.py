@@ -409,7 +409,7 @@ class Detector(object):
             self.name = f['data'].attrs['name'].decode('ascii')
         return self
 
-    def plot(self, stachans='all', size=(10, 7), show=True):
+    def plot(self, stachans='all', size=(10, 7), show=True, *args, **kwargs):
         """
         Plot the output basis vectors for the detector at the given dimension.
 
@@ -434,7 +434,7 @@ class Detector(object):
             for example.
         """
         return subspace_detector_plot(detector=self, stachans=stachans,
-                                      size=size, show=show)
+                                      size=size, show=show, *args, **kwargs)
 
 
 def _detect(detector, st, threshold, trig_int, moveout=0, min_trig=0,

@@ -140,6 +140,10 @@ class SubspaceTestingMethods(unittest.TestCase):
                 os.path.join(os.path.abspath(
                     os.path.dirname(__file__)), 'test_data', 'subspace',
                     'master_detector_multi_unaligned.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(
+        #             os.path.dirname(__file__)), 'test_data', 'subspace',
+        #             'master_detector_multi_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -179,18 +183,23 @@ class SubspaceTestingMethods(unittest.TestCase):
             os.path.join(
                 os.path.abspath(os.path.dirname(__file__)),
                 'test_data', 'subspace', 'master_detector_unaligned.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(
+        #         os.path.abspath(os.path.dirname(__file__)),
+        #         'test_data', 'subspace', 'master_detector_unaligned.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
             self.assertEqual(comparison_detector.__getattribute__(key),
                              detector.__getattribute__(key))
-        for key in ['data', 'u', 'v', 'sigma']:
+        for key in ['sigma', 'v', 'u', 'data']:
             # print(key)
             list_item = detector.__getattribute__(key)
             other_list = comparison_detector.__getattribute__(key)
             self.assertEqual(len(list_item), len(other_list))
             for item, other_item in zip(list_item, other_list):
                 if not np.allclose(np.abs(item), np.abs(other_item)):
+                    print(f"Well fuck. {key} is different...")
                     print(item)
                     print(other_item)
                     print("Differences:")
@@ -219,6 +228,10 @@ class SubspaceTestingMethods(unittest.TestCase):
             os.path.join(os.path.abspath(
                 os.path.dirname(__file__)), 'test_data', 'subspace',
                 'master_detector_multi.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(
+        #         os.path.dirname(__file__)), 'test_data', 'subspace',
+        #         'master_detector_multi.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
@@ -255,6 +268,9 @@ class SubspaceTestingMethods(unittest.TestCase):
         comparison_detector = subspace.read_detector(
             os.path.join(os.path.abspath(os.path.dirname(__file__)),
                          'test_data', 'subspace', 'master_detector.h5'))
+        # Run to re-fresh file after SVD changes upstream
+        # detector.write(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        #                'test_data', 'subspace', 'master_detector.h5'))
         for key in ['name', 'sampling_rate', 'multiplex', 'lowcut', 'highcut',
                     'filt_order', 'dimension', 'stachans']:
             # print(key)
