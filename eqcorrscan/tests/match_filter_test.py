@@ -3,7 +3,6 @@ A series of test functions for the core functions in EQcorrscan.
 """
 import copy
 import os
-import shutil
 import glob
 import unittest
 import pytest
@@ -726,12 +725,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
         cls.unproc_st, cls.tribe, cls.onehztribe, cls.st, cls.party = (
             unproc_st, tribe, onehztribe, st, party)
 
-    @classmethod
-    def tearDownClass(cls):
-        for f in ['eqcorrscan_temporary_party.pkl']:
-            if os.path.isfile(f):
-                os.remove(f)
-
     def test_tribe_detect(self):
         """Test the detect method on Tribe objects"""
         for conc_proc in [True, False]:
@@ -821,7 +814,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
             for pf in party_files:
                 saved_party += Party().read(pf)
             self.assertEqual(party, saved_party)
-            shutil.rmtree(".parties")
 
     @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
@@ -890,7 +882,6 @@ class TestMatchObjectHeavy(unittest.TestCase):
             for pf in party_files:
                 saved_party += Party().read(pf)
             self.assertEqual(party, saved_party)
-            shutil.rmtree(".parties")
             compare_families(
                 party=party, party_in=self.party, float_tol=0.05,
                 check_event=False)

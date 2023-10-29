@@ -26,7 +26,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List, Union
+from typing import List, Union, Iterable
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -233,6 +233,11 @@ class Tribe(object):
                 "must be unique. Non-unique templates: "
                 f"{', '.join(non_unique_names)}")
         return
+
+    @property
+    def _stream_dir(self):
+        """ Location for temporary streams """
+        return f".streams_{os.getpid()}"
 
     def sort(self):
         """
@@ -754,6 +759,8 @@ class Tribe(object):
         export_cccsums = inner_kwargs.pop('export_cccsums', False)
         peak_cores = inner_kwargs.pop('peak_cores',
                                       process_cores) or cpu_count()
+        groups = inner_kwargs.pop("groups", None)
+
         if peak_cores == 1:
             parallel = False
         else:
@@ -764,7 +771,7 @@ class Tribe(object):
                 "Inconsistent template processing parameters found, this is no"
                 " longer supported. Split your tribe using "
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
-                "and re-run for each group")
+                "and re-run for each grouped tribe")
         sampling_rate = self.templates[0].samp_rate
         # Used for sanity checking seed id overlap
         template_ids = set(
@@ -772,7 +779,7 @@ class Tribe(object):
 
         args = (stream, template_ids, pre_processed, parallel_process,
                 process_cores, daylong, ignore_length, overlap,
-                ignore_bad_data, group_size, sampling_rate, threshold,
+                ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
                 export_cccsums, parallel, peak_cores, trig_int, full_peaks,
                 plot, plotdir, plot_format,)
@@ -800,9 +807,9 @@ class Tribe(object):
     def _detect_serial(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal serial detect workflow. """
@@ -831,7 +838,7 @@ class Tribe(object):
             delta = st_chunk[0].stats.delta
             template_groups = _group(
                 sids={tr.id for tr in st_chunk},
-                templates=self.templates, group_size=group_size)
+                templates=self.templates, group_size=group_size, groups=groups)
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -875,14 +882,16 @@ class Tribe(object):
             Logger.info(f"Added party from {_chunk_file}, party now "
                         f"contains {len(party)} detections")
 
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
         return party
 
     def _detect_concurrent(
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, daylong, ignore_length, overlap, ignore_bad_data,
-        group_size, sampling_rate, threshold, threshold_type, save_progress,
-        xcorr_func, concurrency, cores, export_cccsums, parallel, peak_cores,
-        trig_int, full_peaks, plot, plotdir, plot_format,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
         **kwargs
     ):
         """ Internal concurrent detect workflow. """
@@ -926,6 +935,7 @@ class Tribe(object):
                 target=_pre_processor,
                 kwargs=dict(
                     stream_queue=stream,
+                    temp_stream_dir=self._stream_dir,
                     template_ids=template_ids,
                     pre_processed=pre_processed,
                     filt_order=self.templates[0].filt_order,
@@ -950,6 +960,7 @@ class Tribe(object):
             kwargs=dict(
                 input_stream_queue=processed_stream_queue,
                 group_size=group_size,
+                groups=groups,
                 templates=template_db,
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
@@ -1074,9 +1085,6 @@ class Tribe(object):
                 party += pickle.load(f)
             if not save_progress:
                 os.remove(pf)
-        if not save_progress:
-            if os.path.isdir(".parties"):
-                shutil.rmtree(".parties")
 
         # Check for exceptions
         if killed:
@@ -1087,6 +1095,8 @@ class Tribe(object):
                 # Clean the template db
                 if os.path.isdir(template_dir):
                     shutil.rmtree(template_dir)
+                if os.path.isdir(self._stream_dir):
+                    shutil.rmtree(self._stream_dir)
                 self._on_error(internal_error)
 
         # Shut down the processes and close the queues
@@ -1098,6 +1108,8 @@ class Tribe(object):
             self._close_processes()
         if os.path.isdir(template_dir):
             shutil.rmtree(template_dir)
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
@@ -1267,6 +1279,8 @@ class Tribe(object):
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each group")
 
+        groups = kwargs.get("groups", None)
+
         # Hard-coded buffer for downloading data, often data downloaded is
         # not the correct length
         buff = 300
@@ -1284,9 +1298,6 @@ class Tribe(object):
             time_chunks.append((chunk_start, chunk_start + data_length + 20))
             chunk_start += data_length - overlap
 
-        for time_chunk in time_chunks:
-            print(time_chunk)
-
         full_stream_dir = None
         if return_stream:
             full_stream_dir = tempfile.mkdtemp()
@@ -1303,7 +1314,7 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing)
+            concurrent_processing=concurrent_processing, groups=groups)
 
         if not concurrent_processing:
             party = Party()
@@ -1341,6 +1352,7 @@ class Tribe(object):
                 buff=buff,
                 out_queue=stream_queue,
                 poison_queue=poison_queue,
+                temp_stream_dir=self._stream_dir,
                 full_stream_dir=full_stream_dir,
                 pre_process=True, parallel_process=parallel_process,
                 process_cores=process_cores, daylong=daylong,
@@ -1673,6 +1685,8 @@ def _download_st(
                     _st += tr
             st = _st
             st.split()
+    # Merge traces after gap checking
+    st = st.merge()
     st.trim(starttime=starttime, endtime=endtime)
 
     st_ids = [tr.id for tr in st]
@@ -1736,8 +1750,19 @@ def _pre_process(
     return st_chunks
 
 
-def _group(sids, templates, group_size):
+def _group(sids, templates, group_size, groups):
     Logger.info(f"Grouping for {sids}")
+    if groups:
+        Logger.info("Using pre-computed groups")
+        t_dict = {t.name: t for t in templates}
+        template_groups = []
+        for grp in groups:
+            template_group = [
+                t_dict.get(t_name) for t_name in grp
+                if t_name in t_dict.keys()]
+            if len(template_group):
+                template_groups.append(template_group)
+        return template_groups
     template_groups = group_templates_by_seedid(
         templates=templates,
         st_seed_ids=sids,
@@ -1981,7 +2006,9 @@ def _make_party(
     chunk_file_str = os.path.join(
         chunk_dir,
         "chunk_party_{chunk_start_str}"
-        "_{chunk_id}.pkl")
+        "_{chunk_id}_{pid}.pkl")
+    # Process ID included in chunk file to avoid multiple processes writing
+    # and reading and removing the same files.
 
     # Get the results out of the end!
     Logger.info(f"Made {len(detections)} detections")
@@ -2032,7 +2059,7 @@ def _make_party(
     chunk_file = chunk_file_str.format(
         chunk_start_str=chunk_start.strftime("%Y-%m-%dT%H-%M-%S"),
         chunk_start=chunk_start,
-        chunk_id=chunk_id)
+        chunk_id=chunk_id, pid=os.getpid())
     with open(chunk_file, "wb") as _f:
         pickle.dump(chunk_party, _f)
     Logger.info("Completed party processing")
@@ -2103,6 +2130,7 @@ def _get_detection_stream(
     buff: float,
     out_queue: Queue,
     poison_queue: Queue,
+    temp_stream_dir: str,
     full_stream_dir: str = None,
     pre_process: bool = False,
     parallel_process: bool = True,
@@ -2180,12 +2208,14 @@ def _get_detection_stream(
                 Logger.info(f"After processing stream has {len(chunk)} traces:")
                 for tr in chunk:
                     Logger.info(tr)
-                if not os.path.isdir(".streams"):
-                    os.makedirs(".streams")
+                if not os.path.isdir(temp_stream_dir):
+                    os.makedirs(temp_stream_dir)
                 chunk_file = os.path.join(
-                    ".streams",
+                    temp_stream_dir,
                     f"chunk_{len(chunk)}_"
-                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}"
+                    f"_{os.getpid()}.pkl")
+                # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
                 out_queue.put(chunk_file)
                 del chunk
@@ -2199,6 +2229,7 @@ def _get_detection_stream(
 
 def _pre_processor(
     stream_queue: Queue,
+    temp_stream_dir: str,
     template_ids: set,
     pre_processed: bool,
     filt_order: int,
@@ -2238,13 +2269,15 @@ def _pre_processor(
                 samp_rate, process_length, parallel, cores, daylong,
                 ignore_length, ignore_bad_data, overlap)
             for chunk in st_chunks:
-                if not os.path.isdir(".streams"):
-                    os.makedirs(".streams")
+                if not os.path.isdir(temp_stream_dir):
+                    os.makedirs(temp_stream_dir)
                 chunk_files = []
                 chunk_file = os.path.join(
-                    ".streams",
+                    temp_stream_dir,
                     f"chunk_{len(chunk)}_"
-                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}.pkl")
+                    f"{chunk[0].stats.starttime.strftime('%Y-%m-%dT%H-%M-%S')}"
+                    f"_{os.getpid()}.pkl")
+                # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
                 output_queue.put(chunk_file) 
                 del chunk
@@ -2261,6 +2294,7 @@ def _prepper(
     input_stream_queue: Queue,
     templates: Union[List, dict],
     group_size: int,
+    groups: Iterable[Iterable[str]],
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
@@ -2322,7 +2356,7 @@ def _prepper(
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size)
+                                     group_size=group_size, groups=groups)
         except Exception as e:
             Logger.error(e)
             poison_queue.put(e)
