@@ -1,4 +1,7 @@
 ## Current
+* core.match_filter.tribe
+  - Significant re-write of detect logic to take advantage of parallel steps (see #544)
+  - Significant re-structure of hidden functions.
 * core.match_filter.matched_filter
   - 5x speed up for MAD threshold calculation with parallel (threaded) MAD 
     calculation (#531).
