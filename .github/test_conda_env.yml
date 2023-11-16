@@ -19,3 +19,4 @@ dependencies:
   - pytest-rerunfailures
   - pytest-mpl
   - codecov
+  - boto3
