@@ -1,4 +1,5 @@
 matplotlib
+boto3
 mock
 # Note that mock is replaced by unittest.mock now, and we should update the test code to use this
 nbsphinx
