@@ -189,8 +189,9 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
                     picks = [p for p in ev.picks
                              if p.waveform_id.station_code == station
                              and p.phase_hint == phase_hint]
-                    picks.sort(key=lambda p:p.time, reverse=reverse)
+                    picks.sort(key=lambda p: p.time, reverse=reverse)
                     retained_picks.append(picks[0])
+            ev.picks = retained_picks
 
     return tmp_catalog
 

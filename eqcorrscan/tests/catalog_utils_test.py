@@ -12,6 +12,7 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 
 @pytest.mark.network
 class CatalogUtilsTests(unittest.TestCase):
+    @classmethod
     @pytest.mark.flaky(reruns=2)  # Rerun the test in case of network timeout
     def setUpClass(cls):
         client = Client(str("NCEDC"))
@@ -22,6 +23,11 @@ class CatalogUtilsTests(unittest.TestCase):
             minlatitude=35.7, maxlatitude=36.1,
             minlongitude=-120.6, maxlongitude=-120.2,
             includearrivals=True)
+        # Phase hints are not included in the picks, but are in the arrivals
+        for ev in cls.catalog:
+            for arr in ev.origins[-1].arrivals:
+                pick = arr.pick_id.get_referred_object()
+                pick.phase_hint = arr.phase
 
     def test_filter_picks(self):
         """ Test various methods of filtering picks in a catalog."""
@@ -55,7 +61,8 @@ class CatalogUtilsTests(unittest.TestCase):
 
         phase_hints = set(p.phase_hint for ev in filtered_catalog
                           for p in ev.picks)
-        self.assertEqual(phase_hints == {"P"})
+        print(phase_hints)
+        self.assertEqual(phase_hints, set("P"))
 
     def test_filter_single_pick(self):
         filtered_catalog = filter_picks(
@@ -64,12 +71,17 @@ class CatalogUtilsTests(unittest.TestCase):
         for ev in filtered_catalog:
             stations = {p.waveform_id.station_code for p in ev.picks}
             for station in stations:
-                picks = [p for p in ev.picks if p.waveform_id.station_code == station]
-                phase_hints = {p.phase_hint for p in ev.picks}
+                picks = [p for p in ev.picks
+                         if p.waveform_id.station_code == station]
+                phase_hints = {p.phase_hint for p in picks}
                 for phase_hint in phase_hints:
-                    self.assertEqual(
-                        1, len([p for p in picks
-                               if p.phase_hint == phase_hint]))
+                    matched_picks = [
+                        p for p in picks if p.phase_hint == phase_hint]
+                    if len(matched_picks) != 1:
+                        print(f"Multiple picks for {station} - {phase_hint}")
+                        for pick in matched_picks:
+                            print(pick)
+                    self.assertEqual(1, len(matched_picks))
         return
 
 
