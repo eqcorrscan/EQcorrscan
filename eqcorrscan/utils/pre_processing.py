@@ -266,7 +266,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 0. Enforce double-preccision floats for this work
     for tr in st:
         if not tr.data.dtype == np.float64:
-            Logger.info(f"Converting {tr.id} to double precision")
+            Logger.debug(f"Converting {tr.id} to double precision")
             tr.data = tr.data.astype(np.float64)
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
