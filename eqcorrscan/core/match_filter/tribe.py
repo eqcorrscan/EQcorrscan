@@ -969,7 +969,10 @@ class Tribe(object):
             with open(_chunk_file, "rb") as _f:
                 party += pickle.load(_f)
             if not save_progress:
-                os.remove(_chunk_file)
+                try:
+                    os.remove(_chunk_file)
+                except FileNotFoundError:
+                    pass
             Logger.info(f"Added party from {_chunk_file}, party now "
                         f"contains {len(party)} detections")
 
@@ -1180,7 +1183,10 @@ class Tribe(object):
             with open(pf, "rb") as f:
                 party += pickle.load(f)
             if not save_progress:
-                os.remove(pf)
+                try:
+                    os.remove(pf)
+                except FileNotFoundError:
+                    pass
 
         # Check for exceptions
         if killed:
