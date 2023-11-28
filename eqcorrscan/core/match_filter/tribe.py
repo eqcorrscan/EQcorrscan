@@ -654,7 +654,7 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
                plotdir=None, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               concurrent_processing=True, ignore_length=False,
+               concurrent_processing=False, ignore_length=False,
                ignore_bad_data=False, group_size=None, overlap="calculate",
                full_peaks=False, save_progress=False, process_cores=None,
                pre_processed=False, check_processing=True,
@@ -1212,7 +1212,7 @@ class Tribe(object):
                       threshold_type, trig_int, plot=False, plotdir=None,
                       min_gap=None, daylong=False, parallel_process=True,
                       xcorr_func=None, concurrency=None, cores=None,
-                      concurrent_processing=True, ignore_length=False,
+                      concurrent_processing=False, ignore_length=False,
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
@@ -1417,6 +1417,10 @@ class Tribe(object):
             concurrent_processing=concurrent_processing, groups=groups)
 
         if not concurrent_processing:
+            Logger.warning("Using concurrent_processing=True can be faster if"
+                           "downloading your data takes a long time. See "
+                           "https://github.com/eqcorrscan/EQcorrscan/pull/544"
+                           "for benchmarks.")
             party = Party()
             if return_stream:
                 full_st = Stream()
