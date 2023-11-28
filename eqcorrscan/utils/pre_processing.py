@@ -10,7 +10,6 @@ the data using obspy modules (which also rely on scipy and numpy).
     (https://www.gnu.org/copyleft/lesser.html)
 """
 import os
-import time
 
 import numpy as np
 import logging
@@ -693,7 +692,8 @@ def _resample(data, delta, factor, sampling_rate, large_w, _id):
     if data.dtype == np.dtype('float64'):
         _floater = np.float64  # Retain double-precision
     else:
-        _floater = np.float32  # Use single-precision where possible to reduce memory
+        _floater = np.float32
+        # Use single-precision where possible to reduce memory
     data = data.astype(_floater)
     df = _floater(1.0) / (npts * delta)
     num = np.int32(npts / factor)

@@ -28,7 +28,7 @@ from queue import Empty
 from obspy import Stream
 
 from eqcorrscan.core.match_filter.helpers import (
-     _pickle_stream, _unpickle_stream)
+    _pickle_stream, _unpickle_stream)
 from eqcorrscan.core.match_filter.helpers.tribe import (
     _download_st, _pre_process, _group, _detect,
     _read_template_db, _make_party)
@@ -160,8 +160,8 @@ def _get_detection_stream(
                     tr.split().write(os.path.join(
                         full_stream_dir,
                         f"full_trace_{tr.id}_"
-                        f"{tr.stats.starttime.strftime('%y-%m-%dT%H-%M-%S')}.ms"),
-                            format="MSEED")
+                        f"{tr.stats.starttime.strftime('%y-%m-%dT%H-%M-%S')}"
+                        f".ms"), format="MSEED")
             if not pre_process:
                 st_chunks = [st]
             else:
@@ -245,7 +245,6 @@ def _pre_processor(
             for chunk in st_chunks:
                 if not os.path.isdir(temp_stream_dir):
                     os.makedirs(temp_stream_dir)
-                chunk_files = []
                 chunk_file = os.path.join(
                     temp_stream_dir,
                     f"chunk_{len(chunk)}_"
@@ -257,7 +256,7 @@ def _pre_processor(
                 del chunk
         except Exception as e:
             Logger.error(
-                    f"Caught exception in processor:\n {e}")
+                f"Caught exception in processor:\n {e}")
             poison_queue.put(e)
             traceback.print_tb(e.__traceback__)
     output_queue.put(None)

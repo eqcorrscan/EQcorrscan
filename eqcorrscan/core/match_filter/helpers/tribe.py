@@ -71,8 +71,8 @@ def _download_st(
         except FDSNException as e:
             if "Split the request in smaller" in " ".join(e.args):
                 Logger.warning(
-                   "Datacentre does not support large requests: "
-                   "splitting request into smaller chunks")
+                    "Datacentre does not support large requests: "
+                    "splitting request into smaller chunks")
                 st = Stream()
                 for _bulk in bulk_info:
                     try:
@@ -427,12 +427,9 @@ def _make_party(
     save_progress
 ):
     chunk_dir = os.path.join(
-            ".parties", "{chunk_start.year}",
-            "{chunk_start.julday:03d}")
+        ".parties", "{chunk_start.year}", "{chunk_start.julday:03d}")
     chunk_file_str = os.path.join(
-        chunk_dir,
-        "chunk_party_{chunk_start_str}"
-        "_{chunk_id}_{pid}.pkl")
+        chunk_dir, "chunk_party_{chunk_start_str}_{chunk_id}_{pid}.pkl")
     # Process ID included in chunk file to avoid multiple processes writing
     # and reading and removing the same files.
 

@@ -824,7 +824,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream = self.unproc_st.copy()
             stream[0] = (stream[0].copy().trim(
                 stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
-                         stream[0].trim(
+                    stream[0].trim(
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
@@ -1159,7 +1159,7 @@ class TestMatchObjectLight(unittest.TestCase):
         added = self.tribe.copy()
         # Check that we can't add same named templates
         with self.assertRaises(NotImplementedError):
-            bob = added + added[0]
+            _ = added + added[0]  # noqa: F841
         with self.assertRaises(NotImplementedError):
             added += added[0]
         # Check that addition works for differently named templates

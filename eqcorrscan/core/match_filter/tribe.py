@@ -23,8 +23,6 @@ import traceback
 import uuid
 import logging
 
-from typing import List
-
 from multiprocessing import Process, Queue, cpu_count
 from queue import Empty
 
