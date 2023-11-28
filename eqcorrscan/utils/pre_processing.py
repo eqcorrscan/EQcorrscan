@@ -1073,6 +1073,9 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         [key.split('.') + [i] for key, value in template_ids.items()
          for i in range(value)])
     seed_ids = [('.'.join(seed_id[0:-1]), seed_id[-1]) for seed_id in seed_ids]
+    Logger.info(f"Prepping for {len(seed_ids)} channels that share seed-ids "
+                f"between templates and stream")
+    Logger.debug(f"Shared seed-ids: {seed_ids}")
 
     for channel_number, seed_id in enumerate(template_ids.keys()):
         stream_data = np.zeros(stream_length, dtype=np.float32)

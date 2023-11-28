@@ -355,6 +355,10 @@ def _prepper(
                         stream=_unpickle_stream(st_file).merge(),
                         templates=template_streams,
                         template_names=template_names)
+                if len(_st) == 0:
+                    Logger.error(
+                        f"No traces returned from correlation prep: {_st}")
+                    continue
                 starttime = _st[0].stats.starttime
 
                 if xcorr_func in (None, "fmf", "fftw"):
