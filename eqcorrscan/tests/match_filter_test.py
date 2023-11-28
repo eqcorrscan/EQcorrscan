@@ -823,8 +823,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             stream = self.unproc_st.copy()
             stream[0] = (stream[0].copy().trim(
-                stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
-                    stream[0].trim(
+                stream[0].stats.starttime,
+                stream[0].stats.starttime + 1800) + stream[0].trim(
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
@@ -968,9 +968,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.party.copy()
         st = self.unproc_st.copy()
         cut_start = st[0].stats.starttime + (
-                0.5 * party[0].template.process_length)
+            0.5 * party[0].template.process_length)
         cut_end = st[0].stats.starttime + (
-                0.8 * party[0].template.process_length)
+            0.8 * party[0].template.process_length)
         st = st.cutout(cut_start, cut_end)
         catalog = party.lag_calc(stream=st, pre_processed=False,
                                  ignore_length=True, ignore_bad_data=True)
@@ -1633,8 +1633,8 @@ class TestTemplateGrouping(unittest.TestCase):
             tr.stats.channel = "ABC"
 
         groups = group_templates_by_seedid(
-             templates=edited_templates, st_seed_ids=self.st_seed_ids,
-             group_size=10)
+            templates=edited_templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]),
                          len(self.templates) - 1)
