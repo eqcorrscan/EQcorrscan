@@ -1055,7 +1055,7 @@ class Tribe(object):
         prepper_process = Process(
             target=_prepper,
             kwargs=dict(
-                input_stream_queue=processed_stream_queue,
+                input_stream_filename_queue=processed_stream_queue,
                 group_size=group_size,
                 groups=groups,
                 templates=template_db,
@@ -1225,7 +1225,8 @@ class Tribe(object):
         Detect using a Tribe of templates within a continuous stream.
 
         :type client: `obspy.clients.*.Client`
-        :param client: Any obspy client with a dataselect service.
+        :param client:
+            Any obspy client (or client-like object) with a dataselect service.
         :type starttime: :class:`obspy.core.UTCDateTime`
         :param starttime: Start-time for detections.
         :type endtime: :class:`obspy.core.UTCDateTime`

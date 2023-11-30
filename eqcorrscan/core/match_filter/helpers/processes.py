@@ -48,6 +48,12 @@ Logger = logging.getLogger(__name__)
 
 
 class Poison(Exception):
+    """
+    Exception passing within EQcorrscan
+
+    :type value: Exception
+    :param value: Exception to pass between processes
+    """
     def __init__(self, value):
         """
         Poison Exception.
@@ -119,6 +125,61 @@ def _get_detection_stream(
     samp_rate: float = None,
     process_length: float = None,
 ):
+    """
+    Get a stream to be used for detection from a client for a time period.
+
+    This function is designed to be run continuously within a Process and will
+    only stop when the next item in the input_time_queue is None.
+
+    This function uses .get_waveforms_bulk to get a Stream from a Client.
+    The specific time period to get data for is read from the input_time_queue.
+    Once the data have been loaded into memory from the Client, this function
+    then processes that Stream according to the processing parameters passed
+    as arguments to this function. Finally, this function writes the processed
+    Stream to disk in a temporary stream directory and puts the filename
+    for that stream in the output_filename_queue.
+
+    Optionally, an unprocessed version of the stream can be written to the
+    full_stream_dir directory to later provide an unprocessed copy of the
+    raw data. This can be helpful if data downloading is slow and the stream
+    is required for subsequent processing.
+
+    :param template_channel_ids:
+        Iterable of (network, station, location, channel) tuples to get data
+        for. Wildcards may be used if accepted by the client.
+    :param client:
+        Client-like object with at least a .get_waveforms_bulk method.
+    :param input_time_queue:
+        Queue of (starttime, endtime) tuples of UTCDateTimes to get data
+        between.
+    :param retries: See core.match_filter.tribe.client_detect
+    :param min_gap: See core.match_filter.tribe.client_detect
+    :param buff:
+        Length to pad downloaded data by - some clients do not provide all
+        data requested.
+    :param output_filename_queue:
+        Queue to put filenames of written streams into
+    :param poison_queue:
+        Queue to check for poison, or put poison into if something goes awry
+    :param temp_stream_dir:
+        Directory to write processed streams to.
+    :param full_stream_dir:
+        Directory to save unprocessed streams to. If None, will not be used.
+    :param pre_process: Whether to run pre-processing or not.
+    :param parallel_process:
+        Whether to process data in parallel (uses multi-threading)
+    :param process_cores:
+        Maximum number of cores to use for parallel processing
+    :param daylong: See utils.pre_processing.multi_process
+    :param overlap: See core.match_filter.tribe.detect
+    :param ignore_length: See utils.pre_processing.multi_process
+    :param ignore_bad_data: See utils.pre_processing.multi_process
+    :param filt_order: See utils.pre_processing.multi_process
+    :param highcut: See utils.pre_processing.multi_process
+    :param lowcut: See utils.pre_processing.multi_process
+    :param samp_rate: See utils.pre_processing.multi_process
+    :param process_length: See utils.pre_processing.multi_process
+    """
     while True:
         killed = _check_for_poison(poison_queue)
         # Wait until output queue is empty to limit rate and memory use
@@ -220,6 +281,40 @@ def _pre_processor(
     output_filename_queue: Queue,
     poison_queue: Queue,
 ):
+    """
+    Consume a queue of input streams and process those streams.
+
+    This function is designed to be run continuously within a Process and will
+    only stop when the next item in the input_stream_queue is None.
+
+    This function consumes streams from the input_stream_queue and processes
+    them using utils.pre_processing functions. Processed streams are written
+    out to the temp_stream_dir and the filenames are produced in the
+    output_filename_queue.
+
+    :param input_stream_queue:
+        Input Queue to consume streams from.
+    :param temp_stream_dir: Directory to write processed streams to.
+    :param template_ids:
+        Iterable of seed ids in the template set. Only channels matching these
+        seed ids will be retained.
+    :param pre_processed: See core.match_filter.tribe.detect
+    :param filt_order: See utils.pre_processing.multi_process
+    :param highcut: See utils.pre_processing.multi_process
+    :param lowcut: See utils.pre_processing.multi_process
+    :param samp_rate: See utils.pre_processing.multi_process
+    :param process_length: See utils.pre_processing.multi_process
+    :param parallel: See utils.pre_processing.multi_process
+    :param cores: See utils.pre_processing.multi_process
+    :param daylong: See utils.pre_processing.multi_process
+    :param ignore_length: See utils.pre_processing.multi_process
+    :param overlap: See core.match_filter.tribe.detect
+    :param ignore_bad_data: See utils.pre_processing.multi_process
+    :param output_filename_queue:
+        Queue to put filenames of written streams into
+    :param poison_queue:
+         Queue to check for poison, or put poison into if something goes awry
+    """
     while True:
         killed = _check_for_poison(poison_queue)
         if killed:
@@ -264,7 +359,7 @@ def _pre_processor(
 
 
 def _prepper(
-    input_stream_queue: Queue,
+    input_stream_filename_queue: Queue,
     templates: Union[List, dict],
     group_size: int,
     groups: Iterable[Iterable[str]],
@@ -272,6 +367,33 @@ def _prepper(
     poison_queue: Queue,
     xcorr_func: str = None,
 ):
+    """
+    Prepare templates and stream for correlation.
+
+    This function is designed to be run continuously within a Process and will
+    only stop when the next item in the input_stream_queue is None.
+
+    This function prepares (reshapes into numpy arrays) templates and streams
+    and ensures that the data are suitable for the cross-correlation function
+    specified.
+
+    :param input_stream_filename_queue:
+        Input Queue to consume stream_filenames from.
+    :param templates:
+        Either (a) a list of Template objects, or (b) a dictionary of pickled
+        template filenames, keyed by template name.
+    :param group_size:
+        See core.match_filter.tribe.detect
+    :param groups:
+        Iterable of groups, where each group is an iterable of the template
+        names in that group.
+    :param output_queue:
+        Queue to produce inputs for correlation to.
+    :param poison_queue:
+        Queue to check for poison, or put poison into if something goes awry
+    :param xcorr_func:
+        Name of correlation function backend to be used.
+    """
     if isinstance(templates, dict):
         # We have been passed a db of template files on disk
         Logger.info("Deserializing templates from disk")
@@ -288,7 +410,7 @@ def _prepper(
             Logger.info("Killed in prepper")
             break
         Logger.info("Getting stream from queue")
-        st_file = _get_and_check(input_stream_queue, poison_queue)
+        st_file = _get_and_check(input_stream_filename_queue, poison_queue)
         if st_file is None:
             Logger.info("Got None for stream, prepper complete")
             break
@@ -422,6 +544,31 @@ def _make_detections(
     output_queue: Queue,
     poison_queue: Queue,
 ):
+    """
+    Construct Detection objects from sparse detection information.
+
+    This function is designed to be run continuously within a Process and will
+    only stop when the next item in the input_queue is None.
+
+    :param input_queue:
+        Queue of (starttime, peaks, thresholds, no_channels, channels,
+        template_names). Detections are made within `peaks`.
+    :param delta:
+        Sample rate of peaks to detect within in Hz
+    :param templates:
+        Template objects included in input_queue
+    :param threshold:
+        Overall threshold
+    :param threshold_type:
+        Overall threshold type
+    :param save_progress:
+        Whether to save progress or not: If true, individual Party files will
+        be written each time this is run.
+    :param output_queue:
+        Queue of output Party filenames.
+    :param poison_queue:
+        Queue to check for poison, or put poison into if something goes awry
+    """
     chunk_id = 0
     while True:
         killed = _check_for_poison(poison_queue)
@@ -464,6 +611,21 @@ def _reconstruct_party(
     poison_queue: Queue,
     clean: bool = True,
 ):
+    """
+    Reconstruct party from multiple pickled party files on disk.
+
+    This function is designed to be run continuously within a Process and will
+    only stop when the next item in the input_queue is None.
+
+    :param input_queue: Queue to consume filenames of pickled parties from.
+    :param output_queue:
+        Queue to put the resulting party into. Only used once input_queue has
+        been exhausted.
+    :param poison_queue:
+        Queue to check for poison, or put poison into if something goes awry
+    :param clean:
+        Whether to remove temporary files or not.
+    """
     from eqcorrscan.core.match_filter.party import Party
 
     party = Party()
