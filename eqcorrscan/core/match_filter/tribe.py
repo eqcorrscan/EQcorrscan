@@ -706,6 +706,8 @@ class Tribe(object):
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -745,8 +747,6 @@ class Tribe(object):
         :type check_processing: bool
         :param check_processing:
             Whether to check that all templates were processed the same.
-        :type return_stream: bool
-        :param return_stream: Whether to return the stream or not.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -856,7 +856,7 @@ class Tribe(object):
         if check_processing:
             assert len(quick_group_templates(self.templates)) == 1, (
                 "Inconsistent template processing parameters found, this is no"
-                " longer supported. Split your tribe using "
+                " longer supported. \nSplit your tribe using "
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each grouped tribe")
         sampling_rate = self.templates[0].samp_rate
@@ -1031,7 +1031,7 @@ class Tribe(object):
             pre_processor_process = Process(
                 target=_pre_processor,
                 kwargs=dict(
-                    stream_queue=stream,
+                    input_stream_queue=stream,
                     temp_stream_dir=self._stream_dir,
                     template_ids=template_ids,
                     pre_processed=pre_processed,
@@ -1046,7 +1046,7 @@ class Tribe(object):
                     ignore_length=ignore_length,
                     overlap=overlap,
                     ignore_bad_data=ignore_bad_data,
-                    output_queue=processed_stream_queue,
+                    output_filename_queue=processed_stream_queue,
                     poison_queue=poison_queue,
                 ),
                 name="ProcessProcess"
@@ -1276,6 +1276,8 @@ class Tribe(object):
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -1453,12 +1455,12 @@ class Tribe(object):
         downloader = Process(
             target=_get_detection_stream,
             kwargs=dict(
-                time_queue=time_queue,
+                input_time_queue=time_queue,
                 client=client,
                 retries=retries,
                 min_gap=min_gap,
                 buff=buff,
-                out_queue=stream_queue,
+                output_filename_queue=stream_queue,
                 poison_queue=poison_queue,
                 temp_stream_dir=self._stream_dir,
                 full_stream_dir=full_stream_dir,

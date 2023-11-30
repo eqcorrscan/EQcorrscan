@@ -61,11 +61,11 @@ class Poison(Exception):
         return self.value
 
 
-def _get_and_check(queue: Queue, poison_queue: Queue, step: float = 0.5):
+def _get_and_check(input_queue: Queue, poison_queue: Queue, step: float = 0.5):
     """
     Get from a queue and check for poison - returns Poisoned if poisoned.
 
-    :param queue: Queue to get something from
+    :param input_queue: Queue to get something from
     :param poison_queue: Queue to check for poison
 
     :return: Item from queue or Poison.
@@ -74,10 +74,10 @@ def _get_and_check(queue: Queue, poison_queue: Queue, step: float = 0.5):
         poison = _check_for_poison(poison_queue)
         if poison:
             return poison
-        if queue.empty():
+        if input_queue.empty():
             time.sleep(step)
         else:
-            return queue.get_nowait()
+            return input_queue.get_nowait()
 
 
 def _check_for_poison(poison_queue: Queue) -> Union[Poison, None]:
@@ -98,11 +98,11 @@ def _check_for_poison(poison_queue: Queue) -> Union[Poison, None]:
 def _get_detection_stream(
     template_channel_ids: List[tuple],
     client,
-    time_queue: Queue,
+    input_time_queue: Queue,
     retries: int,
     min_gap: float,
     buff: float,
-    out_queue: Queue,
+    output_filename_queue: Queue,
     poison_queue: Queue,
     temp_stream_dir: str,
     full_stream_dir: str = None,
@@ -123,7 +123,7 @@ def _get_detection_stream(
         killed = _check_for_poison(poison_queue)
         # Wait until output queue is empty to limit rate and memory use
         tic = default_timer()
-        while out_queue.full():
+        while output_filename_queue.full():
             # Keep on checking while we wait
             killed = _check_for_poison(poison_queue)
             if killed:
@@ -135,7 +135,7 @@ def _get_detection_stream(
         if killed:
             break
         try:
-            next_times = _get_and_check(time_queue, poison_queue)
+            next_times = _get_and_check(input_time_queue, poison_queue)
             if next_times is None:
                 break
             if isinstance(next_times, Poison):
@@ -191,18 +191,18 @@ def _get_detection_stream(
                     f"_{os.getpid()}.pkl")
                 # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
-                out_queue.put(chunk_file)
+                output_filename_queue.put(chunk_file)
                 del chunk
         except Exception as e:
             Logger.error(f"Caught exception {e} in downloader")
             poison_queue.put(e)
             break
-    out_queue.put(None)
+    output_filename_queue.put(None)
     return
 
 
 def _pre_processor(
-    stream_queue: Queue,
+    input_stream_queue: Queue,
     temp_stream_dir: str,
     template_ids: set,
     pre_processed: bool,
@@ -217,7 +217,7 @@ def _pre_processor(
     ignore_length: bool,
     overlap: float,
     ignore_bad_data: bool,
-    output_queue: Queue,
+    output_filename_queue: Queue,
     poison_queue: Queue,
 ):
     while True:
@@ -225,7 +225,7 @@ def _pre_processor(
         if killed:
             break
         Logger.debug("Getting stream from queue")
-        st = _get_and_check(stream_queue, poison_queue)
+        st = _get_and_check(input_stream_queue, poison_queue)
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
             break
@@ -252,14 +252,14 @@ def _pre_processor(
                     f"_{os.getpid()}.pkl")
                 # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
-                output_queue.put(chunk_file)
+                output_filename_queue.put(chunk_file)
                 del chunk
         except Exception as e:
             Logger.error(
                 f"Caught exception in processor:\n {e}")
             poison_queue.put(e)
             traceback.print_tb(e.__traceback__)
-    output_queue.put(None)
+    output_filename_queue.put(None)
     return
 
 
