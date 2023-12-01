@@ -12,7 +12,6 @@ with data and output the detections.
     (https://www.gnu.org/copyleft/lesser.html)
 """
 import os
-import pickle
 import tempfile
 import time
 import traceback
