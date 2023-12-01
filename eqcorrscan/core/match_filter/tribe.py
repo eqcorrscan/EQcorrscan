@@ -1172,9 +1172,11 @@ class Tribe(object):
                 break
             pf = _get_and_check(party_file_queue, poison_queue)
             if pf is None:
+                # Fin - Queue has been finished with.
                 break
             if isinstance(pf, Poison):
-                Logger.error("Killed")
+                Logger.error("Killed while checking for party")
+                killed = True
                 break
             with open(pf, "rb") as f:
                 party += pickle.load(f)
