@@ -1025,8 +1025,6 @@ class Tribe(object):
         party_file_queue = Queue()
 
         # Set up processes
-        # TODO: Could merge this as well and just define a stream getter
-        #  (download for client_detect and just stream.get() for raw detect)
         if not pre_processed:
             pre_processor_process = Process(
                 target=_pre_processor,
@@ -1123,7 +1121,7 @@ class Tribe(object):
                 elif isinstance(to_corr, Poison):
                     Logger.info("Killed in main loop")
                     break
-                starttime, i, stream, template_names, templates,\
+                starttime, i, stream, template_names, templates, \
                     *extras = to_corr
                 inner_kwargs = copy.copy(kwargs)  # We will mangle them
                 # Correlation specific handling to reduce single-threaded time

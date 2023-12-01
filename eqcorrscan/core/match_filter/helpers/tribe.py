@@ -459,7 +459,7 @@ def _threshold(
         thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
         median_cores = min([peak_cores, len(cccsums)])
-        if cccsums.size < 2e7:  # par not worth it
+        if cccsums.size < 2e7:  # parallelism not worth it
             median_cores = 1
         with ThreadPoolExecutor(max_workers=median_cores) as executor:
             # Because numpy releases GIL threading can use

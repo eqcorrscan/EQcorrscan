@@ -848,7 +848,7 @@ def _group_seed_ids(template_seed_ids, group_size):
 
     # Smush together groups until group-size condition is met.
     # Make list of group ids - compare ungrouped sids to intersection of sids
-    # in group - add most similar, then repeat. Start with least sids.
+    # in group - add most similar, then repeat. Start with fewest sids.
 
     n_original_groups = len(groups)
     grouped = np.zeros(n_original_groups, dtype=bool)
