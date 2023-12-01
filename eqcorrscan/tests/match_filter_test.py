@@ -25,6 +25,7 @@ from eqcorrscan.core.match_filter.matched_filter import (
 from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.core.match_filter.template import (
     quick_group_templates, group_templates_by_seedid)
+from eqcorrscan.core.match_filter.helpers.tribe import _group
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
@@ -1638,6 +1639,16 @@ class TestTemplateGrouping(unittest.TestCase):
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]),
                          len(self.templates) - 1)
+
+    def test_precomputed_groups(self):
+        presetgroups = [
+            ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18'],
+            ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19']]
+
+        groups = _group(sids=self.st_seed_ids, templates=self.templates,
+                        group_size=10, groups=presetgroups)
+        group_names = [[t.name for t in grp] for grp in groups]
+        self.assertEqual(group_names, presetgroups)
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
