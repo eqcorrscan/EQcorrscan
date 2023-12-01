@@ -605,57 +605,6 @@ def _make_detections(
     return
 
 
-def _reconstruct_party(
-    input_queue: Queue,
-    output_queue: Queue,
-    poison_queue: Queue,
-    clean: bool = True,
-):
-    """
-    Reconstruct party from multiple pickled party files on disk.
-
-    This function is designed to be run continuously within a Process and will
-    only stop when the next item in the input_queue is None.
-
-    :param input_queue: Queue to consume filenames of pickled parties from.
-    :param output_queue:
-        Queue to put the resulting party into. Only used once input_queue has
-        been exhausted.
-    :param poison_queue:
-        Queue to check for poison, or put poison into if something goes awry
-    :param clean:
-        Whether to remove temporary files or not.
-    """
-    from eqcorrscan.core.match_filter.party import Party
-
-    party = Party()
-    while True:
-        killed = _check_for_poison(poison_queue)
-        if killed:
-            break
-        try:
-            _chunk_file = _get_and_check(input_queue, poison_queue)
-            if _chunk_file is None:
-                break
-            elif isinstance(_chunk_file, Poison):
-                Logger.error("Killed")
-                break
-            Logger.info(f"Adding party from {_chunk_file} to party")
-            with open(_chunk_file, "rb") as _f:
-                party += pickle.load(_f)
-            if clean:
-                os.remove(_chunk_file)
-            Logger.info(f"Added party from {_chunk_file}, party now "
-                        f"contains {len(party)} detections")
-        except Exception as e:
-            Logger.error(f"Caught exception in party reconstructer {e}")
-            traceback.print_tb(e.__traceback__)
-            poison_queue.put(e)
-    output_queue.put(party)
-    output_queue.put(None)
-    return
-
-
 if __name__ == "__main__":
     import doctest
 
