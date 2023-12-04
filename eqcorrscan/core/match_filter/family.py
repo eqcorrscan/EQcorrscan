@@ -18,14 +18,14 @@ import shutil
 import logging
 
 from obspy import UTCDateTime, Stream, Catalog
-from obspy.core.event import (
-    StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
+# from obspy.core.event import (
+#     StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
+#     CreationInfo, StationMagnitudeContribution)
 
 from eqcorrscan.core.match_filter.matched_filter import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.mag_calc import relative_magnitude
+# from eqcorrscan.utils.mag_calc import relative_magnitude
 
 Logger = logging.getLogger(__name__)
 
@@ -829,7 +829,7 @@ def _write_family(family, filename):
     return
 
 
-def _read_family(fname, all_cat, template, encoding="UTF8",
+def _read_family(fname, all_cat_dict, template, encoding="UTF8",
                  estimate_origin=True):
     """
     Internal function to read csv family files.
@@ -848,11 +848,12 @@ def _read_family(fname, all_cat, template, encoding="UTF8",
             key = key_pair.split(': ')[0].strip()
             value = key_pair.split(': ')[-1].strip()
             if key == 'event':
-                if len(all_cat) == 0:
+                if len(all_cat_dict) == 0:
                     gen_event = True
                     continue
-                el = [e for e in all_cat
-                      if str(e.resource_id).split('/')[-1] == value][0]
+                el = all_cat_dict.get(value)
+                # [e for e in all_cat
+                #       if str(e.resource_id).split('/')[-1] == value][0]
                 det_dict.update({'event': el})
             elif key == 'detect_time':
                 det_dict.update(
