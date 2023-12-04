@@ -63,6 +63,8 @@
  - Made handling of horizontal_chans and vertical_chans consistent so that user
    can freely choose relevant channels.
 * utils.correlate
+ - Weighted correlations supported. Template weights are expected in
+   individual trace.stats.extra.weight attributes.
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than
    the full number of channels are in the stack at the end of the stack, zeros

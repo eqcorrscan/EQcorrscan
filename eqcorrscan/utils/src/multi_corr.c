@@ -23,7 +23,8 @@
 
 static inline int set_ncc(
     long t, long i, int chan, int n_chans, long template_len, long image_len,
-    float value, int *used_chans, int *pad_array, float *ncc, int stack_option);
+    float value, int *used_chans, int *pad_array, float *weight_array, float *ncc,
+    int stack_option);
 
 // Functions
 
@@ -45,6 +46,8 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     ncc:            Output for cross-correlation - should be pointer to memory -
                     must be n_templates x image_len - template_len + 1
     fft_len:        Size for fft (n1)
+
+   Note - no weighting is applied
   */
     long N2 = fft_len / 2 + 1;
     long i, t, startind;
@@ -55,9 +58,17 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     float * template_ext = (float *) calloc(fft_len * n_templates, sizeof(float));
     float * image_ext = (float *) calloc(fft_len, sizeof(float));
     float * ccc = (float *) fftwf_malloc(sizeof(float) * fft_len * n_templates);
+    float * weight_array = (float *) calloc(n_templates, sizeof(float));
     fftwf_complex * outa = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N2 * n_templates);
     fftwf_complex * outb = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N2);
     fftwf_complex * out = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N2 * n_templates);
+
+    // Initialize weights to one
+    // memset(weight_array, 1, (size_t) n_templates * sizeof(float));
+    for (t = 0; t < n_templates; ++t){
+        weight_array[t] = 1;
+    }
+
     // Initialize threads
     #ifdef N_THREADS
         fftwf_init_threads();
@@ -115,7 +126,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     if (var >= ACCEPTED_DIFF) {
         for (t = 0; t < n_templates; ++t){
             float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
-            status += set_ncc(t, 0, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0);
+            status += set_ncc(t, 0, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, weight_array, ncc, 0);
         }
         if (var <= WARN_DIFF){
             variance_warning[0] = 1;
@@ -140,7 +151,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
         if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1 && stdev * mean >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
-                status += set_ncc(t, i, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0);
+                status += set_ncc(t, i, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, weight_array, ncc, 0);
             }
             if (var <= WARN_DIFF){
                 variance_warning[0] += 1;
@@ -189,13 +200,16 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
     This is a wrapper around `normxcorr_fftw_main`, allocating required memory and plans
     for that function. We have taken this outside the main function because creating plans
     is not thread-safe and we want to call the main function from within an OpenMP loop.
+
+    Weights are not applied.
   */
-    int status = 0;
+    int status = 0, t;
     long N2 = fft_len / 2 + 1;
     // All memory allocated with `fftw_malloc` to ensure 16-byte aligned
     float * template_ext = (float*) fftwf_malloc(fft_len * n_templates * sizeof(float));
     float * image_ext = (float*) fftwf_malloc(fft_len * sizeof(float));
     float * ccc = (float*) fftwf_malloc(fft_len * n_templates * sizeof(float));
+    float * weight_array = (float*) calloc(n_templates, sizeof(float));
     fftwf_complex * outa = (fftwf_complex*) fftwf_malloc(N2 * n_templates * sizeof(fftwf_complex));
     fftwf_complex * outb = (fftwf_complex*) fftwf_malloc(N2 * sizeof(fftwf_complex));
     fftwf_complex * out = (fftwf_complex*) fftwf_malloc(N2 * n_templates * sizeof(fftwf_complex));
@@ -207,13 +221,18 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
     // Initialise to zero
     memset(template_ext, 0, (size_t) fft_len * n_templates * sizeof(float));
     memset(image_ext, 0, (size_t) fft_len * sizeof(float));
+    // Initialize weights to one
+    for (t = 0; t < n_templates; ++t){
+        weight_array[t] = 1;
+    }
+    // memset(weight_array, 1, (size_t) n_templates * sizeof(float));
 
     // Call the function to do the work
     // Note: forcing inner threads to 1 for now (could be passed from Python)
     status = normxcorr_fftw_main(
         templates, template_len, n_templates, image, image_len, 0, 1, ncc,
         fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
-        used_chans, pad_array, 1, variance_warning, missed_corr, 0);
+        used_chans, pad_array, weight_array, 1, variance_warning, missed_corr, 0);
 
     // free memory and plans
     fftwf_destroy_plan(pa);
@@ -240,8 +259,8 @@ int normxcorr_fftw_main(
     long image_len, int chan, int n_chans, float *ncc, long fft_len,
     float *template_ext, float *image_ext, float *ccc, fftwf_complex *outa,
     fftwf_complex *outb, fftwf_complex *out, fftwf_plan pa, fftwf_plan pb,
-    fftwf_plan px, int *used_chans, int *pad_array, int num_threads,
-    int *variance_warning, int *missed_corr, int stack_option) {
+    fftwf_plan px, int *used_chans, int *pad_array, float *weight_array,
+    int num_threads, int *variance_warning, int *missed_corr, int stack_option) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   for a single-channel
@@ -273,6 +292,7 @@ int normxcorr_fftw_main(
     used_chans:     Array to fill with number of channels used per template - must
                     be n_templates long
     pad_array:      Array of pads, should be n_templates long
+    weight_array:   Array of weights, should be n_templates long
     num_threads:    Number of threads to parallel internal calculations over
     variance_warning: Pointer to array to store warnings for variance issues
     missed_corr:    Pointer to array to store warnings for unused correlations
@@ -372,7 +392,7 @@ int normxcorr_fftw_main(
                 double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[offset]);
                 c /= stdev;
                 status += set_ncc(t, offset, chan, n_chans, template_len, image_len,
-                                  (float) c, used_chans, pad_array, ncc, stack_option);
+                                  (float) c, used_chans, weight, array, pad_array, ncc, stack_option);
             }
             if (var[offset] <= WARN_DIFF){
                 variance_warning[0] = 1;
@@ -392,7 +412,7 @@ int normxcorr_fftw_main(
                         double c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[offset + i]);
                         c /= stdev;
                         status += set_ncc(t, i + offset, chan, n_chans, template_len,
-                                          image_len, (float) c, used_chans,
+                                          image_len, (float) c, used_chans, weight_array,
                                           pad_array, ncc, stack_option);
                     }
                 }
@@ -441,7 +461,6 @@ int running_mean_var(
     }
     var[0] = sum;
 
-
     // pre-compute the mean and var so we can parallelise the calculation
     for(i = 1; i < (image_len - template_len + 1); ++i){
         // Need to cast to double otherwise we end up with annoying floating
@@ -458,11 +477,13 @@ int running_mean_var(
         }
     }
     return 0;
+
 }
 
 static inline int set_ncc(
     long t, long i, int chan, int n_chans, long template_len, long image_len,
-    float value, int *used_chans, int *pad_array, float *ncc, int stack_option){
+    float value, int *used_chans, int *pad_array, float *weight_array,
+    float *ncc, int stack_option){
 
     int status = 0;
 
@@ -487,6 +508,8 @@ static inline int set_ncc(
         else if (value < -1.0) {
             value = -1.0;
         }
+        // Apply weight after checks to allow for weights > 1.0
+        value *= weight_array[t];
         if (stack_option == 1){
             #pragma omp atomic
             ncc[ncc_index] += value;
@@ -540,7 +563,7 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
                          float *image, long image_len, float *ncc, long fft_len, int *used_chans,
-                         int *pad_array, int num_threads_inner, int num_threads_outer,
+                         int *pad_array, float *weight_array, int num_threads_inner, int num_threads_outer,
                          int *variance_warning, int *missed_corr, int stack_option)
     {
     int i, chan, n_chans;
@@ -728,7 +751,9 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  n_templates, &image[(size_t) image_len * i], image_len, chan, n_chans, ncc, fft_len,
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
-                                 &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
+                                 &pad_array[(size_t) i * n_templates],
+                                 &weight_array[(size_t) i * n_templates],
+                                 num_threads_inner, &variance_warning[i],
                                  &missed_corr[i], stack_option);
         if (results[i] != 0){
             printf("WARNING: %i out-of-range correlations on channel %i\n", results[i], i);
