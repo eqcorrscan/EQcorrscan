@@ -26,6 +26,7 @@ import os
 from obspy import Stream, read, Trace, UTCDateTime, read_events
 from obspy.core.event import Catalog
 from obspy.clients.fdsn import Client as FDSNClient
+from obspy.core.util.attribdict import AttribDict
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
@@ -816,6 +817,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
             starttimes.append(starttime)
     # Cut the data
     st1 = Stream()
+    trace_starttimes = dict()
+    trace_endtimes = dict()
+    trace_peak_snrs = dict()
+    trace_rms_snrs = dict()
+    trace_weights = dict()
     for _starttime in starttimes:
         Logger.info(f"Working on channel {_starttime['station']}."
                     f"{_starttime['channel']}")
@@ -855,14 +861,32 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
             Logger.debug(
                 'Cut starttime = %s\nCut endtime %s' %
                 (str(tr_cut.stats.starttime), str(tr_cut.stats.endtime)))
-            if min_snr is not None and \
-               max(tr_cut.data) / noise_amp < min_snr:
+            peak_snr = max(tr_cut.data) / noise_amp
+            signal_amp = _rms(tr_cut.data)
+            rms_snr = signal_amp / noise_amp
+            if min_snr is not None and peak_snr < min_snr:
                 Logger.warning(
                     "Signal-to-noise ratio {0} below threshold for {1}.{2}, "
                     "not using".format(
                         max(tr_cut.data) / noise_amp, tr_cut.stats.station,
                         tr_cut.stats.channel))
                 continue
+            weight = 1
+            namespace = 'EQcorrscan'
+            if not hasattr(tr_cut.stats, 'extra'):
+                tr_cut.stats.extra = AttribDict()
+            tr_cut.stats.extra.update(
+                {'length_npts': tr_cut.stats.npts})
+            tr_cut.stats.extra.update(
+                {'starttime': tr_cut.stats.starttime})
+            tr_cut.stats.extra.update({
+                'endtime': tr_cut.stats.endtime})
+            tr_cut.stats.extra.update({
+                'peak_snr': peak_snr})
+            tr_cut.stats.extra.update({
+                'rms_snr': rms_snr})
+            tr_cut.stats.extra.update(
+                {'weight': weight})
             st1 += tr_cut
             used_tr = True
         if not used_tr:
