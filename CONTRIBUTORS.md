@@ -8,4 +8,5 @@
 * Felix Halpaap
 * Iman Kahbasi
 * eQ Halauwet
+* Tyler Newton
 * Glenn Nelson

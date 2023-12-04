@@ -79,6 +79,7 @@ you want to see in the tutorials please let us know on github.
   :titlesonly:
 
   tutorials/quick_start.ipynb
+  tutorials/local_files.ipynb
   tutorials/matched-filter.rst
   tutorials/template-creation.rst
   tutorials/subspace.rst
