@@ -18,8 +18,7 @@ from obspy.clients.earthworm import Client as EWClient
 
 from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.core.match_filter.helpers.processes import (
-    _get_detection_stream, _make_detections, _detect, _make_party,
-    _pre_processor, _prepper, Poison)
+    _get_detection_stream, Poison)
 
 
 Logger = logging.getLogger(__name__)
