@@ -85,8 +85,9 @@ class TestCoreMethods(unittest.TestCase):
         """
         Check that correlations output are the same irrespective of version.
         """
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
+            'test_data')
         template = read(os.path.join(testing_path, 'test_template.ms'))
         template = template[0].data.astype(np.float32)
         image = read(os.path.join(testing_path, 'test_image.ms'))
@@ -605,7 +606,7 @@ class TestMatchCopy(unittest.TestCase):
         """Test copy method"""
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         tribe = Tribe(f.template for f in party.families)
         copied = tribe.copy()
@@ -709,7 +710,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             endtime=st[0].stats.starttime + process_len)
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.family = party.sort()[0].copy()
         cls.t1, cls.t2, cls.template_stachans = (t1, t2, template_stachans)
@@ -1075,7 +1076,7 @@ class TestMatchObjectLight(unittest.TestCase):
     def setUpClass(cls):
         cls.party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
@@ -1725,8 +1726,8 @@ def test_match_filter(plot=False, extract_detections=False,
     import inspect
     # Read in the synthetic dataset
     templates = []
-    testing_path = os.path.join(os.path.dirname(os.path.abspath(
-        inspect.getfile(inspect.currentframe()))), 'test_data',
+    testing_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
+        inspect.getfile(inspect.currentframe())))), 'test_data',
         'synthetic_data')
     templates.append(read(os.path.join(testing_path, 'synth_template_0.ms')))
     templates.append(read(os.path.join(testing_path, 'synth_template_1.ms')))
