@@ -296,6 +296,20 @@ class TestPeakFindSpeeds:
 
     @pytest.fixture(scope='class')
     @pytest.append_name(datasets_1d)
+    def all_above_threshold(self):
+        """ array with large spikes """
+        arr = np.ones(self.data_len, dtype=float)
+        spike_locs = np.random.randint(0, self.data_len, size=500)
+        threshold = 0.5
+        for spike_loc in spike_locs:
+            arr[spike_loc] = 10 * spike_loc
+            # Deliberately make each peak different height. When all peaks
+            # are the same height C and Python return different (but both
+            # valid) peaks).
+        return arr, spike_locs, threshold
+
+    @pytest.fixture(scope='class')
+    @pytest.append_name(datasets_1d)
     def clustered(self):
         arr = np.random.randn(self.data_len)
         spike_locs = np.random.randint(0, self.data_len / 10, size=200)
@@ -453,8 +467,6 @@ class TestPeakFindSpeeds:
             np.save("test_c_peaks_parallel.npy", parallel_c_peaks)
             np.save("test_py_peaks_serial.npy", serial_py_peaks)
             np.save("test_py_peaks_parallel.npy", parallel_py_peaks)
-
-
 
     def test_noisy_timings(self, noisy_multi_array):
         arr = noisy_multi_array.astype(np.float32)

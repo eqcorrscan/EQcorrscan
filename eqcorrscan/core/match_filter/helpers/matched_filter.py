@@ -351,7 +351,8 @@ def normxcorr2(template, image):
     """
     array_xcorr = get_array_xcorr()
     # Check that we have been passed numpy arrays
-    if type(template) != np.ndarray or type(image) != np.ndarray:
+    if (not isinstance(template, np.ndarray)
+            or not isinstance(image, np.ndarray)):
         Logger.error(
             'You have not provided numpy arrays, I will not convert them')
         return 'NaN'

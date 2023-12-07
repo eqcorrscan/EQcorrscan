@@ -10,7 +10,6 @@ the data using obspy modules (which also rely on scipy and numpy).
     (https://www.gnu.org/copyleft/lesser.html)
 """
 import os
-import time
 
 import numpy as np
 import logging
@@ -693,7 +692,8 @@ def _resample(data, delta, factor, sampling_rate, large_w, _id):
     if data.dtype == np.dtype('float64'):
         _floater = np.float64  # Retain double-precision
     else:
-        _floater = np.float32  # Use single-precision where possible to reduce memory
+        _floater = np.float32
+        # Use single-precision where possible to reduce memory
     data = data.astype(_floater)
     df = _floater(1.0) / (npts * delta)
     num = np.int32(npts / factor)
@@ -1073,6 +1073,9 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         [key.split('.') + [i] for key, value in template_ids.items()
          for i in range(value)])
     seed_ids = [('.'.join(seed_id[0:-1]), seed_id[-1]) for seed_id in seed_ids]
+    Logger.info(f"Prepping for {len(seed_ids)} channels that share seed-ids "
+                f"between templates and stream")
+    Logger.debug(f"Shared seed-ids: {seed_ids}")
 
     for channel_number, seed_id in enumerate(template_ids.keys()):
         stream_data = np.zeros(stream_length, dtype=np.float32)

@@ -18,14 +18,10 @@ import shutil
 import logging
 
 from obspy import UTCDateTime, Stream, Catalog
-from obspy.core.event import (
-    StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
 
 from eqcorrscan.utils.pre_processing import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.mag_calc import relative_magnitude
 
 Logger = logging.getLogger(__name__)
 
@@ -766,17 +762,17 @@ class Family(object):
             template_stream = stream
         if not pre_processed:
             processed_streams = _group_process(
-                    filt_order=self.template.filt_order,
-                    highcut=self.template.highcut,
-                    lowcut=self.template.lowcut,
-                    samp_rate=self.template.samp_rate,
-                    process_length=self.template.process_length,
-                    parallel=parallel,
-                    cores=process_cores,
-                    stream=template_stream.merge().copy(),
-                    daylong=False,
-                    ignore_length=ignore_length,
-                    overlap=0.0, ignore_bad_data=ignore_bad_data)
+                filt_order=self.template.filt_order,
+                highcut=self.template.highcut,
+                lowcut=self.template.lowcut,
+                samp_rate=self.template.samp_rate,
+                process_length=self.template.process_length,
+                parallel=parallel,
+                cores=process_cores,
+                stream=template_stream.merge().copy(),
+                daylong=False,
+                ignore_length=ignore_length,
+                overlap=0.0, ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
             for p in processed_streams:
                 processed_stream += p

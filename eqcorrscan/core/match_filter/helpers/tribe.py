@@ -17,12 +17,12 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List
+from typing import List, Set
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
 
-from obspy import Stream
+from obspy import Stream, UTCDateTime
 
 from eqcorrscan.core.match_filter.template import (
     Template, group_templates_by_seedid)
@@ -44,14 +44,34 @@ Logger = logging.getLogger(__name__)
 
 
 def _download_st(
-    starttime,
-    endtime,
-    buff,
-    min_gap,
-    template_channel_ids,
+    starttime: UTCDateTime,
+    endtime: UTCDateTime,
+    buff: float,
+    min_gap: float,
+    template_channel_ids: List[tuple],
     client,
-    retries
-):
+    retries: int
+) -> Stream:
+    """
+    Helper to download a stream from a client for a given start and end time.
+
+    Applies `buff` to extend download to (heopfully) ensure all data are
+    provided. Retries download up to `retries` times, and discards data
+    with large gaps.
+
+    :param starttime: Start time to download data from
+    :param endtime: End time to download data to
+    :param buff:
+        Length to pad downloaded data by - some clients do not provide all
+        data requested.
+    :param min_gap: See core.match_filter.tribe.client_detect
+    :param template_channel_ids:
+    :param client:
+        Client-like object with at least a .get_waveforms_bulk method.
+    :param retries: See core.match_filter.tribe.client_detect
+
+    :return: Stream as downloaded.
+    """
     from obspy.clients.fdsn.header import FDSNException
 
     bulk_info = []
@@ -71,8 +91,8 @@ def _download_st(
         except FDSNException as e:
             if "Split the request in smaller" in " ".join(e.args):
                 Logger.warning(
-                   "Datacentre does not support large requests: "
-                   "splitting request into smaller chunks")
+                    "Datacentre does not support large requests: "
+                    "splitting request into smaller chunks")
                 st = Stream()
                 for _bulk in bulk_info:
                     try:
@@ -141,10 +161,44 @@ def _download_st(
 
 
 def _pre_process(
-    st, template_ids, pre_processed, filt_order, highcut, lowcut, samp_rate,
-    process_length, parallel, cores, daylong, ignore_length, ignore_bad_data,
-    overlap, **kwargs
-):
+    st: Stream,
+    template_ids: set,
+    pre_processed: bool,
+    filt_order: int,
+    highcut: float,
+    lowcut: float,
+    samp_rate: float,
+    process_length: float,
+    parallel: bool,
+    cores: int,
+    daylong: bool,
+    ignore_length: bool,
+    ignore_bad_data: bool,
+    overlap: float, **kwargs
+) -> Stream:
+    """
+    Basic matched-filter processing flow. Data are processing in-place.
+
+    :param st: Stream to process
+    :param template_ids:
+        Iterable of seed ids in the template set. Only channels matching these
+        seed ids will be retained.
+    :param pre_processed: See core.match_filter.tribe.detect
+    :param filt_order: See utils.pre_processing.multi_process
+    :param highcut: See utils.pre_processing.multi_process
+    :param lowcut: See utils.pre_processing.multi_process
+    :param samp_rate: See utils.pre_processing.multi_process
+    :param process_length: See utils.pre_processing.multi_process
+    :param parallel: See utils.pre_processing.multi_process
+    :param cores: See utils.pre_processing.multi_process
+    :param daylong: See utils.pre_processing.multi_process
+    :param ignore_length: See utils.pre_processing.multi_process
+    :param overlap: See core.match_filter.tribe.detect
+    :param ignore_bad_data: See utils.pre_processing.multi_process
+    :param template_ids:
+
+    :return: Processed stream
+    """
     # Retain only channels that have matches in templates
     Logger.info(template_ids)
     st = Stream([tr for tr in st if tr.id in template_ids])
@@ -176,7 +230,21 @@ def _pre_process(
     return st_chunks
 
 
-def _group(sids, templates, group_size, groups):
+def _group(
+    sids: Set[str],
+    templates: List[Template],
+    group_size: int,
+    groups: List[List[str]] = None
+) -> List[List[Template]]:
+    """
+    Group templates either by seed id, or using pre-computed groups
+
+    :param sids: Seed IDs available in stream
+    :param templates: Templates to group
+    :param group_size: Maximum group size
+    :param groups: [Optional] List of List of template names in groups
+    :return: Groups of templates.
+    """
     Logger.info(f"Grouping for {sids}")
     if groups:
         Logger.info("Using pre-computed groups")
@@ -200,11 +268,55 @@ def _group(sids, templates, group_size, groups):
 
 
 def _corr_and_peaks(
-    templates, template_names, stream, xcorr_func, concurrency, cores, i,
-    export_cccsums, parallel, peak_cores, threshold, threshold_type,
-    trig_int, sampling_rate, full_peaks, plot, plotdir, plot_format,
-    prepped=False, **kwargs
+    templates: List[Template],
+    template_names: List[str],
+    stream: Stream,
+    xcorr_func: str,
+    concurrency: str,
+    cores: int,
+    i: int,
+    export_cccsums: bool,
+    parallel: bool,
+    peak_cores: int,
+    threshold: float,
+    threshold_type: str,
+    trig_int: float,
+    sampling_rate: float,
+    full_peaks: bool,
+    plot: bool,
+    plotdir: str,
+    plot_format: str,
+    prepped: bool = False,
+    **kwargs
 ):
+    """
+    Compute cross-correlation between templates and a stream. Returns peaks in
+     correlation function.
+
+    :param templates: Templates to correlate
+    :param template_names: Names of templates (ordered as templates)
+    :param stream: Stream to correlate templates with
+    :param xcorr_func: Cross-correlation function to use
+    :param concurrency: Concurrency of cross-correlation function
+    :param cores: Cores (threads) to use for cross-correlation
+    :param i: Group-id (internal book-keeping)
+    :param export_cccsums: Whether to export the raw cross-correlation sums
+    :param parallel: Whether to compute peaks in parallel
+    :param peak_cores: Number of cores (threads) to use for peak finding
+    :param threshold: Threshold value (user-defined)
+    :param threshold_type: Threshold type (e.g. MAD, ...)
+    :param trig_int: Trigger interval in seconds
+    :param sampling_rate: Sampling rate of data
+    :param full_peaks: Whether to compute full peaks, or fast peaks.
+    :param plot: Whether to plot correlation sums and peaks or not
+    :param plotdir: Where to save plots if made
+    :param plot_format: What format (extension) to use for plots.
+    :param prepped:
+        Whether data have already been prepared for correlation or not.
+        If prepped, inputs change for a specific xcorr-function, see code.
+
+    :return: Peaks, thresholds, number of channels, channels for each template
+    """
     # Special cases for fmf and fftw to minimize reshaping time.
     Logger.info(
         f"Starting correlation run for template group {i}")
@@ -318,6 +430,27 @@ def _threshold(
     plotdir: str,
     plot_format: str,
 ):
+    """
+    Find peaks within correlation functions for given thresholds.
+
+    :param cccsums: Numpy array of correlations [templates x samples]
+    :param no_chans:
+        Number of channels for each correlation (ordered as cccsums)
+    :param template_names:
+        Template names for each correlation (ordered as cccsums)
+    :param threshold: Input threshold value
+    :param threshold_type: Input threshold type (e.g. MAD, ...)
+    :param trig_int: Trigger interval in SAMPLES.
+    :param parallel: Whether to compute peaks in parallel
+    :param full_peaks: Whether to compute full peaks or not
+    :param peak_cores: Number of cores (threads) to use for peak finding.
+    :param plot: Whether to plot the peak finding
+    :param stream: Stream for plotting (not needed otherwise)
+    :param plotdir: Directory to write plots to
+    :param plot_format: Format to save plots in
+
+    :return: (all peaks, used thresholds)
+    """
     Logger.debug(f"Got cccsums shaped {cccsums.shape}")
     Logger.debug(f"From {len(template_names)} templates")
 
@@ -326,7 +459,7 @@ def _threshold(
         thresholds = [threshold for _ in range(len(cccsums))]
     elif str(threshold_type) == str('MAD'):
         median_cores = min([peak_cores, len(cccsums)])
-        if cccsums.size < 2e7:  # par not worth it
+        if cccsums.size < 2e7:  # parallelism not worth it
             median_cores = 1
         with ThreadPoolExecutor(max_workers=median_cores) as executor:
             # Because numpy releases GIL threading can use
@@ -361,14 +494,27 @@ def _threshold(
 
 
 def _detect(
-    template_names,
-    all_peaks,
-    starttime,
-    delta,
-    no_chans,
-    chans,
-    thresholds
-):
+    template_names: List[str],
+    all_peaks: np.ndarray,
+    starttime: UTCDateTime,
+    delta: float,
+    no_chans: List[int],
+    chans: List[List[str]],
+    thresholds: List[float]
+) -> List[Detection]:
+    """
+    Convert peaks to Detection objects
+
+    :param template_names: Lis of template names
+    :param all_peaks: Array of peaks orders as template_names
+    :param starttime: Starttime for peak index relative time
+    :param delta: Sample interval to convert peaks from samples to time
+    :param no_chans: Number of channels used (ordered as template_names)
+    :param chans: Channels used (ordered as template_names)
+    :param thresholds: Thresholds used (ordered as template_names)
+
+    :return: List of detections.
+    """
     tic = default_timer()
     detections = []
     for i, template_name in enumerate(template_names):
@@ -396,17 +542,26 @@ def _detect(
     return detections
 
 
-def _load_template(t_file):
+def _load_template(t_file: str) -> Template:
+    """ Load a pickled template from a file """
     try:
         with open(t_file, "rb") as f:
             t = pickle.load(f)
     except Exception as e:
         Logger.warning(f"Could not read template from {t_file} due to {e}")
         return None
+    assert isinstance(t, Template), "Loaded object is not a Template, aborting"
     return t
 
 
-def _read_template_db(template_file_dict: dict) -> List:
+def _read_template_db(template_file_dict: dict) -> List[Template]:
+    """
+    Read templates from files on disk.
+
+    :param template_file_dict: Template file names keyed by template name
+
+    :returns: list of templates
+    """
     with ThreadPoolExecutor() as executor:
         templates = executor.map(_load_template, template_file_dict.values())
     templates = [t for t in templates if t]
@@ -418,21 +573,31 @@ def _read_template_db(template_file_dict: dict) -> List:
 
 
 def _make_party(
-    detections,
-    threshold,
-    threshold_type,
-    templates,
-    chunk_start,
-    chunk_id,
-    save_progress
-):
+    detections: List[Detection],
+    threshold: float,
+    threshold_type: str,
+    templates: List[Template],
+    chunk_start: UTCDateTime,
+    chunk_id: int,
+    save_progress: bool
+) -> str:
+    """
+    Construct a Party from Detections.
+
+    :param detections: List of detections
+    :param threshold: Input threshold
+    :param threshold_type: Input threshold type
+    :param templates: Templates used in detections
+    :param chunk_start: Starttime of party epoch
+    :param chunk_id: Internal index for party epoch
+    :param save_progress: Whether to save progress or not
+
+    :return: The filename the party has been pickled to.
+    """
     chunk_dir = os.path.join(
-            ".parties", "{chunk_start.year}",
-            "{chunk_start.julday:03d}")
+        ".parties", "{chunk_start.year}", "{chunk_start.julday:03d}")
     chunk_file_str = os.path.join(
-        chunk_dir,
-        "chunk_party_{chunk_start_str}"
-        "_{chunk_id}_{pid}.pkl")
+        chunk_dir, "chunk_party_{chunk_start_str}_{chunk_id}_{pid}.pkl")
     # Process ID included in chunk file to avoid multiple processes writing
     # and reading and removing the same files.
 

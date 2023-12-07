@@ -100,7 +100,9 @@ def _badlink(info, base):
 
 
 def _safemembers(members):
-    """Check members of a tar archive for safety.
+    """
+    Check members of a tar archive for safety.
+
     Ensure that they do not contain paths or links outside of where we
     need them - this would only happen if the archive wasn't made by
     eqcorrscan.

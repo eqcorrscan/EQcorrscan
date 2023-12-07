@@ -6,11 +6,7 @@ import unittest
 import os
 import pytest
 
-from obspy import read
-
-from eqcorrscan.tutorials.template_creation import mktemplates
 from eqcorrscan.tutorials import subspace
-from eqcorrscan.core.match_filter import read_detections
 
 
 class TestTutorialScripts(unittest.TestCase):

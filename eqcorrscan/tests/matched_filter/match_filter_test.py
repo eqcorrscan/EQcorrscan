@@ -8,11 +8,11 @@ import unittest
 import pytest
 import logging
 
+
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.header import FDSNException
-from obspy.clients.earthworm import Client as EWClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
@@ -22,9 +22,10 @@ from eqcorrscan.core.match_filter import (
     read_party, read_tribe, _spike_test)
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
-from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.core.match_filter.template import (
     quick_group_templates, group_templates_by_seedid)
+from eqcorrscan.core.match_filter.helpers.tribe import _group
+
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
@@ -32,16 +33,6 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 
 
 Logger = logging.getLogger(__name__)
-
-
-class TestHelpers(unittest.TestCase):
-    def test_monkey_patching(self):
-        """ Test that monkey patching a client works. """
-        client = EWClient("pubavo1.wr.usgs.gov", 16022)
-        self.assertFalse(hasattr(client, "get_waveforms_bulk"))
-        client = get_waveform_client(client)
-        self.assertTrue(hasattr(client, "get_waveforms_bulk"))
-        # TODO: This should test that the method actually works as expected.
 
 
 class TestCoreMethods(unittest.TestCase):
@@ -94,8 +85,9 @@ class TestCoreMethods(unittest.TestCase):
         """
         Check that correlations output are the same irrespective of version.
         """
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
+            'test_data')
         template = read(os.path.join(testing_path, 'test_template.ms'))
         template = template[0].data.astype(np.float32)
         image = read(os.path.join(testing_path, 'test_image.ms'))
@@ -614,7 +606,7 @@ class TestMatchCopy(unittest.TestCase):
         """Test copy method"""
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         tribe = Tribe(f.template for f in party.families)
         copied = tribe.copy()
@@ -718,7 +710,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             endtime=st[0].stats.starttime + process_len)
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.family = party.sort()[0].copy()
         cls.t1, cls.t2, cls.template_stachans = (t1, t2, template_stachans)
@@ -823,8 +815,8 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             stream = self.unproc_st.copy()
             stream[0] = (stream[0].copy().trim(
-                stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
-                         stream[0].trim(
+                stream[0].stats.starttime,
+                stream[0].stats.starttime + 1800) + stream[0].trim(
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
@@ -968,9 +960,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.party.copy()
         st = self.unproc_st.copy()
         cut_start = st[0].stats.starttime + (
-                0.5 * party[0].template.process_length)
+            0.5 * party[0].template.process_length)
         cut_end = st[0].stats.starttime + (
-                0.8 * party[0].template.process_length)
+            0.8 * party[0].template.process_length)
         st = st.cutout(cut_start, cut_end)
         catalog = party.lag_calc(stream=st, pre_processed=False,
                                  ignore_length=True, ignore_bad_data=True)
@@ -1084,7 +1076,7 @@ class TestMatchObjectLight(unittest.TestCase):
     def setUpClass(cls):
         cls.party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
@@ -1159,7 +1151,7 @@ class TestMatchObjectLight(unittest.TestCase):
         added = self.tribe.copy()
         # Check that we can't add same named templates
         with self.assertRaises(NotImplementedError):
-            bob = added + added[0]
+            _ = added + added[0]  # noqa: F841
         with self.assertRaises(NotImplementedError):
             added += added[0]
         # Check that addition works for differently named templates
@@ -1633,11 +1625,21 @@ class TestTemplateGrouping(unittest.TestCase):
             tr.stats.channel = "ABC"
 
         groups = group_templates_by_seedid(
-             templates=edited_templates, st_seed_ids=self.st_seed_ids,
-             group_size=10)
+            templates=edited_templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]),
                          len(self.templates) - 1)
+
+    def test_precomputed_groups(self):
+        presetgroups = [
+            ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18'],
+            ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19']]
+
+        groups = _group(sids=self.st_seed_ids, templates=self.templates,
+                        group_size=10, groups=presetgroups)
+        group_names = [[t.name for t in grp] for grp in groups]
+        self.assertEqual(group_names, presetgroups)
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
@@ -1724,8 +1726,8 @@ def test_match_filter(plot=False, extract_detections=False,
     import inspect
     # Read in the synthetic dataset
     templates = []
-    testing_path = os.path.join(os.path.dirname(os.path.abspath(
-        inspect.getfile(inspect.currentframe()))), 'test_data',
+    testing_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
+        inspect.getfile(inspect.currentframe())))), 'test_data',
         'synthetic_data')
     templates.append(read(os.path.join(testing_path, 'synth_template_0.ms')))
     templates.append(read(os.path.join(testing_path, 'synth_template_1.ms')))

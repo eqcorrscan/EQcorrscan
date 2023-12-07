@@ -79,10 +79,9 @@ you want to see in the tutorials please let us know on github.
   :titlesonly:
 
   tutorials/quick_start.ipynb
-  tutorials/matched-filter.rst
+  tutorials/matched-filter.ipynb
   tutorials/template-creation.rst
   tutorials/subspace.rst
-  tutorials/lag-calc.rst
   tutorials/mag-calc.rst
   tutorials/clustering.rst
 

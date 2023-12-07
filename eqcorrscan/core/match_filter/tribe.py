@@ -23,8 +23,6 @@ import traceback
 import uuid
 import logging
 
-from typing import List
-
 from multiprocessing import Process, Queue, cpu_count
 from queue import Empty
 
@@ -654,7 +652,7 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
                plotdir=None, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               concurrent_processing=True, ignore_length=False,
+               concurrent_processing=False, ignore_length=False,
                ignore_bad_data=False, group_size=None, overlap="calculate",
                full_peaks=False, save_progress=False, process_cores=None,
                pre_processed=False, check_processing=True,
@@ -708,6 +706,8 @@ class Tribe(object):
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -747,8 +747,6 @@ class Tribe(object):
         :type check_processing: bool
         :param check_processing:
             Whether to check that all templates were processed the same.
-        :type return_stream: bool
-        :param return_stream: Whether to return the stream or not.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -858,7 +856,7 @@ class Tribe(object):
         if check_processing:
             assert len(quick_group_templates(self.templates)) == 1, (
                 "Inconsistent template processing parameters found, this is no"
-                " longer supported. Split your tribe using "
+                " longer supported. \nSplit your tribe using "
                 "eqcorrscan.core.match_filter.template.quick_group_templates "
                 "and re-run for each grouped tribe")
         sampling_rate = self.templates[0].samp_rate
@@ -969,7 +967,10 @@ class Tribe(object):
             with open(_chunk_file, "rb") as _f:
                 party += pickle.load(_f)
             if not save_progress:
-                os.remove(_chunk_file)
+                try:
+                    os.remove(_chunk_file)
+                except FileNotFoundError:
+                    pass
             Logger.info(f"Added party from {_chunk_file}, party now "
                         f"contains {len(party)} detections")
 
@@ -1024,13 +1025,11 @@ class Tribe(object):
         party_file_queue = Queue()
 
         # Set up processes
-        # TODO: Could merge this as well and just define a stream getter
-        #  (download for client_detect and just stream.get() for raw detect)
         if not pre_processed:
             pre_processor_process = Process(
                 target=_pre_processor,
                 kwargs=dict(
-                    stream_queue=stream,
+                    input_stream_queue=stream,
                     temp_stream_dir=self._stream_dir,
                     template_ids=template_ids,
                     pre_processed=pre_processed,
@@ -1045,7 +1044,7 @@ class Tribe(object):
                     ignore_length=ignore_length,
                     overlap=overlap,
                     ignore_bad_data=ignore_bad_data,
-                    output_queue=processed_stream_queue,
+                    output_filename_queue=processed_stream_queue,
                     poison_queue=poison_queue,
                 ),
                 name="ProcessProcess"
@@ -1054,7 +1053,7 @@ class Tribe(object):
         prepper_process = Process(
             target=_prepper,
             kwargs=dict(
-                input_stream_queue=processed_stream_queue,
+                input_stream_filename_queue=processed_stream_queue,
                 group_size=group_size,
                 groups=groups,
                 templates=template_db,
@@ -1122,7 +1121,7 @@ class Tribe(object):
                 elif isinstance(to_corr, Poison):
                     Logger.info("Killed in main loop")
                     break
-                starttime, i, stream, template_names, templates,\
+                starttime, i, stream, template_names, templates, \
                     *extras = to_corr
                 inner_kwargs = copy.copy(kwargs)  # We will mangle them
                 # Correlation specific handling to reduce single-threaded time
@@ -1173,18 +1172,25 @@ class Tribe(object):
                 break
             pf = _get_and_check(party_file_queue, poison_queue)
             if pf is None:
+                # Fin - Queue has been finished with.
                 break
             if isinstance(pf, Poison):
-                Logger.error("Killed")
+                Logger.error("Killed while checking for party")
+                killed = True
                 break
             with open(pf, "rb") as f:
                 party += pickle.load(f)
             if not save_progress:
-                os.remove(pf)
+                try:
+                    os.remove(pf)
+                except FileNotFoundError:
+                    pass
 
         # Check for exceptions
         if killed:
             internal_error = poison_queue.get()
+            if isinstance(internal_error, Poison):
+                internal_error = internal_error.value
             Logger.error(f"Raising error {internal_error} in main process")
             # Now we can raise the error
             if internal_error:
@@ -1212,7 +1218,7 @@ class Tribe(object):
                       threshold_type, trig_int, plot=False, plotdir=None,
                       min_gap=None, daylong=False, parallel_process=True,
                       xcorr_func=None, concurrency=None, cores=None,
-                      concurrent_processing=True, ignore_length=False,
+                      concurrent_processing=False, ignore_length=False,
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
@@ -1221,7 +1227,8 @@ class Tribe(object):
         Detect using a Tribe of templates within a continuous stream.
 
         :type client: `obspy.clients.*.Client`
-        :param client: Any obspy client with a dataselect service.
+        :param client:
+            Any obspy client (or client-like object) with a dataselect service.
         :type starttime: :class:`obspy.core.UTCDateTime`
         :param starttime: Start-time for detections.
         :type endtime: :class:`obspy.core.UTCDateTime`
@@ -1272,6 +1279,8 @@ class Tribe(object):
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -1417,6 +1426,10 @@ class Tribe(object):
             concurrent_processing=concurrent_processing, groups=groups)
 
         if not concurrent_processing:
+            Logger.warning("Using concurrent_processing=True can be faster if"
+                           "downloading your data takes a long time. See "
+                           "https://github.com/eqcorrscan/EQcorrscan/pull/544"
+                           "for benchmarks.")
             party = Party()
             if return_stream:
                 full_st = Stream()
@@ -1445,12 +1458,12 @@ class Tribe(object):
         downloader = Process(
             target=_get_detection_stream,
             kwargs=dict(
-                time_queue=time_queue,
+                input_time_queue=time_queue,
                 client=client,
                 retries=retries,
                 min_gap=min_gap,
                 buff=buff,
-                out_queue=stream_queue,
+                output_filename_queue=stream_queue,
                 poison_queue=poison_queue,
                 temp_stream_dir=self._stream_dir,
                 full_stream_dir=full_stream_dir,
