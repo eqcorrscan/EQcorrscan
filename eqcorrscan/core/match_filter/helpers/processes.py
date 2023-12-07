@@ -60,10 +60,14 @@ class Poison(Exception):
         self.value = value
 
     def __repr__(self):
-        return self.value
+        """
+        >>> Poison(Exception('alf'))
+        Poison(Exception('alf'))
+        """
+        return f"Poison({self.value.__repr__()})"
 
     def __str__(self):
-        return self.value
+        return self.__repr__()
 
 
 def _get_and_check(input_queue: Queue, poison_queue: Queue, step: float = 0.5):
@@ -193,6 +197,7 @@ def _get_detection_stream(
                 Logger.debug("Waiting for output_queue to not be full")
                 tic = default_timer()
         if killed:
+            Logger.error("Killed")
             break
         try:
             next_times = _get_and_check(input_time_queue, poison_queue)
@@ -255,7 +260,8 @@ def _get_detection_stream(
                 del chunk
         except Exception as e:
             Logger.error(f"Caught exception {e} in downloader")
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
+            traceback.print_tb(e.__traceback__)
             break
     output_filename_queue.put(None)
     return
@@ -351,7 +357,7 @@ def _pre_processor(
         except Exception as e:
             Logger.error(
                 f"Caught exception in processor:\n {e}")
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
             traceback.print_tb(e.__traceback__)
     output_filename_queue.put(None)
     return
@@ -400,7 +406,7 @@ def _prepper(
             templates = _read_template_db(templates)
         except Exception as e:
             Logger.error(f"Could not read from db due to {e}")
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
             return
 
     while True:
@@ -427,23 +433,23 @@ def _prepper(
             except Exception as e:
                 Logger.error(
                     f"Could not write temporary file {st_file} due to {e}")
-                poison_queue.put(e)
+                poison_queue.put(Poison(e))
                 break
         Logger.info(f"Reading stream from {st_file}")
         try:
             st = _unpickle_stream(st_file)
         except Exception as e:
             Logger.error(f"Error reading {st_file}: {e}")
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
             break
         st_sids = {tr.id for tr in st}
         if len(st_sids) < len(st):
             _sids = [tr.id for tr in st]
             _duplicate_sids = {
                 sid for sid in st_sids if _sids.count(sid) > 1}
-            poison_queue.put(NotImplementedError(
+            poison_queue.put(Poison(NotImplementedError(
                 f"Multiple channels in continuous data for "
-                f"{', '.join(_duplicate_sids)}"))
+                f"{', '.join(_duplicate_sids)}")))
             break
         # Do the grouping for this stream
         Logger.info(f"Grouping {len(templates)} templates into groups "
@@ -453,7 +459,7 @@ def _prepper(
                                      group_size=group_size, groups=groups)
         except Exception as e:
             Logger.error(e)
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
             break
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
@@ -525,7 +531,7 @@ def _prepper(
             except Exception as e:
                 Logger.error(f"Caught exception in Prepper: {e}")
                 traceback.print_tb(e.__traceback__)
-                poison_queue.put(e)
+                poison_queue.put(Poison(e))
             i += 1
         Logger.info(f"Removing temporary {st_file}")
         os.remove(st_file)
@@ -599,7 +605,7 @@ def _make_detections(
             Logger.error(
                 f"Caught exception in detector:\n {e}")
             traceback.print_tb(e.__traceback__)
-            poison_queue.put(e)
+            poison_queue.put(Poison(e))
     output_queue.put(None)
     return
 

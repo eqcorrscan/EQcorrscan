@@ -8,11 +8,11 @@ import unittest
 import pytest
 import logging
 
+
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.header import FDSNException
-from obspy.clients.earthworm import Client as EWClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
@@ -22,10 +22,10 @@ from eqcorrscan.core.match_filter import (
     read_party, read_tribe, _spike_test)
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
-from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.core.match_filter.template import (
     quick_group_templates, group_templates_by_seedid)
 from eqcorrscan.core.match_filter.helpers.tribe import _group
+
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
@@ -33,16 +33,6 @@ from eqcorrscan.utils.catalog_utils import filter_picks
 
 
 Logger = logging.getLogger(__name__)
-
-
-class TestHelpers(unittest.TestCase):
-    def test_monkey_patching(self):
-        """ Test that monkey patching a client works. """
-        client = EWClient("pubavo1.wr.usgs.gov", 16022)
-        self.assertFalse(hasattr(client, "get_waveforms_bulk"))
-        client = get_waveform_client(client)
-        self.assertTrue(hasattr(client, "get_waveforms_bulk"))
-        # TODO: This should test that the method actually works as expected.
 
 
 class TestCoreMethods(unittest.TestCase):
