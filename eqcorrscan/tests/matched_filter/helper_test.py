@@ -36,7 +36,7 @@ class TestHelperFunctions(unittest.TestCase):
 class TestGetDetectionStreamProcess(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.wait_time = 1
+        cls.wait_time = 5
         process_length = 360
         cls.kwargs = dict(
             template_channel_ids=[("NZ", "WVZ", "10", "HHZ")],
