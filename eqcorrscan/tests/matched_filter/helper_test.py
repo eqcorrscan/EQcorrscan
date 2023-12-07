@@ -212,6 +212,7 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
         time.sleep(self.wait_time)
         poison = kwargs['poison_queue'].get()
         self.assertIsInstance(poison, Poison)
+        time.sleep(self.wait_time)
         self.assertFalse(process.is_alive())
         # Cleanup
         shutil.rmtree(kwargs['temp_stream_dir'])
