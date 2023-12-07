@@ -60,13 +60,13 @@ class Poison(Exception):
         self.value = value
 
     def __repr__(self):
-        """
-        >>> Poison(Exception('alf'))
-        Poison(Exception('alf'))
-        """
         return f"Poison({self.value.__repr__()})"
 
     def __str__(self):
+        """
+        >>> print(Poison(Exception('alf')))
+        Poison(Exception('alf'))
+        """
         return self.__repr__()
 
 
