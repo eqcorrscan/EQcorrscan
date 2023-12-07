@@ -1189,6 +1189,8 @@ class Tribe(object):
         # Check for exceptions
         if killed:
             internal_error = poison_queue.get()
+            if isinstance(internal_error, Poison):
+                internal_error = internal_error.value
             Logger.error(f"Raising error {internal_error} in main process")
             # Now we can raise the error
             if internal_error:
