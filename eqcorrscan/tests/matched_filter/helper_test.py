@@ -210,7 +210,7 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
         kwargs['input_time_queue'].put(None)
 
         time.sleep(self.wait_time)
-        poison = kwargs['poison_queue'].get_nowait()
+        poison = kwargs['poison_queue'].get()
         self.assertIsInstance(poison, Poison)
         self.assertFalse(process.is_alive())
         # Cleanup
