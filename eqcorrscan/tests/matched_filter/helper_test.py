@@ -2,6 +2,7 @@
 Test the helpers for EQcorrscan's matched-filter codes.
 """
 
+import abc
 import copy
 import os.path
 import time
@@ -33,21 +34,34 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertTrue(hasattr(client, "get_waveforms_bulk"))
 
 
-class TestGetDetectionStreamProcess(unittest.TestCase):
+class ProcessTests(abc.ABC, unittest.TestCase):
+    directories_to_nuke = []
+    wait_time = 5
+    kwargs = dict()
+    process = None
+
+    @classmethod
+    def tearDownClass(cls):
+        for _dir in cls.directories_to_nuke:
+            try:
+                shutil.rmtree(_dir)
+            except FileNotFoundError:
+                pass
+
+
+class TestGetDetectionStreamProcess(ProcessTests):
+    directories_to_nuke = []
+    wait_time = 5
+
     @classmethod
     def setUpClass(cls):
-        cls.wait_time = 5
         process_length = 360
-        cls.kwargs = dict(
+        cls.global_kwargs = dict(
             template_channel_ids=[("NZ", "WVZ", "10", "HHZ")],
             client=Client("GEONET"),
-            # input_time_queue=input_queue,
             retries=3,
             min_gap=0.0,
             buff=3,
-            # output_filename_queue=output_queue,
-            # poison_queue=poison_queue,
-            # temp_stream_dir=temp_stream_dir,
             full_stream_dir=None,
             pre_process=False,
             parallel_process=True,
@@ -60,113 +74,74 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
             highcut=20,
             lowcut=2,
             samp_rate=50,
-            process_length=process_length)
-        # Queues need to be managed by individual tests
-        # input_queue = Queue()
-        # poison_queue = Queue()
-        # output_queue = Queue()
-        # temp_stream_dir = tempfile.mkdtemp()
+            process_length=process_length,
+        )
+
+    def setUp(self):
+        # Make a copy of the class-wide kwargs
+        self.kwargs = copy.copy(self.global_kwargs)
+        self.kwargs.update(
+            dict(input_time_queue=Queue(),
+                 poison_queue=Queue(),
+                 output_filename_queue=Queue(),
+                 temp_stream_dir=tempfile.mkdtemp()))
+        Logger.info(self.kwargs)
+         # Cleanup
+        self.directories_to_nuke.append(self.kwargs['temp_stream_dir'])
 
     def test_poisoning(self):
-        kwargs = copy.copy(self.kwargs)
-        kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp()))
-        process = Process(
-            target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
-
-        process.start()
-
-        # Test death
-        kwargs['poison_queue'].put(Exception("TestException"))
-        time.sleep(self.wait_time)
-
-        self.assertFalse(process.is_alive())
-
-        # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
+        self.process = Process(
+            target=_get_detection_stream, kwargs=self.kwargs,
+            name="TestProcess")
+        poisoning(obj=self)
 
     def test_poisoning_while_waiting_on_output(self):
-        kwargs = copy.copy(self.kwargs)
-        kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp()))
-        kwargs['output_filename_queue'].put("this_is_a_test")
-        process = Process(
-            target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
-        process.start()
-        # Test death
-        kwargs['poison_queue'].put(Exception("TestException"))
-        time.sleep(self.wait_time)
-        self.assertFalse(process.is_alive())
-        # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
+        self.process = Process(
+            target=_get_detection_stream, kwargs=self.kwargs,
+            name="TestProcess")
+        poisoning_while_waiting_on_output(obj=self)
 
     def test_poisoning_from_input(self):
-        kwargs = copy.copy(self.kwargs)
-        kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp()))
-        process = Process(
-            target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
-        process.start()
-        # Test death
-        kwargs['input_time_queue'].put(Poison(Exception("TestException")))
-        time.sleep(self.wait_time)
-        self.assertFalse(process.is_alive())
-        # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
+        self.process = Process(
+            target=_get_detection_stream, kwargs=self.kwargs,
+            name="TestProcess")
+        poisoning_from_input(obj=self)
 
     def test_normal_operation(self):
-        kwargs = copy.copy(self.kwargs)
-        kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp()))
-        process = Process(
-            target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
-        process.start()
+        self.process = Process(
+            target=_get_detection_stream, kwargs=self.kwargs,
+            name="TestProcess")
+        self.process.start()
 
         # Populate time queue
-        kwargs['input_time_queue'].put((UTCDateTime(2021, 1, 1),
-                                        UTCDateTime(2021, 1, 1, 0, 10)))
-        kwargs['input_time_queue'].put(None)
+        self.kwargs['input_time_queue'].put(
+            (UTCDateTime(2021, 1, 1),
+             UTCDateTime(2021, 1, 1, 0, 10)))
+        self.kwargs['input_time_queue'].put(None)
 
         # Get the output
-        filename = kwargs['output_filename_queue'].get()
+        filename = self.kwargs['output_filename_queue'].get()
         self.assertTrue(os.path.isfile(filename))
-        self.assertEqual(kwargs['output_filename_queue'].get(), None)
+        self.assertEqual(self.kwargs['output_filename_queue'].get(), None)
 
         # Wait for the process to end
         time.sleep(self.wait_time)
-        self.assertFalse(process.is_alive())
-        # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
+        self.assertFalse(self.process.is_alive())
 
     def test_full_stream_operation(self):
         kwargs = copy.copy(self.kwargs)
         kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp(),
             full_stream_dir=tempfile.mkdtemp(),
-            pre_process=True,
-        ))
+            pre_process=True,))
         process = Process(
-            target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
+            target=_get_detection_stream, kwargs=kwargs,
+            name="TestProcess")
         process.start()
 
         # Populate time queue
-        kwargs['input_time_queue'].put((UTCDateTime(2021, 1, 1),
-                                        UTCDateTime(2021, 1, 1, 0, 10)))
+        kwargs['input_time_queue'].put(
+            (UTCDateTime(2021, 1, 1),
+             UTCDateTime(2021, 1, 1, 0, 10)))
         kwargs['input_time_queue'].put(None)
 
         # Get the output
@@ -187,16 +162,11 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
         self.assertEqual(full_st[0].stats.sampling_rate, 100.0)
 
         # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
-        shutil.rmtree(kwargs['full_stream_dir'])
+        self.directories_to_nuke.append(kwargs['full_stream_dir'])
 
     def test_exception_handling(self):
         kwargs = copy.copy(self.kwargs)
         kwargs.update(dict(
-            input_time_queue=Queue(),
-            poison_queue=Queue(),
-            output_filename_queue=Queue(),
-            temp_stream_dir=tempfile.mkdtemp(),
             overlap="bob",  # This need to be a float! Should raise exception
             pre_process=True,
         ))
@@ -205,8 +175,9 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
         process.start()
 
         # Populate time queue
-        kwargs['input_time_queue'].put((UTCDateTime(2021, 1, 1),
-                                        UTCDateTime(2021, 1, 1, 0, 10)))
+        kwargs['input_time_queue'].put(
+            (UTCDateTime(2021, 1, 1),
+             UTCDateTime(2021, 1, 1, 0, 10)))
         kwargs['input_time_queue'].put(None)
 
         time.sleep(self.wait_time)
@@ -214,8 +185,38 @@ class TestGetDetectionStreamProcess(unittest.TestCase):
         self.assertIsInstance(poison, Poison)
         time.sleep(self.wait_time)
         self.assertFalse(process.is_alive())
-        # Cleanup
-        shutil.rmtree(kwargs['temp_stream_dir'])
+
+
+################################################################################
+#  STANDARD PROCESS DEATH TESTS
+################################################################################
+
+
+def poisoning(obj: ProcessTests):
+    obj.process.start()
+    # Test death
+    obj.kwargs['poison_queue'].put(Exception("TestException"))
+    time.sleep(obj.wait_time)
+    obj.assertFalse(obj.process.is_alive())
+    obj.directories_to_nuke.append(obj.kwargs['temp_stream_dir'])
+
+
+def poisoning_while_waiting_on_output(obj: ProcessTests):
+    obj.process.start()
+    # Test death
+    obj.kwargs['poison_queue'].put(Exception("TestException"))
+    time.sleep(obj.wait_time)
+    obj.assertFalse(obj.process.is_alive())
+    obj.directories_to_nuke.append(obj.kwargs['temp_stream_dir'])
+
+
+def poisoning_from_input(obj):
+    # Test death
+    obj.kwargs['input_time_queue'].put(Poison(Exception("TestException")))
+    time.sleep(obj.wait_time)
+    obj.assertFalse(obj.process.is_alive())
+    # Cleanup
+    shutil.rmtree(obj.kwargs['temp_stream_dir'])
 
 
 if __name__ == '__main__':
