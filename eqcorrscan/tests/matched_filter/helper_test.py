@@ -23,6 +23,13 @@ from eqcorrscan.core.match_filter.helpers.processes import (
     _get_detection_stream, Poison, _prepper, _pre_processor,
     _make_detections)
 
+try:
+    from pytest_cov.embed import cleanup_on_sigterm
+except ImportError:
+    pass
+else:
+    cleanup_on_sigterm()
+
 
 Logger = logging.getLogger(__name__)
 
@@ -113,7 +120,7 @@ class TestPrepper(ProcessTests):
             templates=templates,
             group_size=5,
             groups=None,
-            xcorr_func="fftw",
+            xcorr_func="fmf",
         )
 
     def setUp(self):
@@ -277,6 +284,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         # Wait for the process to end
         time.sleep(self.wait_time)
         self.assertFalse(self.process.is_alive())
+        self.process.join()
 
     def test_full_stream_operation(self):
         kwargs = copy.copy(self.kwargs)
@@ -313,6 +321,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
 
         # Cleanup
         self.directories_to_nuke.append(kwargs['full_stream_dir'])
+        process.join()
 
     def test_exception_handling(self):
         kwargs = copy.copy(self.kwargs)
@@ -335,6 +344,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         self.assertIsInstance(poison, Poison)
         time.sleep(self.wait_time)
         self.assertFalse(process.is_alive())
+        process.join()
 
 
 ###############################################################################
@@ -348,6 +358,7 @@ def poisoning(obj: ProcessTests):
     obj.kwargs['poison_queue'].put(Exception("TestException"))
     time.sleep(obj.wait_time)
     obj.assertFalse(obj.process.is_alive())
+    obj.process.join()
 
 
 def poisoning_while_waiting_on_output(obj: ProcessTests):
@@ -356,13 +367,16 @@ def poisoning_while_waiting_on_output(obj: ProcessTests):
     obj.kwargs['poison_queue'].put(Exception("TestException"))
     time.sleep(obj.wait_time)
     obj.assertFalse(obj.process.is_alive())
+    obj.process.join()
 
 
 def poisoning_from_input(obj: ProcessTests, input_queue: Queue):
+    obj.process.start()
     # Test death
     input_queue.put(Poison(Exception("TestException")))
     time.sleep(obj.wait_time)
     obj.assertFalse(obj.process.is_alive())
+    obj.process.join()
 
 
 if __name__ == '__main__':
