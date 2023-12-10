@@ -32,6 +32,7 @@ else:
 
 
 Logger = logging.getLogger(__name__)
+MAX_WAIT = 15  # Maximum wait time for process to close
 
 
 def get_test_templates():
@@ -65,11 +66,18 @@ class ProcessTests(abc.ABC, unittest.TestCase):
             except FileNotFoundError:
                 pass
 
+    def wait_for_close(self):
+        total_wait = 0
+        while total_wait <= MAX_WAIT:
+            if self.process.is_alive():
+                time.sleep(self.wait_time)
+            else:
+                break
+        self.assertFalse(self.process.is_alive())
+        self.process.join()
+
 
 class TestMakeDetections(ProcessTests):
-    directories_to_nuke = []
-    wait_time = 5
-
     @classmethod
     def setUpClass(cls):
         templates = get_test_templates()
@@ -110,9 +118,6 @@ class TestMakeDetections(ProcessTests):
 
 
 class TestPrepper(ProcessTests):
-    directories_to_nuke = []
-    wait_time = 5
-
     @classmethod
     def setUpClass(cls):
         templates = get_test_templates()
@@ -152,9 +157,6 @@ class TestPrepper(ProcessTests):
 
 
 class TestPreProcessor(ProcessTests):
-    directories_to_nuke = []
-    wait_time = 5
-
     @classmethod
     def setUpClass(cls):
         process_length = 360
@@ -206,9 +208,6 @@ class TestPreProcessor(ProcessTests):
 
 
 class TestGetDetectionStreamProcess(ProcessTests):
-    directories_to_nuke = []
-    wait_time = 5
-
     @classmethod
     def setUpClass(cls):
         process_length = 360
@@ -282,19 +281,17 @@ class TestGetDetectionStreamProcess(ProcessTests):
         self.assertEqual(self.kwargs['output_filename_queue'].get(), None)
 
         # Wait for the process to end
-        time.sleep(self.wait_time)
-        self.assertFalse(self.process.is_alive())
-        self.process.join()
+        self.wait_for_close()
 
     def test_full_stream_operation(self):
         kwargs = copy.copy(self.kwargs)
         kwargs.update(dict(
             full_stream_dir=tempfile.mkdtemp(),
             pre_process=True,))
-        process = Process(
+        self.process = Process(
             target=_get_detection_stream, kwargs=kwargs,
             name="TestProcess")
-        process.start()
+        self.process.start()
 
         # Populate time queue
         kwargs['input_time_queue'].put(
@@ -308,8 +305,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         self.assertEqual(kwargs['output_filename_queue'].get(), None)
 
         # Wait for the process to end
-        time.sleep(self.wait_time)
-        self.assertFalse(process.is_alive())
+        self.wait_for_close()
 
         # Check for full stream
         full_st = read(f"{kwargs['full_stream_dir']}/*")
@@ -321,7 +317,6 @@ class TestGetDetectionStreamProcess(ProcessTests):
 
         # Cleanup
         self.directories_to_nuke.append(kwargs['full_stream_dir'])
-        process.join()
 
     def test_exception_handling(self):
         kwargs = copy.copy(self.kwargs)
@@ -329,9 +324,9 @@ class TestGetDetectionStreamProcess(ProcessTests):
             overlap="bob",  # This need to be a float! Should raise exception
             pre_process=True,
         ))
-        process = Process(
+        self.process = Process(
             target=_get_detection_stream, kwargs=kwargs, name="ProcessProcess")
-        process.start()
+        self.process.start()
 
         # Populate time queue
         kwargs['input_time_queue'].put(
@@ -342,9 +337,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         time.sleep(self.wait_time)
         poison = kwargs['poison_queue'].get()
         self.assertIsInstance(poison, Poison)
-        time.sleep(self.wait_time)
-        self.assertFalse(process.is_alive())
-        process.join()
+        self.wait_for_close()
 
 
 ###############################################################################
@@ -356,27 +349,21 @@ def poisoning(obj: ProcessTests):
     obj.process.start()
     # Test death
     obj.kwargs['poison_queue'].put(Exception("TestException"))
-    time.sleep(obj.wait_time)
-    obj.assertFalse(obj.process.is_alive())
-    obj.process.join()
+    obj.wait_for_close()
 
 
 def poisoning_while_waiting_on_output(obj: ProcessTests):
     obj.process.start()
     # Test death
     obj.kwargs['poison_queue'].put(Exception("TestException"))
-    time.sleep(obj.wait_time)
-    obj.assertFalse(obj.process.is_alive())
-    obj.process.join()
+    obj.wait_for_close()
 
 
 def poisoning_from_input(obj: ProcessTests, input_queue: Queue):
     obj.process.start()
     # Test death
     input_queue.put(Poison(Exception("TestException")))
-    time.sleep(obj.wait_time)
-    obj.assertFalse(obj.process.is_alive())
-    obj.process.join()
+    obj.wait_for_close()
 
 
 if __name__ == '__main__':
