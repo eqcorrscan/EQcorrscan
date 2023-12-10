@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = eqcorrscan
-concurrency = multiprocessing
+concurrency = multiprocessing,thread
 omit =
   eqcorrscan/__init__.py
   eqcorrscan/*/__init__.py
