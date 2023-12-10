@@ -104,6 +104,38 @@ def _check_for_poison(poison_queue: Queue) -> Union[Poison, None]:
     return Poison(poison)
 
 
+def _wait_on_output_to_be_available(
+    poison_queue: Queue,
+    output_queue: Queue,
+    raise_exception: bool = False,
+    item=None
+) -> Union[Poison, None]:
+    """
+
+    :param poison_queue:
+    :param output_queue:
+    :param item:
+    :return:
+    """
+    killed = _check_for_poison(poison_queue)
+    # Wait until output queue is empty to limit rate and memory use
+    tic = default_timer()
+    while output_queue.full():
+        # Keep on checking while we wait
+        killed = _check_for_poison(poison_queue)
+        if killed:
+            break
+        waited = default_timer() - tic
+        if waited > 60:
+            Logger.debug("Waiting for output_queue to not be full")
+            tic = default_timer()
+    if not killed and item:
+        output_queue.put_nowait(item)
+    elif killed and raise_exception:
+        raise killed
+    return killed
+
+
 def _get_detection_stream(
     template_channel_ids: List[tuple],
     client,
@@ -184,18 +216,9 @@ def _get_detection_stream(
     :param process_length: See utils.pre_processing.multi_process
     """
     while True:
-        killed = _check_for_poison(poison_queue)
-        # Wait until output queue is empty to limit rate and memory use
-        tic = default_timer()
-        while output_filename_queue.full():
-            # Keep on checking while we wait
-            killed = _check_for_poison(poison_queue)
-            if killed:
-                break
-            waited = default_timer() - tic
-            if waited > 60:
-                Logger.debug("Waiting for output_queue to not be full")
-                tic = default_timer()
+        killed = _wait_on_output_to_be_available(
+            poison_queue=poison_queue, output_queue=output_filename_queue,
+            item=False)
         if killed:
             Logger.error("Killed")
             break
@@ -256,14 +279,26 @@ def _get_detection_stream(
                     f"_{os.getpid()}.pkl")
                 # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
-                output_filename_queue.put(chunk_file)
+                # Wait for output queue to be ready
+                _wait_on_output_to_be_available(
+                    poison_queue=poison_queue,
+                    output_queue=output_filename_queue,
+                    item=chunk_file, raise_exception=True)
                 del chunk
         except Exception as e:
             Logger.error(f"Caught exception {e} in downloader")
             poison_queue.put(Poison(e))
             traceback.print_tb(e.__traceback__)
             break
-    output_filename_queue.put(None)
+    # Wait for output queue to be ready
+    killed = _wait_on_output_to_be_available(
+        poison_queue=poison_queue,
+        output_queue=output_filename_queue,
+        raise_exception=False)
+    if killed:
+        poison_queue.put_nowait(killed)
+    else:
+        output_filename_queue.put(None)
     return
 
 
@@ -352,14 +387,26 @@ def _pre_processor(
                     f"_{os.getpid()}.pkl")
                 # Add PID to cope with multiple instances operating at once
                 _pickle_stream(chunk, chunk_file)
-                output_filename_queue.put(chunk_file)
+                # Wait for output queue to be ready
+                _wait_on_output_to_be_available(
+                    poison_queue=poison_queue,
+                    output_queue=output_filename_queue,
+                    item=chunk_file, raise_exception=True)
                 del chunk
         except Exception as e:
             Logger.error(
                 f"Caught exception in processor:\n {e}")
-            poison_queue.put(Poison(e))
+            poison_queue.put_nowait(Poison(e))
             traceback.print_tb(e.__traceback__)
-    output_filename_queue.put(None)
+    # Wait for output queue to be ready
+    killed = _wait_on_output_to_be_available(
+        poison_queue=poison_queue,
+        output_queue=output_filename_queue,
+        raise_exception=False)
+    if killed:
+        poison_queue.put_nowait(killed)
+    else:
+        output_filename_queue.put_nowait(None)
     return
 
 
@@ -406,7 +453,7 @@ def _prepper(
             templates = _read_template_db(templates)
         except Exception as e:
             Logger.error(f"Could not read from db due to {e}")
-            poison_queue.put(Poison(e))
+            poison_queue.put_nowait(Poison(e))
             return
 
     while True:
@@ -433,21 +480,21 @@ def _prepper(
             except Exception as e:
                 Logger.error(
                     f"Could not write temporary file {st_file} due to {e}")
-                poison_queue.put(Poison(e))
+                poison_queue.put_nowait(Poison(e))
                 break
         Logger.info(f"Reading stream from {st_file}")
         try:
             st = _unpickle_stream(st_file)
         except Exception as e:
             Logger.error(f"Error reading {st_file}: {e}")
-            poison_queue.put(Poison(e))
+            poison_queue.put_nowait(Poison(e))
             break
         st_sids = {tr.id for tr in st}
         if len(st_sids) < len(st):
             _sids = [tr.id for tr in st]
             _duplicate_sids = {
                 sid for sid in st_sids if _sids.count(sid) > 1}
-            poison_queue.put(Poison(NotImplementedError(
+            poison_queue.put_nowait(Poison(NotImplementedError(
                 f"Multiple channels in continuous data for "
                 f"{', '.join(_duplicate_sids)}")))
             break
@@ -459,7 +506,7 @@ def _prepper(
                                      group_size=group_size, groups=groups)
         except Exception as e:
             Logger.error(e)
-            poison_queue.put(Poison(e))
+            poison_queue.put_nowait(Poison(e))
             break
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
@@ -515,27 +562,45 @@ def _prepper(
                         # Stabilise
                         t_arr, d_arr, multipliers = _fmf_stabilisation(
                             template_arr=t_arr, data_arr=d_arr)
-                        # Put into queue
-                        output_queue.put(
-                            (starttime, i, d_arr, template_names, t_arr,
-                             weights, pads, chans, no_chans))
+                        # Wait for output queue to be ready
+                        _wait_on_output_to_be_available(
+                            poison_queue=poison_queue,
+                            output_queue=output_queue,
+                            item=(starttime, i, d_arr, template_names, t_arr,
+                                  weights, pads, chans, no_chans),
+                            raise_exception=True)
                     else:
                         Logger.info("Prepping data for FFTW")
-                        output_queue.put((
-                            starttime, i, stream_dict, template_names,
-                            template_dict, pad_dict, seed_ids))
+                        # Wait for output queue to be ready
+                        killed = _wait_on_output_to_be_available(
+                            poison_queue=poison_queue,
+                            output_queue=output_queue,
+                            item=(starttime, i, stream_dict, template_names,
+                                  template_dict, pad_dict, seed_ids),
+                            raise_exception=True)
                 else:
                     Logger.info("Prepping data for standard correlation")
-                    output_queue.put(
-                        (starttime, i, _st, template_names, template_streams))
+                    # Wait for output queue to be ready
+                    killed = _wait_on_output_to_be_available(
+                        poison_queue=poison_queue, output_queue=output_queue,
+                        item=(starttime, i, _st, template_names,
+                              template_streams),
+                        raise_exception=True)
             except Exception as e:
                 Logger.error(f"Caught exception in Prepper: {e}")
                 traceback.print_tb(e.__traceback__)
-                poison_queue.put(Poison(e))
+                poison_queue.put_nowait(Poison(e))
             i += 1
         Logger.info(f"Removing temporary {st_file}")
         os.remove(st_file)
-    output_queue.put(None)
+    # Wait for output queue to be ready
+    killed = _wait_on_output_to_be_available(
+        poison_queue=poison_queue, output_queue=output_queue,
+        raise_exception=False)
+    if killed:
+        poison_queue.put_nowait(killed)
+    else:
+        output_queue.put_nowait(None)
     return
 
 
@@ -600,13 +665,13 @@ def _make_detections(
                 chunk_start=starttime, chunk_id=chunk_id,
                 save_progress=save_progress)
             chunk_id += 1
-            output_queue.put(chunk_file)
+            output_queue.put_nowait(chunk_file)
         except Exception as e:
             Logger.error(
                 f"Caught exception in detector:\n {e}")
             traceback.print_tb(e.__traceback__)
-            poison_queue.put(Poison(e))
-    output_queue.put(None)
+            poison_queue.put_nowait(Poison(e))
+    output_queue.put_nowait(None)
     return
 
 

@@ -103,12 +103,6 @@ class TestMakeDetections(ProcessTests):
             name="TestProcess")
         poisoning(obj=self)
 
-    def test_poisoning_while_waiting_on_output(self):
-        self.process = Process(
-            target=_make_detections, kwargs=self.kwargs,
-            name="TestProcess")
-        poisoning_while_waiting_on_output(obj=self)
-
     def test_poisoning_from_input(self):
         self.process = Process(
             target=_make_detections, kwargs=self.kwargs,
@@ -132,7 +126,7 @@ class TestPrepper(ProcessTests):
         self.kwargs = copy.copy(self.global_kwargs)
         self.kwargs.update(dict(
             input_stream_filename_queue=Queue(),
-            output_queue=Queue(),
+            output_queue=Queue(maxsize=1),
             poison_queue=Queue()
         ))
 
@@ -146,7 +140,8 @@ class TestPrepper(ProcessTests):
         self.process = Process(
             target=_prepper, kwargs=self.kwargs,
             name="TestProcess")
-        poisoning_while_waiting_on_output(obj=self)
+        poisoning_while_waiting_on_output(
+            obj=self, output_queue=self.kwargs["output_queue"])
 
     def test_poisoning_from_input(self):
         self.process = Process(
@@ -181,7 +176,7 @@ class TestPreProcessor(ProcessTests):
         self.kwargs.update(dict(
             input_stream_queue=Queue(),
             temp_stream_dir=tempfile.mkdtemp(),
-            output_filename_queue=Queue(),
+            output_filename_queue=Queue(maxsize=1),
             poison_queue=Queue()
         ))
         Logger.info(self.kwargs)
@@ -197,7 +192,8 @@ class TestPreProcessor(ProcessTests):
         self.process = Process(
             target=_pre_processor, kwargs=self.kwargs,
             name="TestProcess")
-        poisoning_while_waiting_on_output(obj=self)
+        poisoning_while_waiting_on_output(
+            obj=self, output_queue=self.kwargs["output_filename_queue"])
 
     def test_poisoning_from_input(self):
         self.process = Process(
@@ -238,7 +234,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         self.kwargs.update(
             dict(input_time_queue=Queue(),
                  poison_queue=Queue(),
-                 output_filename_queue=Queue(),
+                 output_filename_queue=Queue(maxsize=1),
                  temp_stream_dir=tempfile.mkdtemp()))
         Logger.info(self.kwargs)
         # Cleanup
@@ -254,7 +250,8 @@ class TestGetDetectionStreamProcess(ProcessTests):
         self.process = Process(
             target=_get_detection_stream, kwargs=self.kwargs,
             name="TestProcess")
-        poisoning_while_waiting_on_output(obj=self)
+        poisoning_while_waiting_on_output(
+            obj=self, output_queue=self.kwargs['output_filename_queue'])
 
     def test_poisoning_from_input(self):
         self.process = Process(
@@ -352,7 +349,9 @@ def poisoning(obj: ProcessTests):
     obj.wait_for_close()
 
 
-def poisoning_while_waiting_on_output(obj: ProcessTests):
+def poisoning_while_waiting_on_output(obj: ProcessTests, output_queue: Queue):
+    # Fill output queue
+    output_queue.put("This is dog")
     obj.process.start()
     # Test death
     obj.kwargs['poison_queue'].put(Exception("TestException"))
