@@ -399,7 +399,8 @@ def setup_package():
         'cmdclass': {'build_ext': CustomBuildExt},
         'packages': [
             'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
-            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.core.match_filter',
+            'eqcorrscan.core.match_filter.helpers', 'eqcorrscan.utils.lib',
             'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests'],
     }
 

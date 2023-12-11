@@ -776,6 +776,7 @@ class TestStreamCorrelateFunctionsUnstacked:
                 assert np.allclose(cc_1, cc, atol=self.atol * 100)
 
 
+@pytest.mark.serial
 class TestXcorrContextManager:
     # fake_cache = copy.deepcopy(corr.XCOR_FUNCS)
 

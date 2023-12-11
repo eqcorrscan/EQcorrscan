@@ -2,7 +2,7 @@
 ## A python package for the detection and analysis of repeating and near-repeating earthquakes.
 
 ## Citation:
-We have a manuscript on the development of EQcorrscan, if you make use of EQcorrscan please cite the folloing paper:
+We have a manuscript on the development of EQcorrscan, if you make use of EQcorrscan please cite the following paper:
 
 Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., [EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python.](https://pubs.geoscienceworld.org/ssa/srl/article/89/1/173/524875/eqcorrscan-repeating-and-near-repeating-earthquake) Seismological Research Letters *2017*
 

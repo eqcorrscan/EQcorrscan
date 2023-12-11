@@ -56,7 +56,7 @@ jobs:
       - name: run main test suite
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml --dist loadscope
+          py.test -n 2 -m "not serial and not network and not superslow and not slow" --cov-report=xml --dist loadscope
 
       - name: run serial test
         if: always()
@@ -72,7 +72,7 @@ jobs:
           py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3.1.1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -131,7 +131,7 @@ jobs:
           py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3.1.1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -189,7 +189,7 @@ jobs:
           py.test eqcorrscan/tests/correlate_test.py --cov-report=xml
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3.1.1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml

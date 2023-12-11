@@ -24,12 +24,12 @@ from eqcorrscan.core.match_filter import normxcorr2
 from eqcorrscan.core import template_gen, subspace
 
 
-class SeimicityPlottingMethods(unittest.TestCase):
+class SeismicityPlottingMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from obspy.clients.fdsn import Client
         client = Client("IRIS")
-        starttime = UTCDateTime("2000-01-01")
+        starttime = UTCDateTime("2010-01-01")
         endtime = UTCDateTime("2020-05-16")
         cls.catalog = client.get_events(
             starttime=starttime, endtime=endtime, latitude=32.5,
