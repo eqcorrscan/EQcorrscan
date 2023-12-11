@@ -143,13 +143,11 @@ for example:
     >>> # do correlation using a custom function
     >>> def custom_normxcorr(templates, stream, pads, *args, **kwargs):
     ...     # Just to keep example short call other xcorr function
-    ...     print('calling custom xcorr function')
     ...     return numpy_normxcorr(templates, stream, pads, *args, **kwargs)
 
     >>> detections = match_filter(
     ...     ['1'], [template], stream, .5, 'absolute', 1, False,
     ...     xcorr_func=custom_normxcorr) # doctest:+ELLIPSIS
-    calling custom xcorr function...
 
 
 You can also use the set_xcorr object (eqcorrscan.utils.correlate.set_xcorr)
@@ -162,14 +160,12 @@ or within the scope of a context manager:
     >>> with set_xcorr(custom_normxcorr):
     ...     detections = match_filter(['1'], [template], stream, .5,
     ...                               'absolute', 1, False) # doctest:+ELLIPSIS
-    calling custom xcorr function...
 
     >>> # permanently set the xcorr function (until the python kernel restarts)
     >>> set_xcorr(custom_normxcorr)
     default changed to custom_normxcorr
     >>> detections = match_filter(['1'], [template], stream, .5, 'absolute',
     ...                           1, False) # doctest:+ELLIPSIS
-    calling custom xcorr function...
     >>> set_xcorr.revert()  # change it back to the previous state
 
 

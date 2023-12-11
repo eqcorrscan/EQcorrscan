@@ -28,7 +28,9 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import math
+
 from packaging import version
+from timeit import default_timer
 
 from obspy import UTCDateTime
 
@@ -747,39 +749,25 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         list of list of tuples of station, channel for all cross-correlations.
     :rtype: list
     """
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
+    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    assert set(seed_ids)
     # number of threads:
     #   default to using inner threads
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
-    max_threads = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
-    num_cores_inner = kwargs.pop('cores', None)
-    if num_cores_inner is None:
-        num_cores_inner = max_threads
-    num_cores_outer = kwargs.pop('cores_outer', 1)
-    if num_cores_outer > 1:
-        if num_cores_outer > len(stream):
-            Logger.info(
-                "More outer cores than channels, setting to {0}".format(
-                    len(stream)))
-            num_cores_outer = len(stream)
-        if num_cores_outer * num_cores_inner > max_threads:
-            Logger.info("More threads requested than exist, falling back to "
-                        "outer-loop parallelism")
-            num_cores_outer = min(max_threads, num_cores_outer)
-            if 2 * num_cores_outer < max_threads:
-                num_cores_inner = max_threads // num_cores_outer
-            else:
-                num_cores_inner = 1
+    inner_kwargs = copy.copy(kwargs)
+    num_cores_inner, num_cores_outer = _set_inner_outer_threading(
+        inner_kwargs.pop('cores', None),
+        inner_kwargs.pop("cores_outer", None),
+        len(stream))
 
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-    assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer, stack=stack, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **inner_kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -790,6 +778,28 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
               for seed_id in _chans] for _chans in chans]
     return cccsums, no_chans, chans
+
+
+def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
+    max_threads = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+    if num_cores_inner is None:
+        num_cores_inner = max_threads
+    num_cores_outer = num_cores_outer or 1
+    if num_cores_outer > 1:
+        if num_cores_outer > n_chans:
+            Logger.info(
+                "More outer cores than channels, setting to {0}".format(
+                    n_chans))
+            num_cores_outer = n_chans
+        if num_cores_outer * num_cores_inner > max_threads:
+            Logger.info("More threads requested than exist, falling back to "
+                        "outer-loop parallelism")
+            num_cores_outer = min(max_threads, num_cores_outer)
+            if 2 * num_cores_outer < max_threads:
+                num_cores_inner = max_threads // num_cores_outer
+            else:
+                num_cores_inner = 1
+    return num_cores_inner, num_cores_outer
 
 
 def fftw_multi_normxcorr(
@@ -949,6 +959,16 @@ def fftw_multi_normxcorr(
 # ------------------------------- FastMatchedFilter Wrapper
 
 def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
+    template_arr, data_arr, multipliers = _fmf_stabilisation(
+        template_arr=template_arr, data_arr=data_arr)
+
+    return _stabalised_fmf(
+        template_arr=template_arr, data_arr=data_arr, weights=weights,
+        pads=pads, arch=arch, multipliers=multipliers, step=step)
+
+
+def _stabalised_fmf(template_arr, data_arr, weights, pads, arch, multipliers,
+                    step):
     if not FMF_INSTALLED:
         raise ImportError("FastMatchedFilter is not available")
     import fast_matched_filter
@@ -958,30 +978,45 @@ def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
     else:
         raise ImportError(f"FMF version {fast_matched_filter.__version__} "
                           f"must be >= {MIN_FMF_VERSION}")
-    # Demean
-    template_arr -= template_arr.mean(axis=-1, keepdims=True)
-    data_arr -= data_arr.mean(axis=-1, keepdims=True)
 
-    multipliers = []
-    for x in range(data_arr.shape[0]):
-        # Check that stream is non-zero and above variance threshold
-        if not np.all(data_arr[x] == 0) and np.var(data_arr[x]) < 1e-8:
-            # Apply gain
-            data_arr[x] *= MULTIPLIER
-            Logger.warning(f"Low variance found for {x}, applying gain "
-                           "to stabilise correlations")
-            multipliers.append(MULTIPLIER)
-        else:
-            multipliers.append(1)
-
+    Logger.info("Handing off to FMF")
     cccsums = fmf(
         templates=template_arr, weights=weights, moveouts=pads,
         data=data_arr, step=step, arch=arch, normalize="full")
+    Logger.info("FMF returned")
     # Remove gain
-    for x in range(data_arr.shape[0]):
-        data_arr[x] *= multipliers[x]
-
+    if np.any(multipliers != 1):
+        data_arr /= multipliers
     return cccsums
+
+
+def _fmf_stabilisation(template_arr, data_arr):
+    """ FMF doesn't do the internal check that EQC correlations do. """
+    # Demean
+    tic = default_timer()
+    template_arr -= template_arr.mean(axis=-1, keepdims=True)
+    data_arr -= data_arr.mean(axis=-1, keepdims=True)
+    toc = default_timer()
+    Logger.info(f"Removing mean took {toc - tic:.4f} s")
+
+    # Stability checking
+    tic = default_timer()
+    # var is fairly slow, var = mean(abs(a - a.mean()) ** 2) - mean is zero,
+    # so we can skip a step
+    stability_issues = np.logical_and(
+        # data_arr.var(axis=1, keepdims=True) < 1e-8,
+        np.mean(np.abs(data_arr) ** 2, axis=1, keepdims=True) < 1e-8,
+        ~np.all(data_arr == 0, axis=1, keepdims=True))
+    multipliers = np.ones_like(stability_issues, dtype=float)
+    multipliers[stability_issues] = MULTIPLIER
+    if np.any(stability_issues):
+        Logger.warning(
+            f"Low variance found for channels {np.where(stability_issues)},"
+            f"applying gain to stabilise correlations")
+        data_arr *= multipliers
+    toc = default_timer()
+    Logger.info(f"Checking stability took {toc - tic:.4f} s")
+    return template_arr, data_arr, multipliers
 
 
 @register_array_xcorr("fmf")
@@ -1044,6 +1079,22 @@ def _fmf_cpu(templates, stream, *args, **kwargs):
     return _fmf_multi_xcorr(templates, stream, arch="precise")
 
 
+def _fmf_reshape(template_dict, stream_dict, pad_dict, seed_ids):
+    tic = default_timer()
+    # Reshape templates into [templates x traces x time]
+    t_arr = np.array([template_dict[seed_id]
+                      for seed_id in seed_ids]).swapaxes(0, 1)
+    # Reshape stream into [traces x time]
+    d_arr = np.array([stream_dict[seed_id] for seed_id in seed_ids])
+    # Moveouts should be [templates x traces]
+    pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
+    # Weights should be shaped like pads
+    weights = np.ones_like(pads)
+    toc = default_timer()
+    Logger.info(f"Reshaping for FMF took {toc - tic:.4f} s")
+    return t_arr, d_arr, weights, pads
+
+
 def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     """
     Apply FastMatchedFilter routine concurrently.
@@ -1080,15 +1131,9 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
 
-    # Reshape templates into [templates x traces x time]
-    t_arr = np.array([template_dict[seed_id]
-                      for seed_id in seed_ids]).swapaxes(0, 1)
-    # Reshape stream into [traces x time]
-    d_arr = np.array([stream_dict[seed_id] for seed_id in seed_ids])
-    # Moveouts should be [templates x traces]
-    pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
-    # Weights should be shaped like pads
-    weights = np.ones_like(pads)
+    t_arr, d_arr, weights, pads = _fmf_reshape(
+        template_dict=template_dict, stream_dict=stream_dict,
+        pad_dict=pad_dict, seed_ids=seed_ids)
 
     cccsums = _run_fmf_xcorr(
         template_arr=t_arr, weights=weights, pads=pads,
@@ -1141,8 +1186,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-def _get_array_dicts(templates, stream, stack, copy_streams=True):
+def _get_array_dicts(templates, stream, stack, *args, **kwargs):
     """ prepare templates and stream, return dicts """
+    tic = default_timer()
     # Do some reshaping
     # init empty structures for data storage
     template_dict = {}
@@ -1188,6 +1234,9 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         else:
             pad_list = [0 for _ in templates]
         pad_dict.update({seed_id: pad_list})
+    toc = default_timer()
+    Logger.info(f"Making array dicts for {len(seed_ids)} seed ids "
+                f"took {toc - tic:.4f} s")
 
     return stream_dict, template_dict, pad_dict, seed_ids
 

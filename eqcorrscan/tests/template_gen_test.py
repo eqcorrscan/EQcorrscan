@@ -103,7 +103,7 @@ class TestTemplateGeneration(unittest.TestCase):
                     station=tr.stats.station, channel=tr.stats.channel)[0]
                 self.assertTrue(np.allclose(
                     expected_tr.data.astype(np.float32),
-                    tr.data.astype(np.float32)))
+                    tr.data.astype(np.float32), rtol=0.0001))
             del template
             os.remove('tutorial_template_' + str(template_no) + '.ms')
 

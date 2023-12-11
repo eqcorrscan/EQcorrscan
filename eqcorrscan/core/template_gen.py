@@ -901,6 +901,7 @@ def _group_events(catalog, process_len, template_length, data_pad):
     :rtype: list
     """
     # case for catalog only containing one event
+    assert len(catalog), "No events to group"
     if len(catalog) == 1:
         return [catalog]
     sub_catalogs = []
