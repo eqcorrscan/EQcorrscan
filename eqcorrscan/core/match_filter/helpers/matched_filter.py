@@ -8,14 +8,14 @@ Helper functions for network matched-filter detection of seismic data.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
-import contextlib
+
 import os
-import shutil
-import tarfile
-import tempfile
 import logging
+import pickle
 
 import numpy as np
+
+from concurrent.futures import ThreadPoolExecutor
 from obspy import Stream
 from obspy.core.event import Event
 
@@ -25,36 +25,13 @@ from eqcorrscan.utils.correlate import get_array_xcorr
 Logger = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def temporary_directory():
-    """ make a temporary directory, yeild its name, cleanup on exit """
-    dir_name = tempfile.mkdtemp()
-    yield dir_name
-    if os.path.exists(dir_name):
-        shutil.rmtree(dir_name)
-
-
-def get_waveform_client(waveform_client):
-    """
-    Bind a `get_waveforms_bulk` method to client if it doesn't already have one
-
-    :param waveform_client: Obspy client with a `get_waveforms` method
-
-    :returns: waveform_client with `get_waveforms_bulk`.
-    """
-    def _get_waveforms_bulk_naive(self, bulk_arg):
-        """ naive implementation of get_waveforms_bulk that uses iteration. """
-        st = Stream()
-        for arg in bulk_arg:
-            st += self.get_waveforms(*arg)
-        return st
-
-    # add waveform_bulk method dynamically if it doesn't exist already
-    if not hasattr(waveform_client, "get_waveforms_bulk"):
-        bound_method = _get_waveforms_bulk_naive.__get__(waveform_client)
-        setattr(waveform_client, "get_waveforms_bulk", bound_method)
-
-    return waveform_client
+def _tr_spike_test(data, percent, multiplier):
+    data_len = data.shape[0]
+    thresh = 2 * np.max(np.sort(
+        np.abs(data))[0:np.int64(percent * data_len)]) * multiplier
+    if (data > thresh).sum() > 0:
+        return True
+    return False
 
 
 def _spike_test(stream, percent=0.99, multiplier=1e7):
@@ -70,13 +47,15 @@ def _spike_test(stream, percent=0.99, multiplier=1e7):
     """
     from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
+    to_check = ((tr.data, percent, multiplier) for tr in stream)
     list_ids = []
-    for tr in stream:
-        if (tr.data > 2 * np.max(np.sort(
-                np.abs(tr.data))[0:int(percent * len(tr.data))]
-                                 ) * multiplier).sum() > 0:
-            list_ids.append(tr.id)
-    if list_ids != []:
+    with ThreadPoolExecutor() as executor:
+        for tr, spiked in zip(stream, executor.map(
+                lambda args: _tr_spike_test(*args), to_check)):
+            if spiked:
+                list_ids.append(tr.id)
+
+    if len(list_ids):
         ids = ', '.join(list_ids)
         msg = ('Spikes above ' + str(multiplier) +
                ' of the range of ' + str(percent) +
@@ -245,112 +224,71 @@ def _test_event_similarity(event_1, event_2, verbose=False, shallow=False):
                               ' %s' % (amp_1[key], amp_2[key], key))
                     return False
             elif key == "waveform_id":
-                if pick_1[key].station_code != pick_2[key].station_code:
+                if amp_1[key].station_code != amp_2[key].station_code:
                     if verbose:
                         print('Station codes do not match')
                     return False
-                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                if amp_1[key].channel_code[0] != amp_2[key].channel_code[0]:
                     if verbose:
                         print('Channel codes do not match')
                     return False
-                if pick_1[key].channel_code[-1] != \
-                        pick_2[key].channel_code[-1]:
+                if amp_1[key].channel_code[-1] != \
+                        amp_2[key].channel_code[-1]:
                     if verbose:
                         print('Channel codes do not match')
                     return False
     return True
 
 
-def _par_read(dirname, compressed=True):
+def _remove_duplicates(party):
+    for family in party:
+        if family is not None:
+            # Slow uniq:
+            # family.detections = family._uniq().detections
+            # Very quick uniq:
+            det_tuples = [
+                (det.id, str(det.detect_time), det.detect_val)
+                for det in family]
+            # Retrieve the indices for the first occurrence of each
+            # detection in the family (so only unique detections will
+            # remain).
+            uniq_det_tuples, uniq_det_indices = np.unique(
+                det_tuples, return_index=True, axis=0)
+            uniq_detections = []
+            for uniq_det_index in uniq_det_indices:
+                uniq_detections.append(family[uniq_det_index])
+            family.detections = uniq_detections
+    return party
+
+
+def _moveout(st: Stream) -> float:
+    """ Maximum moveout across template in seconds. """
+    return max(tr.stats.starttime for tr in st) - min(
+        tr.stats.starttime for tr in st)
+
+
+def _mad(cccsum):
     """
-    Internal write function to read a formatted parameter file.
-
-    :type dirname: str
-    :param dirname: Directory to read the parameter file from.
-    :type compressed: bool
-    :param compressed: Whether the directory is compressed or not.
+    Internal helper to compute MAD-thresholds in parallel.
     """
-    from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
-    from eqcorrscan.core.match_filter.template import Template
-
-    templates = []
-    if compressed:
-        arc = tarfile.open(dirname, "r:*")
-        members = arc.getmembers()
-        _parfile = [member for member in members
-                    if member.name.split(os.sep)[-1] ==
-                    'template_parameters.csv']
-        if len(_parfile) == 0:
-            arc.close()
-            raise MatchFilterError(
-                'No template parameter file in archive')
-        parfile = arc.extractfile(_parfile[0])
-    else:
-        parfile = open(dirname + '/' + 'template_parameters.csv', 'r')
-    for line in parfile:
-        t_in = Template()
-        for key_pair in line.rstrip().split(','):
-            if key_pair.split(':')[0].strip() == 'name':
-                t_in.__dict__[key_pair.split(':')[0].strip()] = \
-                    key_pair.split(':')[-1].strip()
-            elif key_pair.split(':')[0].strip() == 'filt_order':
-                try:
-                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
-                        int(key_pair.split(':')[-1])
-                except ValueError:
-                    pass
-            else:
-                try:
-                    t_in.__dict__[key_pair.split(':')[0].strip()] = \
-                        float(key_pair.split(':')[-1])
-                except ValueError:
-                    pass
-        templates.append(t_in)
-    parfile.close()
-    if compressed:
-        arc.close()
-    return templates
+    return np.median(np.abs(cccsum))
 
 
-def _resolved(x):
-    return os.path.realpath(os.path.abspath(x))
+def _pickle_stream(stream: Stream, filename: str):
+    Logger.info(f"Pickling stream of {len(stream)} traces to {filename}")
+    with open(filename, "wb") as f:
+        pickle.dump(stream, f)
+    Logger.info(f"Pickled to {filename}")
+    return
 
 
-def _badpath(path, base):
-    """
-    joinpath will ignore base if path is absolute.
-    """
-    return not _resolved(os.path.join(base, path)).startswith(base)
-
-
-def _badlink(info, base):
-    """
-    Links are interpreted relative to the directory containing the link
-    """
-    tip = _resolved(os.path.join(base, os.path.dirname(info.name)))
-    return _badpath(info.linkname, base=tip)
-
-
-def _safemembers(members):
-    """Check members of a tar archive for safety.
-    Ensure that they do not contain paths or links outside of where we
-    need them - this would only happen if the archive wasn't made by
-    eqcorrscan.
-
-    :type members: :class:`tarfile.TarFile`
-    :param members: an open tarfile.
-    """
-    base = _resolved(".")
-
-    for finfo in members:
-        if _badpath(finfo.name, base):
-            print(finfo.name, "is blocked (illegal path)")
-        elif finfo.issym() and _badlink(finfo, base):
-            print(finfo.name, "is blocked: Hard link to", finfo.linkname)
-        elif finfo.islnk() and _badlink(finfo, base):
-            print(finfo.name, "is blocked: Symlink to", finfo.linkname)
-        else:
-            yield finfo
+def _unpickle_stream(filename: str) -> Stream:
+    Logger.info(f"Unpickling from {filename}")
+    with open(filename, "rb") as f:
+        stream = pickle.load(f)
+    assert isinstance(stream, Stream)
+    Logger.info(f"Unpickled stream of {len(stream)} traces from {filename}")
+    return stream
 
 
 def extract_from_stream(stream, detections, pad=5.0, length=30.0):
@@ -413,7 +351,8 @@ def normxcorr2(template, image):
     """
     array_xcorr = get_array_xcorr()
     # Check that we have been passed numpy arrays
-    if type(template) != np.ndarray or type(image) != np.ndarray:
+    if (not isinstance(template, np.ndarray)
+            or not isinstance(image, np.ndarray)):
         Logger.error(
             'You have not provided numpy arrays, I will not convert them')
         return 'NaN'

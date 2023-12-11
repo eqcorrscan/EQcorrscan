@@ -58,15 +58,9 @@ int decluster_dist_time(float*, long*, float*, long, float, long, float, unsigne
 
 int decluster_ll(float*, long long*, long long, float, long long, unsigned int*);
 
-int multi_decluster_ll(float*, long long*, long long*, int, float*, long long, unsigned int*, int);
-
 int decluster(float*, long*, long, float, long, unsigned int*);
 
-int multi_decluster(float*, long*, long*, int, float*, long, unsigned int*, int);
-
 int findpeaks(float*, long, float, unsigned int*);
-
-int multi_find_peaks(float*, long, int, float*, int, unsigned int*);
 
 // multi_corr functions
 int running_mean_var(double*, double*, int*, float*, long, long);

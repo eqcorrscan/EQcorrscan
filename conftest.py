@@ -1,5 +1,6 @@
 import os
 import shutil
+import glob
 from os.path import join, dirname
 
 import pytest
@@ -58,7 +59,8 @@ def clean_up_test_files():
         'dt.cc2',
         'dt.ct',
         'dt.ct2',
-        'phase.dat'
+        'phase.dat',
+        'eqcorrscan_temporary_party.pkl'
     ]
 
     yield
@@ -85,7 +87,11 @@ def clean_up_test_directories():
         'test_tar_write',
         'tmp1',
         'cc_exported',
+        '.streams',
+        '.parties'
     ]
+    directories_to_kill.extend(glob.glob(".template_db_*"))
+    directories_to_kill.extend(glob.glob(".streams_*"))
 
     yield
 
@@ -93,6 +99,7 @@ def clean_up_test_directories():
     for directory in directories_to_kill:
         if os.path.isdir(directory):
             try:
+                print(f"Removing directory {directory}")
                 shutil.rmtree(directory)
             except Exception as e:
                 print("Could not find directory, already cleaned?")

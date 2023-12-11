@@ -3,14 +3,16 @@ A series of test functions for the core functions in EQcorrscan.
 """
 import copy
 import os
+import glob
 import unittest
 import pytest
+import logging
+
 
 import numpy as np
 from obspy import read, UTCDateTime, read_events, Catalog, Stream, Trace
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.header import FDSNException
-from obspy.clients.earthworm import Client as EWClient
 from obspy.core.event import Pick, Event
 from obspy.core.util.base import NamedTemporaryFile
 
@@ -20,32 +22,26 @@ from eqcorrscan.core.match_filter import (
     read_party, read_tribe, _spike_test)
 from eqcorrscan.core.match_filter.matched_filter import (
     match_filter, MatchFilterError)
-from eqcorrscan.core.match_filter.helpers import get_waveform_client
 from eqcorrscan.core.match_filter.template import (
     quick_group_templates, group_templates_by_seedid)
+from eqcorrscan.core.match_filter.helpers.tribe import _group
+
 
 from eqcorrscan.utils import pre_processing, catalog_utils
 from eqcorrscan.utils.correlate import fftw_normxcorr, numpy_normxcorr
 from eqcorrscan.utils.catalog_utils import filter_picks
-from eqcorrscan.utils.synth_seis import generate_synth_data
 
 
-class TestHelpers(unittest.TestCase):
-    def test_monkey_patching(self):
-        """ Test that monkey patching a client works. """
-        client = EWClient("pubavo1.wr.usgs.gov", 16022)
-        self.assertFalse(hasattr(client, "get_waveforms_bulk"))
-        client = get_waveform_client(client)
-        self.assertTrue(hasattr(client, "get_waveforms_bulk"))
-        # TODO: This should test that the method actually works as expected.
+Logger = logging.getLogger(__name__)
 
 
 class TestCoreMethods(unittest.TestCase):
     """
     Tests for internal _template_loop and normxcorr2 functions.
     """
+    # changed to overflowerror in 0.5.0
     def test_detection_assertion(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(OverflowError):
             Detection(
                 template_name='a', detect_time=UTCDateTime(), threshold=1.2,
                 threshold_input=8.0, threshold_type="MAD", typeofdet="corr",
@@ -89,8 +85,9 @@ class TestCoreMethods(unittest.TestCase):
         """
         Check that correlations output are the same irrespective of version.
         """
-        testing_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                    'test_data')
+        testing_path = os.path.join(
+            os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
+            'test_data')
         template = read(os.path.join(testing_path, 'test_template.ms'))
         template = template[0].data.astype(np.float32)
         image = read(os.path.join(testing_path, 'test_image.ms'))
@@ -128,11 +125,13 @@ class TestSynthData(unittest.TestCase):
 
     def test_missing_data(self):
         # Test case where there are non-matching streams in the template
-        test_match_filter(stream_excess=True)
+        for conc_proc in [True, False]:
+            test_match_filter(stream_excess=True, conc_proc=conc_proc)
 
     def test_extra_templates(self):
         # Test case where there are non-matching streams in the data
-        test_match_filter(template_excess=True)
+        for conc_proc in [True, False]:
+            test_match_filter(template_excess=True, conc_proc=conc_proc)
 
     def test_onesamp_diff(self):
         """Tests to check that traces in stream are set to same length."""
@@ -149,9 +148,11 @@ class TestSynthData(unittest.TestCase):
         templates[0][0].stats.station = 'A'
         templates[0][1].stats.sampling_rate = 40
         templates[0][1].stats.station = 'B'
-        match_filter(template_names=['1'], template_list=templates, st=stream,
-                     threshold=8, threshold_type='MAD', trig_int=1,
-                     plot=False)
+        for conc_proc in [True, False]:
+            match_filter(template_names=['1'], template_list=templates,
+                         st=stream, threshold=8, threshold_type='MAD',
+                         trig_int=1, plot=False,
+                         concurrent_processing=conc_proc)
 
     def test_half_samp_diff(self):
         """
@@ -173,9 +174,11 @@ class TestSynthData(unittest.TestCase):
         templates[0][0].stats.station = 'A'
         templates[0][1].stats.sampling_rate = 40
         templates[0][1].stats.station = 'B'
-        match_filter(template_names=['1'], template_list=templates, st=stream,
-                     threshold=8, threshold_type='MAD', trig_int=1,
-                     plot=False)
+        for conc_proc in [True, False]:
+            match_filter(template_names=['1'], template_list=templates,
+                         st=stream, threshold=8, threshold_type='MAD',
+                         trig_int=1, plot=False,
+                         concurrent_processing=conc_proc)
 
 
 @pytest.mark.network
@@ -229,13 +232,15 @@ class TestGeoNetCase(unittest.TestCase):
         templates = copy.deepcopy(self.templates)
         # Do this to test an extra condition in match_filter
         templates[0].remove(templates[0].select(station='CNGZ')[0])
-        detections = match_filter(template_names=self.template_names,
-                                  template_list=templates, st=self.st,
-                                  threshold=8.0, threshold_type='MAD',
-                                  trig_int=6.0, plot=False, plotdir='.',
-                                  cores=1)
-        self.assertEqual(len(detections), 1)
-        self.assertEqual(detections[0].no_chans, 6)
+        for conc_proc in [True, False]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            detections = match_filter(
+                template_names=self.template_names, template_list=templates,
+                st=self.st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.', cores=1,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 1)
+            self.assertEqual(detections[0].no_chans, 6)
 
     def test_duplicate_cont_data(self):
         """ Check that error is raised if duplicate channels are present in
@@ -243,52 +248,64 @@ class TestGeoNetCase(unittest.TestCase):
         tr = self.st[0].copy()
         tr.data = np.random.randn(100)
         st = self.st.copy() + tr
-        with self.assertRaises(NotImplementedError):
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=st, threshold=8.0,
-                         threshold_type='MAD', trig_int=6.0, plot=False,
-                         plotdir='.', cores=1)
+        for conc_proc in [True, False]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            with self.assertRaises(NotImplementedError):
+                match_filter(template_names=self.template_names,
+                             template_list=self.templates, st=st,
+                             threshold=8.0, threshold_type='MAD',
+                             trig_int=6.0, plot=False, plotdir='.', cores=1,
+                             concurrent_processing=conc_proc)
 
     def test_missing_cont_channel(self):
         """ Remove one channel from continuous data and check that everything
         still works. """
         st = self.st.copy()
         st.remove(st[-1])
-        detections, det_cat = match_filter(
-            template_names=self.template_names, template_list=self.templates,
-            st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            plot=False, plotdir='.', cores=1, output_cat=True)
-        self.assertEqual(len(detections), 1)
-        self.assertEqual(detections[0].no_chans, 5)
-        self.assertEqual(len(detections), len(det_cat))
+        for conc_proc in [True, False]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            detections, det_cat = match_filter(
+                template_names=self.template_names,
+                template_list=self.templates,
+                st=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                plot=False, plotdir='.', cores=1, output_cat=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 1)
+            self.assertEqual(detections[0].no_chans, 5)
+            self.assertEqual(len(detections), len(det_cat))
 
     def test_no_matching_data(self):
         """ No matching data between continuous and templates."""
         st = self.st.copy()
         for tr, staname in zip(st, ['a', 'b', 'c', 'd', 'e']):
             tr.stats.station = staname
-        with self.assertRaises(IndexError):
-            match_filter(
-                template_names=self.template_names,
-                template_list=self.templates, st=st, threshold=8.0,
-                threshold_type='MAD', trig_int=6.0, plot=False,
-                plotdir='.', cores=1)
+        for conc_proc in [True, False]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            with self.assertRaises(IndexError):
+                match_filter(
+                    template_names=self.template_names,
+                    template_list=self.templates, st=st, threshold=8.0,
+                    threshold_type='MAD', trig_int=6.0, plot=False,
+                    plotdir='.', cores=1, concurrent_processing=conc_proc)
 
     @pytest.mark.flaky(reruns=2)
     def test_geonet_tribe_detect(self):
         client = Client('GEONET')
         # Try to force issues with starting samples on wrong day for geonet
         # data
-        tribe = self.tribe.copy()
-        for template in tribe.templates:
-            template.process_length = 86400
-            template.st = Stream(template.st[0])
-            # Only run one channel templates
-        party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1, endtime=self.t2,
-            threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plot=False)
-        self.assertEqual(len(party), 16)
+        # TODO: This does nothing
+        # tribe = self.tribe.copy()
+        # for template in tribe.templates:
+        #     template.process_length = 86400
+        #     template.st = Stream(template.st[0])
+        #     # Only run one channel templates
+        for conc_proc in [True, False]:
+            Logger.info(f"Running for conc_proc={conc_proc}")
+            party = self.tribe.copy().client_detect(
+                client=client, starttime=self.t1, endtime=self.t2,
+                threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                daylong=False, plot=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 16)
 
 
 class TestGappyData(unittest.TestCase):
@@ -315,26 +332,30 @@ class TestGappyData(unittest.TestCase):
         self.assertEqual(len(gaps), 1)
         start_gap = gaps[0][4]
         end_gap = gaps[0][5]
-        party = self.tribe.client_detect(
-            client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=0.6,
-            threshold_type="absolute", trig_int=2, plot=False,
-            parallel_process=False, cores=1)
-        for family in party:
-            print(family)
-            for detection in family:
-                self.assertFalse(
-                    start_gap <= detection.detect_time <= end_gap)
-        for family in party:
-            self.assertTrue(len(family) in [5, 1])
+        for conc_proc in [True, False]:
+            party = self.tribe.client_detect(
+                client=self.client, starttime=self.starttime,
+                endtime=self.endtime, threshold=0.6,
+                threshold_type="absolute", trig_int=2, plot=False,
+                parallel_process=False, cores=1,
+                concurrent_processing=conc_proc)
+            for family in party:
+                print(family)
+                for detection in family:
+                    self.assertFalse(
+                        start_gap <= detection.detect_time <= end_gap)
+            for family in party:
+                self.assertTrue(len(family) in [5, 1])
 
     def test_gappy_data_removal(self):
-        party = self.tribe.client_detect(
-            client=self.client, starttime=self.starttime,
-            endtime=self.endtime, threshold=8,
-            threshold_type="MAD", trig_int=2, plot=False,
-            parallel_process=False, min_gap=1)
-        self.assertEqual(len(party), 0)
+        for conc_proc in [True, False]:
+            party = self.tribe.client_detect(
+                client=self.client, starttime=self.starttime,
+                endtime=self.endtime, threshold=8,
+                threshold_type="MAD", trig_int=2, plot=False,
+                parallel_process=False, min_gap=1,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 0)
 
 
 @pytest.mark.network
@@ -386,14 +407,16 @@ class TestNCEDCCases(unittest.TestCase):
 
     def test_detection_extraction(self):
         # Test outputting the streams works
-        detections, detection_streams = \
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=self.st,
-                         threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plot=False, plotdir='.',
-                         cores=1, extract_detections=True)
-        self.assertEqual(len(detections), 4)
-        self.assertEqual(len(detection_streams), len(detections))
+        for conc_proc in [True, False]:
+            detections, detection_streams = match_filter(
+                template_names=self.template_names,
+                template_list=self.templates, st=self.st,
+                threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.',
+                cores=1, extract_detections=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 4)
+            self.assertEqual(len(detection_streams), len(detections))
 
     def test_normxcorr(self):
         # Test a known issue with early normalisation methods
@@ -409,15 +432,17 @@ class TestNCEDCCases(unittest.TestCase):
         self.assertTrue(np.allclose(ccc, ccc_numpy, atol=0.04))
 
     def test_catalog_extraction(self):
-        detections, det_cat, detection_streams = \
-            match_filter(template_names=self.template_names,
-                         template_list=self.templates, st=self.st,
-                         threshold=8.0, threshold_type='MAD',
-                         trig_int=6.0, plot=False, plotdir='.',
-                         cores=1, extract_detections=True, output_cat=True)
-        self.assertEqual(len(detections), 4)
-        self.assertEqual(len(detection_streams), len(detections))
-        self.assertEqual(len(detection_streams), len(det_cat))
+        for conc_proc in [True, False]:
+            detections, det_cat, detection_streams = match_filter(
+                template_names=self.template_names,
+                template_list=self.templates, st=self.st,
+                threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, plotdir='.',
+                cores=1, extract_detections=True, output_cat=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(detections), 4)
+            self.assertEqual(len(detection_streams), len(detections))
+            self.assertEqual(len(detection_streams), len(det_cat))
 
     def test_same_detections_individual_and_parallel(self):
         """
@@ -581,7 +606,7 @@ class TestMatchCopy(unittest.TestCase):
         """Test copy method"""
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         tribe = Tribe(f.template for f in party.families)
         copied = tribe.copy()
@@ -685,28 +710,24 @@ class TestMatchObjectHeavy(unittest.TestCase):
             endtime=st[0].stats.starttime + process_len)
         party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.family = party.sort()[0].copy()
         cls.t1, cls.t2, cls.template_stachans = (t1, t2, template_stachans)
         cls.unproc_st, cls.tribe, cls.onehztribe, cls.st, cls.party = (
             unproc_st, tribe, onehztribe, st, party)
 
-    @classmethod
-    def tearDownClass(cls):
-        for f in ['eqcorrscan_temporary_party.tgz']:
-            if os.path.isfile(f):
-                os.remove(f)
-
     def test_tribe_detect(self):
         """Test the detect method on Tribe objects"""
-        party = self.tribe.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=False)
-        self.assertEqual(len(party), 4)
-        compare_families(
-            party=party, party_in=self.party, float_tol=0.05,
-            check_event=True)
+        for conc_proc in [True, False]:
+            party = self.tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 4)
+            compare_families(
+                party=party, party_in=self.party, float_tol=0.05,
+                check_event=True)
 
     def test_tribe_detect_with_empty_streams(self):
         """
@@ -715,175 +736,201 @@ class TestMatchObjectHeavy(unittest.TestCase):
         continuous data is incomplete. This test should fail in v0.4.2 due to
         a bug.
         """
-        # remove trace for station PHA (PHOB, PSR, PCA, PAG remain)
-        st = self.unproc_st.copy().remove(
-            self.unproc_st.copy().select(station='PHA')[0])
-        tribe1 = Tribe([t.copy() for t in self.tribe
-                        if (t.name == '2004_09_28t17_19_08' or
-                            t.name == '2004_09_28t17_19_25')])
-        # run detection with 2 templates in tribe
-        party1 = tribe1.detect(
-            stream=st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
-        self.assertEqual(len(party1), 2)
-        party1 = Party([f for f in party1
-                        if f.template.name == '2004_09_28t17_19_25'])
-        # run detection with only 1 template in tribe
-        tribe2 = Tribe([t.copy() for t in self.tribe
-                        if t.name == '2004_09_28t17_19_25'])
-        party2 = tribe2.detect(
-            stream=st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plotvar=False, parallel_process=False)
-        self.assertEqual(len(party2), 1)
-        # This should fail in v0.4.2
-        compare_families(
-            party=party1, party_in=party2, float_tol=0.05, check_event=False)
+        for conc_proc in [True, False]:
+            # remove trace for station PHA (PHOB, PSR, PCA, PAG remain)
+            st = self.unproc_st.copy().remove(
+                self.unproc_st.copy().select(station='PHA')[0])
+            tribe1 = Tribe([t.copy() for t in self.tribe
+                            if (t.name == '2004_09_28t17_19_08' or
+                                t.name == '2004_09_28t17_19_25')])
+            # run detection with 2 templates in tribe
+            party1 = tribe1.detect(
+                stream=st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plotvar=False,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party1), 2)
+            party1 = Party([f for f in party1
+                            if f.template.name == '2004_09_28t17_19_25'])
+            # run detection with only 1 template in tribe
+            tribe2 = Tribe([t.copy() for t in self.tribe
+                            if t.name == '2004_09_28t17_19_25'])
+            party2 = tribe2.detect(
+                stream=st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plotvar=False,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party2), 1)
+            # This should fail in v0.4.2
+            compare_families(
+                party=party1, party_in=party2, float_tol=0.05,
+                check_event=False)
 
     def test_tribe_detect_short_data(self):
         """Test the detect method on Tribe objects"""
-        short_st = self.unproc_st.copy()
-        tribe = self.tribe.copy()
-        for template in tribe:
-            template.process_length = 2400
-        party = tribe.detect(
-            stream=short_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
-            ignore_bad_data=True)
-        self.assertEqual(len(party), 4)
+        for conc_proc in [True, False]:
+            short_st = self.unproc_st.copy()
+            tribe = self.tribe.copy()
+            for template in tribe:
+                template.process_length = 2400
+            party = tribe.detect(
+                stream=short_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, concurrent_processing=conc_proc,
+                ignore_bad_data=True)
+            self.assertEqual(len(party), 4)
 
     @pytest.mark.serial
     def test_tribe_detect_parallel_process(self):
         """Test the detect method on Tribe objects"""
-        party = self.tribe.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=True,
-            process_cores=2)
-        self.assertEqual(len(party), 4)
-        compare_families(
-            party=party, party_in=self.party, float_tol=0.05,
-            check_event=False)
+        for conc_proc in [True, False]:
+            party = self.tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False, parallel_process=True,
+                process_cores=2, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 4)
+            compare_families(
+                party=party, party_in=self.party, float_tol=0.05,
+                check_event=False)
 
     def test_tribe_detect_save_progress(self):
         """Test the detect method on Tribe objects"""
-        party = self.tribe.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
-            save_progress=True)
-        self.assertEqual(len(party), 4)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
-        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
-        self.assertEqual(party, saved_party)
+        for conc_proc in [True, False]:
+            party = self.tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, save_progress=True,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 4)
+            # Get all the parties
+            party_files = glob.glob(".parties/????/???/*.pkl")
+            saved_party = Party()
+            for pf in party_files:
+                saved_party += Party().read(pf)
+            self.assertEqual(party, saved_party)
 
     @pytest.mark.serial
     def test_tribe_detect_masked_data(self):
         """Test using masked data - possibly raises error at pre-processing.
         Padding may also result in error at correlation stage due to poor
         normalisation."""
-        stream = self.unproc_st.copy()
-        stream[0] = (stream[0].copy().trim(
-            stream[0].stats.starttime, stream[0].stats.starttime + 1800) +
-                     stream[0].trim(
-            stream[0].stats.starttime + 1900, stream[0].stats.endtime))
-        party = self.tribe.detect(
-            stream=stream, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=False,
-            xcorr_func='fftw', concurrency='concurrent')
-        self.assertEqual(len(party), 4)
+        for conc_proc in [True, False]:
+            stream = self.unproc_st.copy()
+            stream[0] = (stream[0].copy().trim(
+                stream[0].stats.starttime,
+                stream[0].stats.starttime + 1800) + stream[0].trim(
+                stream[0].stats.starttime + 1900, stream[0].stats.endtime))
+            party = self.tribe.detect(
+                stream=stream, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, xcorr_func='fftw',
+                concurrency='concurrent', concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 4)
 
     def test_tribe_detect_no_processing(self):
         """Test that no processing is done when it isn't necessary."""
-        tribe = self.tribe.copy()
-        for template in tribe:
-            template.lowcut = None
-            template.highcut = None
-        party = tribe.detect(
-            stream=self.st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, parallel_process=False)
-        self.assertEqual(len(party), 4)
-        compare_families(
-            party=party, party_in=self.party, float_tol=0.05,
-            check_event=False)
+        for conc_proc in [True, False]:
+            tribe = self.tribe.copy()
+            for template in tribe:
+                template.lowcut = None
+                template.highcut = None
+            party = tribe.detect(
+                stream=self.st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 4)
+            compare_families(
+                party=party, party_in=self.party, float_tol=0.05,
+                check_event=False)
 
     @pytest.mark.flaky(reruns=2)
     @pytest.mark.network
     def test_client_detect(self):
         """Test the client_detect method."""
-        client = Client('NCEDC')
-        party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
-            threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plot=False)
-        compare_families(
-            party=party, party_in=self.party, float_tol=0.05,
-            check_event=False)
+        for conc_proc in [True, False]:
+            client = Client('NCEDC')
+            party = self.tribe.copy().client_detect(
+                client=client, starttime=self.t1 + 2.75, endtime=self.t2,
+                threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                daylong=False, plot=False, concurrent_processing=conc_proc)
+            compare_families(
+                party=party, party_in=self.party, float_tol=0.05,
+                check_event=False)
 
     @pytest.mark.flaky(reruns=2)
     @pytest.mark.network
     def test_client_detect_save_progress(self):
         """Test the client_detect method."""
-        client = Client('NCEDC')
-        party = self.tribe.copy().client_detect(
-            client=client, starttime=self.t1 + 2.75, endtime=self.t2,
-            threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=False, plot=False, save_progress=True)
-        self.assertTrue(os.path.isfile("eqcorrscan_temporary_party.tgz"))
-        saved_party = Party().read("eqcorrscan_temporary_party.tgz")
-        self.assertEqual(party, saved_party)
-        os.remove("eqcorrscan_temporary_party.tgz")
-        compare_families(
-            party=party, party_in=self.party, float_tol=0.05,
-            check_event=False)
+        for conc_proc in [True, False]:
+            client = Client('NCEDC')
+            party = self.tribe.copy().client_detect(
+                client=client, starttime=self.t1 + 2.75, endtime=self.t2,
+                threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                daylong=False, plot=False, save_progress=True,
+                concurrent_processing=conc_proc)
+            self.assertTrue(os.path.isdir(".parties"))
+
+            # Get all the parties
+            party_files = glob.glob(".parties/????/???/*.pkl")
+            saved_party = Party()
+            for pf in party_files:
+                saved_party += Party().read(pf)
+            self.assertEqual(party, saved_party)
+            compare_families(
+                party=party, party_in=self.party, float_tol=0.05,
+                check_event=False)
 
     @pytest.mark.network
     def test_party_lag_calc(self):
         """Test the lag-calc method on Party objects."""
         # Test the chained method
-        chained_cat = self.tribe.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False).lag_calc(
-            stream=self.unproc_st, pre_processed=False)
-        catalog = self.party.copy().lag_calc(
-            stream=self.unproc_st, pre_processed=False)
-        self.assertEqual(len(catalog), 4)
-        for ev1, ev2 in zip(catalog, chained_cat):
-            ev1.picks.sort(key=lambda p: p.time)
-            ev2.picks.sort(key=lambda p: p.time)
-        catalog.events.sort(key=lambda e: e.picks[0].time)
-        chained_cat.events.sort(key=lambda e: e.picks[0].time)
-        for ev, chained_ev in zip(catalog, chained_cat):
-            for i in range(len(ev.picks)):
-                for key in ev.picks[i].keys():
-                    if key == 'resource_id':
-                        continue
-                    if key == 'comments':
-                        continue
-                    if key == 'waveform_id':
-                        for _k in ['network_code', 'station_code',
-                                   'channel_code']:
-                            self.assertEqual(
-                                sorted(ev.picks,
-                                       key=lambda p: p.time)[i][key][_k],
-                                sorted(chained_ev.picks,
-                                       key=lambda p: p.time)[i][key][_k])
-                        continue
-                    self.assertEqual(
-                        sorted(ev.picks,
-                               key=lambda p: p.time)[i][key],
-                        sorted(chained_ev.picks,
-                               key=lambda p: p.time)[i][key])
-                pick_corrs = sorted(ev.picks, key=lambda p: p.time)
-                pick_corrs = [float(p.comments[0].text.split("=")[-1])
-                              for p in pick_corrs]
-                chained_ev_pick_corrs = sorted(ev.picks, key=lambda p: p.time)
-                chained_ev_pick_corrs = [
-                    float(p.comments[0].text.split("=")[-1])
-                    for p in chained_ev_pick_corrs]
-                assert np.allclose(
-                    pick_corrs, chained_ev_pick_corrs, atol=0.001)
-                assert np.allclose(
-                    float(ev.comments[0].text.split("=")[-1]),
-                    float(chained_ev.comments[0].text.split("=")[-1]),
-                    atol=0.001)
+        for conc_proc in [True, False]:
+            chained_cat = self.tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False,
+                concurrent_processing=conc_proc).lag_calc(
+                stream=self.unproc_st, pre_processed=False)
+            catalog = self.party.copy().lag_calc(
+                stream=self.unproc_st, pre_processed=False)
+            self.assertEqual(len(catalog), 4)
+            for ev1, ev2 in zip(catalog, chained_cat):
+                ev1.picks.sort(key=lambda p: p.time)
+                ev2.picks.sort(key=lambda p: p.time)
+            catalog.events.sort(key=lambda e: e.picks[0].time)
+            chained_cat.events.sort(key=lambda e: e.picks[0].time)
+            for ev, chained_ev in zip(catalog, chained_cat):
+                for i in range(len(ev.picks)):
+                    for key in ev.picks[i].keys():
+                        if key == 'resource_id':
+                            continue
+                        if key == 'comments':
+                            continue
+                        if key == 'waveform_id':
+                            for _k in ['network_code', 'station_code',
+                                       'channel_code']:
+                                self.assertEqual(
+                                    sorted(ev.picks,
+                                           key=lambda p: p.time)[i][key][_k],
+                                    sorted(chained_ev.picks,
+                                           key=lambda p: p.time)[i][key][_k])
+                            continue
+                        self.assertEqual(
+                            sorted(ev.picks,
+                                   key=lambda p: p.time)[i][key],
+                            sorted(chained_ev.picks,
+                                   key=lambda p: p.time)[i][key])
+                    pick_corrs = sorted(ev.picks, key=lambda p: p.time)
+                    pick_corrs = [float(p.comments[0].text.split("=")[-1])
+                                  for p in pick_corrs]
+                    chained_ev_pick_corrs = sorted(
+                        ev.picks, key=lambda p: p.time)
+                    chained_ev_pick_corrs = [
+                        float(p.comments[0].text.split("=")[-1])
+                        for p in chained_ev_pick_corrs]
+                    assert np.allclose(
+                        pick_corrs, chained_ev_pick_corrs, atol=0.001)
+                    assert np.allclose(
+                        float(ev.comments[0].text.split("=")[-1]),
+                        float(chained_ev.comments[0].text.split("=")[-1]),
+                        atol=0.001)
 
     def test_party_lag_calc_preprocessed(self):
         """Test that the lag-calc works on pre-processed data."""
@@ -913,9 +960,9 @@ class TestMatchObjectHeavy(unittest.TestCase):
         party = self.party.copy()
         st = self.unproc_st.copy()
         cut_start = st[0].stats.starttime + (
-                0.5 * party[0].template.process_length)
+            0.5 * party[0].template.process_length)
         cut_end = st[0].stats.starttime + (
-                0.8 * party[0].template.process_length)
+            0.8 * party[0].template.process_length)
         st = st.cutout(cut_start, cut_end)
         catalog = party.lag_calc(stream=st, pre_processed=False,
                                  ignore_length=True, ignore_bad_data=True)
@@ -985,15 +1032,19 @@ class TestMatchObjectHeavy(unittest.TestCase):
             template.process_length = 86400
         # Aftershock sequence, with 1Hz data, lots of good correlations = high
         # MAD!
-        day_party = daylong_tribe.detect(
-            stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-            daylong=True, plot=False, parallel_process=False)
-        self.assertEqual(len(day_party), 4)
-        day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
-                                         parallel=False)
-        self.assertEqual(len(day_catalog), 4)
-        pre_picked_cat = day_party.get_catalog()
-        self.assertEqual(len(pre_picked_cat), 4)
+        Logger.info(f"Downloaded {len(st)} traces - handing off to detect")
+        for conc_proc in [True, False]:
+            Logger.info(f"Running conc_proc={conc_proc}")
+            day_party = daylong_tribe.detect(
+                stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
+                daylong=True, plot=False, parallel_process=False,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(day_party), 4)
+            day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
+                                             parallel=False)
+            self.assertEqual(len(day_catalog), 4)
+            pre_picked_cat = day_party.get_catalog()
+            self.assertEqual(len(pre_picked_cat), 4)
 
     def test_family_lag_calc(self):
         """Test the lag-calc method on family."""
@@ -1004,10 +1055,12 @@ class TestMatchObjectHeavy(unittest.TestCase):
     def test_template_detect(self):
         """Test detect method on Template objects."""
         test_template = self.family.template.copy()
-        party_t = test_template.detect(
-            stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-            trig_int=6.0, daylong=False, plot=False, overlap=None)
-        self.assertEqual(len(party_t), 1)
+        for conc_proc in [True, False]:
+            party_t = test_template.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False, overlap=None,
+                concurrent_processing=conc_proc)
+            self.assertEqual(len(party_t), 1)
 
     def test_template_construct_not_implemented(self):
         """Test template construction."""
@@ -1023,7 +1076,7 @@ class TestMatchObjectLight(unittest.TestCase):
     def setUpClass(cls):
         cls.party = Party().read(
             filename=os.path.join(
-                os.path.abspath(os.path.dirname(__file__)),
+                os.path.abspath(os.path.dirname(os.path.dirname(__file__))),
                 'test_data', 'test_party.tgz'))
         cls.tribe = Tribe(templates=[fam.template for fam in cls.party])
         cls.family = cls.party.sort()[0].copy()
@@ -1044,6 +1097,14 @@ class TestMatchObjectLight(unittest.TestCase):
         fig = self.party.plot(
             plot_grouped=True, rate=True, show=False, return_figure=True)
         return fig
+
+    def test_tribe_detect_duplicated_template_names(self):
+        tribe = self.tribe.copy()
+        duplicated_template = tribe[0].copy()
+        # Remove some traces to make it actually different
+        duplicated_template.st = duplicated_template.st[0:-2]
+        with self.assertRaises(NotImplementedError):
+            tribe += duplicated_template
 
     def test_party_io_list(self):
         """Test reading and writing party objects."""
@@ -1088,9 +1149,18 @@ class TestMatchObjectLight(unittest.TestCase):
     def test_tribe_add(self):
         """Test add method"""
         added = self.tribe.copy()
-        self.assertEqual(len(added + added[0]), 5)
+        # Check that we can't add same named templates
+        with self.assertRaises(NotImplementedError):
+            _ = added + added[0]  # noqa: F841
+        with self.assertRaises(NotImplementedError):
+            added += added[0]
+        # Check that addition works for differently named templates
+        different = added.copy()
+        for template in different:
+            template.name += "_a"
+        self.assertEqual(len(added + different[0]), 5)
         self.assertEqual(len(added), 4)
-        added += added[-1]
+        added += different[-1]
         self.assertEqual(len(added), 5)
 
     def test_tribe_remove(self):
@@ -1494,15 +1564,31 @@ class TestMatchObjectLight(unittest.TestCase):
 class TestTemplateGrouping(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        templates, data, _ = generate_synth_data(
-            nsta=10, ntemplates=20, nseeds=10, samp_rate=100.,
-            t_length=6., max_amp=10, max_lag=5., phaseout="all", jitter=0,
-            noise=True, same_phase=False)
+        templates = []
+        station_names = [
+            'ALPH', 'BETA', 'GAMM', 'KAPP', 'ZETA', 'BOB', 'MAGG',
+            'ALF', 'WALR', 'ALBA', 'PENG', 'BANA', 'WIGG', 'SAUS',
+            'MALC']
+        for i in range(20):
+            template = Stream()
+            for j in range(10):
+                for c in ["EHZ", "EHN", "EHE"]:
+                    tr = Trace(
+                        data=np.random.randn(600),
+                        header=dict(station=station_names[j],
+                                    channel=c, network="NZ", location="10",
+                                    sampling_rate=100.,
+                                    starttime=UTCDateTime() + (i * 1000)))
+                    template += tr
+            templates.append(template)
+        st = templates[0].copy()
+        for tr in st:
+            tr.data = np.random.randn(3600 * 100)
         templates = [Template(name=str(i), st=t)
                      for i, t in enumerate(templates)]
         cls.templates = templates
-        cls.st = data
-        cls.st_seed_ids = {tr.id for tr in data}
+        cls.st = st
+        cls.st_seed_ids = {tr.id for tr in st}
 
     def test_all_grouped(self):
         groups = group_templates_by_seedid(
@@ -1539,11 +1625,21 @@ class TestTemplateGrouping(unittest.TestCase):
             tr.stats.channel = "ABC"
 
         groups = group_templates_by_seedid(
-             templates=edited_templates, st_seed_ids=self.st_seed_ids,
-             group_size=10)
+            templates=edited_templates, st_seed_ids=self.st_seed_ids,
+            group_size=10)
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]) + len(groups[1]),
                          len(self.templates) - 1)
+
+    def test_precomputed_groups(self):
+        presetgroups = [
+            ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18'],
+            ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19']]
+
+        groups = _group(sids=self.st_seed_ids, templates=self.templates,
+                        group_size=10, groups=presetgroups)
+        group_names = [[t.name for t in grp] for grp in groups]
+        self.assertEqual(group_names, presetgroups)
 
 
 def compare_families(party, party_in, float_tol=0.001, check_event=True):
@@ -1615,7 +1711,8 @@ def compare_families(party, party_in, float_tol=0.001, check_event=True):
 
 def test_match_filter(plot=False, extract_detections=False,
                       threshold_type='MAD', threshold=10,
-                      template_excess=False, stream_excess=False):
+                      template_excess=False, stream_excess=False,
+                      conc_proc=False):
     """
     Function to test the capabilities of match_filter and just check that \
     it is working!  Uses synthetic templates and seeded, randomised data.
@@ -1629,8 +1726,8 @@ def test_match_filter(plot=False, extract_detections=False,
     import inspect
     # Read in the synthetic dataset
     templates = []
-    testing_path = os.path.join(os.path.dirname(os.path.abspath(
-        inspect.getfile(inspect.currentframe()))), 'test_data',
+    testing_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
+        inspect.getfile(inspect.currentframe())))), 'test_data',
         'synthetic_data')
     templates.append(read(os.path.join(testing_path, 'synth_template_0.ms')))
     templates.append(read(os.path.join(testing_path, 'synth_template_1.ms')))
@@ -1660,7 +1757,7 @@ def test_match_filter(plot=False, extract_detections=False,
         template_names=template_names, template_list=templates, st=data,
         threshold=threshold, threshold_type=threshold_type, trig_int=6.0,
         plot=plot, plotdir='.', cores=1, output_cat=False,
-        extract_detections=extract_detections)
+        extract_detections=extract_detections, concurrent_processing=conc_proc)
     if extract_detections:
         detection_streams = detections[1]
         detections = detections[0]
