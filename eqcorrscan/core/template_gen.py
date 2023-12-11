@@ -17,6 +17,8 @@ repeating events.
     GNU Lesser General Public License, Version 3
     (https://www.gnu.org/copyleft/lesser.html)
 """
+import warnings
+
 import numpy as np
 import logging
 import os
@@ -27,7 +29,7 @@ from obspy.clients.fdsn import Client as FDSNClient
 
 from eqcorrscan.utils.sac_util import sactoevent
 from eqcorrscan.utils import pre_processing
-from eqcorrscan.core import EQcorrscanDeprecationWarning
+# from eqcorrscan.core import EQcorrscanDeprecationWarning
 
 
 Logger = logging.getLogger(__name__)
@@ -52,10 +54,11 @@ class TemplateGenError(Exception):
 
 def template_gen(method, lowcut, highcut, samp_rate, filt_order,
                  length, prepick, swin="all", process_len=86400,
-                 all_horiz=False, delayed=True, plot=False, plotdir=None,
-                 return_event=False, min_snr=None, parallel=False,
-                 num_cores=False, save_progress=False, skip_short_chans=False,
-                 **kwargs):
+                 all_vert=False, all_horiz=False, delayed=True, plot=False,
+                 plotdir=None, return_event=False, min_snr=None,
+                 parallel=False, num_cores=False, save_progress=False,
+                 skip_short_chans=False, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'], **kwargs):
     """
     Generate processed and cut waveforms for use as templates.
 
@@ -82,6 +85,10 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         :func:`eqcorrscan.core.template_gen.template_gen`
     :type process_len: int
     :param process_len: Length of data in seconds to download and process.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one of
@@ -119,18 +126,26 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
         Whether to ignore channels that have insufficient length data or not.
         Useful when the quality of data is not known, e.g. when downloading
         old, possibly triggered data from a datacentre
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: List of :class:`obspy.core.stream.Stream` Templates
     :rtype: list
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. warning::
         If there is no phase_hint included in picks, and swin=all, all channels
@@ -338,17 +353,13 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             if len(st) == 0:
                 Logger.info("No data")
                 continue
+            kwargs = dict(
+                st=st, lowcut=lowcut, highcut=highcut,
+                filt_order=filt_order, samp_rate=samp_rate,
+                parallel=parallel, num_cores=num_cores, daylong=daylong)
             if daylong:
-                st = pre_processing.dayproc(
-                    st=st, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, samp_rate=samp_rate,
-                    parallel=parallel, starttime=UTCDateTime(starttime),
-                    num_cores=num_cores)
-            else:
-                st = pre_processing.shortproc(
-                    st=st, lowcut=lowcut, highcut=highcut,
-                    filt_order=filt_order, parallel=parallel,
-                    samp_rate=samp_rate, num_cores=num_cores)
+                kwargs.update(dict(starttime=UTCDateTime(starttime)))
+            st = pre_processing.multi_process(**kwargs)
         data_start = min([tr.stats.starttime for tr in st])
         data_end = max([tr.stats.endtime for tr in st])
 
@@ -388,8 +399,9 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             # Cut and extract the templates
             template = _template_gen(
                 event.picks, st, length, swin, prepick=prepick, plot=plot,
-                all_horiz=all_horiz, delayed=delayed, min_snr=min_snr,
-                plotdir=plotdir)
+                all_vert=all_vert, all_horiz=all_horiz, delayed=delayed,
+                min_snr=min_snr, vertical_chans=vertical_chans,
+                horizontal_chans=horizontal_chans, plotdir=plotdir)
             process_lengths.append(len(st[0].data) / samp_rate)
             temp_list.append(template)
             catalog_out += event
@@ -471,7 +483,7 @@ def extract_from_stack(stack, template, length, pre_pick, pre_pad,
 
     #  Process the data if necessary
     if not pre_processed:
-        new_template = pre_processing.shortproc(
+        new_template = pre_processing.multi_process(
             st=new_template, lowcut=lowcut, highcut=highcut,
             filt_order=filt_order, samp_rate=samp_rate)
     # Loop through the stack and trim!
@@ -560,7 +572,7 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                 "percent of the desired length, will not use".format(
                     tr.stats.station, tr.stats.channel,
                     (tr.stats.endtime - tr.stats.starttime) / 3600))
-        elif not pre_processing._check_daylong(tr):
+        elif not pre_processing._check_daylong(tr.data):
             Logger.warning(
                 "Data are mostly zeros, removing trace: {0}".format(tr.id))
         else:
@@ -582,9 +594,10 @@ def _rms(array):
     return np.sqrt(np.mean(np.square(array)))
 
 
-def _template_gen(picks, st, length, swin='all', prepick=0.05,
+def _template_gen(picks, st, length, swin='all', prepick=0.05, all_vert=False,
                   all_horiz=False, delayed=True, plot=False, min_snr=None,
-                  plotdir=None):
+                  plotdir=None, vertical_chans=['Z'],
+                  horizontal_chans=['E', 'N', '1', '2']):
     """
     Master function to generate a multiplexed template for a single event.
 
@@ -607,6 +620,10 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param prepick:
         Length in seconds to extract before the pick time default is 0.05
         seconds.
+    :type all_vert: bool
+    :param all_vert:
+        To use all channels defined in vertical_chans for P-arrivals even if
+        there is only a pick on one of them.  Defaults to False.
     :type all_horiz: bool
     :param all_horiz:
         To use both horizontal channels even if there is only a pick on one
@@ -630,18 +647,26 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     :param plotdir:
         The path to save plots to. If `plotdir=None` (default) then the figure
         will be shown on screen.
+    :type vertical_chans: list
+    :param vertical_chans:
+        List of channel endings on which P-picks are accepted.
+    :type horizontal_chans: list
+    :param horizontal_chans:
+        List of channel endings for horizontal channels, on which S-picks are
+        accepted.
 
     :returns: Newly cut template.
     :rtype: :class:`obspy.core.stream.Stream`
 
     .. note::
         By convention templates are generated with P-phases on the
-        vertical channel and S-phases on the horizontal channels, normal
-        seismograph naming conventions are assumed, where Z denotes vertical
-        and N, E, R, T, 1 and 2 denote horizontal channels, either oriented
-        or not.  To this end we will **only** use Z channels if they have a
-        P-pick, and will use one or other horizontal channels **only** if
-        there is an S-pick on it.
+        vertical channel [can be multiple, e.g., Z (vertical) and H
+        (hydrophone) for an ocean bottom seismometer] and S-phases on the
+        horizontal channels. By default, normal seismograph naming conventions
+        are assumed, where Z denotes vertical and N, E, 1 and 2 denote
+        horizontal channels, either oriented or not.  To this end we will
+        **only** use vertical channels if they have a P-pick, and will use one
+        or other horizontal channels **only** if there is an S-pick on it.
 
     .. note::
         swin argument: Setting to `P` will return only data for channels
@@ -690,10 +715,14 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
     for tr in st:
         # Check that the data can be represented by float16, and check they
         # are not all zeros
-        if np.all(tr.data.astype(np.float16) == 0):
-            Logger.error("Trace is all zeros at float16 level, either gain or "
-                         "check. Not using in template: {0}".format(tr))
-            continue
+        # Catch RuntimeWarning for overflow in casting
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            if np.all(tr.data.astype(np.float16) == 0):
+                Logger.error(
+                    "Trace is all zeros at float16 level, either gain or "
+                    f"check. Not using in template: {tr}")
+                continue
         st_copy += tr
     st = st_copy
     if len(st) == 0:
@@ -735,13 +764,18 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 starttime.update({'picks': s_pick})
             elif _swin == 'all':
-                if all_horiz and tr.stats.channel[-1] in ['1', '2', '3',
-                                                          'N', 'E']:
+                if all_vert and tr.stats.channel[-1] in vertical_chans:
+                    # Get all picks on vertical channels
+                    channel_pick = [
+                        pick for pick in station_picks
+                        if pick.waveform_id.channel_code[-1] in
+                        vertical_chans]
+                elif all_horiz and tr.stats.channel[-1] in horizontal_chans:
                     # Get all picks on horizontal channels
                     channel_pick = [
                         pick for pick in station_picks
                         if pick.waveform_id.channel_code[-1] in
-                        ['1', '2', '3', 'N', 'E']]
+                        horizontal_chans]
                 else:
                     channel_pick = [
                         pick for pick in station_picks
@@ -751,8 +785,11 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                 starttime.update({'picks': channel_pick})
             elif _swin == 'P':
                 p_pick = [pick for pick in station_picks
-                          if pick.phase_hint.upper()[0] == 'P' and
-                          pick.waveform_id.channel_code == tr.stats.channel]
+                          if pick.phase_hint.upper()[0] == 'P']
+                if not all_vert:
+                    p_pick = [pick for pick in p_pick
+                              if pick.waveform_id.channel_code ==
+                              tr.stats.channel]
                 if len(p_pick) == 0:
                     Logger.debug(
                         f"No picks with phase_hint P "
@@ -760,7 +797,7 @@ def _template_gen(picks, st, length, swin='all', prepick=0.05,
                     continue
                 starttime.update({'picks': p_pick})
             elif _swin == 'S':
-                if tr.stats.channel[-1] in ['Z', 'U']:
+                if tr.stats.channel[-1] in vertical_chans:
                     continue
                 s_pick = [pick for pick in station_picks
                           if pick.phase_hint.upper()[0] == 'S']
@@ -864,6 +901,7 @@ def _group_events(catalog, process_len, template_length, data_pad):
     :rtype: list
     """
     # case for catalog only containing one event
+    assert len(catalog), "No events to group"
     if len(catalog) == 1:
         return [catalog]
     sub_catalogs = []

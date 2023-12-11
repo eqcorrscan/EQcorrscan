@@ -28,10 +28,15 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import math
+
 from packaging import version
+from timeit import default_timer
+
+from obspy import UTCDateTime
 
 from eqcorrscan.utils.libnames import _load_cdll
 from eqcorrscan.utils import FMF_INSTALLED
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 
 Logger = logging.getLogger(__name__)
@@ -353,8 +358,11 @@ def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
     """
     # TODO: This is potentially quite a slow way to do this.
     for i, cccsum in enumerate(cccsums):
-        max_moveout = max(value[i] for key, value in pad_dict.items()
-                          if key in used_seed_ids[i])
+        moveouts = [value[i] for key, value in pad_dict.items()
+                    if key in used_seed_ids[i]]
+        max_moveout = 0
+        if len(moveouts):
+            max_moveout = max(moveouts)
         if max_moveout:
             cccsum[-max_moveout:] = 0.0
     return cccsums
@@ -741,23 +749,25 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         list of list of tuples of station, channel for all cross-correlations.
     :rtype: list
     """
+    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
+    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    assert set(seed_ids)
     # number of threads:
     #   default to using inner threads
     #   if `cores` or `cores_outer` passed in then use that
     #   else if OMP_NUM_THREADS set use that
     #   otherwise use all available
-    num_cores_inner = kwargs.pop('cores', None)
-    if num_cores_inner is None:
-        num_cores_inner = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+    inner_kwargs = copy.copy(kwargs)
+    num_cores_inner, num_cores_outer = _set_inner_outer_threading(
+        inner_kwargs.pop('cores', None),
+        inner_kwargs.pop("cores_outer", None),
+        len(stream))
 
     chans = [[] for _i in range(len(templates))]
-    array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
-    stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-    assert set(seed_ids)
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        stack=stack, *args, **kwargs)
+        cores_outer=num_cores_outer, stack=stack, *args, **inner_kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
@@ -770,8 +780,39 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
-                         cores_inner, stack=True, *args, **kwargs):
+def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
+    max_threads = int(os.getenv("OMP_NUM_THREADS", cpu_count()))
+    if num_cores_inner is None:
+        num_cores_inner = max_threads
+    num_cores_outer = num_cores_outer or 1
+    if num_cores_outer > 1:
+        if num_cores_outer > n_chans:
+            Logger.info(
+                "More outer cores than channels, setting to {0}".format(
+                    n_chans))
+            num_cores_outer = n_chans
+        if num_cores_outer * num_cores_inner > max_threads:
+            Logger.info("More threads requested than exist, falling back to "
+                        "outer-loop parallelism")
+            num_cores_outer = min(max_threads, num_cores_outer)
+            if 2 * num_cores_outer < max_threads:
+                num_cores_inner = max_threads // num_cores_outer
+            else:
+                num_cores_inner = 1
+    return num_cores_inner, num_cores_outer
+
+
+def fftw_multi_normxcorr(
+    template_array,
+    stream_array,
+    pad_array,
+    seed_ids,
+    cores_inner,
+    cores_outer,
+    stack=True,
+    *args,
+    **kwargs
+):
     """
     Use a C loop rather than a Python loop - in some cases this will be fast.
 
@@ -803,7 +844,7 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
-        ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
@@ -822,7 +863,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
         fft-length
         used channels (stacked as per templates)
         pad array (stacked as per templates)
-        num thread inner
+        num threads inner
+        num threads outer
         variance warnings
         missed correlation warnings (usually due to gaps)
         stack option
@@ -842,10 +884,12 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     n_channels = len(seed_ids)
     n_templates = template_array[seed_ids[0]].shape[0]
     image_len = stream_array[seed_ids[0]].shape[0]
-    # In testing, 2**13 consistently comes out fastest - setting to
-    # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
-    fft_len = kwargs.get(
-        "fft_len", min(2 ** 13, next_fast_len(template_len + image_len - 1)))
+    fft_len = kwargs.get("fft_len")
+    if fft_len is None:
+        # In testing, 2**13 consistently comes out fastest - setting to
+        # default. https://github.com/eqcorrscan/EQcorrscan/pull/285
+        # But this results in lots of chunks - 2 ** 17 is also good.
+        fft_len = min(2 ** 17, next_fast_len(template_len + image_len - 1))
     if fft_len < template_len:
         Logger.warning(
             f"FFT length of {fft_len} is shorter than the template, setting to"
@@ -885,7 +929,8 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
     ret = utilslib.multi_normxcorr_fftw(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np,
-        cores_inner, variance_warnings, missed_correlations, int(stack))
+        cores_inner, cores_outer, variance_warnings, missed_correlations,
+        int(stack))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret > 0:
@@ -914,6 +959,16 @@ def fftw_multi_normxcorr(template_array, stream_array, pad_array, seed_ids,
 # ------------------------------- FastMatchedFilter Wrapper
 
 def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
+    template_arr, data_arr, multipliers = _fmf_stabilisation(
+        template_arr=template_arr, data_arr=data_arr)
+
+    return _stabalised_fmf(
+        template_arr=template_arr, data_arr=data_arr, weights=weights,
+        pads=pads, arch=arch, multipliers=multipliers, step=step)
+
+
+def _stabalised_fmf(template_arr, data_arr, weights, pads, arch, multipliers,
+                    step):
     if not FMF_INSTALLED:
         raise ImportError("FastMatchedFilter is not available")
     import fast_matched_filter
@@ -923,30 +978,45 @@ def _run_fmf_xcorr(template_arr, data_arr, weights, pads, arch, step=1):
     else:
         raise ImportError(f"FMF version {fast_matched_filter.__version__} "
                           f"must be >= {MIN_FMF_VERSION}")
-    # Demean
-    template_arr -= template_arr.mean(axis=-1, keepdims=True)
-    data_arr -= data_arr.mean(axis=-1, keepdims=True)
 
-    multipliers = []
-    for x in range(data_arr.shape[0]):
-        # Check that stream is non-zero and above variance threshold
-        if not np.all(data_arr[x] == 0) and np.var(data_arr[x]) < 1e-8:
-            # Apply gain
-            data_arr[x] *= MULTIPLIER
-            Logger.warning(f"Low variance found for {x}, applying gain "
-                           "to stabilise correlations")
-            multipliers.append(MULTIPLIER)
-        else:
-            multipliers.append(1)
-
+    Logger.info("Handing off to FMF")
     cccsums = fmf(
         templates=template_arr, weights=weights, moveouts=pads,
         data=data_arr, step=step, arch=arch, normalize="full")
+    Logger.info("FMF returned")
     # Remove gain
-    for x in range(data_arr.shape[0]):
-        data_arr[x] *= multipliers[x]
-
+    if np.any(multipliers != 1):
+        data_arr /= multipliers
     return cccsums
+
+
+def _fmf_stabilisation(template_arr, data_arr):
+    """ FMF doesn't do the internal check that EQC correlations do. """
+    # Demean
+    tic = default_timer()
+    template_arr -= template_arr.mean(axis=-1, keepdims=True)
+    data_arr -= data_arr.mean(axis=-1, keepdims=True)
+    toc = default_timer()
+    Logger.info(f"Removing mean took {toc - tic:.4f} s")
+
+    # Stability checking
+    tic = default_timer()
+    # var is fairly slow, var = mean(abs(a - a.mean()) ** 2) - mean is zero,
+    # so we can skip a step
+    stability_issues = np.logical_and(
+        # data_arr.var(axis=1, keepdims=True) < 1e-8,
+        np.mean(np.abs(data_arr) ** 2, axis=1, keepdims=True) < 1e-8,
+        ~np.all(data_arr == 0, axis=1, keepdims=True))
+    multipliers = np.ones_like(stability_issues, dtype=float)
+    multipliers[stability_issues] = MULTIPLIER
+    if np.any(stability_issues):
+        Logger.warning(
+            f"Low variance found for channels {np.where(stability_issues)},"
+            f"applying gain to stabilise correlations")
+        data_arr *= multipliers
+    toc = default_timer()
+    Logger.info(f"Checking stability took {toc - tic:.4f} s")
+    return template_arr, data_arr, multipliers
 
 
 @register_array_xcorr("fmf")
@@ -1009,6 +1079,22 @@ def _fmf_cpu(templates, stream, *args, **kwargs):
     return _fmf_multi_xcorr(templates, stream, arch="precise")
 
 
+def _fmf_reshape(template_dict, stream_dict, pad_dict, seed_ids):
+    tic = default_timer()
+    # Reshape templates into [templates x traces x time]
+    t_arr = np.array([template_dict[seed_id]
+                      for seed_id in seed_ids]).swapaxes(0, 1)
+    # Reshape stream into [traces x time]
+    d_arr = np.array([stream_dict[seed_id] for seed_id in seed_ids])
+    # Moveouts should be [templates x traces]
+    pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
+    # Weights should be shaped like pads
+    weights = np.ones_like(pads)
+    toc = default_timer()
+    Logger.info(f"Reshaping for FMF took {toc - tic:.4f} s")
+    return t_arr, d_arr, weights, pads
+
+
 def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     """
     Apply FastMatchedFilter routine concurrently.
@@ -1045,15 +1131,9 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     assert set(seed_ids)
 
-    # Reshape templates into [templates x traces x time]
-    t_arr = np.array([template_dict[seed_id]
-                      for seed_id in seed_ids]).swapaxes(0, 1)
-    # Reshape stream into [traces x time]
-    d_arr = np.array([stream_dict[seed_id] for seed_id in seed_ids])
-    # Moveouts should be [templates x traces]
-    pads = np.array([pad_dict[seed_id] for seed_id in seed_ids]).swapaxes(0, 1)
-    # Weights should be shaped like pads
-    weights = np.ones_like(pads)
+    t_arr, d_arr, weights, pads = _fmf_reshape(
+        template_dict=template_dict, stream_dict=stream_dict,
+        pad_dict=pad_dict, seed_ids=seed_ids)
 
     cccsums = _run_fmf_xcorr(
         template_arr=t_arr, weights=weights, pads=pads,
@@ -1106,8 +1186,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
 # --------------------------- stream prep functions
 
 
-def _get_array_dicts(templates, stream, stack, copy_streams=True):
+def _get_array_dicts(templates, stream, stack, *args, **kwargs):
     """ prepare templates and stream, return dicts """
+    tic = default_timer()
     # Do some reshaping
     # init empty structures for data storage
     template_dict = {}
@@ -1118,16 +1199,18 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
     stream.sort(['network', 'station', 'location', 'channel'])
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
-        t_starts.append(min([tr.stats.starttime for tr in template]))
+        t_starts.append(
+            UTCDateTime(ns=min([tr.stats.starttime.__dict__['_UTCDateTime__ns']
+                                for tr in template])))
     stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
     seed_ids = [tr.id + '_' + str(i) for i, tr in enumerate(templates[0])]
     # pull common channels out of streams and templates and put in dicts
     for i, seed_id in enumerate(seed_ids):
-        temps_with_seed = [template[i].data for template in templates]
+        temps_with_seed = [template.traces[i].data for template in templates]
         t_ar = np.array(temps_with_seed).astype(np.float32)
         template_dict.update({seed_id: t_ar})
-        stream_channel = stream.select(id=seed_id.split('_')[0])[0]
+        stream_channel = _stream_quick_select(stream, seed_id.split('_')[0])[0]
         # Normalize data to ensure no float overflow
         stream_data = stream_channel.data / (np.max(
             np.abs(stream_channel.data)) / 1e5)
@@ -1138,16 +1221,22 @@ def _get_array_dicts(templates, stream, stack, copy_streams=True):
         # pad_list can become 0. 0-1 = -1; which is problematic.
         stream_offset = int(
             math.floor(stream_channel.stats.sampling_rate *
-                  (stream_channel.stats.starttime - stream_start)))
+                       (stream_channel.stats.starttime - stream_start)))
         if stack:
             pad_list = [
-                int(round(template[i].stats.sampling_rate *
-                          (template[i].stats.starttime -
-                           t_starts[j]))) - stream_offset
-                for j, template in zip(range(len(templates)), templates)]
+                int(round(
+                    template.traces[i].stats.__dict__['sampling_rate'] *
+                    (template.traces[i].stats.starttime.__dict__[
+                        '_UTCDateTime__ns'] -
+                     t_starts[j].__dict__['_UTCDateTime__ns']) / 1e9)) -
+                stream_offset
+                for j, template in enumerate(templates)]
         else:
-            pad_list = [0 for _ in range(len(templates))]
+            pad_list = [0 for _ in templates]
         pad_dict.update({seed_id: pad_list})
+    toc = default_timer()
+    Logger.info(f"Making array dicts for {len(seed_ids)} seed ids "
+                f"took {toc - tic:.4f} s")
 
     return stream_dict, template_dict, pad_dict, seed_ids
 

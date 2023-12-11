@@ -18,14 +18,10 @@ import shutil
 import logging
 
 from obspy import UTCDateTime, Stream, Catalog
-from obspy.core.event import (
-    StationMagnitude, Magnitude, ResourceIdentifier, WaveformStreamID,
-    CreationInfo, StationMagnitudeContribution)
 
-from eqcorrscan.core.match_filter.matched_filter import _group_process
+from eqcorrscan.utils.pre_processing import _group_process
 from eqcorrscan.core.match_filter.detection import Detection, get_catalog
 from eqcorrscan.utils.plotting import cumulative_detections
-from eqcorrscan.utils.mag_calc import relative_magnitude
 
 Logger = logging.getLogger(__name__)
 
@@ -507,8 +503,8 @@ class Family(object):
         return
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
-                 min_cc_from_mean_cc_factor=None,
-                 horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                 min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,
@@ -766,10 +762,17 @@ class Family(object):
             template_stream = stream
         if not pre_processed:
             processed_streams = _group_process(
-                template_group=[self.template], cores=process_cores,
-                parallel=parallel, stream=template_stream.merge().copy(),
-                daylong=False, ignore_length=ignore_length, overlap=0.0,
-                ignore_bad_data=ignore_bad_data)
+                filt_order=self.template.filt_order,
+                highcut=self.template.highcut,
+                lowcut=self.template.lowcut,
+                samp_rate=self.template.samp_rate,
+                process_length=self.template.process_length,
+                parallel=parallel,
+                cores=process_cores,
+                stream=template_stream.merge().copy(),
+                daylong=False,
+                ignore_length=ignore_length,
+                overlap=0.0, ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
             for p in processed_streams:
                 processed_stream += p
@@ -779,7 +782,9 @@ class Family(object):
             processed_stream = stream.merge()
         return processed_stream.split()
 
-    def extract_streams(self, stream, length, prepick):
+    def extract_streams(self, stream, length, prepick, all_vert=False,
+                        all_horiz=False, vertical_chans=['Z'],
+                        horizontal_chans=['E', 'N', '1', '2']):
         """
         Generate a dictionary of cut streams around detections.
 
@@ -797,7 +802,9 @@ class Family(object):
         """
         # Splitting and merging to remove trailing and leading masks
         return {d.id: d.extract_stream(
-            stream=stream, length=length, prepick=prepick).split().merge()
+            stream=stream, length=length, prepick=prepick, all_vert=all_vert,
+            all_horiz=all_horiz, vertical_chans=vertical_chans,
+            horizontal_chans=horizontal_chans).split().merge()
             for d in self.detections}
 
 

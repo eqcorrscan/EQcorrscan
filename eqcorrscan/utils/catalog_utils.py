@@ -24,7 +24,8 @@ Logger = logging.getLogger(__name__)
 
 
 def filter_picks(catalog, stations=None, channels=None, networks=None,
-                 locations=None, top_n_picks=None, evaluation_mode='all'):
+                 locations=None, top_n_picks=None, evaluation_mode='all',
+                 phase_hints=None, enforce_single_pick=False):
     """
     Filter events in the catalog based on a number of parameters.
 
@@ -43,6 +44,12 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     :param evaluation_mode:
         To select only manual or automatic picks, or use all (default).
     :type evaluation_mode: str
+    :param phase_hints: List of retained phase hints, or None to use all
+    :type phase_hints: list
+    :param enforce_single_pick:
+        Method to enforce using only one pick of each phase-hint per
+        station or False to leave all. Can be {False, "earliest"}
+    :type enforce_single_pick: str
 
 
     :return:
@@ -88,6 +95,8 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     >>> print(sorted(list(set(stations))))
     ['BAP', 'BMS', 'PAG', 'PAN', 'PBI', 'PKY', 'WOF', 'YEG']
     """
+    assert enforce_single_pick in {False, "earliest"}, \
+        f"enforce_single_pick={enforce_single_pick} unknown"
     # Don't work in place on the catalog
     filtered_catalog = catalog.copy()
 
@@ -115,6 +124,13 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
                 continue
             event.picks = [pick for pick in event.picks
                            if pick.waveform_id.location_code in locations]
+    if phase_hints:
+        for event in filtered_catalog:
+            if len(event.picks) == 0:
+                continue
+            event.picks = [pick for pick in event.picks
+                           if pick.phase_hint in phase_hints]
+
     if evaluation_mode == 'manual':
         for event in filtered_catalog:
             event.picks = [pick for pick in event.picks
@@ -158,6 +174,24 @@ def filter_picks(catalog, stations=None, channels=None, networks=None,
     for event in filtered_catalog:
         if len(event.picks) > 0:
             tmp_catalog.append(event)
+
+    # Finally remove extra picks
+    if enforce_single_pick:
+        reverse = False
+        # TODO: Allow other options
+        for ev in tmp_catalog:
+            retained_picks = []
+            stations = {p.waveform_id.station_code for p in ev.picks}
+            for station in stations:
+                phase_hints = {p.phase_hint for p in ev.picks
+                               if p.waveform_id.station_code == station}
+                for phase_hint in phase_hints:
+                    picks = [p for p in ev.picks
+                             if p.waveform_id.station_code == station
+                             and p.phase_hint == phase_hint]
+                    picks.sort(key=lambda p: p.time, reverse=reverse)
+                    retained_picks.append(picks[0])
+            ev.picks = retained_picks
 
     return tmp_catalog
 
