@@ -115,7 +115,7 @@ def _safemembers(members):
     for finfo in members:
         assert not _badpath(finfo.name, base), \
             f"{finfo.name} is blocked (illegal path)"
-        if finfo.issym() or finfo.islink():
+        if finfo.issym() or finfo.islnk():
             assert not _badlink(finfo, base), \
                 f"{finfo.name} is blocked: Link to {finfo.linkname}"
         else:
