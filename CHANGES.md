@@ -1,4 +1,49 @@
 ## Current
+* core.match_filter.tribe
+  - Significant re-write of detect logic to take advantage of parallel steps (see #544)
+  - Significant re-structure of hidden functions.
+* core.match_filter.matched_filter
+  - 5x speed up for MAD threshold calculation with parallel (threaded) MAD 
+    calculation (#531).
+* core.match_filter.detect
+  - 1000x speedup for retrieving unique detections for all templates.
+  - 30x speedup in handling detections (50x speedup in selecting detections,
+    4x speedup in adding prepick time)
+* core.match_filter.template
+  - new quick_group_templates function for 50x quicker template grouping.
+  - Templates with nan channels will be considered equal to other templates with shared
+  nan channels.
+  - New grouping strategy to minimise nan-channels - templates are grouped by
+  similar seed-ids. This should speed up both correlations and 
+  prep_data_for_correlation. See PR #457.
+* utils.pre_processing
+  - `_prep_data_for_correlation`: 3x speedup for filling NaN-traces in templates
+  - New function ``quick_trace_select` for a very efficient selection of trace
+    by seed ID without wildcards (4x speedup).
+  - `process`, `dayproc` and `shortproc` replaced by `multi_process`. Deprecation
+    warning added.
+  - `multi_process` implements multithreaded GIL-releasing parallelism of slow 
+    sections (detrending, resampling and filtering) of the processing workflow. 
+    Multiprocessing is no longer supported or needed for processing. See PR #540 
+    for benchmarks. New approach is slightly faster overall, and significantly 
+    more memory efficeint (uses c. 6x less memory than old multiprocessing approach 
+    on a 12 core machine)
+* utils.correlate
+  - 25 % speedup for `_get_array_dicts` with quicker access to properties.
+* utils.catalog_to_dd
+  - _prepare_stream
+    - Now more consistently slices templates to length = extract_len * samp_rate
+      so that user receives less warnings about insufficient data.
+  - write_correlations
+    - New option `use_shared_memory` to speed up correlation of many events by
+      ca. 20 % by moving trace data into shared memory.
+    - Add ability to weight correlations by raw correlation rather than just
+      correlation squared.
+* utils.cluster.decluster_distance_time
+  - Bug-fix: fix segmentation fault when declustering more than 46340 detections
+    with hypocentral_separation.
+
+## 0.4.4
 * core.match_filter
   - Bug-fix: peak-cores could be defined twice in _group_detect through kwargs.
     Fix: only update peak_cores if it isn't there already.
@@ -9,9 +54,17 @@
 * core.lag_calc._xcorr_interp
  - CC-interpolation replaced with resampling (more robust), old method
    deprecated. Use new method with use_new_resamp_method=True as **kwarg.
-* core.lag_calc:
+* core.lag_calc
+ - Added new option all_vert to transfer P-picks to all channels defined as
+   vertical_chans.
+ - Made usage of all_vert, all_horiz consistent across the lag_calc.
  - Fixed bug where minimum CC defined via min_cc_from_mean_cc_factor was not
    set correctly for negative correlation sums.
+* core.template_gen
+ - Added new option all_vert to transfer P-picks to all channels defined as
+   vertical_chans.
+ - Made handling of horizontal_chans and vertical_chans consistent so that user
+   can freely choose relevant channels.
 * utils.correlate
  - Fast Matched Filter now supported natively for version >= 1.4.0
  - Only full correlation stacks are returned now (e.g. where fewer than than

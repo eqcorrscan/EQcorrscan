@@ -15,6 +15,7 @@ import copy
 import glob
 import os
 import shutil
+import pickle
 import tarfile
 import tempfile
 import logging
@@ -93,12 +94,13 @@ class Party(object):
             raise NotImplementedError(
                 'Ambiguous add, only allowed Party or Family additions.')
         for oth_fam in families:
-            added = False
-            for fam in self.families:
-                if fam.template == oth_fam.template:
-                    fam += oth_fam
-                    added = True
-            if not added:
+            fam = self.select(oth_fam.template.name)
+            # This check is taken care of by Family.__iadd__
+            # assert fam.template == oth_fam.template, (
+            #     "Matching template names, but different templates")
+            if fam is not None:
+                fam += oth_fam
+            else:
                 self.families.append(oth_fam)
         return self
 
@@ -294,6 +296,10 @@ class Party(object):
             length += len(family)
         return length
 
+    @property
+    def _template_dict(self):
+        return {family.template.name: family for family in self}
+
     def select(self, template_name):
         """
         Select a specific family from the party.
@@ -302,8 +308,7 @@ class Party(object):
         :param template_name: Template name of Family to select from a party.
         :returns: Family
         """
-        return [fam for fam in self.families
-                if fam.template.name == template_name][0]
+        return self._template_dict.get(template_name)
 
     def sort(self):
         """
@@ -490,7 +495,7 @@ class Party(object):
 
     def decluster(self, trig_int, timing='detect', metric='avg_cor',
                   hypocentral_separation=None, min_chans=0,
-                  absolute_values=False):
+                  absolute_values=False, num_threads=None):
         """
         De-cluster a Party of detections by enforcing a detection separation.
 
@@ -527,6 +532,10 @@ class Party(object):
         :param absolute_values:
             Use the absolute value of the metric to choose the preferred
             detection.
+        :type num_threads: int
+        :param num_threads:
+            Number of threads to use for internal c-funcs if available.
+            Only valid if hypocentral_separation used.
 
         .. Warning::
             Works in place on object, if you need to keep the original safe
@@ -614,7 +623,8 @@ class Party(object):
             peaks_out = decluster_distance_time(
                 peaks=detect_vals, index=detect_times,
                 trig_int=trig_int * 10 ** 6, catalog=catalog,
-                hypocentral_separation=hypocentral_separation)
+                hypocentral_separation=hypocentral_separation,
+                num_threads=num_threads)
         else:
             peaks_out = decluster(
                 peaks=detect_vals, index=detect_times,
@@ -637,6 +647,7 @@ class Party(object):
                 template=template,
                 detections=[d for d in declustered_detections
                             if d.template_name == template_name]))
+        # TODO: this might be better changing the list of families in place.
         self.families = new_families
         return self
 
@@ -796,6 +807,12 @@ class Party(object):
             filenames = glob.glob(filename)
         for _filename in filenames:
             Logger.info(f"Reading from {_filename}")
+            # Cope with pickled files
+            if _filename.endswith('.pkl'):
+                with open(_filename, "rb") as _f:
+                    chunk_party = pickle.load(_f)
+                self.__iadd__(chunk_party)
+                continue
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
                 arc.extractall(path=temp_dir, members=_safemembers(arc))
@@ -833,8 +850,8 @@ class Party(object):
         return self
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
-                 min_cc_from_mean_cc_factor=None,
-                 horizontal_chans=['E', 'N', '1', '2'], vertical_chans=['Z'],
+                 min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
+                 horizontal_chans=['E', 'N', '1', '2'],
                  cores=1, interpolate=False, plot=False, plotdir=None,
                  parallel=True, process_cores=None, ignore_length=False,
                  ignore_bad_data=False, export_cc=False, cc_dir=None,

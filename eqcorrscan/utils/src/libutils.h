@@ -58,26 +58,17 @@ int decluster_dist_time(float*, long*, float*, long, float, long, float, unsigne
 
 int decluster_ll(float*, long long*, long long, float, long long, unsigned int*);
 
-int multi_decluster_ll(float*, long long*, long long*, int, float*, long long, unsigned int*, int);
-
 int decluster(float*, long*, long, float, long, unsigned int*);
-
-int multi_decluster(float*, long*, long*, int, float*, long, unsigned int*, int);
 
 int findpeaks(float*, long, float, unsigned int*);
 
-int multi_find_peaks(float*, long, int, float*, int, unsigned int*);
-
 // multi_corr functions
+int running_mean_var(double*, double*, int*, float*, long, long);
+
 int normxcorr_fftw_main(float*, long, long, float*, long, int, int, float*, long,
                         float*, float*, float*, fftwf_complex*, fftwf_complex*,
                         fftwf_complex*, fftwf_plan, fftwf_plan, fftwf_plan,
                         int*, int*, int, int*, int*, int);
-
-int normxcorr_fftw_internal(
-    long, long, float*, long, int, int, float*, long, long, float*, float*, float*,
-    float*, fftwf_complex*, fftwf_complex*, fftwf_complex*, fftwf_plan,
-    fftwf_plan, int*, int*, int, int*, int*, int, long);
 
 int normxcorr_fftw_threaded(
     float*, long, long, float*, long, float*, long, int*, int*, int*, int*);
@@ -92,7 +83,7 @@ void free_fftw_arrays(
 
 int multi_normxcorr_fftw(
     float*, long, long, long, float*, long, float*, long, int*, int*, int,
-    int*, int*, int);
+    int, int*, int*, int);
 
 int normxcorr_fftw(float*, long, long, float*, long, float*, long, int*, int*, int*, int*);
 

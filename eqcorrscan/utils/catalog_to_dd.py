@@ -11,8 +11,7 @@ Functions to generate hypoDD input files from catalogs.
 import numpy as np
 import logging
 from collections import namedtuple, defaultdict, Counter
-from obspy.core import stream
-from multiprocessing import cpu_count, Pool
+from multiprocessing import cpu_count, Pool, shared_memory
 
 from obspy import UTCDateTime, Stream
 from obspy.core.event import (
@@ -208,8 +207,20 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
                 seed_id=seed_pick_id.seed_id))
             continue
         tr = tr[0]
-        if tr.stats.endtime - tr.stats.starttime != extract_len:
-            Logger.warning(f"Insufficient data for {tr.id}, discarding")
+
+        # If there is one sample too many after this remove the first one
+        # by convention
+        n_samples_intended = extract_len * tr.stats.sampling_rate
+        if len(tr.data) == n_samples_intended + 1:
+            tr.data = tr.data[1:len(tr.data)]
+        # if tr.stats.endtime - tr.stats.starttime != extract_len:
+        if tr.stats.npts < n_samples_intended:
+            Logger.warning(
+                "Insufficient data ({rlen} s) for {tr_id}, discarding. Check "
+                "that your traces are at least of length {length} s, with a "
+                "pre_pick time of at least {prepick} s!".format(
+                    rlen=tr.stats.endtime - tr.stats.starttime,
+                    tr_id=tr.id, length=extract_len, prepick=pre_pick))
             continue
         stream_sliced.update(
             {seed_pick_id.phase_hint:
@@ -221,12 +232,26 @@ def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
 
 def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                              stream_dict, min_cc, extract_len, pre_pick,
-                             shift_len, interpolate, max_workers=1, **kwargs):
+                             shift_len, interpolate, max_workers=1,
+                             shm_data_shape=None, shm_dtype=None,
+                             weight_by_square=True, **kwargs):
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(
         f"Correlating {str(master.resource_id)} with {len(catalog)} events")
     differential_times_dict = dict()
+    # Assign trace data from shared memory
+    for (key, stream) in stream_dict.items():
+        for tr in stream:
+            if len(tr.data) == 0 and hasattr(tr, 'shared_memory_name'):
+                shm = shared_memory.SharedMemory(name=tr.shared_memory_name)
+                # Reconstructing numpy data array
+                sm_data = np.ndarray(
+                    shm_data_shape, dtype=shm_dtype, buffer=shm.buf)
+                tr.data = np.zeros_like(sm_data)
+                # Copy data into process memory
+                tr.data[:] = sm_data[:]
+
     master_stream = _prepare_stream(
         stream=stream_dict[str(master.resource_id)], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
@@ -379,11 +404,14 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                             event_id_1=event_id_mapper[
                                 str(master.resource_id)],
                             event_id_2=event_id_mapper[used_event_id])
+                    weight = cc_max
+                    if weight_by_square:
+                        weight **= 2
                     diff_time.obs.append(
                         _DTObs(station=chan.channel[0],
                                tt1=master_tts["{0}_{1}".format(
                                    chan.channel[0], phase_hint)],
-                               tt2=tt2, weight=cc_max ** 2,
+                               tt2=tt2, weight=weight,
                                phase=phase_hint[0]))
                     differential_times_dict.update({used_event_id: diff_time})
     # Threshold on min_link
@@ -465,12 +493,67 @@ def _prep_horiz_picks(catalog, stream_dict, event_id_mapper):
     return catalog
 
 
+def stream_dict_to_shared_mem(stream_dict):
+    """
+    Move the data of streams from a dict of (key, obspy.stream) into shared
+    memory so that the data can be retrieved by multiple processes in parallel.
+    This can help speed up parallel execution because the initiation of each
+    worker process becomes cheaper (less data to transfer). For now this only
+    puts the numpy array in trace.data into shared memory (because it's easy).
+
+    :type stream_dict: dict of (key, `obspy.stream`)
+    :param stream_dict: dict of streams that should be moved to shared memory
+
+    :returns: stream_dict, shm_name_list, shm_data_shapes, shm_data_dtypes
+
+    :rtype: dict
+    :return: Dictionary streams that were moved to shared memory
+    :rtype: list
+    :return: List of names to the shared memory address for each trace.
+    :rtype: list
+    :return:
+        List of numpy-array shaped for each trace-data array in shared memory.
+    :rtype: list
+    :return: List of data types for each trace-data-array in shared memory.
+
+    """
+    shm_name_list = []
+    shm_data_shapes = []
+    shm_data_dtypes = []
+    shm_references = []
+    for (key, stream) in stream_dict.items():
+        for tr in stream:
+            data_array = tr.data
+            # Let SharedMemory create suitable filename itself:
+            shm = shared_memory.SharedMemory(
+                create=True, size=data_array.nbytes)
+            shm_name_list.append(shm.name)
+            shm_references.append(shm)
+            # Now create a NumPy array backed by shared memory
+            shm_data_shape = data_array.shape
+            shm_data_dtype = data_array.dtype
+            shared_data_array = np.ndarray(
+                shm_data_shape, dtype=shm_data_dtype, buffer=shm.buf)
+            # Copy the original data into shared memory
+            shared_data_array[:] = data_array[:]
+            # tr.data = shared_data_array
+            tr.data = np.array([])
+            tr.shared_memory_name = shm.name
+            shm_data_shapes.append(shm_data_shape)
+            shm_data_dtypes.append(shm_data_dtype)
+    shm_data_shapes = list(set(shm_data_shapes))
+    shm_data_dtypes = list(set(shm_data_dtypes))
+    return (stream_dict, shm_name_list, shm_references, shm_data_shapes,
+            shm_data_dtypes)
+
+
 def compute_differential_times(catalog, correlation, stream_dict=None,
                                event_id_mapper=None, max_sep=8., min_link=8,
                                min_cc=None, extract_len=None, pre_pick=None,
                                shift_len=None, interpolate=False,
                                all_horiz=False, max_workers=None,
-                               max_trace_workers=1, *args, **kwargs):
+                               max_trace_workers=1, use_shared_memory=False,
+                               weight_by_square=True, *args, **kwargs):
     """
     Generate groups of differential times for a catalog.
 
@@ -517,6 +600,15 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         Maximum number of workers for parallel correlation of traces insted of
         events. If None then all threads will be used (but can only be used
         when max_workers = 1).
+    :type use_shared_memory: bool
+    :param use_shared_memory:
+        Whether to move trace data arrays into shared memory for computing
+        trace correlations. Can speed up total execution time by ~20 % for
+        hypodd-correlations with a lot of clustered seismicity.
+    :type weight_by_square: bool
+    :param weight_by_square:
+        Whether to compute correlation weights as the square of the maximum
+        correlation (True), or the maximum correlation (False).
 
     :rtype: dict
     :return: Dictionary of differential times keyed by event id.
@@ -534,12 +626,16 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         multiple events and may require more memory, but the latter can be
         quicker for few events with many or very long traces and requires less
         memory.
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     include_master = kwargs.get("include_master", False)
     correlation_kwargs = dict(
         min_cc=min_cc, stream_dict=stream_dict, extract_len=extract_len,
         pre_pick=pre_pick, shift_len=shift_len, interpolate=interpolate,
-        max_workers=max_workers)
+        max_workers=max_workers, weight_by_square=weight_by_square)
     for key, value in kwargs.items():
         correlation_kwargs.update({key: value})
     if correlation:
@@ -587,6 +683,19 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
             sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                              if master_filter[i]]
                             for master_filter in distance_filter)
+            # Move trace data into shared memory
+            if use_shared_memory:
+                (shm_stream_dict, shm_name_list, shm_references,
+                 shm_data_shapes, shm_dtypes) = (
+                    stream_dict_to_shared_mem(stream_dict))
+                if len(shm_data_shapes) == 1 and len(shm_dtypes) == 1:
+                    shm_data_shape = shm_data_shapes[0]
+                    shm_dtype = shm_dtypes[0]
+                    additional_args.update({'stream_dict': shm_stream_dict})
+                    additional_args.update({'shm_data_shape': shm_data_shape})
+                    additional_args.update({'shm_dtype': shm_dtype})
+                else:
+                    use_shared_memory = False
             with pool_boy(Pool, n, cores=max_workers) as pool:
                 # Parallelize over events instead of traces
                 additional_args.update(dict(max_workers=1))
@@ -598,11 +707,19 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                                                    sparse_catalog)
                     if str(master.resource_id) in additional_args[
                         "stream_dict"].keys()]
+                Logger.info('Submitted asynchronous jobs to workers.')
                 differential_times = {
                     master.resource_id: result.get()
                     for master, result in zip(sparse_catalog, results)
                     if str(master.resource_id) in additional_args[
                         "stream_dict"].keys()}
+                Logger.debug('Got results from workers.')
+                # Destroy shared memory
+                if use_shared_memory:
+                    for shm_name in shm_name_list:
+                        shm = shared_memory.SharedMemory(name=shm_name)
+                        shm.close()
+                        shm.unlink()
     else:
         sub_catalogs = ([ev for i, ev in enumerate(sparse_catalog)
                          if master_filter[i]]
@@ -659,6 +776,10 @@ def write_catalog(catalog, event_id_mapper=None, max_sep=8, min_link=8,
         threads will be used.
 
     :returns: event_id_mapper
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     differential_times, event_id_mapper = compute_differential_times(
         catalog=catalog, correlation=False, event_id_mapper=event_id_mapper,
@@ -697,9 +818,10 @@ def _filter_stream(event_id, st, lowcut, highcut):
 
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
-                       highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
+                       highcut=10.0, max_sep=8, min_link=8, min_cc=0.0,
                        interpolate=False, all_horiz=False, max_workers=None,
-                       parallel_process=False, *args, **kwargs):
+                       parallel_process=False, weight_by_square=True,
+                       *args, **kwargs):
     """
     Write a dt.cc file for hypoDD input for a given list of events.
 
@@ -746,6 +868,10 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
     :param parallel_process:
         Whether to process streams in parallel or not. Experimental, may use
         too much memory.
+    :type weight_by_square: bool
+    :param weight_by_square:
+        Whether to compute correlation weights as the square of the maximum
+        correlation (True), or the maximum correlation (False).
 
     :rtype: dict
     :returns: event_id_mapper
@@ -754,6 +880,10 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         You can provide processed waveforms, or let this function filter your
         data for you.  Filtering is undertaken by detrending and bandpassing
         with a 8th order zerophase butterworth filter.
+
+    .. note::
+        Differential times are computed as travel-time for event 1 minus
+        travel-time for event 2 (tt1 - tt2).
     """
     # Depreciated argument
     cc_thresh = kwargs.get("cc_thresh", None)
@@ -787,7 +917,8 @@ def write_correlations(catalog, stream_dict, extract_len, pre_pick,
         max_sep=max_sep, min_link=min_link, max_workers=max_workers,
         stream_dict=processed_stream_dict, min_cc=min_cc,
         extract_len=extract_len, pre_pick=pre_pick, shift_len=shift_len,
-        interpolate=interpolate, all_horiz=all_horiz, **kwargs)
+        interpolate=interpolate, all_horiz=all_horiz,
+        weight_by_square=weight_by_square, **kwargs)
     with open("dt.cc", "w") as f:
         for master_id, linked_events in correlation_times.items():
             for linked_event in linked_events:
@@ -802,7 +933,7 @@ def _hypodd_phase_pick_str(pick, sparse_event):
     """ Make a hypodd phase.dat style pick string. """
     pick_str = "{station:5s} {tt:7.4f} {weight:5.3f} {phase:1s}".format(
         station=pick.waveform_id.station_code,
-        tt=pick.tt, weight=pick.weight, phase_hint=pick.phase_hint[0].upper())
+        tt=pick.tt, weight=pick.weight, phase=pick.phase_hint[0].upper())
     return pick_str
 
 
