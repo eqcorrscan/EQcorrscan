@@ -113,12 +113,11 @@ def _safemembers(members):
     base = _resolved(".")
 
     for finfo in members:
-        if _badpath(finfo.name, base):
-            print(finfo.name, "is blocked (illegal path)")
-        elif finfo.issym() and _badlink(finfo, base):
-            print(finfo.name, "is blocked: Hard link to", finfo.linkname)
-        elif finfo.islnk() and _badlink(finfo, base):
-            print(finfo.name, "is blocked: Symlink to", finfo.linkname)
+        assert not _badpath(finfo.name, base), \
+            f"{finfo.name} is blocked (illegal path)"
+        if finfo.issym() or finfo.islink():
+            assert not _badlink(finfo, base), \
+                f"{finfo.name} is blocked: Link to {finfo.linkname}"
         else:
             yield finfo
 
