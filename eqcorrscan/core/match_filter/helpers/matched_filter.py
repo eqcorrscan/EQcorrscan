@@ -224,16 +224,16 @@ def _test_event_similarity(event_1, event_2, verbose=False, shallow=False):
                               ' %s' % (amp_1[key], amp_2[key], key))
                     return False
             elif key == "waveform_id":
-                if pick_1[key].station_code != pick_2[key].station_code:
+                if amp_1[key].station_code != amp_2[key].station_code:
                     if verbose:
                         print('Station codes do not match')
                     return False
-                if pick_1[key].channel_code[0] != pick_2[key].channel_code[0]:
+                if amp_1[key].channel_code[0] != amp_2[key].channel_code[0]:
                     if verbose:
                         print('Channel codes do not match')
                     return False
-                if pick_1[key].channel_code[-1] != \
-                        pick_2[key].channel_code[-1]:
+                if amp_1[key].channel_code[-1] != \
+                        amp_2[key].channel_code[-1]:
                     if verbose:
                         print('Channel codes do not match')
                     return False

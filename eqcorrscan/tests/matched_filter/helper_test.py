@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import logging
 import unittest
+import pytest
 
 from multiprocessing import Process, Queue
 
@@ -18,7 +19,8 @@ from obspy.clients.fdsn import Client
 from obspy.clients.earthworm import Client as EWClient
 
 from eqcorrscan.core.match_filter import Party
-from eqcorrscan.core.match_filter.helpers import get_waveform_client
+from eqcorrscan.core.match_filter.helpers import (
+    get_waveform_client, _test_event_similarity)
 from eqcorrscan.core.match_filter.helpers.processes import (
     _get_detection_stream, Poison, _prepper, _pre_processor,
     _make_detections)
@@ -50,6 +52,80 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertFalse(hasattr(client, "get_waveforms_bulk"))
         client = get_waveform_client(client)
         self.assertTrue(hasattr(client, "get_waveforms_bulk"))
+
+    @pytest.mark.network
+    def test_event_similarity_quiet(self):
+        self._event_similarity(verbose=False)
+
+    @pytest.mark.network
+    def test_event_similarity_loud(self):
+        self._event_similarity(verbose=True)
+
+    def _event_similarity(self, verbose: bool = False):
+        client = Client("GEONET")
+        event = client.get_events(eventid="2023p923930")[0]
+        self.assertTrue(_test_event_similarity(
+            event, event, verbose=verbose))
+        event2 = event.copy()
+        self.assertTrue(_test_event_similarity(
+            event, event2, verbose=verbose))
+        with self.assertRaises(NotImplementedError):
+            _test_event_similarity(event, "bob")
+        event2.origins = event2.origins[0:-2]
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.origins[-1].arrivals = event2.origins[-1].arrivals[0:-2]
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.origins[-1].arrivals[-1].time_residual = \
+            event2.origins[-1].arrivals[-1].time_residual - .5
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.origins[-1].arrivals[-1].distance = \
+            event2.origins[-1].arrivals[-1].distance - 1.5
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.origins[-1].time -= 60
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        # Picks
+        event2 = event.copy()
+        event2.picks = event2.picks[0:-2]
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.picks[0].time += 20
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.picks[0].waveform_id.station_code = "BOB"
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.picks[0].waveform_id.channel_code = "BOB"
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        # Amplitudes
+        event2 = event.copy()
+        event2.amplitudes = event2.amplitudes[0:-2]
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.amplitudes[0].generic_amplitude += 100
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.amplitudes[0].waveform_id.station_code = "BOB"
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
+        event2 = event.copy()
+        event2.amplitudes[0].waveform_id.channel_code = "BOB"
+        self.assertFalse(_test_event_similarity(
+            event, event2, verbose=verbose))
 
 
 class ProcessTests(abc.ABC, unittest.TestCase):
