@@ -717,7 +717,8 @@ def _subspace_process(streams, lowcut, highcut, filt_order, sampling_rate,
                                'station ' + stachan[0] + '.' + stachan[1])
                 processed_stream += tr
             processed_stream += tr
-        assert [(tr.stats.station, tr.stats.channel) for tr in processed_stream] == input_stachans
+        assert [(tr.stats.station, tr.stats.channel)
+                for tr in processed_stream] == input_stachans
         processed_streams.append(processed_stream)
         if no_missed and multiplex:
             for tr in processed_stream:

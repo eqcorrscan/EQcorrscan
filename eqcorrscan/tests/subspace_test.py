@@ -137,9 +137,9 @@ class SubspaceTestingMethods(unittest.TestCase):
             self.assertTrue(np.allclose(
                 identity, np.diag(np.ones(len(identity), dtype=np.float16))))
         comparison_detector = subspace.read_detector(
-                os.path.join(os.path.abspath(
-                    os.path.dirname(__file__)), 'test_data', 'subspace',
-                    'master_detector_multi_unaligned.h5'))
+            os.path.join(os.path.abspath(
+                os.path.dirname(__file__)), 'test_data', 'subspace',
+                'master_detector_multi_unaligned.h5'))
         # Run to re-fresh file after SVD changes upstream
         # detector.write(os.path.join(os.path.abspath(
         #             os.path.dirname(__file__)), 'test_data', 'subspace',
@@ -160,7 +160,8 @@ class SubspaceTestingMethods(unittest.TestCase):
                     print(other_item)
                     print("Differences:")
                     print(item - other_item)
-                    print(f"Max difference: {np.max(np.abs(item - other_item))}")
+                    print(f"Max difference: "
+                          f"{np.max(np.abs(item - other_item))}")
                 self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
                                             atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
@@ -204,7 +205,8 @@ class SubspaceTestingMethods(unittest.TestCase):
                     print(other_item)
                     print("Differences:")
                     print(item - other_item)
-                    print(f"Max difference: {np.max(np.abs(item - other_item))}")
+                    print(f"Max difference: "
+                          f"{np.max(np.abs(item - other_item))}")
                 self.assertTrue(np.allclose(np.abs(item), np.abs(other_item),
                                             atol=0.001))
         # Finally check that the __eq__ method works if all the above passes.
