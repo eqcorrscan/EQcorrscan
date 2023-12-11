@@ -43,6 +43,33 @@ from eqcorrscan.utils.plotting import _match_filter_plot
 Logger = logging.getLogger(__name__)
 
 
+def _wildcard_fill(
+    net: str, sta: str, loc: str, chan: str
+) -> [str, str, str, str]:
+    """
+    Convert none to wildcards. Cope with seisan channel naming.
+
+    .. rubric:: Example
+
+    >>> _wildcard_fill(None, None, None, None)
+    ('*', '*', '*', '*')
+    >>> _wildcard_fill("NZ", "FOZ", "10", "HZ")
+    ('NZ', 'FOZ', '10', 'H?Z')
+    """
+    if net in [None, '']:
+        net = "*"
+    if sta in [None, '']:
+        sta = "*"
+    if loc in [None, '']:
+        loc = "*"
+    if chan in [None, '']:
+        chan = "*"
+    # Cope with old seisan chans
+    if len(chan) == 2:
+        chan = f"{chan[0]}?{chan[-1]}"
+    return net, sta, loc, chan
+
+
 def _download_st(
     starttime: UTCDateTime,
     endtime: UTCDateTime,

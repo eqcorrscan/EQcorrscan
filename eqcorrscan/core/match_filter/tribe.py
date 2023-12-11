@@ -37,6 +37,7 @@ from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.helpers import (
     _safemembers, _par_read, get_waveform_client,
     _remove_duplicates, _moveout)
+from eqcorrscan.core.match_filter.helpers.tribe import _wildcard_fill
 
 from eqcorrscan.utils.pre_processing import (
     _quick_copy_stream, _prep_data_for_correlation)
@@ -108,13 +109,13 @@ class Tribe(object):
         >>> print(tribe)
         Tribe of 3 templates
         """
+        assert isinstance(other, (Tribe, Template)), \
+            "Must be either Template or Tribe"
         self.__unique_ids(other)
         if isinstance(other, Tribe):
             self.templates += other.templates
         elif isinstance(other, Template):
             self.templates.append(other)
-        else:
-            raise TypeError('Must be either Template or Tribe')
         return self
 
     def __eq__(self, other):
@@ -185,6 +186,8 @@ class Tribe(object):
          process length: None s
         >>> tribe[0:2]
         Tribe of 2 templates
+        >>> tribe["d"]
+        []
         """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
@@ -325,6 +328,11 @@ class Tribe(object):
         >>> tribe = Tribe(templates=[Template(name='c', st=read())])
         >>> tribe.write('test_tribe')
         Tribe of 1 templates
+        >>> tribe.write(
+        ...    "this_wont_work.bob",
+        ...    catalog_format="BOB") # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        TypeError: BOB is not supported
         """
         from eqcorrscan.core.match_filter import CAT_EXT_MAP
 
@@ -414,6 +422,13 @@ class Tribe(object):
         >>> tribe.write('test_tribe')
         Tribe of 1 templates
         >>> tribe_back = Tribe().read('test_tribe.tgz')
+        >>> tribe_back == tribe
+        True
+        >>> # This can also read pickled templates
+        >>> import pickle
+        >>> with open("test_tribe.pkl", "wb") as f:
+        ...    pickle.dump(tribe, f)
+        >>> tribe_back = Tribe().read("test_tribe.pkl")
         >>> tribe_back == tribe
         True
         """
@@ -604,17 +619,8 @@ class Tribe(object):
                 # Cope with missing info and convert to wildcards
                 net, sta, loc, chan = tr.id.split('.')
                 if wildcards:
-                    if net in [None, '']:
-                        net = "*"
-                    if sta in [None, '']:
-                        sta = "*"
-                    if loc in [None, '']:
-                        loc = "*"
-                    if chan in [None, '']:
-                        chan = "*"
-                    # Cope with old seisan chans
-                    if len(chan) == 2:
-                        chan = f"{chan[0]}?{chan[-1]}"
+                    net, sta, loc, chan = _wildcard_fill(
+                        net, sta, loc, chan)
                 template_channel_ids.add((net, sta, loc, chan))
         return template_channel_ids
 
@@ -630,10 +636,6 @@ class Tribe(object):
             Method of stacking, see :mod:`eqcorrscan.utils.clustering`
 
         :return: List of tribes.
-
-        .. rubric:: Example
-
-
         """
         from eqcorrscan.utils import clustering
         tribes = []
@@ -1586,7 +1588,7 @@ if __name__ == "__main__":
 
     doctest.testmod()
     # List files to be removed after doctest
-    cleanup = ['test_tribe.tgz']
+    cleanup = ['test_tribe.tgz', "test_tribe.pkl"]
     for f in cleanup:
         if os.path.isfile(f):
             os.remove(f)
