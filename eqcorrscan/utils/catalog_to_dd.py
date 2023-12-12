@@ -818,7 +818,7 @@ def _filter_stream(event_id, st, lowcut, highcut):
 
 def write_correlations(catalog, stream_dict, extract_len, pre_pick,
                        shift_len, event_id_mapper=None, lowcut=1.0,
-                       highcut=10.0, max_sep=8, min_link=8,  min_cc=0.0,
+                       highcut=10.0, max_sep=8, min_link=8, min_cc=0.0,
                        interpolate=False, all_horiz=False, max_workers=None,
                        parallel_process=False, weight_by_square=True,
                        *args, **kwargs):
@@ -933,7 +933,7 @@ def _hypodd_phase_pick_str(pick, sparse_event):
     """ Make a hypodd phase.dat style pick string. """
     pick_str = "{station:5s} {tt:7.4f} {weight:5.3f} {phase:1s}".format(
         station=pick.waveform_id.station_code,
-        tt=pick.tt, weight=pick.weight, phase_hint=pick.phase_hint[0].upper())
+        tt=pick.tt, weight=pick.weight, phase=pick.phase_hint[0].upper())
     return pick_str
 
 
