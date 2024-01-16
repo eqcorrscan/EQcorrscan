@@ -53,6 +53,10 @@ class Party(object):
         if isinstance(families, Family):
             families = [families]
         if families:
+            assert isinstance(families, list), \
+                "Families must be list of Family objects"
+            assert all(isinstance(f, Family) for f in families), \
+                "Families must be list of Family objects"
             self.families.extend(families)
 
     def __repr__(self):
