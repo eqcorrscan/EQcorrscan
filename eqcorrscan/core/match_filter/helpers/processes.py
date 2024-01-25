@@ -70,21 +70,32 @@ class Poison(Exception):
         return self.__repr__()
 
 
-def _get_and_check(input_queue: Queue, poison_queue: Queue, step: float = 0.5):
+def _get_and_check(
+    input_queue: Queue, 
+    poison_queue: Queue, 
+    step: float = 0.5,
+    timeout: float = None,
+):
     """
     Get from a queue and check for poison - returns Poisoned if poisoned.
 
     :param input_queue: Queue to get something from
     :param poison_queue: Queue to check for poison
+    :param step: Time in seconds to wait until re-checking the queues
+    :param timeout: Maximum time in seconds to wait for data in the input queue.
 
     :return: Item from queue or Poison.
     """
+    waited = 0.0
     while True:
         poison = _check_for_poison(poison_queue)
         if poison:
             return poison
         if input_queue.empty():
             time.sleep(step)
+            waited += step
+            if timeout and waited >= timeout:
+                return Poison(Empty(f"{input_queue} is empty after {timeout} seconds"))
         else:
             return input_queue.get_nowait()
 
