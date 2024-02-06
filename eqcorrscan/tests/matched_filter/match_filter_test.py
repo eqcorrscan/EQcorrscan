@@ -729,6 +729,18 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 party=party, party_in=self.party, float_tol=0.05,
                 check_event=True)
 
+    def test_min_stations(self):
+        """
+        Check that minimum stations is respected and templates
+        without sufficient stations are not run.
+        """
+        for conc_proc in [True, False]:
+            party = self.tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False, min_stations=6,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 0)
+
     def test_tribe_detect_with_empty_streams(self):
         """
         Compare the detect method for a tribe of one vs two templates and check
