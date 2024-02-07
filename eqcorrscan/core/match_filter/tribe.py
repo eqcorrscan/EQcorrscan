@@ -1437,7 +1437,8 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing, groups=groups)
+            concurrent_processing=concurrent_processing, groups=groups,
+            min_stations=min_stations)
 
         if not concurrent_processing:
             Logger.warning("Using concurrent_processing=True can be faster if"
