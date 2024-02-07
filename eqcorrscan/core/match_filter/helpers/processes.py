@@ -388,14 +388,17 @@ def _pre_processor(
             break
         Logger.debug("Getting stream from queue")
         st = _get_and_check(input_stream_queue, poison_queue)
+        Logger.warning(st)
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
             break
         elif isinstance(st, Poison):
             Logger.error("Killed")
             break
-        if len(st) == 0:
-            break
+        # if len(st) == 0:
+        #     Logger.error("Empty stream provided")
+        #     poison_queue.put_nowait(Poison(IndexError("No matching channels between stream and ")))
+        #     break
         Logger.info(f"Processing stream:\n{st}")
 
         # Process stream
@@ -528,6 +531,10 @@ def _prepper(
                 f"Multiple channels in continuous data for "
                 f"{', '.join(_duplicate_sids)}")))
             break
+        template_sids = {tr.id for template in templates for tr in template.st}
+        if len(template_sids.intersection(st_sids)) == 0:
+            poison_queue.put_nowait(Poison(
+                IndexError("No matching channels between templates and data")))
         # Do the grouping for this stream
         Logger.info(f"Grouping {len(templates)} templates into groups "
                     f"of {group_size} templates")

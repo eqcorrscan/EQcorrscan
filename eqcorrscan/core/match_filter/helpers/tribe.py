@@ -287,7 +287,7 @@ def _group(
                 if t_name in t_dict.keys() and
                 len({tr.stats.station for tr in
                      t_dict.get(t_name).st}.intersection(stations)
-                    ) >= min_stations]
+                    ) >= max(1, min_stations)]
             Logger.info(f"Dropping {len(grp) - len(template_group)} templates "
                         f"due to fewer than {min_stations} matched channels")
             if len(template_group):

@@ -792,7 +792,7 @@ def group_templates_by_seedid(
     # Don't use templates that don't have any overlap with the stream
     template_seed_ids = tuple(
         (t_name, t_chans) for t_name, t_chans in template_seed_ids
-        if len({sid.split('.')[1] for sid in t_chans}) >= min_stations)
+        if len({sid.split('.')[1] for sid in t_chans}) >= max(1, min_stations))
     Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
                 f"templates due to fewer than {min_stations} matched channels")
     # We will need this dictionary at the end for getting the templates by id
