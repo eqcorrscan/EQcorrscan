@@ -734,8 +734,24 @@ class TestMatchObjectHeavy(unittest.TestCase):
         Check that minimum stations is respected and templates
         without sufficient stations are not run.
         """
-        for conc_proc in [True, False]:
-            party = self.tribe.detect(
+        local_tribe = self.tribe.copy()
+        # Drop some channels
+        local_tribe[0].st = local_tribe[0].st[0:-2]
+        for conc_proc in [False, True]:
+            party = local_tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, daylong=False, plot=False, min_stations=5,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 3)
+
+    def test_no_stations(self):
+        """
+        Check that minimum stations is respected and templates
+        without sufficient stations are not run.
+        """
+        local_tribe = self.tribe.copy()
+        for conc_proc in [False, True]:
+            party = local_tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
                 trig_int=6.0, daylong=False, plot=False, min_stations=6,
                 parallel_process=False, concurrent_processing=conc_proc)

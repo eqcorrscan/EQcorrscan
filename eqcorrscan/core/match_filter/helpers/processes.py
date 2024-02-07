@@ -445,6 +445,7 @@ def _prepper(
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
+    min_stations: int = 0,
 ):
     """
     Prepare templates and stream for correlation.
@@ -472,6 +473,8 @@ def _prepper(
         Queue to check for poison, or put poison into if something goes awry
     :param xcorr_func:
         Name of correlation function backend to be used.
+    :param min_stations:
+        Minimum number of stations to run a template.
     """
     if isinstance(templates, dict):
         # We have been passed a db of template files on disk
@@ -530,11 +533,16 @@ def _prepper(
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size, groups=groups)
+                                     group_size=group_size, groups=groups,
+                                     min_stations=min_stations)
         except Exception as e:
             Logger.error(e)
             poison_queue.put_nowait(Poison(e))
             break
+        if template_groups is None:
+            output_queue.put_nowait(None)
+            return
+
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
             killed = _check_for_poison(poison_queue)

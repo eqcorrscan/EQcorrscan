@@ -761,6 +761,7 @@ def group_templates_by_seedid(
         templates: List[Template],
         st_seed_ids: Set[str],
         group_size: int,
+        min_stations: int = 0,
 ) -> List[List[Template]]:
     """
     Group templates to reduce dissimilar traces
@@ -771,6 +772,9 @@ def group_templates_by_seedid(
         Seed ids in the stream to be matched with
     :param group_size:
         Maximum group size - will not exceed this size
+    :param min_stations:
+        Minimum number of overlapping stations between template
+        and stream to use the template for detection.
 
     :return:
         List of lists of templates grouped.
@@ -788,9 +792,9 @@ def group_templates_by_seedid(
     # Don't use templates that don't have any overlap with the stream
     template_seed_ids = tuple(
         (t_name, t_chans) for t_name, t_chans in template_seed_ids
-        if len(t_chans))
+        if len({sid.split('.')[1] for sid in t_chans}) >= min_stations)
     Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
-                f"templates due to no matched channels")
+                f"templates due to fewer than {min_stations} matched channels")
     # We will need this dictionary at the end for getting the templates by id
     template_dict = {t.name: t for t in templates}
     # group_size can be None, in which case we don't actually need to group
