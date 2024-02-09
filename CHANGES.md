@@ -1,4 +1,9 @@
 ## Current
+- core.match_filter.tribe
+  - Add option to set minimum number of stations required to use a template in detect
+    (`min_stations` kwarg)
+
+## 0.5.0
 * core.match_filter.tribe
   - Significant re-write of detect logic to take advantage of parallel steps (see #544)
   - Significant re-structure of hidden functions.
