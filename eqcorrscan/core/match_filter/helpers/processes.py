@@ -397,7 +397,8 @@ def _pre_processor(
             break
         # if len(st) == 0:
         #     Logger.error("Empty stream provided")
-        #     poison_queue.put_nowait(Poison(IndexError("No matching channels between stream and ")))
+        #     poison_queue.put_nowait(Poison(IndexError
+        #           ("No matching channels between stream and ")))
         #     break
         Logger.info(f"Processing stream:\n{st}")
 
