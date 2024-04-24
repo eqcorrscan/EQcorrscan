@@ -1226,7 +1226,7 @@ class Tribe(object):
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      check_processing=True, make_events, **kwargs):
+                      check_processing=True, make_events=True, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
