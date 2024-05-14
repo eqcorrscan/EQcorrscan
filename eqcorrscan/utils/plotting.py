@@ -1843,7 +1843,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     """
     import matplotlib.pyplot as plt
     # Ensure magnitudes are sorted
-    magnitudes.sort()
+    magnitudes = sorted(magnitudes)
     # Check that there are no nans or infs
     if np.isnan(magnitudes).any():
         Logger.warning('Found nan values, removing them')
