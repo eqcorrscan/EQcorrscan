@@ -23,6 +23,7 @@ from os.path import join
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
+from obspy.core.event import Comment
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -489,6 +490,13 @@ class Party(object):
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
+                    if d.event:
+                        d.comments = [
+                            c for c in d.comments
+                            if not c.lower().startswith("threshold=")]
+                        d.comments.append(Comment(
+                            text=f"threshold={new_thresh}"))
+
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
         return self
