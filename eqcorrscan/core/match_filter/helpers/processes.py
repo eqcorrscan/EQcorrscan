@@ -388,14 +388,18 @@ def _pre_processor(
             break
         Logger.debug("Getting stream from queue")
         st = _get_and_check(input_stream_queue, poison_queue)
+        Logger.warning(st)
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
             break
         elif isinstance(st, Poison):
             Logger.error("Killed")
             break
-        if len(st) == 0:
-            break
+        # if len(st) == 0:
+        #     Logger.error("Empty stream provided")
+        #     poison_queue.put_nowait(Poison(IndexError
+        #           ("No matching channels between stream and ")))
+        #     break
         Logger.info(f"Processing stream:\n{st}")
 
         # Process stream
@@ -445,6 +449,7 @@ def _prepper(
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
+    min_stations: int = 0,
 ):
     """
     Prepare templates and stream for correlation.
@@ -472,6 +477,8 @@ def _prepper(
         Queue to check for poison, or put poison into if something goes awry
     :param xcorr_func:
         Name of correlation function backend to be used.
+    :param min_stations:
+        Minimum number of stations to run a template.
     """
     if isinstance(templates, dict):
         # We have been passed a db of template files on disk
@@ -525,16 +532,25 @@ def _prepper(
                 f"Multiple channels in continuous data for "
                 f"{', '.join(_duplicate_sids)}")))
             break
+        template_sids = {tr.id for template in templates for tr in template.st}
+        if len(template_sids.intersection(st_sids)) == 0:
+            poison_queue.put_nowait(Poison(
+                IndexError("No matching channels between templates and data")))
         # Do the grouping for this stream
         Logger.info(f"Grouping {len(templates)} templates into groups "
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size, groups=groups)
+                                     group_size=group_size, groups=groups,
+                                     min_stations=min_stations)
         except Exception as e:
             Logger.error(e)
             poison_queue.put_nowait(Poison(e))
             break
+        if template_groups is None:
+            output_queue.put_nowait(None)
+            return
+
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
             killed = _check_for_poison(poison_queue)
@@ -638,6 +654,7 @@ def _make_detections(
     threshold: float,
     threshold_type: str,
     save_progress: bool,
+    make_events: bool,
     output_queue: Queue,
     poison_queue: Queue,
 ):
@@ -661,6 +678,8 @@ def _make_detections(
     :param save_progress:
         Whether to save progress or not: If true, individual Party files will
         be written each time this is run.
+    :param make_events:
+        Whether to make events for all detections or not.
     :param output_queue:
         Queue of output Party filenames.
     :param poison_queue:
@@ -690,7 +709,7 @@ def _make_detections(
                 detections=detections, threshold=threshold,
                 threshold_type=threshold_type, templates=templates,
                 chunk_start=starttime, chunk_id=chunk_id,
-                save_progress=save_progress)
+                save_progress=save_progress, make_events=make_events)
             chunk_id += 1
             output_queue.put_nowait(chunk_file)
         except Exception as e:

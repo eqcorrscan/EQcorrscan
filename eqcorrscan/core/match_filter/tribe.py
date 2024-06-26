@@ -657,8 +657,8 @@ class Tribe(object):
                concurrent_processing=False, ignore_length=False,
                ignore_bad_data=False, group_size=None, overlap="calculate",
                full_peaks=False, save_progress=False, process_cores=None,
-               pre_processed=False, check_processing=True,
-               **kwargs):
+               pre_processed=False, check_processing=True, make_events=True,
+               min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -749,6 +749,10 @@ class Tribe(object):
         :type check_processing: bool
         :param check_processing:
             Whether to check that all templates were processed the same.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -871,7 +875,7 @@ class Tribe(object):
                 ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
                 export_cccsums, parallel, peak_cores, trig_int, full_peaks,
-                plot, plotdir, plot_format,)
+                plot, plotdir, plot_format, make_events, min_stations,)
 
         if concurrent_processing:
             party = self._detect_concurrent(*args, **inner_kwargs)
@@ -899,7 +903,7 @@ class Tribe(object):
         group_size, groups, sampling_rate, threshold, threshold_type,
         save_progress, xcorr_func, concurrency, cores, export_cccsums,
         parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        **kwargs
+        make_events, min_stations, **kwargs
     ):
         """ Internal serial detect workflow. """
         from eqcorrscan.core.match_filter.helpers.tribe import (
@@ -929,7 +933,10 @@ class Tribe(object):
             delta = st_chunk[0].stats.delta
             template_groups = _group(
                 sids={tr.id for tr in st_chunk},
-                templates=self.templates, group_size=group_size, groups=groups)
+                templates=self.templates, group_size=group_size, groups=groups,
+                min_stations=min_stations)
+            if template_groups is None:
+                continue
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -961,7 +968,8 @@ class Tribe(object):
                     detections=detections, threshold=threshold,
                     threshold_type=threshold_type,
                     templates=self.templates, chunk_start=starttime,
-                    chunk_id=i, save_progress=save_progress)
+                    chunk_id=i, save_progress=save_progress,
+                    make_events=make_events)
                 chunk_files.append(chunk_file)
         # Rebuild
         for _chunk_file in chunk_files:
@@ -986,7 +994,7 @@ class Tribe(object):
         group_size, groups, sampling_rate, threshold, threshold_type,
         save_progress, xcorr_func, concurrency, cores, export_cccsums,
         parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        **kwargs
+        make_events, min_stations, **kwargs
     ):
         """ Internal concurrent detect workflow. """
         from eqcorrscan.core.match_filter.helpers.processes import (
@@ -1062,6 +1070,7 @@ class Tribe(object):
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
                 xcorr_func=xcorr_func,
+                min_stations=min_stations,
             ),
             name="PrepProcess"
         )
@@ -1074,6 +1083,7 @@ class Tribe(object):
                 threshold=threshold,
                 threshold_type=threshold_type,
                 save_progress=save_progress,
+                make_events=make_events,
                 output_queue=party_file_queue,
                 poison_queue=poison_queue,
             ),
@@ -1224,7 +1234,8 @@ class Tribe(object):
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      check_processing=True, **kwargs):
+                      check_processing=True, make_events=True,
+                      min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -1316,6 +1327,10 @@ class Tribe(object):
         :param retries:
             Number of attempts allowed for downloading - allows for transient
             server issues.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -1425,7 +1440,8 @@ class Tribe(object):
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing, groups=groups)
+            concurrent_processing=concurrent_processing, groups=groups,
+            make_events=make_events, min_stations=min_stations)
 
         if not concurrent_processing:
             Logger.warning("Using concurrent_processing=True can be faster if"
