@@ -491,10 +491,10 @@ class Party(object):
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
                     if d.event:
-                        d.comments = [
-                            c for c in d.comments
+                        d.event.comments = [
+                            c for c in d.event.comments
                             if not c.lower().startswith("threshold=")]
-                        d.comments.append(Comment(
+                        d.event.comments.append(Comment(
                             text=f"threshold={new_thresh}"))
 
                     rethresh_detections.append(d)
