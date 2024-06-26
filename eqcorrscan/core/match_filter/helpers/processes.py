@@ -654,6 +654,7 @@ def _make_detections(
     threshold: float,
     threshold_type: str,
     save_progress: bool,
+    make_events: bool,
     output_queue: Queue,
     poison_queue: Queue,
 ):
@@ -677,6 +678,8 @@ def _make_detections(
     :param save_progress:
         Whether to save progress or not: If true, individual Party files will
         be written each time this is run.
+    :param make_events:
+        Whether to make events for all detections or not.
     :param output_queue:
         Queue of output Party filenames.
     :param poison_queue:
@@ -706,7 +709,7 @@ def _make_detections(
                 detections=detections, threshold=threshold,
                 threshold_type=threshold_type, templates=templates,
                 chunk_start=starttime, chunk_id=chunk_id,
-                save_progress=save_progress)
+                save_progress=save_progress, make_events=make_events)
             chunk_id += 1
             output_queue.put_nowait(chunk_file)
         except Exception as e:

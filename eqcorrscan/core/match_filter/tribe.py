@@ -657,8 +657,8 @@ class Tribe(object):
                concurrent_processing=False, ignore_length=False,
                ignore_bad_data=False, group_size=None, overlap="calculate",
                full_peaks=False, save_progress=False, process_cores=None,
-               pre_processed=False, check_processing=True, min_stations=0,
-               **kwargs):
+               pre_processed=False, check_processing=True, make_events=True,
+               min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -875,7 +875,7 @@ class Tribe(object):
                 ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
                 export_cccsums, parallel, peak_cores, trig_int, full_peaks,
-                plot, plotdir, plot_format, min_stations,)
+                plot, plotdir, plot_format, make_events, min_stations,)
 
         if concurrent_processing:
             party = self._detect_concurrent(*args, **inner_kwargs)
@@ -903,7 +903,7 @@ class Tribe(object):
         group_size, groups, sampling_rate, threshold, threshold_type,
         save_progress, xcorr_func, concurrency, cores, export_cccsums,
         parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        min_stations, **kwargs
+        make_events, min_stations, **kwargs
     ):
         """ Internal serial detect workflow. """
         from eqcorrscan.core.match_filter.helpers.tribe import (
@@ -968,7 +968,8 @@ class Tribe(object):
                     detections=detections, threshold=threshold,
                     threshold_type=threshold_type,
                     templates=self.templates, chunk_start=starttime,
-                    chunk_id=i, save_progress=save_progress)
+                    chunk_id=i, save_progress=save_progress,
+                    make_events=make_events)
                 chunk_files.append(chunk_file)
         # Rebuild
         for _chunk_file in chunk_files:
@@ -993,7 +994,7 @@ class Tribe(object):
         group_size, groups, sampling_rate, threshold, threshold_type,
         save_progress, xcorr_func, concurrency, cores, export_cccsums,
         parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        min_stations, **kwargs
+        make_events, min_stations, **kwargs
     ):
         """ Internal concurrent detect workflow. """
         from eqcorrscan.core.match_filter.helpers.processes import (
@@ -1082,6 +1083,7 @@ class Tribe(object):
                 threshold=threshold,
                 threshold_type=threshold_type,
                 save_progress=save_progress,
+                make_events=make_events,
                 output_queue=party_file_queue,
                 poison_queue=poison_queue,
             ),
@@ -1232,7 +1234,8 @@ class Tribe(object):
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      check_processing=True, min_stations=0, **kwargs):
+                      check_processing=True, make_events=True,
+                      min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -1438,7 +1441,7 @@ class Tribe(object):
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
             concurrent_processing=concurrent_processing, groups=groups,
-            min_stations=min_stations)
+            make_events=make_events, min_stations=min_stations)
 
         if not concurrent_processing:
             Logger.warning("Using concurrent_processing=True can be faster if"
