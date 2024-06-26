@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List, Set
+from typing import List, Set, Union
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -261,8 +261,9 @@ def _group(
     sids: Set[str],
     templates: List[Template],
     group_size: int,
-    groups: List[List[str]] = None
-) -> List[List[Template]]:
+    groups: List[List[str]] = None,
+    min_stations: int = 0,
+) -> Union[List[List[Template]], None]:
     """
     Group templates either by seed id, or using pre-computed groups
 
@@ -270,27 +271,37 @@ def _group(
     :param templates: Templates to group
     :param group_size: Maximum group size
     :param groups: [Optional] List of List of template names in groups
-    :return: Groups of templates.
+    :param min_stations: Minimum number of stations to run a template.
+
+    :return: Groups of templates. None if no templates meet criteria
     """
     Logger.info(f"Grouping for {sids}")
     if groups:
         Logger.info("Using pre-computed groups")
         t_dict = {t.name: t for t in templates}
+        stations = {sid.split('.')[1] for sid in sids}
         template_groups = []
         for grp in groups:
             template_group = [
                 t_dict.get(t_name) for t_name in grp
-                if t_name in t_dict.keys()]
+                if t_name in t_dict.keys() and
+                len({tr.stats.station for tr in
+                     t_dict.get(t_name).st}.intersection(stations)
+                    ) >= max(1, min_stations)]
+            Logger.info(f"Dropping {len(grp) - len(template_group)} templates "
+                        f"due to fewer than {min_stations} matched channels")
             if len(template_group):
                 template_groups.append(template_group)
         return template_groups
     template_groups = group_templates_by_seedid(
         templates=templates,
         st_seed_ids=sids,
-        group_size=group_size)
+        group_size=group_size,
+        min_stations=min_stations)
     if len(template_groups) == 1 and len(template_groups[0]) == 0:
         Logger.error("No matching ids between stream and templates")
-        raise IndexError("No matching ids between stream and templates")
+        return None
+        # raise IndexError("No matching ids between stream and templates")
     return template_groups
 
 
