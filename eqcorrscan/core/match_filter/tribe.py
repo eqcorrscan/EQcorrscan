@@ -968,7 +968,7 @@ class Tribe(object):
                     detections=detections, threshold=threshold,
                     threshold_type=threshold_type,
                     templates=self.templates, chunk_start=starttime,
-                    chunk_id=i, save_progress=save_progress, 
+                    chunk_id=i, save_progress=save_progress,
                     make_events=make_events)
                 chunk_files.append(chunk_file)
         # Rebuild
@@ -1234,7 +1234,7 @@ class Tribe(object):
                       ignore_bad_data=False, group_size=None,
                       return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      check_processing=True, make_events=True, 
+                      check_processing=True, make_events=True,
                       min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
