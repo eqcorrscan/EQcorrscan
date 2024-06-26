@@ -920,7 +920,9 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                     trim_start = s_time - pre_pick
                 trim_end = s_time + winlen
             if trim_end <= trim_start:
-                Logger.error(f"Trying to trim to negative length: {trim_start} -- {trim_end}. Skipping")
+                Logger.error(
+                    f"Trying to trim to negative length: "
+                    f"{trim_start} -- {trim_end}. Skipping")
                 continue
             tr = tr.trim(trim_start, trim_end)
             if len(tr.data) <= 10:
