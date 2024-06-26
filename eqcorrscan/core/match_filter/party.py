@@ -493,7 +493,7 @@ class Party(object):
                     if d.event:
                         d.event.comments = [
                             c for c in d.event.comments
-                            if not c.lower().startswith("threshold=")]
+                            if not c.text.lower().startswith("threshold=")]
                         d.event.comments.append(Comment(
                             text=f"threshold={new_thresh}"))
 
