@@ -691,7 +691,7 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                    winlen=0.9, pre_pick=0.2, pre_filt=True, lowcut=1.0,
                    highcut=20.0, corners=4, min_snr=1.0, plot=False,
                    remove_old=False, ps_multiplier=0.34, velocity=False,
-                   water_level=0, iaspei_standard=False):
+                   water_level=0, iaspei_standard=False, win_from_p=False):
     """
     Pick amplitudes for local magnitude for a single event.
 
@@ -779,6 +779,9 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
         static amplification of 1), or AML with wood-anderson static
         amplification of 2080. Note: Units are SI (and specified in the
         amplitude)
+    :type win_from_p: bool
+    :param win_from_p:
+        Whether to start the picking window from the P-time or not.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.Event`
@@ -891,7 +894,10 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                     raise NotImplementedError(
                         "No p or s picks - you should not have been able to "
                         "get here")
-                trim_start = s_time - pre_pick
+                if win_from_p:
+                    trim_start = p_time - pre_pick
+                else:
+                    trim_start = s_time - pre_pick
                 trim_end = s_time + (s_time - p_time) * winlen
                 # Work out the window length based on p-s time or distance
             else:  # Fixed window-length
@@ -908,8 +914,16 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                         "No s-pick or hypocentral distance to predict "
                         f"s-arrival for station {sta}, skipping")
                     continue
-                trim_start = s_time - pre_pick
+                if win_from_p:
+                    trim_start = p_time - pre_pick
+                else:
+                    trim_start = s_time - pre_pick
                 trim_end = s_time + winlen
+            if trim_end <= trim_start:
+                Logger.error(
+                    f"Trying to trim to negative length: "
+                    f"{trim_start} -- {trim_end}. Skipping")
+                continue
             tr = tr.trim(trim_start, trim_end)
             if len(tr.data) <= 10:
                 Logger.warning(f'Insufficient data for {sta}')
