@@ -522,7 +522,8 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                     " {0}".format(pick))
                 continue
             if pick.waveform_id.channel_code is None:
-                Logger.error(f"Missing waveform_id.channel_code for Pick {pick}.")
+                Logger.error(
+                    f"Missing waveform_id.channel_code for Pick {pick}.")
                 raise TemplateGenError(
                     "Ensure that all picks have complete "
                     "waveform_id attributes")
