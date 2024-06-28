@@ -843,6 +843,8 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
     Logger.info(f"Splitting these data in {n_chunks} chunks")
     if n_chunks == 0:
         Logger.error('Data must be process_length or longer, not computing')
+        Logger.error(f"Data have {data_len_samps} samples and we require at "
+                     f"least {chunk_len_samps} samples")
         return []
 
     for i in range(n_chunks):
