@@ -781,7 +781,7 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
         amplitude)
     :type win_from_p: bool
     :param win_from_p:
-        Whether to start the picking window from the P-time or not. 
+        Whether to start the picking window from the P-time or not.
 
     :returns: Picked event
     :rtype: :class:`obspy.core.event.Event`
