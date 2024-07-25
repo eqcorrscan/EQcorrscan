@@ -20,6 +20,7 @@ import tarfile
 import tempfile
 import logging
 from os.path import join
+import warnings
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
@@ -927,8 +928,9 @@ class Party(object):
             `cores`).
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -961,6 +963,10 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
+        # Cope with daylong deprecation
+        daylong = kwargs.pop("daylong", None)
+        if daylong:
+            warnings.warn("daylong argument deprecated - will be ignored")
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families
