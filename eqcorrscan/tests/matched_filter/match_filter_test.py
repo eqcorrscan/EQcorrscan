@@ -304,7 +304,7 @@ class TestGeoNetCase(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, concurrent_processing=conc_proc)
+                plot=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 16)
 
 
@@ -722,7 +722,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
@@ -740,7 +740,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [False, True]:
             party = local_tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, min_stations=5,
+                trig_int=6.0, plot=False, min_stations=5,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 3)
 
@@ -758,7 +758,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 client=Client('NCEDC'), starttime=UTCDateTime(2004, 9, 28, 17),
                 endtime=UTCDateTime(2004, 9, 28, 18),
                 threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, min_stations=5,
+                trig_int=6.0, plot=False, min_stations=5,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 3)
 
@@ -771,7 +771,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [False, True]:
             party = local_tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, min_stations=6,
+                trig_int=6.0, plot=False, min_stations=6,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 0)
 
@@ -792,7 +792,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             # run detection with 2 templates in tribe
             party1 = tribe1.detect(
                 stream=st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plotvar=False,
+                trig_int=6.0, plotvar=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party1), 2)
             party1 = Party([f for f in party1
@@ -802,7 +802,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                             if t.name == '2004_09_28t17_19_25'])
             party2 = tribe2.detect(
                 stream=st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plotvar=False,
+                trig_int=6.0, plotvar=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party2), 1)
             # This should fail in v0.4.2
@@ -819,7 +819,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 template.process_length = 2400
             party = tribe.detect(
                 stream=short_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc,
                 ignore_bad_data=True)
             self.assertEqual(len(party), 4)
@@ -830,7 +830,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, parallel_process=True,
+                trig_int=6.0, plot=False, parallel_process=True,
                 process_cores=2, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
@@ -842,7 +842,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, save_progress=True,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
@@ -866,7 +866,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, xcorr_func='fftw',
                 concurrency='concurrent', concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
@@ -880,7 +880,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 template.highcut = None
             party = tribe.detect(
                 stream=self.st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
@@ -896,7 +896,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1 + 2.75, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, concurrent_processing=conc_proc)
+                plot=False, concurrent_processing=conc_proc)
             compare_families(
                 party=party, party_in=self.party, float_tol=0.05,
                 check_event=False)
@@ -910,7 +910,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1 + 2.75, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, save_progress=True,
+                plot=False, save_progress=True,
                 concurrent_processing=conc_proc)
             self.assertTrue(os.path.isdir(".parties"))
 
@@ -931,7 +931,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             chained_cat = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 concurrent_processing=conc_proc).lag_calc(
                 stream=self.unproc_st, pre_processed=False)
             catalog = self.party.copy().lag_calc(
@@ -1083,7 +1083,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             Logger.info(f"Running conc_proc={conc_proc}")
             day_party = daylong_tribe.detect(
                 stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=True, plot=False, parallel_process=False,
+                plot=False, parallel_process=False,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(day_party), 4)
             day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
@@ -1104,7 +1104,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party_t = test_template.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, overlap=None,
+                trig_int=6.0, plot=False, overlap=None,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(party_t), 1)
 

@@ -20,9 +20,11 @@ import tarfile
 import tempfile
 import logging
 from os.path import join
+import warnings
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
+from obspy.core.event import Comment
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -489,6 +491,13 @@ class Party(object):
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
+                    if d.event:
+                        d.event.comments = [
+                            c for c in d.event.comments
+                            if not c.text.lower().startswith("threshold=")]
+                        d.event.comments.append(Comment(
+                            text=f"threshold={new_thresh}"))
+
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
         return self
@@ -919,8 +928,9 @@ class Party(object):
             `cores`).
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -953,6 +963,10 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
+        # Cope with daylong deprecation
+        daylong = kwargs.pop("daylong", None)
+        if daylong:
+            warnings.warn("daylong argument deprecated - will be ignored")
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families

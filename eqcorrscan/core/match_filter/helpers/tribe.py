@@ -198,7 +198,6 @@ def _pre_process(
     process_length: float,
     parallel: bool,
     cores: int,
-    daylong: bool,
     ignore_length: bool,
     ignore_bad_data: bool,
     overlap: float, **kwargs
@@ -218,7 +217,6 @@ def _pre_process(
     :param process_length: See utils.pre_processing.multi_process
     :param parallel: See utils.pre_processing.multi_process
     :param cores: See utils.pre_processing.multi_process
-    :param daylong: See utils.pre_processing.multi_process
     :param ignore_length: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -247,7 +245,6 @@ def _pre_process(
             parallel=parallel,
             cores=cores,
             stream=st,
-            daylong=daylong,
             ignore_length=ignore_length,
             overlap=overlap,
             ignore_bad_data=ignore_bad_data)
@@ -617,7 +614,8 @@ def _make_party(
     templates: List[Template],
     chunk_start: UTCDateTime,
     chunk_id: int,
-    save_progress: bool
+    save_progress: bool,
+    make_events: bool,
 ) -> str:
     """
     Construct a Party from Detections.
@@ -629,6 +627,7 @@ def _make_party(
     :param chunk_start: Starttime of party epoch
     :param chunk_id: Internal index for party epoch
     :param save_progress: Whether to save progress or not
+    :param make_events: Whether to make events for all detections or not
 
     :return: The filename the party has been pickled to.
     """
@@ -657,7 +656,10 @@ def _make_party(
         detection_idx_dict[detection.template_name].append(n)
 
     # Convert to Families and build party.
-    Logger.info("Converting to party and making events")
+    if not make_events:
+        Logger.info("Converting to party")
+    else:
+        Logger.info("Converting to party and making events")
     chunk_party = Party()
 
     # Make a dictionary of templates keyed by name - we could be passed a dict
@@ -676,7 +678,8 @@ def _make_party(
                 with open(template, "rb") as f:
                     template = pickle.load(f)
             for d in family_detections:
-                d._calculate_event(template=template)
+                if make_events:
+                    d._calculate_event(template=template)
             family = Family(
                 template=template, detections=family_detections)
             chunk_party += family

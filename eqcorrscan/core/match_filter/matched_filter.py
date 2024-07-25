@@ -313,7 +313,7 @@ def match_filter(template_names, template_list, st, threshold,
     # Data must be pre-processed
     party = tribe.detect(
         stream=st, threshold=threshold, threshold_type=threshold_type,
-        trig_int=trig_int, plot=plot, plotdir=plotdir, daylong=False,
+        trig_int=trig_int, plot=plot, plotdir=plotdir,
         parallel_process=False, xcorr_func=xcorr_func, concurrency=concurrency,
         cores=cores, ignore_length=True, ignore_bad_data=True, group_size=None,
         overlap="calculate", full_peaks=full_peaks, save_progress=False,

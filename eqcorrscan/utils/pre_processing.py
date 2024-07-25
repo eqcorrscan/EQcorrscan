@@ -83,7 +83,7 @@ def _simple_qc(st, max_workers=None, chunksize=1):
     return qual
 
 
-def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
+def _sanitize_length(st, starttime=None, endtime=None):
     """
     Check length and work out start, end, length and trimming criteria
 
@@ -93,54 +93,32 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
     :type starttime: obspy.core.UTCDateTime
     :param endtime: DEsired endtime - can be None
     :type endtime: obspy.core.UTCDateTime
-    :param daylong: Whether data should be one-day long.
-    :type daylong: bool
 
     :return: obspy.core.Stream, length[float], clip[bool],
         starttime[obspy.core.UTCDateTime]
     """
     length, clip = None, False
 
-    if daylong:
-        length, clip = 86400, True
-        # Set the start-time to a day start - cope with
-        if starttime is None:
-            startdates = []
-            for tr in st:
-                if abs(tr.stats.starttime - (UTCDateTime(
-                        tr.stats.starttime.date) + 86400)) < tr.stats.delta:
-                    # If the trace starts within 1 sample of the next day,
-                    # use the next day as the startdate
-                    startdates.append((tr.stats.starttime + 86400).date)
-                    Logger.warning(
-                        f'{tr.id} starts within 1 sample of the next day, '
-                        f'using this time {(tr.stats.starttime + 86400).date}')
-                else:
-                    startdates.append(tr.stats.starttime.date)
-            # Check that all traces start on the same date...
-            if not len(set(startdates)) == 1:
-                raise NotImplementedError('Traces start on different days')
-            starttime = UTCDateTime(startdates[0])
-    else:
-        if starttime is not None and endtime is not None:
-            for tr in st:
-                Logger.info(
-                    f"Trimming {tr.id} between {starttime} and {endtime}")
-                tr.trim(starttime, endtime)
-                if len(tr.data) == ((endtime - starttime) *
-                                    tr.stats.sampling_rate) + 1:
-                    Logger.info(f"{tr.id} is overlength dropping first sample")
-                    tr.data = tr.data[1:len(tr.data)]
-                    # TODO: this should adjust the start-time
-                    # tr.stats.starttime += tr.stats.delta
-            length = endtime - starttime
-            clip = True
-        elif starttime:
-            for tr in st:
-                tr.trim(starttime=starttime)
-        elif endtime:
-            for tr in st:
-                tr.trim(endtime=endtime)
+    if starttime is not None and endtime is not None:
+        for tr in st:
+            Logger.info(
+                f"Trimming {tr.id} between {starttime} and {endtime}")
+            tr.trim(starttime, endtime)
+            if len(tr.data) == ((endtime - starttime) *
+                                tr.stats.sampling_rate) + 1:
+                Logger.info(f"{tr.id} between {tr.stats.starttime} and "
+                            f"{tr.stats.endtime} with {tr.stats.npts} samples "
+                            f"is overlength by one sample. Dropping last "
+                            f"sample.")
+                tr.data = tr.data[0:-1]
+        length = endtime - starttime
+        clip = True
+    elif starttime:
+        for tr in st:
+            tr.trim(starttime=starttime)
+    elif endtime:
+        for tr in st:
+            tr.trim(endtime=endtime)
     return st, length, clip, starttime
 
 
@@ -153,7 +131,7 @@ def _get_window(window, npts):
 
 def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                   num_cores=False, starttime=None, endtime=None,
-                  daylong=False, seisan_chan_names=False, fill_gaps=True,
+                  seisan_chan_names=False, fill_gaps=True,
                   ignore_length=False, ignore_bad_data=False):
     """
     Apply standardised processing workflow to data for matched-filtering
@@ -199,11 +177,6 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     :type starttime: obspy.core.UTCDateTime
     :param endtime: Desired endtime of data
     :type endtime: obspy.core.UTCDateTime
-    :param daylong:
-        Whether data should be considered to be one-day long. Setting this will
-        assume that your data should start as close to the start of a day
-        as possible given the sampling.
-    :type daylong: bool
     :param seisan_chan_names:
         Whether to convert channel names to two-char seisan channel names
     :type seisan_chan_names: bool
@@ -254,7 +227,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     chunksize = len(st) // max_workers
 
     st, length, clip, starttime = _sanitize_length(
-        st=st, starttime=starttime, endtime=endtime, daylong=daylong)
+        st=st, starttime=starttime, endtime=endtime)
 
     for tr in st:
         if len(tr.data) == 0:
@@ -776,7 +749,7 @@ def _fill_gaps(tr):
 
 
 def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
-                   parallel, cores, stream, daylong,
+                   parallel, cores, stream,
                    ignore_length, ignore_bad_data, overlap):
     """
     Process and chunk data.
@@ -787,14 +760,11 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
     :param cores: Number of cores to use, can be False to use all available.
     :type stream: :class:`obspy.core.stream.Stream`
     :param stream: Stream to process, will be left intact.
-    :type daylong: bool
-    :param daylong: Whether to enforce day-length files or not.
     :type ignore_length: bool
     :param ignore_length:
-        If using daylong=True, then processing will try check that the data
-        are there for at least 80% of the day, if you don't want this check
-        (which will raise an error if too much data are missing) then set
-        ignore_length=True.  This is not recommended!
+        Check that the data are there for at least 80% of the required length,
+        if you don't want this check (which will raise an error if too much
+        data are missing) then set ignore_length=True.  This is not recommended!
     :type ignore_bad_data: bool
     :param ignore_bad_data:
         If False (default), errors will be raised if data are excessively
@@ -818,23 +788,7 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
     starttimes = sorted([tr.stats.starttime for tr in stream])
     endtimes = sorted([tr.stats.endtime for tr in stream])
 
-    if daylong:
-        if process_length != 86400:
-            Logger.warning(
-                f'Processing day-long data, but template was cut from '
-                f'{process_length} s long data, will reduce correlations')
-        process_length = 86400
-        # Check that data all start on the same day, otherwise strange
-        # things will happen...
-        startdates = [starttime.date for starttime in starttimes]
-        if not len(set(startdates)) == 1:
-            Logger.warning('Data start on different days, setting to last day')
-            starttime = UTCDateTime(startdates[-1])
-        else:
-            starttime = UTCDateTime(startdates[0])  # Can take any
-    else:
-        # We want to use shortproc to allow overlaps
-        starttime = starttimes[0]
+    starttime = starttimes[0]
     endtime = endtimes[-1]
     data_len_samps = round((endtime - starttime) * samp_rate) + 1
     assert overlap < process_length, "Overlap must be less than process length"
@@ -843,16 +797,15 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
     Logger.info(f"Splitting these data in {n_chunks} chunks")
     if n_chunks == 0:
         Logger.error('Data must be process_length or longer, not computing')
+        Logger.error(f"Data have {data_len_samps} samples and we require at "
+                     f"least {chunk_len_samps} samples")
         return []
 
     for i in range(n_chunks):
         kwargs.update(
             {'starttime': starttime + (i * (process_length - overlap))})
-        if not daylong:
-            _endtime = kwargs['starttime'] + process_length
-            kwargs.update({'endtime': _endtime})
-        else:
-            _endtime = kwargs['starttime'] + 86400
+        _endtime = kwargs['starttime'] + process_length
+        kwargs.update({'endtime': _endtime})
 
         # This is where data should be copied and only here!
         if n_chunks > 1:
@@ -1231,57 +1184,15 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     return out_stream, out_templates
 
 
-def shortproc(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
-              num_cores=False, starttime=None, endtime=None,
-              seisan_chan_names=False, fill_gaps=True, ignore_length=False,
-              ignore_bad_data=False, fft_threads=1):
-    """
-    Deprecated
-    """
-    Logger.warning("Shortproc is depreciated after 0.4.4 and will "
-                   "be removed in a future version. Use multi_process"
-                   " instead")
-    st = multi_process(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
-        starttime=starttime, endtime=endtime, daylong=False,
-        seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-        ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
-    return st
-
-
-def dayproc(st, lowcut, highcut, filt_order, samp_rate, starttime,
-            parallel=True, num_cores=False, ignore_length=False,
-            seisan_chan_names=False, fill_gaps=True, ignore_bad_data=False,
-            fft_threads=1):
-    """
-    Deprecated
-    """
-    Logger.warning("dayproc is depreciated after 0.4.4 and will be "
-                   "removed in a future version. Use multi_process instead")
-    st = multi_process(
-        st=st, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
-        samp_rate=samp_rate, parallel=parallel, num_cores=num_cores,
-        starttime=starttime, endtime=None, daylong=True,
-        seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
-        ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
-    return st
-
-
 def process(tr, lowcut, highcut, filt_order, samp_rate,
             starttime=False, clip=False, length=86400,
             seisan_chan_names=False, ignore_length=False, fill_gaps=True,
-            ignore_bad_data=False, fft_threads=1):
+            ignore_bad_data=False):
     """
     Deprecated
     """
     Logger.warning("process is depreciated after 0.4.4 and will be removed "
                    "in a future version. Use multi_process instead")
-    if length == 86400:
-        daylong = True
-    else:
-        daylong = False
-
     endtime = None
     if clip:
         if not starttime:
@@ -1292,7 +1203,7 @@ def process(tr, lowcut, highcut, filt_order, samp_rate,
     st = multi_process(
         st=tr, lowcut=lowcut, highcut=highcut, filt_order=filt_order,
         samp_rate=samp_rate, parallel=False, num_cores=1,
-        starttime=starttime, endtime=endtime, daylong=daylong,
+        starttime=starttime, endtime=endtime,
         seisan_chan_names=seisan_chan_names, fill_gaps=fill_gaps,
         ignore_length=ignore_length, ignore_bad_data=ignore_bad_data)
     return st
