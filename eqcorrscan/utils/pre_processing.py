@@ -129,10 +129,11 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
                 tr.trim(starttime, endtime)
                 if len(tr.data) == ((endtime - starttime) *
                                     tr.stats.sampling_rate) + 1:
-                    Logger.info(f"{tr.id} is overlength dropping first sample")
-                    tr.data = tr.data[1:len(tr.data)]
-                    # TODO: this should adjust the start-time
-                    # tr.stats.starttime += tr.stats.delta
+                    Logger.info(f"{tr.id} between {tr.stats.starttime} and "
+                                f"{tr.stats.endtime} with {tr.stats.npts} samples "
+                                f"is overlength by one sample. Dropping last "
+                                f"sample.")
+                    tr.data = tr.data[0:-1]
             length = endtime - starttime
             clip = True
         elif starttime:
