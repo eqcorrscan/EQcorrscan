@@ -177,7 +177,6 @@ def _get_detection_stream(
     pre_process: bool = False,
     parallel_process: bool = True,
     process_cores: int = None,
-    daylong: bool = False,
     overlap: Union[str, float] = "calculate",
     ignore_length: bool = False,
     ignore_bad_data: bool = False,
@@ -232,7 +231,6 @@ def _get_detection_stream(
         Whether to process data in parallel (uses multi-threading)
     :param process_cores:
         Maximum number of cores to use for parallel processing
-    :param daylong: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_length: See utils.pre_processing.multi_process
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -289,7 +287,7 @@ def _get_detection_stream(
                     lowcut=lowcut, samp_rate=samp_rate,
                     process_length=process_length,
                     parallel=parallel_process, cores=process_cores,
-                    daylong=daylong, ignore_length=ignore_length,
+                    ignore_length=ignore_length,
                     overlap=overlap, ignore_bad_data=ignore_bad_data)
                 # We don't need to hold on to st!
                 del st
@@ -341,7 +339,6 @@ def _pre_processor(
     process_length: float,
     parallel: bool,
     cores: int,
-    daylong: bool,
     ignore_length: bool,
     overlap: float,
     ignore_bad_data: bool,
@@ -373,7 +370,6 @@ def _pre_processor(
     :param process_length: See utils.pre_processing.multi_process
     :param parallel: See utils.pre_processing.multi_process
     :param cores: See utils.pre_processing.multi_process
-    :param daylong: See utils.pre_processing.multi_process
     :param ignore_length: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -406,7 +402,7 @@ def _pre_processor(
         try:
             st_chunks = _pre_process(
                 st, template_ids, pre_processed, filt_order, highcut, lowcut,
-                samp_rate, process_length, parallel, cores, daylong,
+                samp_rate, process_length, parallel, cores,
                 ignore_length, ignore_bad_data, overlap)
             for chunk in st_chunks:
                 if not os.path.isdir(temp_stream_dir):

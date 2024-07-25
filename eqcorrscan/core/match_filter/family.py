@@ -565,8 +565,9 @@ class Family(object):
             `cores`).
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -770,7 +771,6 @@ class Family(object):
                 parallel=parallel,
                 cores=process_cores,
                 stream=template_stream.merge().copy(),
-                daylong=False,
                 ignore_length=ignore_length,
                 overlap=0.0, ignore_bad_data=ignore_bad_data)
             processed_stream = Stream()
