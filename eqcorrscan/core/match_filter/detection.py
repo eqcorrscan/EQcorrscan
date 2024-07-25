@@ -397,7 +397,8 @@ class Detection(object):
                 pick = [p for p in pick
                         if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
-                Logger.info("No pick for {0}.{1}".format(station, channel))
+                Logger.info(
+                    "No pick for {0}.{1}".format(station, channel))
                 continue
             elif len(pick) > 1:
                 Logger.info(
@@ -406,21 +407,26 @@ class Detection(object):
                 pick.sort(key=lambda p: p.time)
             pick = pick[0]
             cut_start = pick.time - prepick
-            # Find nearest sample to avoid trimming to too-short length - see #573
+            # Find nearest sample to avoid  to too-short length - see #573
             for tr in _st:
-                sample_offset = (cut_start - tr.stats.starttime) / tr.stats.delta
+                sample_offset = (cut_start -
+                                 tr.stats.starttime) / tr.stats.delta
                 sample_offset //= 1
-                # If the sample offset is not a whole number, always take the sample
-                # before that requested
-                _tr_cut_start = tr.stats.starttime + (sample_offset * tr.stats.delta)
+                # If the sample offset is not a whole number, always take the
+                # sample before that requested
+                _tr_cut_start = tr.stats.starttime + (
+                        sample_offset * tr.stats.delta)
                 _tr_cut_end = _tr_cut_start + length
-                Logger.info(f"Trimming {tr.id} between {_tr_cut_end} and {_tr_cut_end}.")
+                Logger.debug(
+                    f"Trimming {tr.id} between {_tr_cut_end} "
+                    f"and {_tr_cut_end}.")
                 _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
-                Logger.debug(f"Length: {(_tr.stats.endtime - _tr.stats.starttime)}")
+                Logger.debug(
+                    f"Length: {(_tr.stats.endtime - _tr.stats.starttime)}")
                 Logger.debug(f"Requested length: {length}")
                 if abs((_tr.stats.endtime - _tr.stats.starttime) -
                        length) < tr.stats.delta:
-                    cut_stream += tr
+                    cut_stream += _tr
                 else:
                     Logger.info(
                         "Insufficient data length for {0}".format(tr.id))
