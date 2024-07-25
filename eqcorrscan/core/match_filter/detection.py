@@ -68,10 +68,11 @@ class Detection(object):
     :type id: str
     :param id: Identification for detection (should be unique).
     """
+    _precision = 1e-5  # Used for warning about out of range correlations
 
     def __init__(self, template_name, detect_time, no_chans, detect_val,
                  threshold, typeofdet, threshold_type, threshold_input,
-                 chans=None, event=None, id=None):
+                 chans=None, event=None, id=None, strict=True):
         """Main class of Detection."""
         self.template_name = template_name
         self.detect_time = detect_time
@@ -94,7 +95,13 @@ class Detection(object):
         if event is not None:
             event.resource_id = self.id
         if self.typeofdet == 'corr':
-            assert abs(self.detect_val) <= self.no_chans
+            if abs(self.detect_val) > self.no_chans * (1 + self._precision):
+                msg = (f"Correlation detection at {self.detect_val} exceeds "
+                       f"boundedness ({self.no_chans}")
+                if strict:
+                    raise OverflowError(msg)
+                else:
+                    Logger.error(msg)
 
     def __repr__(self):
         """Simple print."""

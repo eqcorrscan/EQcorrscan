@@ -15,25 +15,33 @@ import copy
 import getpass
 import glob
 import os
+import pickle
 import shutil
 import tarfile
 import tempfile
 import traceback
+import uuid
 import logging
 
-import numpy as np
+from multiprocessing import Process, Queue, cpu_count
+from queue import Empty
+
 from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
 
+from eqcorrscan.core import template_gen
 from eqcorrscan.core.match_filter.template import (
     Template, quick_group_templates)
 from eqcorrscan.core.match_filter.party import Party
+from eqcorrscan.core.match_filter.family import Family
 from eqcorrscan.core.match_filter.helpers import (
-    _safemembers, _par_read, get_waveform_client)
-from eqcorrscan.core.match_filter.matched_filter import (
-    _group_detect, MatchFilterError)
-from eqcorrscan.core import template_gen
-from eqcorrscan.utils.pre_processing import _check_daylong
+    _safemembers, _par_read, get_waveform_client,
+    _remove_duplicates, _moveout)
+from eqcorrscan.core.match_filter.helpers.tribe import _wildcard_fill
+
+from eqcorrscan.utils.pre_processing import (
+    _quick_copy_stream, _prep_data_for_correlation)
+
 
 Logger = logging.getLogger(__name__)
 
@@ -45,6 +53,7 @@ class Tribe(object):
     :type templates: List of Template
     :param templates: The templates within the Tribe.
     """
+    _timeout = 1
 
     def __init__(self, templates=None):
         self.templates = []
@@ -52,6 +61,11 @@ class Tribe(object):
             templates = [templates]
         if templates:
             self.templates.extend(templates)
+        # Managers for Processes and Queues to be killed on errors
+        self._processes = dict()
+        self._queues = dict()
+        # Assign unique ids
+        self.__unique_ids()
 
     def __repr__(self):
         """
@@ -95,12 +109,13 @@ class Tribe(object):
         >>> print(tribe)
         Tribe of 3 templates
         """
+        assert isinstance(other, (Tribe, Template)), \
+            "Must be either Template or Tribe"
+        self.__unique_ids(other)
         if isinstance(other, Tribe):
             self.templates += other.templates
         elif isinstance(other, Template):
             self.templates.append(other)
-        else:
-            raise TypeError('Must be either Template or Tribe')
         return self
 
     def __eq__(self, other):
@@ -171,6 +186,8 @@ class Tribe(object):
          process length: None s
         >>> tribe[0:2]
         Tribe of 2 templates
+        >>> tribe["d"]
+        []
         """
         if isinstance(index, slice):
             return self.__class__(templates=self.templates.__getitem__(index))
@@ -184,6 +201,32 @@ class Tribe(object):
             except IndexError:
                 Logger.warning('Template: %s not in tribe' % index)
                 return []
+
+    def __unique_ids(self, other=None):
+        """ Check that template names are unique. """
+        template_names = [t.name for t in self.templates]
+        if other:
+            assert isinstance(other, (Template, Tribe)), (
+                "Can only test against tribes or templates")
+            if isinstance(other, Template):
+                template_names.append(other.name)
+            else:
+                template_names.extend([t.name for t in other])
+
+        unique_names = set(template_names)
+        if len(unique_names) < len(template_names):
+            non_unique_names = [name for name in unique_names
+                                if template_names.count(name) > 1]
+            raise NotImplementedError(
+                "Multiple templates found with the same name. Template names "
+                "must be unique. Non-unique templates: "
+                f"{', '.join(non_unique_names)}")
+        return
+
+    @property
+    def _stream_dir(self):
+        """ Location for temporary streams """
+        return f".streams_{os.getpid()}"
 
     def sort(self):
         """
@@ -258,7 +301,9 @@ class Tribe(object):
         >>> tribe_a == tribe_b
         True
         """
-        return copy.deepcopy(self)
+        # We can't copy processes, so we need to just copy the templates
+        other = Tribe(copy.deepcopy(self.templates))
+        return other
 
     def write(self, filename, compress=True, catalog_format="QUAKEML"):
         """
@@ -283,6 +328,11 @@ class Tribe(object):
         >>> tribe = Tribe(templates=[Template(name='c', st=read())])
         >>> tribe.write('test_tribe')
         Tribe of 1 templates
+        >>> tribe.write(
+        ...    "this_wont_work.bob",
+        ...    catalog_format="BOB") # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        TypeError: BOB is not supported
         """
         from eqcorrscan.core.match_filter import CAT_EXT_MAP
 
@@ -336,6 +386,29 @@ class Tribe(object):
                 parfile.write('\n')
         return self
 
+    def _temporary_template_db(self, template_dir: str = None) -> dict:
+        """
+        Write a temporary template database of pickled templates to disk.
+
+        :param template_dir:
+            Directory to write to - if None will make a temporary directory.
+        """
+        # We use template names for filenames - check that these are unique
+        self.__unique_ids()
+        # Make sure that the template directory exists, or make a tempdir
+        if template_dir:
+            if not os.path.isdir(template_dir):
+                os.makedirs(template_dir)
+        else:
+            template_dir = tempfile.mkdtemp()
+        template_files = dict()
+        for template in self.templates:
+            t_file = os.path.join(template_dir, f"{template.name}.pkl")
+            with open(t_file, "wb") as f:
+                pickle.dump(template, f)
+            template_files.update({template.name: t_file})
+        return template_files
+
     def read(self, filename):
         """
         Read a tribe of templates from a tar formatted file.
@@ -351,13 +424,26 @@ class Tribe(object):
         >>> tribe_back = Tribe().read('test_tribe.tgz')
         >>> tribe_back == tribe
         True
+        >>> # This can also read pickled templates
+        >>> import pickle
+        >>> with open("test_tribe.pkl", "wb") as f:
+        ...    pickle.dump(tribe, f)
+        >>> tribe_back = Tribe().read("test_tribe.pkl")
+        >>> tribe_back == tribe
+        True
         """
+        if filename.endswith(".pkl"):
+            with open(filename, "rb") as f:
+                self.__iadd__(pickle.load(f))
+            return self
         with tarfile.open(filename, "r:*") as arc:
             temp_dir = tempfile.mkdtemp()
             arc.extractall(path=temp_dir, members=_safemembers(arc))
             tribe_dir = glob.glob(temp_dir + os.sep + '*')[0]
             self._read_from_folder(dirname=tribe_dir)
         shutil.rmtree(temp_dir)
+        # Assign unique ids
+        self.__unique_ids()
         return self
 
     def _read_from_folder(self, dirname):
@@ -387,13 +473,156 @@ class Tribe(object):
                       if t.split(os.sep)[-1] == template.name + '.ms']
             if len(t_file) == 0:
                 Logger.error('No waveform for template: ' + template.name)
-                templates.remove(template)
                 continue
             elif len(t_file) > 1:
                 Logger.warning('Multiple waveforms found, using: ' + t_file[0])
             template.st = read(t_file[0])
+        # Remove templates that do not have streams
+        templates = [t for t in templates if t.st is not None]
         self.templates.extend(templates)
         return
+
+    def construct(self, method, lowcut, highcut, samp_rate, filt_order,
+                  length, prepick, swin="all", process_len=86400,
+                  all_horiz=False, delayed=True, plot=False, plotdir=None,
+                  min_snr=None, parallel=False, num_cores=False,
+                  skip_short_chans=False, save_progress=False, **kwargs):
+        """
+        Generate a Tribe of Templates.
+
+        :type method: str
+        :param method:
+            Method of Tribe generation. Possible options are: `from_client`,
+            `from_meta_file`.  See below on the additional required arguments
+            for each method.
+        :type lowcut: float
+        :param lowcut:
+            Low cut (Hz), if set to None will not apply a lowcut
+        :type highcut: float
+        :param highcut:
+            High cut (Hz), if set to None will not apply a highcut.
+        :type samp_rate: float
+        :param samp_rate:
+            New sampling rate in Hz.
+        :type filt_order: int
+        :param filt_order:
+            Filter level (number of corners).
+        :type length: float
+        :param length: Length of template waveform in seconds.
+        :type prepick: float
+        :param prepick: Pre-pick time in seconds
+        :type swin: str
+        :param swin:
+            P, S, P_all, S_all or all, defaults to all: see note in
+            :func:`eqcorrscan.core.template_gen.template_gen`
+        :type process_len: int
+        :param process_len: Length of data in seconds to download and process.
+        :type all_horiz: bool
+        :param all_horiz:
+            To use both horizontal channels even if there is only a pick on
+            one of them.  Defaults to False.
+        :type delayed: bool
+        :param delayed: If True, each channel will begin relative to it's own
+            pick-time, if set to False, each channel will begin at the same
+            time.
+        :type plot: bool
+        :param plot: Plot templates or not.
+        :type plotdir: str
+        :param plotdir:
+            The path to save plots to. If `plotdir=None` (default) then the
+            figure will be shown on screen.
+        :type min_snr: float
+        :param min_snr:
+            Minimum signal-to-noise ratio for a channel to be included in the
+            template, where signal-to-noise ratio is calculated as the ratio
+            of the maximum amplitude in the template window to the rms
+            amplitude in the whole window given.
+        :type parallel: bool
+        :param parallel: Whether to process data in parallel or not.
+        :type num_cores: int
+        :param num_cores:
+            Number of cores to try and use, if False and parallel=True,
+            will use either all your cores, or as many traces as in the data
+            (whichever is smaller).
+        :type save_progress: bool
+        :param save_progress:
+            Whether to save the resulting template set at every data step or
+            not. Useful for long-running processes.
+        :type skip_short_chans: bool
+        :param skip_short_chans:
+            Whether to ignore channels that have insufficient length data or
+            not. Useful when the quality of data is not known, e.g. when
+            downloading old, possibly triggered data from a datacentre
+
+        .. note::
+            *Method specific arguments:*
+
+            - `from_client` requires:
+                :param str client_id:
+                    string passable by obspy to generate Client, or any object
+                    with a `get_waveforms` method, including a Client instance.
+                :param `obspy.core.event.Catalog` catalog:
+                    Catalog of events to generate template for
+                :param float data_pad: Pad length for data-downloads in seconds
+            - `from_meta_file` requires:
+                :param str meta_file:
+                    Path to obspy-readable event file, or an obspy Catalog
+                :param `obspy.core.stream.Stream` st:
+                    Stream containing waveform data for template. Note that
+                    this should be the same length of stream as you will use
+                    for the continuous detection, e.g. if you detect in
+                    day-long files, give this a day-long file!
+                :param bool process:
+                    Whether to process the data or not, defaults to True.
+
+        .. Note::
+            Method: `from_sac` is not supported by Tribe.construct and must
+            use Template.construct.
+
+        .. Note:: Templates will be named according to their start-time.
+        """
+        templates, catalog, process_lengths = template_gen.template_gen(
+            method=method, lowcut=lowcut, highcut=highcut, length=length,
+            filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
+            return_event=True, save_progress=save_progress, swin=swin,
+            process_len=process_len, all_horiz=all_horiz, plotdir=plotdir,
+            delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
+            num_cores=num_cores, skip_short_chans=skip_short_chans,
+            **kwargs)
+        for template, event, process_len in zip(templates, catalog,
+                                                process_lengths):
+            t = Template()
+            if len(template) == 0:
+                Logger.error('Empty Template')
+                continue
+            t.st = template
+            t.name = template.sort(['starttime'])[0]. \
+                stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            t.lowcut = lowcut
+            t.highcut = highcut
+            t.filt_order = filt_order
+            t.samp_rate = samp_rate
+            t.process_length = process_len
+            t.prepick = prepick
+            event.comments.append(Comment(
+                text="eqcorrscan_template_" + t.name,
+                creation_info=CreationInfo(agency='eqcorrscan',
+                                           author=getpass.getuser())))
+            t.event = event
+            self.templates.append(t)
+        return self
+
+    def _template_channel_ids(self, wildcards: bool = False):
+        template_channel_ids = set()
+        for template in self.templates:
+            for tr in template.st:
+                # Cope with missing info and convert to wildcards
+                net, sta, loc, chan = tr.id.split('.')
+                if wildcards:
+                    net, sta, loc, chan = _wildcard_fill(
+                        net, sta, loc, chan)
+                template_channel_ids.add((net, sta, loc, chan))
+        return template_channel_ids
 
     def cluster(self, method, **kwargs):
         """
@@ -407,10 +636,6 @@ class Tribe(object):
             Method of stacking, see :mod:`eqcorrscan.utils.clustering`
 
         :return: List of tribes.
-
-        .. rubric:: Example
-
-
         """
         from eqcorrscan.utils import clustering
         tribes = []
@@ -429,14 +654,18 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
                plotdir=None, daylong=False, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               ignore_length=False, ignore_bad_data=False, group_size=None,
-               overlap="calculate", full_peaks=False, save_progress=False,
-               process_cores=None, pre_processed=False, **kwargs):
+               concurrent_processing=False, ignore_length=False,
+               ignore_bad_data=False, group_size=None, overlap="calculate",
+               full_peaks=False, save_progress=False, process_cores=None,
+               pre_processed=False, check_processing=True, make_events=True,
+               min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
-        :type stream: `obspy.core.stream.Stream`
-        :param stream: Continuous data to detect within using the Template.
+        :type stream: `Queue` or `obspy.core.stream.Stream`
+        :param stream:
+            Queue of streams of continuous data to detect within using the
+            Templates, or just the continuous data itself.
         :type threshold: float
         :param threshold:
             Threshold level, if using `threshold_type='MAD'` then this will be
@@ -475,7 +704,12 @@ class Tribe(object):
             'multithread', 'multiprocess', 'concurrent'. For more details see
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
-        :param cores: Number of workers for procesisng and detection.
+        :param cores: Number of workers for processing and detection.
+        :type concurrent_processing: bool
+        :param concurrent_processing:
+            Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -499,7 +733,7 @@ class Tribe(object):
             overlap = "calculate" will work out the appropriate overlap based
             on the maximum lags within templates.
         :type full_peaks: bool
-        :param full_peaks: See `eqcorrscan.utils.findpeak.find_peaks2_short`
+        :param full_peaks: See `eqcorrscan.utils.findpeaks.find_peaks2_short`
         :type save_progress: bool
         :param save_progress:
             Whether to save the resulting party at every data step or not.
@@ -512,6 +746,13 @@ class Tribe(object):
         :param pre_processed:
             Whether the stream has been pre-processed or not to match the
             templates.
+        :type check_processing: bool
+        :param check_processing:
+            Whether to check that all templates were processed the same.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -586,60 +827,421 @@ class Tribe(object):
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
         """
-        party = Party()
-        # template_groups = group_templates(self.templates)
-        template_groups = quick_group_templates(self.templates)
-        if len(template_groups) > 1 and pre_processed:
+        # Check that template names are unique
+        self.__unique_ids()
+        # We should not need to copy the stream, it is copied in chunks by
+        # _group_process
+
+        # Argument handling
+        if overlap is None:
+            overlap = 0.0
+        elif not isinstance(overlap, float) and str(overlap) == "calculate":
+            overlap = max(
+                _moveout(template.st) for template in self.templates)
+        elif not isinstance(overlap, float):
             raise NotImplementedError(
-                "Inconsistent template processing and pre-processed data - "
-                "something is wrong!")
-        # now we can compute the detections for each group
-        for group in template_groups:
-            group_party = _group_detect(
-                templates=group, stream=stream.copy(), threshold=threshold,
-                threshold_type=threshold_type, trig_int=trig_int,
-                plot=plot, group_size=group_size, pre_processed=pre_processed,
-                daylong=daylong, parallel_process=parallel_process,
-                xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
-                ignore_length=ignore_length, overlap=overlap, plotdir=plotdir,
-                full_peaks=full_peaks, process_cores=process_cores,
-                ignore_bad_data=ignore_bad_data, arg_check=False, **kwargs)
-            party += group_party
-            if save_progress:
-                party.write("eqcorrscan_temporary_party")
+                "%s is not a recognised overlap type" % str(overlap))
+        assert overlap < self.templates[0].process_length, (
+            f"Overlap {overlap} must be less than process length "
+            f"{self.templates[0].process_length}")
+
+        # Copy because we need to muck around with them.
+        inner_kwargs = copy.copy(kwargs)
+
+        plot_format = inner_kwargs.pop("plot_format", "png")
+        export_cccsums = inner_kwargs.pop('export_cccsums', False)
+        peak_cores = inner_kwargs.pop('peak_cores',
+                                      process_cores) or cpu_count()
+        groups = inner_kwargs.pop("groups", None)
+
+        if peak_cores == 1:
+            parallel = False
+        else:
+            parallel = True
+
+        if check_processing:
+            assert len(quick_group_templates(self.templates)) == 1, (
+                "Inconsistent template processing parameters found, this is no"
+                " longer supported. \nSplit your tribe using "
+                "eqcorrscan.core.match_filter.template.quick_group_templates "
+                "and re-run for each grouped tribe")
+        sampling_rate = self.templates[0].samp_rate
+        # Used for sanity checking seed id overlap
+        template_ids = set(
+            tr.id for template in self.templates for tr in template.st)
+
+        args = (stream, template_ids, pre_processed, parallel_process,
+                process_cores, daylong, ignore_length, overlap,
+                ignore_bad_data, group_size, groups, sampling_rate, threshold,
+                threshold_type, save_progress, xcorr_func, concurrency, cores,
+                export_cccsums, parallel, peak_cores, trig_int, full_peaks,
+                plot, plotdir, plot_format, make_events, min_stations,)
+
+        if concurrent_processing:
+            party = self._detect_concurrent(*args, **inner_kwargs)
+        else:
+            party = self._detect_serial(*args, **inner_kwargs)
+
+        Logger.info("Ensuring all templates are in party")
+        additional_families = []
+        for template in self.templates:
+            if template.name in party._template_dict.keys():
+                continue
+            additional_families.append(
+                Family(template=template, detections=[]))
+        party.families.extend(additional_families)
+
+        # Post-process
         if len(party) > 0:
-            for family in party:
-                if family is not None:
-                    # Slow uniq:
-                    # family.detections = family._uniq().detections
-                    # Very quick uniq:
-                    det_tuples = [
-                        (det.id, str(det.detect_time), det.detect_val)
-                        for det in family]
-                    # Retrieve the indices for the first occurrence of each
-                    # detection in the family (so only unique detections will
-                    # remain).
-                    uniq_det_tuples, uniq_det_indices = np.unique(
-                        det_tuples, return_index=True, axis=0)
-                    uniq_detections = []
-                    for uniq_det_index in uniq_det_indices:
-                        uniq_detections.append(family[uniq_det_index])
-                    family.detections = uniq_detections
+            Logger.info("Removing duplicates")
+            party = _remove_duplicates(party)
+        return party
+
+    def _detect_serial(
+        self, stream, template_ids, pre_processed, parallel_process,
+        process_cores, daylong, ignore_length, overlap, ignore_bad_data,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
+        make_events, min_stations, **kwargs
+    ):
+        """ Internal serial detect workflow. """
+        from eqcorrscan.core.match_filter.helpers.tribe import (
+            _pre_process, _group, _corr_and_peaks, _detect, _make_party)
+        party = Party()
+
+        assert isinstance(stream, Stream), (
+            f"Serial detection requires stream to be a stream, not"
+            f" a {type(stream)}")
+
+        # We need to copy data here to keep the users input safe.
+        st_chunks = _pre_process(
+            st=stream.copy(), template_ids=template_ids,
+            pre_processed=pre_processed,
+            filt_order=self.templates[0].filt_order,
+            highcut=self.templates[0].highcut,
+            lowcut=self.templates[0].lowcut,
+            samp_rate=self.templates[0].samp_rate,
+            process_length=self.templates[0].process_length,
+            parallel=parallel_process, cores=process_cores, daylong=daylong,
+            ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
+            overlap=overlap, **kwargs)
+
+        chunk_files = []
+        for st_chunk in st_chunks:
+            starttime = st_chunk[0].stats.starttime
+            delta = st_chunk[0].stats.delta
+            template_groups = _group(
+                sids={tr.id for tr in st_chunk},
+                templates=self.templates, group_size=group_size, groups=groups,
+                min_stations=min_stations)
+            if template_groups is None:
+                continue
+            for i, template_group in enumerate(template_groups):
+                templates = [_quick_copy_stream(t.st) for t in template_group]
+                template_names = [t.name for t in template_group]
+                Logger.info(
+                    f"Prepping {len(templates)} templates for correlation")
+
+                # We need to copy the stream here.
+                _st, templates, template_names = _prep_data_for_correlation(
+                    stream=_quick_copy_stream(st_chunk), templates=templates,
+                    template_names=template_names)
+
+                all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
+                    templates=templates, template_names=template_names,
+                    stream=_st, xcorr_func=xcorr_func, concurrency=concurrency,
+                    cores=cores, i=i, export_cccsums=export_cccsums,
+                    parallel=parallel, peak_cores=peak_cores,
+                    threshold=threshold, threshold_type=threshold_type,
+                    trig_int=trig_int, sampling_rate=sampling_rate,
+                    full_peaks=full_peaks, plot=plot, plotdir=plotdir,
+                    plot_format=plot_format, prepped=False, **kwargs)
+
+                detections = _detect(
+                    template_names=template_names,
+                    all_peaks=all_peaks, starttime=starttime,
+                    delta=delta, no_chans=no_chans,
+                    chans=chans, thresholds=thresholds)
+
+                chunk_file = _make_party(
+                    detections=detections, threshold=threshold,
+                    threshold_type=threshold_type,
+                    templates=self.templates, chunk_start=starttime,
+                    chunk_id=i, save_progress=save_progress,
+                    make_events=make_events)
+                chunk_files.append(chunk_file)
+        # Rebuild
+        for _chunk_file in chunk_files:
+            Logger.info(f"Adding party from {_chunk_file} to party")
+            with open(_chunk_file, "rb") as _f:
+                party += pickle.load(_f)
+            if not save_progress:
+                try:
+                    os.remove(_chunk_file)
+                except FileNotFoundError:
+                    pass
+            Logger.info(f"Added party from {_chunk_file}, party now "
+                        f"contains {len(party)} detections")
+
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
+        return party
+
+    def _detect_concurrent(
+        self, stream, template_ids, pre_processed, parallel_process,
+        process_cores, daylong, ignore_length, overlap, ignore_bad_data,
+        group_size, groups, sampling_rate, threshold, threshold_type,
+        save_progress, xcorr_func, concurrency, cores, export_cccsums,
+        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
+        make_events, min_stations, **kwargs
+    ):
+        """ Internal concurrent detect workflow. """
+        from eqcorrscan.core.match_filter.helpers.processes import (
+            _pre_processor, _prepper, _make_detections, _check_for_poison,
+            _get_and_check, Poison)
+        from eqcorrscan.core.match_filter.helpers.tribe import _corr_and_peaks
+
+        if isinstance(stream, Stream):
+            Logger.info("Copying stream to keep your original data safe")
+            st_queue = Queue(maxsize=2)
+            st_queue.put(stream.copy())
+            # Close off queue
+            st_queue.put(None)
+            stream = st_queue
+        else:
+            # Note that if a queue has been passed we do not try to keep
+            # data safe
+            Logger.warning("Streams in queue will be edited in-place, you "
+                           "should not re-use them")
+
+        # To reduce load copying templates between processes we dump them to
+        # disk and pass the dictionary of files
+        template_dir = f".template_db_{uuid.uuid4()}"
+        template_db = self._temporary_template_db(template_dir)
+
+        # Set up processes and queues
+        poison_queue = kwargs.get('poison_queue', Queue())
+
+        if not pre_processed:
+            processed_stream_queue = Queue(maxsize=1)
+        else:
+            processed_stream_queue = stream
+
+        # Prepped queue contains templates and stream (and extras)
+        prepped_queue = Queue(maxsize=1)
+        # Output queues
+        peaks_queue = Queue()
+        party_file_queue = Queue()
+
+        # Set up processes
+        if not pre_processed:
+            pre_processor_process = Process(
+                target=_pre_processor,
+                kwargs=dict(
+                    input_stream_queue=stream,
+                    temp_stream_dir=self._stream_dir,
+                    template_ids=template_ids,
+                    pre_processed=pre_processed,
+                    filt_order=self.templates[0].filt_order,
+                    highcut=self.templates[0].highcut,
+                    lowcut=self.templates[0].lowcut,
+                    samp_rate=self.templates[0].samp_rate,
+                    process_length=self.templates[0].process_length,
+                    parallel=parallel_process,
+                    cores=process_cores,
+                    daylong=daylong,
+                    ignore_length=ignore_length,
+                    overlap=overlap,
+                    ignore_bad_data=ignore_bad_data,
+                    output_filename_queue=processed_stream_queue,
+                    poison_queue=poison_queue,
+                ),
+                name="ProcessProcess"
+            )
+
+        prepper_process = Process(
+            target=_prepper,
+            kwargs=dict(
+                input_stream_filename_queue=processed_stream_queue,
+                group_size=group_size,
+                groups=groups,
+                templates=template_db,
+                output_queue=prepped_queue,
+                poison_queue=poison_queue,
+                xcorr_func=xcorr_func,
+                min_stations=min_stations,
+            ),
+            name="PrepProcess"
+        )
+        detector_process = Process(
+            target=_make_detections,
+            kwargs=dict(
+                input_queue=peaks_queue,
+                delta=1 / sampling_rate,
+                templates=template_db,
+                threshold=threshold,
+                threshold_type=threshold_type,
+                save_progress=save_progress,
+                make_events=make_events,
+                output_queue=party_file_queue,
+                poison_queue=poison_queue,
+            ),
+            name="DetectProcess"
+        )
+
+        # Cope with old tribes
+        if not hasattr(self, '_processes'):
+            self._processes = dict()
+        if not hasattr(self, '_queues'):
+            self._queues = dict()
+
+        # Put these processes into the namespace
+        self._processes.update({
+            "prepper": prepper_process,
+            "detector": detector_process,
+        })
+        self._queues.update({
+            "poison": poison_queue,
+            "stream": stream,
+            "prepped": prepped_queue,
+            "peaks": peaks_queue,
+            "party_file": party_file_queue,
+        })
+
+        if not pre_processed:
+            Logger.info("Starting preprocessor")
+            self._queues.update({"processed_stream": processed_stream_queue})
+            self._processes.update({"pre-processor": pre_processor_process})
+            pre_processor_process.start()
+
+        # Start your engines!
+        prepper_process.start()
+        detector_process.start()
+
+        # Loop over input streams and template groups
+        while True:
+            killed = _check_for_poison(poison_queue)
+            if killed:
+                Logger.info("Killed in main loop")
+                break
+            try:
+                to_corr = _get_and_check(prepped_queue, poison_queue)
+                if to_corr is None:
+                    Logger.info("Ran out of streams, exiting correlation")
+                    break
+                elif isinstance(to_corr, Poison):
+                    Logger.info("Killed in main loop")
+                    break
+                starttime, i, stream, template_names, templates, \
+                    *extras = to_corr
+                inner_kwargs = copy.copy(kwargs)  # We will mangle them
+                # Correlation specific handling to reduce single-threaded time
+                if xcorr_func == "fmf":
+                    weights, pads, chans, no_chans = extras
+                    inner_kwargs.update({
+                        'weights': weights, 'pads': pads, "no_chans": no_chans,
+                        "chans": chans, "prepped": True})
+                elif xcorr_func in (None, 'fftw'):
+                    pads, seed_ids = extras
+                    inner_kwargs.update({
+                        "pads": pads, "seed_ids": seed_ids, "prepped": True})
+
+                Logger.info(f"Got stream of {len(stream)} channels")
+                Logger.info(f"Starting correlation from {starttime}")
+
+                all_peaks, thresholds, no_chans, chans = _corr_and_peaks(
+                    templates=templates, template_names=template_names,
+                    stream=stream, xcorr_func=xcorr_func,
+                    concurrency=concurrency,
+                    cores=cores, i=i, export_cccsums=export_cccsums,
+                    parallel=parallel, peak_cores=peak_cores,
+                    threshold=threshold, threshold_type=threshold_type,
+                    trig_int=trig_int, sampling_rate=sampling_rate,
+                    full_peaks=full_peaks, plot=plot, plotdir=plotdir,
+                    plot_format=plot_format, **inner_kwargs
+                )
+                peaks_queue.put(
+                    (starttime, all_peaks, thresholds, no_chans, chans,
+                     template_names))
+            except Exception as e:
+                Logger.error(
+                    f"Caught exception in correlator:\n {e}")
+                traceback.print_tb(e.__traceback__)
+                poison_queue.put(e)
+                break  # We need to break in Main
+            i += 1
+        Logger.debug("Putting None into peaks queue.")
+        peaks_queue.put(None)
+
+        # Get the party back
+        Logger.info("Collecting party")
+        party = Party()
+        while True:
+            killed = _check_for_poison(poison_queue)
+            if killed:
+                Logger.error("Killed")
+                break
+            pf = _get_and_check(party_file_queue, poison_queue)
+            if pf is None:
+                # Fin - Queue has been finished with.
+                break
+            if isinstance(pf, Poison):
+                Logger.error("Killed while checking for party")
+                killed = True
+                break
+            with open(pf, "rb") as f:
+                party += pickle.load(f)
+            if not save_progress:
+                try:
+                    os.remove(pf)
+                except FileNotFoundError:
+                    pass
+
+        # Check for exceptions
+        if killed:
+            internal_error = poison_queue.get()
+            if isinstance(internal_error, Poison):
+                internal_error = internal_error.value
+            Logger.error(f"Raising error {internal_error} in main process")
+            # Now we can raise the error
+            if internal_error:
+                # Clean the template db
+                if os.path.isdir(template_dir):
+                    shutil.rmtree(template_dir)
+                if os.path.isdir(self._stream_dir):
+                    shutil.rmtree(self._stream_dir)
+                self._on_error(internal_error)
+
+        # Shut down the processes and close the queues
+        shutdown = kwargs.get("shutdown", True)
+        # Allow client_detect to take control
+        if shutdown:
+            Logger.info("Shutting down")
+            self._close_queues()
+            self._close_processes()
+        if os.path.isdir(template_dir):
+            shutil.rmtree(template_dir)
+        if os.path.isdir(self._stream_dir):
+            shutil.rmtree(self._stream_dir)
         return party
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plot=False, plotdir=None,
                       min_gap=None, daylong=False, parallel_process=True,
                       xcorr_func=None, concurrency=None, cores=None,
-                      ignore_length=False, ignore_bad_data=False,
-                      group_size=None, return_stream=False, full_peaks=False,
+                      concurrent_processing=False, ignore_length=False,
+                      ignore_bad_data=False, group_size=None,
+                      return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      **kwargs):
+                      check_processing=True, make_events=True,
+                      min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
         :type client: `obspy.clients.*.Client`
-        :param client: Any obspy client with a dataselect service.
+        :param client:
+            Any obspy client (or client-like object) with a dataselect service.
         :type starttime: :class:`obspy.core.UTCDateTime`
         :param starttime: Start-time for detections.
         :type endtime: :class:`obspy.core.UTCDateTime`
@@ -687,6 +1289,11 @@ class Tribe(object):
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
         :param cores: Number of workers for processing and detection.
+        :type concurrent_processing: bool
+        :param concurrent_processing:
+            Whether to process steps in detection workflow concurrently or not.
+            See https://github.com/eqcorrscan/EQcorrscan/pull/544 for
+            benchmarking.
         :type ignore_length: bool
         :param ignore_length:
             If using daylong=True, then dayproc will try check that the data
@@ -720,6 +1327,10 @@ class Tribe(object):
         :param retries:
             Number of attempts allowed for downloading - allows for transient
             server issues.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -774,7 +1385,9 @@ class Tribe(object):
             where :math:`template` is a single template from the input and the
             length is the number of channels within this template.
         """
-        from obspy.clients.fdsn.client import FDSNException
+        from eqcorrscan.core.match_filter.helpers.tribe import _download_st
+        from eqcorrscan.core.match_filter.helpers.processes import (
+            _get_detection_stream)
 
         # This uses get_waveforms_bulk to get data - not all client types have
         # this, so we check and monkey patch here.
@@ -785,292 +1398,193 @@ class Tribe(object):
                         "method, monkey-patching this")
             client = get_waveform_client(client)
 
-        party = Party()
+        if check_processing:
+            assert len(quick_group_templates(self.templates)) == 1, (
+                "Inconsistent template processing parameters found, this is no"
+                " longer supported. Split your tribe using "
+                "eqcorrscan.core.match_filter.template.quick_group_templates "
+                "and re-run for each group")
+
+        groups = kwargs.get("groups", None)
+
+        # Hard-coded buffer for downloading data, often data downloaded is
+        # not the correct length
         buff = 300
-        # Apply a buffer, often data downloaded is not the correct length
         data_length = max([t.process_length for t in self.templates])
-        pad = 0
-        for template in self.templates:
-            max_delay = (template.st.sort(['starttime'])[-1].stats.starttime -
-                         template.st.sort(['starttime'])[0].stats.starttime)
-            if max_delay > pad:
-                pad = max_delay
-        download_groups = int(endtime - starttime) / data_length
-        template_channel_ids = []
-        for template in self.templates:
-            for tr in template.st:
-                if tr.stats.network not in [None, '']:
-                    chan_id = (tr.stats.network,)
-                else:
-                    chan_id = ('*',)
-                if tr.stats.station not in [None, '']:
-                    chan_id += (tr.stats.station,)
-                else:
-                    chan_id += ('*',)
-                if tr.stats.location not in [None, '']:
-                    chan_id += (tr.stats.location,)
-                else:
-                    chan_id += ('*',)
-                if tr.stats.channel not in [None, '']:
-                    if len(tr.stats.channel) == 2:
-                        chan_id += (tr.stats.channel[0] + '?' +
-                                    tr.stats.channel[-1],)
-                    else:
-                        chan_id += (tr.stats.channel,)
-                else:
-                    chan_id += ('*',)
-                template_channel_ids.append(chan_id)
-        template_channel_ids = list(set(template_channel_ids))
+
+        # Calculate overlap
+        overlap = max(_moveout(template.st) for template in self.templates)
+        assert overlap < data_length, (
+            f"Overlap of {overlap} s is larger than the length of data to "
+            f"be downloaded: {data_length} s - this won't work.")
+
+        # Work out start and end times of chunks to download
+        chunk_start, time_chunks = starttime, []
+        while chunk_start < endtime:
+            time_chunks.append((chunk_start, chunk_start + data_length + 20))
+            chunk_start += data_length - overlap
+
+        full_stream_dir = None
         if return_stream:
-            stream = Stream()
-        if int(download_groups) < download_groups:
-            download_groups = int(download_groups) + 1
-        else:
-            download_groups = int(download_groups)
-        for i in range(download_groups):
-            bulk_info = []
-            for chan_id in template_channel_ids:
-                bulk_info.append((
-                    chan_id[0], chan_id[1], chan_id[2], chan_id[3],
-                    starttime + (i * data_length) - (pad + buff),
-                    starttime + ((i + 1) * data_length) + (pad + buff)))
-            for retry_attempt in range(retries):
-                try:
-                    Logger.info("Downloading data")
-                    st = client.get_waveforms_bulk(bulk_info)
-                    Logger.info(
-                        "Downloaded data for {0} traces".format(len(st)))
-                    break
-                except FDSNException as e:
-                    if "Split the request in smaller" in " ".join(e.args):
-                        Logger.warning(
-                            "Datacentre does not support large requests: "
-                            "splitting request into smaller chunks")
-                        st = Stream()
-                        for _bulk in bulk_info:
-                            try:
-                                st += client.get_waveforms_bulk([_bulk])
-                            except Exception as e:
-                                Logger.error("No data for {0}".format(_bulk))
-                                Logger.error(e)
-                                continue
-                        Logger.info("Downloaded data for {0} traces".format(
-                            len(st)))
-                        break
-                except Exception as e:
-                    Logger.error(e)
-                    continue
-            else:
-                raise MatchFilterError(
-                    "Could not download data after {0} attempts".format(
-                        retries))
-            # Get gaps and remove traces as necessary
-            if min_gap:
-                gaps = st.get_gaps(min_gap=min_gap)
-                if len(gaps) > 0:
-                    Logger.warning("Large gaps in downloaded data")
-                    st.merge()
-                    gappy_channels = list(
-                        set([(gap[0], gap[1], gap[2], gap[3])
-                             for gap in gaps]))
-                    _st = Stream()
-                    for tr in st:
-                        tr_stats = (tr.stats.network, tr.stats.station,
-                                    tr.stats.location, tr.stats.channel)
-                        if tr_stats in gappy_channels:
-                            Logger.warning(
-                                "Removing gappy channel: {0}".format(tr))
-                        else:
-                            _st += tr
-                    st = _st
-                    st.split()
-            st.detrend("simple").merge()
-            st.trim(starttime=starttime + (i * data_length) - pad,
-                    endtime=starttime + ((i + 1) * data_length) + pad)
-            for tr in st:
-                if not _check_daylong(tr.data):
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} contains more zeros than non-zero, "
-                        "removed".format(tr.id))
-            for tr in st:
-                if tr.stats.endtime - tr.stats.starttime < \
-                   0.8 * data_length:
-                    st.remove(tr)
-                    Logger.warning(
-                        "{0} is less than 80% of the required length"
-                        ", removed".format(tr.id))
+            full_stream_dir = tempfile.mkdtemp()
+
+        poison_queue = Queue()
+
+        detector_kwargs = dict(
+            threshold=threshold, threshold_type=threshold_type,
+            trig_int=trig_int, plot=plot, plotdir=plotdir,
+            daylong=daylong, parallel_process=parallel_process,
+            xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
+            ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
+            group_size=group_size, overlap=None, full_peaks=full_peaks,
+            process_cores=process_cores, save_progress=save_progress,
+            return_stream=return_stream, check_processing=False,
+            poison_queue=poison_queue, shutdown=False,
+            concurrent_processing=concurrent_processing, groups=groups,
+            make_events=make_events, min_stations=min_stations)
+
+        if not concurrent_processing:
+            Logger.warning("Using concurrent_processing=True can be faster if"
+                           "downloading your data takes a long time. See "
+                           "https://github.com/eqcorrscan/EQcorrscan/pull/544"
+                           "for benchmarks.")
+            party = Party()
             if return_stream:
-                stream += st
-            try:
-                party += self.detect(
-                    stream=st, threshold=threshold,
-                    threshold_type=threshold_type, trig_int=trig_int,
-                    plot=plot, plotdir=plotdir, daylong=daylong,
-                    parallel_process=parallel_process, xcorr_func=xcorr_func,
-                    concurrency=concurrency, cores=cores,
-                    ignore_length=ignore_length,
-                    ignore_bad_data=ignore_bad_data, group_size=group_size,
-                    overlap=None, full_peaks=full_peaks,
-                    process_cores=process_cores, **kwargs)
-                if save_progress:
-                    party.write("eqcorrscan_temporary_party")
-            except Exception as e:
-                Logger.critical(
-                    'Error, routine incomplete, returning incomplete Party')
-                Logger.error('Error: {0}'.format(e))
-                traceback.print_exc()
+                full_st = Stream()
+            for _starttime, _endtime in time_chunks:
+                st = _download_st(
+                    starttime=_starttime, endtime=_endtime,
+                    buff=buff, min_gap=min_gap,
+                    template_channel_ids=self._template_channel_ids(),
+                    client=client, retries=retries)
+                if len(st) == 0:
+                    Logger.warning(f"No suitable data between {_starttime} "
+                                   f"and {_endtime}, skipping")
+                    continue
+                party += self.detect(stream=st, pre_processed=False,
+                                     **detector_kwargs)
                 if return_stream:
-                    return party, stream
-                else:
-                    return party
-        for family in party:
-            if family is not None:
-                family.detections = family._uniq().detections
-        if return_stream:
-            return party, stream
-        else:
+                    full_st += st
+            if return_stream:
+                return party, full_st
             return party
 
-    def construct(self, method, lowcut, highcut, samp_rate, filt_order,
-                  length, prepick, swin="all", process_len=86400,
-                  all_horiz=False, delayed=True, plot=False, plotdir=None,
-                  min_snr=None, parallel=False, num_cores=False,
-                  skip_short_chans=False, save_progress=False, **kwargs):
-        """
-        Generate a Tribe of Templates.
+        # Get data in advance
+        time_queue = Queue()
+        stream_queue = Queue(maxsize=1)
 
-        :type method: str
-        :param method:
-            Method of Tribe generation. Possible options are: `from_client`,
-            `from_meta_file`.  See below on the additional required arguments
-            for each method.
-        :type lowcut: float
-        :param lowcut:
-            Low cut (Hz), if set to None will not apply a lowcut
-        :type highcut: float
-        :param highcut:
-            High cut (Hz), if set to None will not apply a highcut.
-        :type samp_rate: float
-        :param samp_rate:
-            New sampling rate in Hz.
-        :type filt_order: int
-        :param filt_order:
-            Filter level (number of corners).
-        :type length: float
-        :param length: Length of template waveform in seconds.
-        :type prepick: float
-        :param prepick: Pre-pick time in seconds
-        :type swin: str
-        :param swin:
-            P, S, P_all, S_all or all, defaults to all: see note in
-            :func:`eqcorrscan.core.template_gen.template_gen`
-        :type process_len: int
-        :param process_len: Length of data in seconds to download and process.
-        :type all_horiz: bool
-        :param all_horiz:
-            To use both horizontal channels even if there is only a pick on
-            one of them.  Defaults to False.
-        :type delayed: bool
-        :param delayed: If True, each channel will begin relative to it's own
-            pick-time, if set to False, each channel will begin at the same
-            time.
-        :type plot: bool
-        :param plot: Plot templates or not.
-        :type plotdir: str
-        :param plotdir:
-            The path to save plots to. If `plotdir=None` (default) then the
-            figure will be shown on screen.
-        :type min_snr: float
-        :param min_snr:
-            Minimum signal-to-noise ratio for a channel to be included in the
-            template, where signal-to-noise ratio is calculated as the ratio
-            of the maximum amplitude in the template window to the rms
-            amplitude in the whole window given.
-        :type parallel: bool
-        :param parallel: Whether to process data in parallel or not.
-        :type num_cores: int
-        :param num_cores:
-            Number of cores to try and use, if False and parallel=True,
-            will use either all your cores, or as many traces as in the data
-            (whichever is smaller).
-        :type save_progress: bool
-        :param save_progress:
-            Whether to save the resulting template set at every data step or
-            not. Useful for long-running processes.
-        :type skip_short_chans: bool
-        :param skip_short_chans:
-            Whether to ignore channels that have insufficient length data or
-            not. Useful when the quality of data is not known, e.g. when
-            downloading old, possibly triggered data from a datacentre
-        :type save_progress: bool
-        :param save_progress:
-            Whether to save the resulting party at every data step or not.
-            Useful for long-running processes.
+        downloader = Process(
+            target=_get_detection_stream,
+            kwargs=dict(
+                input_time_queue=time_queue,
+                client=client,
+                retries=retries,
+                min_gap=min_gap,
+                buff=buff,
+                output_filename_queue=stream_queue,
+                poison_queue=poison_queue,
+                temp_stream_dir=self._stream_dir,
+                full_stream_dir=full_stream_dir,
+                pre_process=True, parallel_process=parallel_process,
+                process_cores=process_cores, daylong=daylong,
+                overlap=0.0, ignore_length=ignore_length,
+                ignore_bad_data=ignore_bad_data,
+                filt_order=self.templates[0].filt_order,
+                highcut=self.templates[0].highcut,
+                lowcut=self.templates[0].lowcut,
+                samp_rate=self.templates[0].samp_rate,
+                process_length=self.templates[0].process_length,
+                template_channel_ids=self._template_channel_ids(),
+            ),
+            name="DownloadProcess"
+        )
 
-        .. note::
-            *Method specific arguments:*
+        # Cope with old tribes
+        if not hasattr(self, '_processes'):
+            self._processes = dict()
+        if not hasattr(self, '_queues'):
+            self._queues = dict()
+        # Put processes and queues into shared state
+        self._processes.update({
+            "downloader": downloader,
+        })
+        self._queues.update({
+            "times": time_queue,
+            "poison": poison_queue,
+            "stream": stream_queue,
+        })
 
-            - `from_client` requires:
-                :param str client_id:
-                    string passable by obspy to generate Client, or any object
-                    with a `get_waveforms` method, including a Client instance.
-                :param `obspy.core.event.Catalog` catalog:
-                    Catalog of events to generate template for
-                :param float data_pad: Pad length for data-downloads in seconds
-            - `from_meta_file` requires:
-                :param str meta_file:
-                    Path to obspy-readable event file, or an obspy Catalog
-                :param `obspy.core.stream.Stream` st:
-                    Stream containing waveform data for template. Note that
-                    this should be the same length of stream as you will use
-                    for the continuous detection, e.g. if you detect in
-                    day-long files, give this a day-long file!
-                :param bool process:
-                    Whether to process the data or not, defaults to True.
+        # Fill time queue
+        for time_chunk in time_chunks:
+            time_queue.put(time_chunk)
+        # Close off queue
+        time_queue.put(None)
 
-        .. Note::
-            Method: `from_sac` is not supported by Tribe.construct and must
-            use Template.construct.
+        # Start up processes
+        downloader.start()
 
-        .. Note:: Templates will be named according to their start-time.
-        """
-        templates, catalog, process_lengths = template_gen.template_gen(
-            method=method, lowcut=lowcut, highcut=highcut, length=length,
-            filt_order=filt_order, samp_rate=samp_rate, prepick=prepick,
-            return_event=True, save_progress=save_progress, swin=swin,
-            process_len=process_len, all_horiz=all_horiz, plotdir=plotdir,
-            delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
-            num_cores=num_cores, skip_short_chans=skip_short_chans,
-            **kwargs)
-        for template, event, process_len in zip(templates, catalog,
-                                                process_lengths):
-            t = Template()
-            # Template-gen already does this check, no need to duplicate
-            # for tr in template:
-            #     if not np.any(tr.data.astype(np.float16)):
-            #         Logger.warning('Data are zero in float16, missing data,'
-            #                        ' will not use: {0}'.format(tr.id))
-            #         template.remove(tr)
-            if len(template) == 0:
-                Logger.error('Empty Template')
+        party = self.detect(
+            stream=stream_queue, pre_processed=True, **detector_kwargs)
+
+        # Close and join processes
+        self._close_processes()
+        self._close_queues()
+
+        if return_stream:
+            full_st = read(os.path.join(full_stream_dir, "*"))
+            shutil.rmtree(full_stream_dir)
+            return party, full_st
+        return party
+
+    def _close_processes(
+        self,
+        terminate: bool = False,
+        processes: dict = None
+    ):
+        processes = processes or self._processes
+        for p_name, p in processes.items():
+            if terminate:
+                Logger.warning(f"Terminating {p_name}")
+                p.terminate()
                 continue
-            t.st = template
-            t.name = template.sort(['starttime'])[0]. \
-                stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
-            t.lowcut = lowcut
-            t.highcut = highcut
-            t.filt_order = filt_order
-            t.samp_rate = samp_rate
-            t.process_length = process_len
-            t.prepick = prepick
-            event.comments.append(Comment(
-                text="eqcorrscan_template_" + t.name,
-                creation_info=CreationInfo(agency='eqcorrscan',
-                                           author=getpass.getuser())))
-            t.event = event
-            self.templates.append(t)
-        return self
+            try:
+                Logger.info(f"Joining {p_name}")
+                p.join(timeout=self._timeout)
+            except Exception as e:
+                Logger.error(f"Failed to join due to {e}: terminating")
+                p.terminate()
+            Logger.info(f"Closing {p_name}")
+            try:
+                p.close()
+            except Exception as e:
+                Logger.error(
+                    f"Failed to close {p_name} due to {e}, terminating")
+                p.terminate()
+        Logger.info("Finished closing processes")
+        return
+
+    def _close_queues(self, queues: dict = None):
+        queues = queues or self._queues
+        for q_name, q in queues.items():
+            if q._closed:
+                continue
+            Logger.info(f"Emptying {q_name}")
+            while True:
+                try:
+                    q.get_nowait()
+                except Empty:
+                    break
+            Logger.info(f"Closing {q_name}")
+            q.close()
+        Logger.info("Finished closing queues")
+        return
+
+    def _on_error(self, error):
+        """ Gracefully close all child processes and queues and raise error """
+        self._close_processes(terminate=True)
+        self._close_queues()
+        Logger.info("Admin complete, raising error")
+        raise error
 
 
 def read_tribe(fname):
@@ -1090,7 +1604,7 @@ if __name__ == "__main__":
 
     doctest.testmod()
     # List files to be removed after doctest
-    cleanup = ['test_tribe.tgz']
+    cleanup = ['test_tribe.tgz', "test_tribe.pkl"]
     for f in cleanup:
         if os.path.isfile(f):
             os.remove(f)

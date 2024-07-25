@@ -124,10 +124,15 @@ def _sanitize_length(st, starttime=None, endtime=None, daylong=False):
     else:
         if starttime is not None and endtime is not None:
             for tr in st:
+                Logger.info(
+                    f"Trimming {tr.id} between {starttime} and {endtime}")
                 tr.trim(starttime, endtime)
                 if len(tr.data) == ((endtime - starttime) *
                                     tr.stats.sampling_rate) + 1:
+                    Logger.info(f"{tr.id} is overlength dropping first sample")
                     tr.data = tr.data[1:len(tr.data)]
+                    # TODO: this should adjust the start-time
+                    # tr.stats.starttime += tr.stats.delta
             length = endtime - starttime
             clip = True
         elif starttime:
@@ -161,7 +166,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
            end to 0)
         #. Pad data to length
         #. Resample in the frequency domain
-        #. Detrend dat (using a simple linear detrend to set start and
+        #. Detrend data (using a simple linear detrend to set start and
            end to 0)
         #. Zerophase Butterworth filter
         #. Re-check length
@@ -211,6 +216,9 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     :type ignore_bad_data: bool
 
     :return: Processed stream as obspy.core.Stream
+
+    :Note: Works in place on your data, copy before giving to this function if
+           you want to reuse your input data.
     """
     if isinstance(st, Trace):
         tracein = True
@@ -254,6 +262,11 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             Logger.warning('No data for {0} after trim'.format(tr.id))
 
     # Do work
+    # 0. Enforce double-preccision floats for this work
+    for tr in st:
+        if not tr.data.dtype == np.float64:
+            Logger.debug(f"Converting {tr.id} to double precision")
+            tr.data = tr.data.astype(np.float64)
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
     gaps = dict()
@@ -274,7 +287,12 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                 raise ValueError(msg)
             else:
                 # Remove bad traces from the stream
-                st.remove(st.select(id=trace_id))
+                try:
+                    st.remove(st.select(id=trace_id))
+                except ValueError:
+                    Logger.info(
+                        f"{trace_id} not found in {set(tr.id for tr in st)},"
+                        f" ignoring")
 
     # 3. Detrend
     # ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
@@ -373,6 +391,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     if tracein:
         st.merge()
         return st[0]
+
     return st
 
 
@@ -602,9 +621,12 @@ def _detrend(data):
     :type data: np.ndarray.
     :return: Nothing - works in place
     """
+    # Work in double-precision.
+    data = np.require(data, dtype=np.float64)
     ndat = data.shape[0]
     x1, x2 = data[0], data[-1]
-    data -= x1 + np.arange(ndat) * (x2 - x1) / np.float64(ndat - 1)
+    data -= x1 + np.arange(ndat, dtype=np.float64) * (
+        np.float64(x2 - x1) / np.float64(ndat - 1))
     return
 
 
@@ -627,10 +649,10 @@ def _multi_resample(st, sampling_rate, max_workers=None, chunksize=1):
     to_resample = (
         (tr.data, tr.stats.delta,
          tr.stats.sampling_rate / float(sampling_rate),
-         sampling_rate, _get_window("hann", tr.stats.npts))
+         sampling_rate, _get_window("hann", tr.stats.npts), tr.id)
         for tr in st)
     with ThreadPoolExecutor(max_workers) as executor:
-        # Unpack tuple using lamba
+        # Unpack tuple using lambda
         results = executor.map(lambda args: _resample(*args), to_resample,
                                chunksize=chunksize)
     for r, tr in zip(results, st):
@@ -639,7 +661,7 @@ def _multi_resample(st, sampling_rate, max_workers=None, chunksize=1):
     return st
 
 
-def _resample(data, delta, factor, sampling_rate, large_w):
+def _resample(data, delta, factor, sampling_rate, large_w, _id):
     """
     Resample data in the frequency domain - adapted from obspy resample method
 
@@ -651,7 +673,7 @@ def _resample(data, delta, factor, sampling_rate, large_w):
     :type factor: float
     :param sampling_rate: Desired sampling-rate
     :type sampling_rate: float
-    :param large_w: Window to apply to spectra to stabalise resampling
+    :param large_w: Window to apply to spectra to stabilise resampling
     :type large_w: np.ndarray
 
     :return: np.ndarray of resampled data.
@@ -661,12 +683,21 @@ def _resample(data, delta, factor, sampling_rate, large_w):
         return data
     # Need to work with numpy objects to release the GIL
     npts = data.shape[0]
-    if npts == 0:
-        Logger.debug("Data of zero length found. Not resampling")
-        return data
-    df = np.float32(1.0) / (npts * delta)
+    Logger.debug(f"Running resample for {_id} with {npts} data points")
+    Logger.debug(f"{_id}: delta={delta}, factor={factor}, "
+                 f"sampling_rate out={sampling_rate}")
+    Logger.debug(f"Sanity check data for {_id}, start and "
+                 f"end: {data[0]} -- {data[-1]}")
+    Logger.debug(f"dtype for {_id}: {data.dtype}")
+    if data.dtype == np.dtype('float64'):
+        _floater = np.float64  # Retain double-precision
+    else:
+        _floater = np.float32
+        # Use single-precision where possible to reduce memory
+    data = data.astype(_floater)
+    df = _floater(1.0) / (npts * delta)
     num = np.int32(npts / factor)
-    d_large_f = np.float32(1.0) / num * sampling_rate
+    d_large_f = _floater(1.0) / num * sampling_rate
 
     # Forward fft
     x = np.fft.rfft(data)
@@ -684,7 +715,7 @@ def _resample(data, delta, factor, sampling_rate, large_w):
     # Try to reduce memory before doing the ifft
     del large_f, f, x
 
-    return np.fft.irfft(y, n=num)[0:num] * (np.float32(num) / np.float32(npts))
+    return np.fft.irfft(y, n=num)[0:num] * (_floater(num) / _floater(npts))
 
 
 def _zero_pad_gaps(tr, gaps, fill_gaps=True):
@@ -703,15 +734,12 @@ def _zero_pad_gaps(tr, gaps, fill_gaps=True):
     :return: :class:`obspy.core.stream.Trace`
     """
     start_in, end_in = (tr.stats.starttime, tr.stats.endtime)
+    tr = Stream([tr])  # convert to stream to use cutout method
     for gap in gaps:
-        stream = Stream()
-        if gap['starttime'] > tr.stats.starttime:
-            stream += tr.slice(tr.stats.starttime, gap['starttime']).copy()
-        if gap['endtime'] < tr.stats.endtime:
-            # Note this can happen when gaps are calculated for a trace that
-            # is longer than `length`, e.g. gaps are calculated pre-trim.
-            stream += tr.slice(gap['endtime'], tr.stats.endtime).copy()
-        tr = stream.merge()[0]
+        Logger.debug(
+            f"Filling gap between {gap['starttime']} and {gap['endtime']}")
+        tr.cutout(gap['starttime'], gap['endtime']).merge()
+    tr = tr.merge()[0]
     if fill_gaps:
         tr = tr.split()
         tr = tr.detrend()
@@ -742,7 +770,162 @@ def _fill_gaps(tr):
     gaps = tr.get_gaps()
     tr = tr.detrend().merge(fill_value=0)[0]
     gaps = [{'starttime': gap[4], 'endtime': gap[5]} for gap in gaps]
+    if len(gaps):
+        Logger.debug(f"Gaps in {tr.id}: \n\t{gaps}")
     return gaps, tr
+
+
+def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
+                   parallel, cores, stream, daylong,
+                   ignore_length, ignore_bad_data, overlap):
+    """
+    Process and chunk data.
+
+    :type parallel: bool
+    :param parallel: Whether to use parallel processing or not
+    :type cores: int
+    :param cores: Number of cores to use, can be False to use all available.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param stream: Stream to process, will be left intact.
+    :type daylong: bool
+    :param daylong: Whether to enforce day-length files or not.
+    :type ignore_length: bool
+    :param ignore_length:
+        If using daylong=True, then processing will try check that the data
+        are there for at least 80% of the day, if you don't want this check
+        (which will raise an error if too much data are missing) then set
+        ignore_length=True.  This is not recommended!
+    :type ignore_bad_data: bool
+    :param ignore_bad_data:
+        If False (default), errors will be raised if data are excessively
+        gappy or are mostly zeros. If True then no error will be raised, but
+        an empty trace will be returned.
+    :type overlap: float
+    :param overlap: Number of seconds to overlap chunks by.
+
+    :return: list of processed streams.
+    """
+    processed_streams = []
+    kwargs = {
+        'filt_order': filt_order,
+        'highcut': highcut, 'lowcut': lowcut,
+        'samp_rate': samp_rate, 'parallel': parallel,
+        'num_cores': cores, 'ignore_length': ignore_length,
+        'ignore_bad_data': ignore_bad_data}
+    # Processing always needs to be run to account for gaps - pre-process will
+    # check whether filtering and resampling needs to be done.
+
+    starttimes = sorted([tr.stats.starttime for tr in stream])
+    endtimes = sorted([tr.stats.endtime for tr in stream])
+
+    if daylong:
+        if process_length != 86400:
+            Logger.warning(
+                f'Processing day-long data, but template was cut from '
+                f'{process_length} s long data, will reduce correlations')
+        process_length = 86400
+        # Check that data all start on the same day, otherwise strange
+        # things will happen...
+        startdates = [starttime.date for starttime in starttimes]
+        if not len(set(startdates)) == 1:
+            Logger.warning('Data start on different days, setting to last day')
+            starttime = UTCDateTime(startdates[-1])
+        else:
+            starttime = UTCDateTime(startdates[0])  # Can take any
+    else:
+        # We want to use shortproc to allow overlaps
+        starttime = starttimes[0]
+    endtime = endtimes[-1]
+    data_len_samps = round((endtime - starttime) * samp_rate) + 1
+    assert overlap < process_length, "Overlap must be less than process length"
+    chunk_len_samps = (process_length - overlap) * samp_rate
+    n_chunks = int(data_len_samps // chunk_len_samps)
+    Logger.info(f"Splitting these data in {n_chunks} chunks")
+    if n_chunks == 0:
+        Logger.error('Data must be process_length or longer, not computing')
+        Logger.error(f"Data have {data_len_samps} samples and we require at "
+                     f"least {chunk_len_samps} samples")
+        return []
+
+    for i in range(n_chunks):
+        kwargs.update(
+            {'starttime': starttime + (i * (process_length - overlap))})
+        if not daylong:
+            _endtime = kwargs['starttime'] + process_length
+            kwargs.update({'endtime': _endtime})
+        else:
+            _endtime = kwargs['starttime'] + 86400
+
+        # This is where data should be copied and only here!
+        if n_chunks > 1:
+            chunk_stream = _quick_copy_stream(
+                stream.slice(starttime=kwargs['starttime'], endtime=_endtime))
+            # Reduce memory by removing data that we don't need anymore
+            stream.trim(starttime=_endtime - overlap)
+        else:
+            # If we only have one chunk, lets just use those data!
+            chunk_stream = stream.trim(
+                starttime=kwargs['starttime'], endtime=_endtime)
+        Logger.info(f"Processing chunk {i} between {kwargs['starttime']} "
+                    f"and {_endtime}")
+        if len(chunk_stream) == 0:
+            Logger.warning(
+                f"No data between {kwargs['starttime']} and {_endtime}")
+            continue
+        # Enforce chunk npts
+        for tr in chunk_stream:
+            Logger.info(
+                f"Enforcing {int(process_length * tr.stats.sampling_rate)} "
+                f"samples for {tr.id} (had {tr.stats.npts} points)")
+            tr.data = tr.data[0:int(
+                process_length * tr.stats.sampling_rate)]
+        _chunk_stream_lengths = {
+            tr.id: tr.stats.endtime - tr.stats.starttime
+            for tr in chunk_stream}
+        for tr_id, chunk_length in _chunk_stream_lengths.items():
+            # Remove traces that are too short.
+            if not ignore_length and chunk_length <= .8 * process_length:
+                tr = chunk_stream.select(id=tr_id)[0]
+                chunk_stream.remove(tr)
+                Logger.warning(
+                    "Data chunk on {0} starting {1} and ending {2} is "
+                    "below 80% of the requested length, will not use"
+                    " this.".format(
+                        tr.id, tr.stats.starttime, tr.stats.endtime))
+        if len(chunk_stream) == 0:
+            continue
+        Logger.debug(
+            f"Processing chunk:\n{chunk_stream.__str__(extended=True)}")
+        Logger.info(f"Processing using {kwargs}")
+        _processed_stream = multi_process(st=chunk_stream, **kwargs)
+        # If data have more zeros then pre-processing will return a
+        # trace of 0 length
+        _processed_stream.traces = [
+            tr for tr in _processed_stream if tr.stats.npts != 0]
+        if len(_processed_stream) == 0:
+            Logger.warning(
+                f"Data quality insufficient between {kwargs['starttime']}"
+                f" and {_endtime}")
+            continue
+        # Pre-processing does additional checks for zeros - we need to check
+        # again whether we actually have something useful from this.
+        processed_chunk_stream_lengths = [
+            tr.stats.endtime - tr.stats.starttime
+            for tr in _processed_stream]
+        if min(processed_chunk_stream_lengths) >= .8 * process_length:
+            processed_streams.append(_processed_stream)
+        else:
+            Logger.warning(
+                f"Data quality insufficient between {kwargs['starttime']}"
+                f" and {_endtime}")
+            continue
+
+    if _endtime < stream[0].stats.endtime:
+        Logger.warning(
+            "Last bit of data between {0} and {1} will go unused "
+            "because it is shorter than a chunk of {2} s".format(
+                _endtime, stream[0].stats.endtime, process_length))
+    return processed_streams
 
 
 def _quick_copy_trace(trace, deepcopy_data=True):
@@ -892,13 +1075,17 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
         [key.split('.') + [i] for key, value in template_ids.items()
          for i in range(value)])
     seed_ids = [('.'.join(seed_id[0:-1]), seed_id[-1]) for seed_id in seed_ids]
+    Logger.info(f"Prepping for {len(seed_ids)} channels that share seed-ids "
+                f"between templates and stream")
+    Logger.debug(f"Shared seed-ids: {seed_ids}")
 
     for channel_number, seed_id in enumerate(template_ids.keys()):
         stream_data = np.zeros(stream_length, dtype=np.float32)
         stream_channel = stream.select(id=seed_id)
         if len(stream_channel) > 1:
-            raise NotImplementedError(
-                "Multiple channels in continuous data for {0}".format(seed_id))
+            msg = f"Multiple channels in continuous data for {seed_id}"
+            Logger.error(msg)
+            raise NotImplementedError(msg)
         stream_channel = stream_channel[0]
         if stream_channel.stats.npts == stream_length:
             stream_data = stream_channel.data

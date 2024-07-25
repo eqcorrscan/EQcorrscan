@@ -26,8 +26,7 @@ from obspy import Stream
 from obspy.core.event import Comment, Event, CreationInfo
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
-from eqcorrscan.core.match_filter.matched_filter import (
-    _group_detect, MatchFilterError)
+from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 from eqcorrscan.core import template_gen
 
 Logger = logging.getLogger(__name__)
@@ -531,11 +530,12 @@ class Template(object):
         .. Note::
             See tutorials for example.
         """
+        from eqcorrscan.core.match_filter.tribe import Tribe
         if kwargs.get("plotvar") is not None:
             Logger.warning("plotvar is depreciated, use plot instead")
             plot = kwargs.get("plotvar")
-        party = _group_detect(
-            templates=[self], stream=stream.copy(), threshold=threshold,
+        party = Tribe(templates=[self]).detect(
+            stream=stream, threshold=threshold,
             threshold_type=threshold_type, trig_int=trig_int, plotdir=plotdir,
             plot=plot, pre_processed=pre_processed, daylong=daylong,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
@@ -761,6 +761,7 @@ def group_templates_by_seedid(
         templates: List[Template],
         st_seed_ids: Set[str],
         group_size: int,
+        min_stations: int = 0,
 ) -> List[List[Template]]:
     """
     Group templates to reduce dissimilar traces
@@ -771,10 +772,17 @@ def group_templates_by_seedid(
         Seed ids in the stream to be matched with
     :param group_size:
         Maximum group size - will not exceed this size
+    :param min_stations:
+        Minimum number of overlapping stations between template
+        and stream to use the template for detection.
 
     :return:
         List of lists of templates grouped.
     """
+    all_template_sids = {tr.id for template in templates for tr in template.st}
+    if len(all_template_sids.intersection(st_seed_ids)) == 0:
+        Logger.warning(f"No matches between stream ({st_seed_ids} and "
+                       f"templates ({all_template_sids}")
     # Get overlapping seed ids so that we only group based on the
     # channels we have in the data. Use a tuple so that it hashes
     template_seed_ids = tuple(
@@ -784,19 +792,27 @@ def group_templates_by_seedid(
     # Don't use templates that don't have any overlap with the stream
     template_seed_ids = tuple(
         (t_name, t_chans) for t_name, t_chans in template_seed_ids
-        if len(t_chans))
+        if len({sid.split('.')[1] for sid in t_chans}) >= max(1, min_stations))
     Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
-                f"templates due to no matched channels")
+                f"templates due to fewer than {min_stations} matched channels")
     # We will need this dictionary at the end for getting the templates by id
     template_dict = {t.name: t for t in templates}
+    # group_size can be None, in which case we don't actually need to group
+    if (group_size is not None) and (group_size < len(template_seed_ids)):
+        # Pass off to cached function
+        out_groups = _group_seed_ids(
+            template_seed_ids=template_seed_ids, group_size=group_size)
 
-    # Pass off to cached function
-    out_groups = _group_seed_ids(
-        template_seed_ids=template_seed_ids, group_size=group_size)
-
-    # Convert from groups of template names to groups of templates
-    out_groups = [[template_dict[t] for t in out_group]
-                  for out_group in out_groups]
+        # Convert from groups of template names to groups of templates
+        out_groups = [[template_dict[t] for t in out_group]
+                      for out_group in out_groups]
+    else:
+        Logger.info(f"Group size ({group_size}) larger than n templates"
+                    f" ({len(template_seed_ids)}), no grouping performed")
+        out_groups = [[template_dict[t[0]] for t in template_seed_ids]]
+    assert sum(len(grp) for grp in out_groups) == len(template_seed_ids), (
+        "Something went wrong internally with grouping - we don't have the "
+        "right number of templates. Please report this bug")
     return out_groups
 
 
@@ -827,6 +843,7 @@ def _group_seed_ids(template_seed_ids, group_size):
     # Get the final group
     groups.append(group)
     group_sids.append(group_sid)
+    Logger.info(f"{len(groups)} initial template groups")
 
     # Check if all the groups are full
     groups_full = sum([len(grp) == group_size for grp in groups])
@@ -835,7 +852,7 @@ def _group_seed_ids(template_seed_ids, group_size):
 
     # Smush together groups until group-size condition is met.
     # Make list of group ids - compare ungrouped sids to intersection of sids
-    # in group - add most similar, then repeat. Start with least sids.
+    # in group - add most similar, then repeat. Start with fewest sids.
 
     n_original_groups = len(groups)
     grouped = np.zeros(n_original_groups, dtype=bool)
@@ -853,6 +870,7 @@ def _group_seed_ids(template_seed_ids, group_size):
     group_sid = group_sids[0]
     group_len = len(groups[0])
     # Loop until all groups have been assigned a final group
+    Logger.info("Running similarity grouping")
     while grouped.sum() < n_original_groups:
         # Work out difference between groups
         diffs = [(i, len(group_sid.symmetric_difference(other_sid)))
@@ -878,6 +896,7 @@ def _group_seed_ids(template_seed_ids, group_size):
             # Update the group seed ids to include the new ones
             group_sid = group_sid.union(group_sids[closest_group_id])
             group_len += len(groups[closest_group_id])
+    Logger.info("Completed grouping")
 
     out_groups = []
     for group_id in set(group_ids):

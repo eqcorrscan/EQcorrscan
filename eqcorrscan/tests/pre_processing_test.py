@@ -39,8 +39,11 @@ class TestMultiThreadMethods(unittest.TestCase):
 
     def test_resample(self):
         samp_rates = [v / 10 for v in range(1, 10)]
-        for st in [self.real_st, self.random_st, self.short_st]:
+        for st, name in zip([self.real_st, self.random_st, self.short_st],
+                            ["real", "random", "short"]):
+            print(f"Running for {name}")
             for samp_frac in samp_rates:
+                print(f"Checking for {samp_frac} fractional sampling_rate")
                 samp_rate = st[0].stats.sampling_rate * samp_frac
                 acc_resample = _multi_resample(st.copy(), samp_rate)
                 obspy_resample = st.copy().resample(samp_rate)

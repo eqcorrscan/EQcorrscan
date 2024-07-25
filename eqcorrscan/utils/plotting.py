@@ -1274,7 +1274,7 @@ def noise_plot(signal, noise, normalise=False, **kwargs):
     axes[-2].set_xlabel("Frequency (Hz)")
     axes[0].set_title("Spectra")
     axes[1].set_title("Signal - noise")
-    fig.legend(lines, labels, 'upper left')
+    fig.legend(lines, labels, loc='upper left')
     fig.subplots_adjust(hspace=0, top=0.91)
     fig = _finalise_figure(fig=fig, **kwargs)  # pragma: no cover
     return fig
@@ -1843,7 +1843,7 @@ def freq_mag(magnitudes, completeness, max_mag, binsize=0.2, **kwargs):
     """
     import matplotlib.pyplot as plt
     # Ensure magnitudes are sorted
-    magnitudes.sort()
+    magnitudes = sorted(magnitudes)
     # Check that there are no nans or infs
     if np.isnan(magnitudes).any():
         Logger.warning('Found nan values, removing them')
@@ -1954,7 +1954,6 @@ def spec_trace(traces, cmap=None, wlen=0.4, log=False, trc='k', tralpha=0.9,
             ax = fig.add_subplot(len(traces), 1, i + 1, sharex=ax)
         ax1, ax2 = _spec_trace(tr, cmap=cmap, wlen=wlen, log=log, trc=trc,
                                tralpha=tralpha, axes=ax)
-        ax.set_yticks([])
         if i < len(traces) - 1:
             plt.setp(ax1.get_xticklabels(), visible=False)
         if isinstance(traces, list):

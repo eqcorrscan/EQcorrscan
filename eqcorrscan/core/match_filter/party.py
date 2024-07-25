@@ -15,6 +15,7 @@ import copy
 import glob
 import os
 import shutil
+import pickle
 import tarfile
 import tempfile
 import logging
@@ -22,6 +23,7 @@ from os.path import join
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
+from obspy.core.event import Comment
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -93,12 +95,13 @@ class Party(object):
             raise NotImplementedError(
                 'Ambiguous add, only allowed Party or Family additions.')
         for oth_fam in families:
-            added = False
-            for fam in self.families:
-                if fam.template == oth_fam.template:
-                    fam += oth_fam
-                    added = True
-            if not added:
+            fam = self.select(oth_fam.template.name)
+            # This check is taken care of by Family.__iadd__
+            # assert fam.template == oth_fam.template, (
+            #     "Matching template names, but different templates")
+            if fam is not None:
+                fam += oth_fam
+            else:
                 self.families.append(oth_fam)
         return self
 
@@ -294,6 +297,10 @@ class Party(object):
             length += len(family)
         return length
 
+    @property
+    def _template_dict(self):
+        return {family.template.name: family for family in self}
+
     def select(self, template_name):
         """
         Select a specific family from the party.
@@ -302,8 +309,7 @@ class Party(object):
         :param template_name: Template name of Family to select from a party.
         :returns: Family
         """
-        return [fam for fam in self.families
-                if fam.template.name == template_name][0]
+        return self._template_dict.get(template_name)
 
     def sort(self):
         """
@@ -484,6 +490,13 @@ class Party(object):
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
+                    if d.event:
+                        d.event.comments = [
+                            c for c in d.event.comments
+                            if not c.text.lower().startswith("threshold=")]
+                        d.event.comments.append(Comment(
+                            text=f"threshold={new_thresh}"))
+
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
         return self
@@ -802,6 +815,12 @@ class Party(object):
             filenames = glob.glob(filename)
         for _filename in filenames:
             Logger.info(f"Reading from {_filename}")
+            # Cope with pickled files
+            if _filename.endswith('.pkl'):
+                with open(_filename, "rb") as _f:
+                    chunk_party = pickle.load(_f)
+                self.__iadd__(chunk_party)
+                continue
             with tarfile.open(_filename, "r:*") as arc:
                 temp_dir = tempfile.mkdtemp()
                 arc.extractall(path=temp_dir, members=_safemembers(arc))

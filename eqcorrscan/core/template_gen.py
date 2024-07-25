@@ -521,6 +521,12 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                     "Pick not associated with waveforms, will not use:"
                     " {0}".format(pick))
                 continue
+            if pick.waveform_id.channel_code is None:
+                Logger.error(
+                    f"Missing waveform_id.channel_code for Pick {pick}.")
+                raise TemplateGenError(
+                    "Ensure that all picks have complete "
+                    "waveform_id attributes")
             if all_channels:
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
             else:
@@ -901,6 +907,7 @@ def _group_events(catalog, process_len, template_length, data_pad):
     :rtype: list
     """
     # case for catalog only containing one event
+    assert len(catalog), "No events to group"
     if len(catalog) == 1:
         return [catalog]
     sub_catalogs = []
