@@ -406,11 +406,19 @@ class Detection(object):
                 pick.sort(key=lambda p: p.time)
             pick = pick[0]
             cut_start = pick.time - prepick
-            cut_end = cut_start + length
-            _st = _st.slice(starttime=cut_start, endtime=cut_end).copy()
-            # Minimum length check
+            # Find nearest sample to avoid trimming to too-short length - see #573
             for tr in _st:
-                if abs((tr.stats.endtime - tr.stats.starttime) -
+                sample_offset = (cut_start - tr.stats.starttime) / tr.stats.delta
+                sample_offset //= 1
+                # If the sample offset is not a whole number, always take the sample
+                # before that requested
+                _tr_cut_start = tr.stats.starttime + (sample_offset * tr.stats.delta)
+                _tr_cut_end = _tr_cut_start + length
+                Logger.info(f"Trimming {tr.id} between {_tr_cut_end} and {_tr_cut_end}.")
+                _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
+                Logger.debug(f"Length: {(_tr.stats.endtime - _tr.stats.starttime)}")
+                Logger.debug(f"Requested length: {length}")
+                if abs((_tr.stats.endtime - _tr.stats.starttime) -
                        length) < tr.stats.delta:
                     cut_stream += tr
                 else:
