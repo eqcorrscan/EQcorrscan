@@ -410,7 +410,9 @@ class Detection(object):
             # Find nearest sample to avoid  to too-short length - see #573
             for tr in _st:
                 sample_offset = (cut_start -
-                                 tr.stats.starttime) / tr.stats.delta
+                                 tr.stats.starttime) * tr.stats.sampling_rate
+                Logger.debug(
+                    f"Sample offset for slice on {tr.id}: {sample_offset}")
                 sample_offset //= 1
                 # If the sample offset is not a whole number, always take the
                 # sample before that requested
