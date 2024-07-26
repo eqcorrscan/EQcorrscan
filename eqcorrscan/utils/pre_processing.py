@@ -243,11 +243,19 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
     gaps = dict()
+    used = [True for _ in st]
     for i, tr in enumerate(st):
         if isinstance(tr.data, np.ma.MaskedArray):
+            _gaps, tr = _fill_gaps(tr)
+            if tr is None:
+                Logger.debug(f"Dropped trace due to being completely "
+                             f"masked for {tr.id}")
+                used[i] = False
+                continue
             gappy[tr.id] = True
-            gaps[tr.id], tr = _fill_gaps(tr)
+            gaps[tr.id] = _gaps
             st[i] = tr
+    st.traces = [tr for i, tr in enumerate(st) if used[i]]
 
     # 2. Check for zeros and cope with bad data
     # ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
@@ -740,6 +748,9 @@ def _fill_gaps(tr):
     :return: gaps, trace, where gaps is a list of dict
     """
     tr = tr.split()
+    if len(tr) == 0:
+        Logger.debug("Data was completely masked, no data remain")
+        return [], None
     gaps = tr.get_gaps()
     tr = tr.detrend().merge(fill_value=0)[0]
     gaps = [{'starttime': gap[4], 'endtime': gap[5]} for gap in gaps]
