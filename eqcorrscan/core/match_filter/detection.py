@@ -417,7 +417,7 @@ class Detection(object):
                 # If the sample offset is not a whole number, always take the
                 # sample before that requested
                 _tr_cut_start = tr.stats.starttime + (
-                        sample_offset * tr.stats.delta)
+                    sample_offset * tr.stats.delta)
                 _tr_cut_end = _tr_cut_start + length
                 Logger.debug(
                     f"Trimming {tr.id} between {_tr_cut_end} "
