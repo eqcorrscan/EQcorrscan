@@ -1606,6 +1606,52 @@ class TestMatchObjectLight(unittest.TestCase):
         family.detections.append(additional_detection)
         self.assertEqual(family.catalog, get_catalog(family.detections))
 
+    def test_detection_extract_stream(self):
+        # Create simple synthetic stream
+        traces = []
+        pick_sids = {p.waveform_id.get_seed_string() for f in self.party
+                     for d in f for p in d.event.picks}
+        pick_times = sorted([p.time for f in self.party for d in f
+                             for p in d.event.picks])
+        first_pick, last_pick = pick_times[0], pick_times[-1]
+        delta = self.party[0].template.st[0].stats.delta
+        n_samples = int(((last_pick - first_pick) + 120) / delta)
+        data = np.arange(n_samples, dtype=int)
+        for sid in pick_sids:
+            tr = Trace(data=data.copy())
+            tr.stats.starttime = first_pick - 60
+            n, s, l, c = sid.split('.')
+            tr.stats.delta = delta
+            tr.stats.network = n
+            tr.stats.station = s
+            tr.stats.location = l
+            tr.stats.channel = c
+            traces.append(tr)
+        st = Stream(traces=traces)
+
+        # Test straightforward extraction
+        detection = self.party[0][0]
+        length, pre_pick = 40.0, 1 / delta
+        for shift in range(6):
+            pre_pick -= shift * (delta / 6)  # Sub-sample shifting
+            expected_starts = {
+                p.waveform_id.get_seed_string(): p.time - pre_pick
+                for p in detection.event.picks}
+            cut_st = detection.extract_stream(
+                stream=st, length=length, prepick=pre_pick)
+            for sid, expected_start in expected_starts.items():
+                Logger.debug(f"Checking for {sid}")
+                tr = cut_st.select(id=sid)
+                # Check that we get a returned trace
+                self.assertTrue(len(tr), 1)
+                tr = tr[0]
+                # Check that start is within one sample of the expected start
+                self.assertLess(abs(tr.stats.starttime - expected_start),
+                                delta)
+                # Check that the length is correct
+                returned_length = tr.stats.endtime - tr.stats.starttime
+                self.assertEqual(length, returned_length)
+
 
 class TestTemplateGrouping(unittest.TestCase):
     @classmethod

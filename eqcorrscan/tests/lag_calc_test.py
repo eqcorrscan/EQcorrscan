@@ -26,7 +26,6 @@ class SyntheticTests(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(999)
         print("Setting up class")
-        np.random.seed(999)
         samp_rate = 50
         t_length = .75
         # Make some synthetic templates
@@ -34,6 +33,7 @@ class SyntheticTests(unittest.TestCase):
             nsta=5, ntemplates=5, nseeds=10, samp_rate=samp_rate,
             t_length=t_length, max_amp=10, max_lag=15, phaseout="both",
             jitter=0, noise=False, same_phase=True)
+        print("Made synthetic data")
         # Rename channels
         channel_mapper = {"SYN_Z": "HHZ", "SYN_H": "HHN"}
         for tr in data:
@@ -44,6 +44,7 @@ class SyntheticTests(unittest.TestCase):
         party = Party()
         t = 0
         data_start = data[0].stats.starttime
+        print("Making party")
         for template, template_seeds in zip(templates, seeds):
             template_name = "template_{0}".format(t)
             detections = []
@@ -68,6 +69,8 @@ class SyntheticTests(unittest.TestCase):
             family = Family(template=_template, detections=detections)
             party += family
             t += 1
+            print(f"Made template {template_name}")
+        print("Made party")
         cls.party = party
         cls.data = data
         cls.t_length = t_length
