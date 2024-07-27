@@ -198,7 +198,6 @@ def _pre_process(
     process_length: float,
     parallel: bool,
     cores: int,
-    daylong: bool,
     ignore_length: bool,
     ignore_bad_data: bool,
     overlap: float, **kwargs
@@ -218,7 +217,6 @@ def _pre_process(
     :param process_length: See utils.pre_processing.multi_process
     :param parallel: See utils.pre_processing.multi_process
     :param cores: See utils.pre_processing.multi_process
-    :param daylong: See utils.pre_processing.multi_process
     :param ignore_length: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -247,7 +245,6 @@ def _pre_process(
             parallel=parallel,
             cores=cores,
             stream=st,
-            daylong=daylong,
             ignore_length=ignore_length,
             overlap=overlap,
             ignore_bad_data=ignore_bad_data)

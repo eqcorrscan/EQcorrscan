@@ -393,7 +393,7 @@ class Template(object):
         return self
 
     def detect(self, stream, threshold, threshold_type, trig_int,
-               plot=False, plotdir=None, pre_processed=False, daylong=False,
+               plot=False, plotdir=None, pre_processed=False,
                parallel_process=True, xcorr_func=None, concurrency=None,
                cores=None, ignore_length=False, overlap="calculate",
                full_peaks=False, **kwargs):
@@ -428,12 +428,6 @@ class Template(object):
             Defaults to False, which will use the
             :mod:`eqcorrscan.utils.pre_processing` routines to resample and
             filter the continuous data.
-        :type daylong: bool
-        :param daylong:
-            Set to True to use the
-            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
-            preforms additional checks and is more efficient for day-long data
-            over other methods.
         :type parallel_process: bool
         :param parallel_process:
         :type xcorr_func: str or callable
@@ -450,8 +444,9 @@ class Template(object):
         :param cores: Number of workers for processing and detection.
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type overlap: float
@@ -537,7 +532,7 @@ class Template(object):
         party = Tribe(templates=[self]).detect(
             stream=stream, threshold=threshold,
             threshold_type=threshold_type, trig_int=trig_int, plotdir=plotdir,
-            plot=plot, pre_processed=pre_processed, daylong=daylong,
+            plot=plot, pre_processed=pre_processed,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
             overlap=overlap, full_peaks=full_peaks, **kwargs)
