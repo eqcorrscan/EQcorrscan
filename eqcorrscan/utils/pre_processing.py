@@ -245,11 +245,12 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     gaps = dict()
     used = [True for _ in st]
     for i, tr in enumerate(st):
+        tr_id = tr.id
         if isinstance(tr.data, np.ma.MaskedArray):
             _gaps, tr = _fill_gaps(tr)
             if tr is None:
                 Logger.debug(f"Dropped trace due to being completely "
-                             f"masked for {tr.id}")
+                             f"masked for {tr_id}")
                 used[i] = False
                 continue
             gappy[tr.id] = True
