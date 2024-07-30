@@ -106,10 +106,11 @@ def _sanitize_length(st, starttime=None, endtime=None):
             tr.trim(starttime, endtime)
             if len(tr.data) == ((endtime - starttime) *
                                 tr.stats.sampling_rate) + 1:
-                Logger.info(f"{tr.id} is overlength dropping first sample")
-                tr.data = tr.data[1:len(tr.data)]
-                # TODO: this should adjust the start-time
-                # tr.stats.starttime += tr.stats.delta
+                Logger.info(f"{tr.id} between {tr.stats.starttime} and "
+                            f"{tr.stats.endtime} with {tr.stats.npts} samples "
+                            f"is overlength by one sample. Dropping last "
+                            f"sample.")
+                tr.data = tr.data[0:-1]
         length = endtime - starttime
         clip = True
     elif starttime:
@@ -242,11 +243,20 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # 1. Fill gaps and keep track of them
     gappy = {tr.id: False for tr in st}
     gaps = dict()
+    used = [True for _ in st]
     for i, tr in enumerate(st):
+        tr_id = tr.id
         if isinstance(tr.data, np.ma.MaskedArray):
+            _gaps, tr = _fill_gaps(tr)
+            if tr is None:
+                Logger.debug(f"Dropped trace due to being completely "
+                             f"masked for {tr_id}")
+                used[i] = False
+                continue
             gappy[tr.id] = True
-            gaps[tr.id], tr = _fill_gaps(tr)
+            gaps[tr.id] = _gaps
             st[i] = tr
+    st.traces = [tr for i, tr in enumerate(st) if used[i]]
 
     # 2. Check for zeros and cope with bad data
     # ~ 4x speedup for 50 100 Hz daylong traces on 12 threads
@@ -739,6 +749,9 @@ def _fill_gaps(tr):
     :return: gaps, trace, where gaps is a list of dict
     """
     tr = tr.split()
+    if len(tr) == 0:
+        Logger.debug("Data was completely masked, no data remain")
+        return [], None
     gaps = tr.get_gaps()
     tr = tr.detrend().merge(fill_value=0)[0]
     gaps = [{'starttime': gap[4], 'endtime': gap[5]} for gap in gaps]
