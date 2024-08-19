@@ -23,6 +23,7 @@ from obspy.core.event import (
     Origin)
 
 from eqcorrscan.core.match_filter.helpers import _test_event_similarity
+from eqcorrscan.utils.pre_processing import _stream_quick_select
 
 Logger = logging.getLogger(__name__)
 
@@ -67,10 +68,11 @@ class Detection(object):
     :type id: str
     :param id: Identification for detection (should be unique).
     """
+    _precision = 1e-5  # Used for warning about out of range correlations
 
     def __init__(self, template_name, detect_time, no_chans, detect_val,
                  threshold, typeofdet, threshold_type, threshold_input,
-                 chans=None, event=None, id=None):
+                 chans=None, event=None, id=None, strict=True):
         """Main class of Detection."""
         self.template_name = template_name
         self.detect_time = detect_time
@@ -93,7 +95,13 @@ class Detection(object):
         if event is not None:
             event.resource_id = self.id
         if self.typeofdet == 'corr':
-            assert abs(self.detect_val) <= self.no_chans
+            if abs(self.detect_val) > self.no_chans * (1 + self._precision):
+                msg = (f"Correlation detection at {self.detect_val} exceeds "
+                       f"boundedness ({self.no_chans}")
+                if strict:
+                    raise OverflowError(msg)
+                else:
+                    Logger.error(msg)
 
     def __repr__(self):
         """Simple print."""
@@ -284,7 +292,8 @@ class Detection(object):
                     new_pick.phase_hint = template_pick[0].phase_hint
                 else:
                     # Multiple picks for this trace in template
-                    similar_traces = template_st.select(id=tr.id)
+                    # similar_traces = template_st.select(id=tr.id)
+                    similar_traces = _stream_quick_select(template_st, tr.id)
                     similar_traces.sort()
                     _index = similar_traces.traces.index(tr)
                     try:
@@ -348,7 +357,9 @@ class Detection(object):
         self.event = ev
         return self
 
-    def extract_stream(self, stream, length, prepick):
+    def extract_stream(self, stream, length, prepick, all_vert=False,
+                       all_horiz=False, vertical_chans=['Z'],
+                       horizontal_chans=['E', 'N', '1', '2']):
         """
         Extract a cut stream of a given length around the detection.
 
@@ -374,7 +385,17 @@ class Detection(object):
             pick = [
                 p for p in self.event.picks
                 if p.waveform_id.station_code == station and
-                p.waveform_id.channel_code == channel]
+                p.waveform_id.channel_code[0:-1] == channel[0:-1]]
+            # Allow picks to be transferred to other vertical/horizontal chans
+            if all_vert and channel[-1] in vertical_chans:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code[-1] in vertical_chans]
+            elif all_horiz and channel[-1] in horizontal_chans:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code[-1] in horizontal_chans]
+            else:
+                pick = [p for p in pick
+                        if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
                 Logger.info("No pick for {0}.{1}".format(station, channel))
                 continue

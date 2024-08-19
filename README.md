@@ -2,7 +2,7 @@
 ## A python package for the detection and analysis of repeating and near-repeating earthquakes.
 
 ## Citation:
-We have a manuscript on the development of EQcorrscan, if you make use of EQcorrscan please cite the folloing paper:
+We have a manuscript on the development of EQcorrscan, if you make use of EQcorrscan please cite the following paper:
 
 Chamberlain, C. J., Hopp, C. J., Boese, C. M., Warren-Smith, E., Chambers, D., Chu, S. X., Michailos, K., Townend, J., [EQcorrscan: Repeating and near-repeating earthquake detection and analysis in Python.](https://pubs.geoscienceworld.org/ssa/srl/article/89/1/173/524875/eqcorrscan-repeating-and-near-repeating-earthquake) Seismological Research Letters *2017*
 
@@ -89,3 +89,16 @@ Note that tests for travis and appveyor are run daily on master as cron jobs, an
 This package is written  and maintained by the EQcorrscan developers,
 and is distributed under the LGPL GNU License, 
 Copyright EQcorrscan developers 2018.
+
+
+# Funding
+
+![RCET](eqcorrscan/doc/RCET_logo_transparent.png)
+
+Continued development of the EQcorrscan package is directly supported by the 
+[RCET](https://www.rcet.science/), Rapid Characterisation of Earthquakes and Tsunami
+programme funded by the New Zealand Ministry of Business, Innovation and Employment
+Endeavour fund.
+
+Development is indirectly funded by grants from [Toku Tū Ake: EQC](https://www.eqc.govt.nz/)
+and a [Rutherford Discovery Fellowship](https://www.royalsociety.org.nz/what-we-do/funds-and-opportunities/rutherford-discovery-fellowships/rutherford-discovery-fellowship-recipients/calum-chamberlain/).

@@ -385,8 +385,9 @@ def setup_package():
             'Topic :: Scientific/Engineering',
             'License :: OSI Approved :: GNU Library or Lesser General Public '
             'License (LGPL)',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.10',
         ],
         'keywords': 'earthquake correlation detection match-filter',
         'scripts': scriptfiles,
@@ -398,7 +399,8 @@ def setup_package():
         'cmdclass': {'build_ext': CustomBuildExt},
         'packages': [
             'eqcorrscan', 'eqcorrscan.utils', 'eqcorrscan.core',
-            'eqcorrscan.core.match_filter', 'eqcorrscan.utils.lib',
+            'eqcorrscan.core.match_filter',
+            'eqcorrscan.core.match_filter.helpers', 'eqcorrscan.utils.lib',
             'eqcorrscan.tutorials', 'eqcorrscan.helpers', 'eqcorrscan.tests'],
     }
 

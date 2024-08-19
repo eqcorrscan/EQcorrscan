@@ -8,12 +8,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
       fail-fast: false
 #      continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get conda env file
         shell: bash -l {0}
@@ -22,31 +22,22 @@ jobs:
               cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
           fi
 
-      - name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if needed by env file has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('.github/test_conda_env.yml') }}
-
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: 'latest'
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env.yml
-          condarc-file: .github/test_condarc.yml
-          use-only-tar-bz2: true  # Must be set for caching to work properly
+          use-mamba: true
+          
+      - name: Update Env
+        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -v -e . --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -65,7 +56,7 @@ jobs:
       - name: run main test suite
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "not serial and not network and not superslow" --cov-report=xml --dist loadscope
+          py.test -n 2 -m "not serial and not network and not superslow and not slow" --cov-report=xml --dist loadscope
 
       - name: run serial test
         if: always()
@@ -81,7 +72,7 @@ jobs:
           py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -95,37 +86,28 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: ['3.10']
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if needed by env file has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('.github/test_conda_env.yml') }}
+      - uses: actions/checkout@v3
 
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: 'latest'
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env.yml
-          condarc-file: .github/test_condarc.yml
-          use-only-tar-bz2: true  # Must be set for caching to work properly
+          use-mamba: true
+          
+      - name: Update Env
+        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install -e . --no-deps
 
       - name: print package info
         shell: bash -l {0}
@@ -136,7 +118,7 @@ jobs:
       - name: run network tests
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "network" --cov-report=xml
+          py.test -n 2 -m "network and not superslow" --cov-report=xml
       - name: run tutorials
         if: always()
         shell: bash -l {0}
@@ -149,7 +131,7 @@ jobs:
           py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -162,32 +144,23 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: ['3.9']
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if needed by env file has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('.github/test_conda_env.yml') }}
-
+      - uses: actions/checkout@v3
+      
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
-          miniconda-version: 'latest'
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          environment-file: .github/test_conda_env.yml
-          condarc-file: .github/test_condarc.yml
-          use-only-tar-bz2: true  # Must be set for caching to work properly
+          use-mamba: true
+          
+      - name: Update Env
+        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install fmf
         shell: bash -l {0}
@@ -195,7 +168,7 @@ jobs:
           cd ..
           git clone https://github.com/beridel/fast_matched_filter.git
           cd fast_matched_filter
-          pip install -e .
+          pip install -e . --no-deps
           cd ../EQcorrscan
 
       - name: install eqcorrscan
@@ -216,7 +189,7 @@ jobs:
           py.test eqcorrscan/tests/correlate_test.py --cov-report=xml
 
       - name: upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
