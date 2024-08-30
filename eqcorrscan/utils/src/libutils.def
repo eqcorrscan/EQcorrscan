@@ -13,5 +13,6 @@ EXPORTS
     multi_normxcorr_time
     multi_normxcorr_time_threaded
     dist_calc
+    distance_array
     distance_matrix
     remove_unclustered
