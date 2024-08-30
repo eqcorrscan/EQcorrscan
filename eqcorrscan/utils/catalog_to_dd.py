@@ -98,7 +98,7 @@ class SparsePick(object):
             seed_id=pick.waveform_id.get_seed_string(),
             phase_hint=pick.phase_hint[0],  # Note, only using P or S hints
             time_weight=time_weight,
-            waveform_id=pick.waveform_id.id)
+            waveform_id=pick.waveform_id)
 
 
 
