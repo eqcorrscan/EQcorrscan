@@ -28,29 +28,58 @@ SeedPickID = namedtuple("SeedPickID", ["seed_id", "phase_hint"])
 
 # Some hypoDD specific event holders - classes were faster than named-tuples
 
-class SparseEvent(object):
-    def __init__(self, resource_id, picks, origin_time):
+class SparseOrigin(object):
+    def __init__(self, resource_id, latitude, longitude, depth, time):
         self.resource_id = resource_id
-        self.picks = picks
-        self.origin_time = origin_time
+        self.latitude = latitude
+        self.longitude = longitude
+        self.depth = depth
+        self.time = time
 
     def __repr__(self):
-        return ("SparseEvent(resource_id={0}, origin_time={1}, picks=[{2} "
+        return (f"SparseOrigin(resource_id={self.resource_id}, "
+                f"latitude={self.latitude}, longitude={self.longitude}, "
+                f"depth={self.depth}, time={self.time})")
+
+    @classmethod
+    def from_origin(cls, origin: Origin):
+        return cls(resource_id=origin.resource_id.id,
+                   latitude=origin.latitude,
+                   longitude=origin.longitude,
+                   depth=origin.depth,
+                   time=origin.time)
+
+class SparseEvent(object):
+    def __init__(self, resource_id, picks, origin):
+        self.resource_id = resource_id
+        self.picks = picks
+        self.origin = origin
+
+    def __repr__(self):
+        return ("SparseEvent(resource_id={0}, origin={1}, picks=[{2} "
                 "picks])".format(
-                    self.resource_id, self.origin_time, len(self.picks)))
+                    self.resource_id, self.origin, len(self.picks)))
+
+    @property
+    def origin_time(self):
+        return self.origin.time
+
+    def preferred_origin(self):
+        return self.origin
 
     @classmethod
     def from_event(cls, event: Event):
-        origin_time = (event.preferred_origin() or event.origins[0]).time
+        origin = SparseOrigin.from_origin(
+            event.preferred_origin() or event.origins[0])
         time_weight_dict = {
             arr.pick_id: arr.time_weight or 1.0 for origin in event.origins
             for arr in origin.arrivals}
         picks = [
             SparsePick.from_pick(
-                pick=pick, origin_time=origin_time,
+                pick=pick, origin_time=origin.time,
                 time_weight=time_weight_dict.get(pick.resource_id, 1.0)
             ) for pick in event.picks]
-        return cls(resource_id=event.resource_id.id, origin_time=origin_time,
+        return cls(resource_id=event.resource_id.id, origin=origin,
                    picks=picks)
 
 
