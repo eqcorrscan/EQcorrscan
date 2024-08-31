@@ -49,6 +49,7 @@ class SparseOrigin(object):
                    depth=origin.depth,
                    time=origin.time)
 
+
 class SparseEvent(object):
     def __init__(self, resource_id, picks, origin):
         self.resource_id = resource_id
@@ -128,7 +129,6 @@ class SparsePick(object):
             phase_hint=pick.phase_hint[0],  # Note, only using P or S hints
             time_weight=time_weight,
             waveform_id=pick.waveform_id)
-
 
 
 # Generic helpers
