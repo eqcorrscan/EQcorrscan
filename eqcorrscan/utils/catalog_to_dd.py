@@ -27,10 +27,24 @@ SeedPickID = namedtuple("SeedPickID", ["seed_id", "phase_hint"])
 
 
 # Some hypoDD specific event holders - classes were faster than named-tuples
+class SparseResourceID(object):
+    def __init__(self, id):
+        if isinstance(id, str):
+            self.id = id
+        elif hasattr(id, "id"):
+            self.id = id.id
+        else:
+            NotImplementedError(
+                f"{id} is neither a string nor something with an id.")
+
+    def __repr__(self):
+        return f"SparseResourceID(id={self.id})"
+
+
 
 class SparseOrigin(object):
     def __init__(self, resource_id, latitude, longitude, depth, time):
-        self.resource_id = resource_id
+        self.resource_id = SparseResourceID(resource_id)
         self.latitude = latitude
         self.longitude = longitude
         self.depth = depth
@@ -52,7 +66,7 @@ class SparseOrigin(object):
 
 class SparseEvent(object):
     def __init__(self, resource_id, picks, origin):
-        self.resource_id = resource_id
+        self.resource_id = SparseResourceID(resource_id)
         self.picks = picks
         self.origin = origin
 
