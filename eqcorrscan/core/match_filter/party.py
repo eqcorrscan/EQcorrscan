@@ -21,6 +21,7 @@ import tempfile
 import logging
 from os.path import join
 import warnings
+from tempfile import template
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
@@ -857,6 +858,89 @@ class Party(object):
             shutil.rmtree(temp_dir)
         self.families = families
         return self
+
+    def client_lag_calc(
+        self,
+        client,
+        shift_len=0.2,
+        min_gap=None,
+        retries=3,
+        *args, **kwargs):
+        """
+        Compute picks based on cross-correlation using data from a Client.
+
+        Works in-place on events in Party.
+
+        :param client:
+            obspy FDSN-like client with at least a .get_waveforms method
+
+        All other arguments are passed to party.lag_calc. For documentation
+        see that method.
+        """
+        from eqcorrscan.core.match_filter.helpers.tribe import _download_st
+
+        # 1. Group detections into chunks of process-len
+        det_times = [d.detect_time for f in self for d in f]
+        # Work out when our data need to start and end incorporating data pads
+        det_start, det_end = min(det_times), max(det_times)
+        pad = shift_len * 2
+        max_template_length = max(tr.stats.endtime - tr.stats.starttime
+                                  for f in self for tr in f.template.st)
+        det_start -= pad
+        chunk_overlap = pad + max_template_length
+        chunk_length = max(f.template.process_length for f in self)
+        det_end += chunk_overlap
+
+        # Loop over groups
+        chunk_start, chunk_end = det_start, det_start + chunk_length
+        detections_run = set()  # Keep track of what we have done
+        catalog = Catalog()
+        Logger.info(f"Running in chunks of {chunk_length} s between "
+                    f"{det_start} and {det_end}")
+        while chunk_start <= det_end:
+            # Make a party of just those detections in this chunk of data
+            chunk = Party()
+            for family in self:
+                chunk_detections = [
+                    d for d in family
+                    if d.detect_time <= (chunk_end - chunk_overlap)
+                    and d.detect_time >= (chunk_start + pad)
+                    and d.id not in detections_run]
+                if len(chunk_detections):
+                    chunk_family = Family(
+                        template=family.template, detections=chunk_detections)
+                    chunk += chunk_family
+            if len(chunk) == 0:
+                Logger.info(f"No detections between {chunk_start} and "
+                            f"{chunk_end}, skipping")
+                chunk_start += (chunk_length - chunk_overlap)
+                chunk_end = chunk_start + chunk_length
+                continue
+            Logger.info(f"Working on {len(chunk)} detections")
+
+            # 2. Download stream for those detections
+            Logger.info(
+                f"Downloading data between {chunk_start} and {chunk_end}")
+            template_channel_ids = {
+                tuple(tr.id.split('.')) for f in chunk for tr in f.template.st}
+            st = _download_st(
+                starttime=chunk_start, endtime=chunk_end, buff=300.0,
+                min_gap=min_gap, template_channel_ids=template_channel_ids,
+                client=client, retries=retries)
+            Logger.info(f"Downloaded data for {len(st)} channels, expected "
+                        f"{len(template_channel_ids)} channels")
+
+            # 3. Run lag-calc
+            catalog += chunk.lag_calc(
+                stream=st, pre_processed=False, shift_len=shift_len,
+                *args, **kwargs)
+
+            # 4. Run next group
+            detections_run.update({d.id for f in chunk for d in f})
+            chunk_start += (chunk_length - chunk_overlap)
+            chunk_end = chunk_start + chunk_length
+        return catalog
+
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
