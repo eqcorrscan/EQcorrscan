@@ -984,6 +984,13 @@ class TestMatchObjectHeavy(unittest.TestCase):
             stream=self.st, pre_processed=True)
         self.assertEqual(len(catalog), 4)
 
+    @pytest.mark.network
+    def test_party_lag_calc_from_client(self):
+        """ Test that getting data from a client works as expected. """
+        catalog = self.party.copy().client_lag_calc(
+            client=Client("NCEDC"))
+        self.assertEqual(len(catalog), 4)
+
     def test_party_lag_calc_empty_families(self):
         """ Test that passing some empty families works properly, see #341. """
         party = self.party.copy()
