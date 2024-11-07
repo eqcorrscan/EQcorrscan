@@ -590,6 +590,8 @@ class Tribe(object):
             delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
             num_cores=num_cores, skip_short_chans=skip_short_chans,
             **kwargs)
+        # Templates need unique names - keep track of used ones
+        template_names = set()
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
@@ -597,8 +599,25 @@ class Tribe(object):
                 Logger.error('Empty Template')
                 continue
             t.st = template
-            t.name = template.sort(['starttime'])[0]. \
-                stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            # Name templates by the start of a the earliest trace - we do this
+            # to cope with events possibly not having attributes (e.g. we don't
+            # require an origin or an event id, so we can't use that by
+            # default).
+            template_name = template.sort(
+                ['starttime'])[0].stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            template_name_base = template_name
+            _i = 0
+            while template_name in template_names:
+                Logger.info(
+                    f"Template with name {template_name} already exists")
+                _i += 1
+                template_name = f"{template_name_base}_{_i}"
+            else:
+                if _i > 0:
+                    Logger.info(
+                        f"Chaning template name from {template_name_base} to "
+                        f"{template_name}")
+            t.name = template_name
             t.lowcut = lowcut
             t.highcut = highcut
             t.filt_order = filt_order
