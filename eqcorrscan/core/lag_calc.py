@@ -301,12 +301,19 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     # Make dict of pick phase hints from the template
     phase_hints = dict()
     if family.template.event is not None:
-        for p in family.template.event.picks:
-            sid = p.waveform_id.get_seed_string()
-            if sid in phase_hints.keys():
+        # Get a set of picked trace ids, then iterate through that - take
+        # earliest pick - matches earliest trace used by
+        # detection.extract_stream
+        picked_sids = {p.waveform_id.get_seed_string()}
+        for sid in picked_sids:
+            _sid_picks = [p for p in family.template.event
+                          if p.waveform_id.get_seed_string() == sid]
+            _sid_picks.sort(key=lambda p: p.time)
+            if len(_sid_picks) > 1:
                 Logger.warning(f"Multiple phase hints found for {sid} - "
-                               f"behaviour is unpredictable")
-            phase_hints.update({sid: p.phase_hint})
+                               f"using earliest ({_sid_picks[0].phase_hint} "
+                               f"at {_sid_picks[0].time}")
+            phase_hints.update({sid: _sid_picks[0].phase_hint})
 
     for i, detection_id in enumerate(detection_ids):
         detection = [d for d in family.detections if d.id == detection_id][0]
