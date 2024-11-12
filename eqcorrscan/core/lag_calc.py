@@ -304,7 +304,8 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         # Get a set of picked trace ids, then iterate through that - take
         # earliest pick - matches earliest trace used by
         # detection.extract_stream
-        picked_sids = {p.waveform_id.get_seed_string()}
+        picked_sids = {p.waveform_id.get_seed_string()
+                       for p in family.template.event.picks}
         for sid in picked_sids:
             _sid_picks = [p for p in family.template.event.picks
                           if p.waveform_id.get_seed_string() == sid]
@@ -312,7 +313,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             if len(_sid_picks) > 1:
                 Logger.warning(f"Multiple phase hints found for {sid} - "
                                f"using earliest ({_sid_picks[0].phase_hint} "
-                               f"at {_sid_picks[0].time}")
+                               f"at {_sid_picks[0].time})")
             phase_hints.update({sid: _sid_picks[0].phase_hint})
 
     for i, detection_id in enumerate(detection_ids):
