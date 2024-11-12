@@ -2,6 +2,8 @@
 - core.match_filter.tribe
   - Add option to set minimum number of stations required to use a template in detect
     (`min_stations` kwarg)
+- core.match_filter.party
+  - Add client_lag_calc method to run lag-calc using data from a client.
 
 ## 0.5.0
 * core.match_filter.tribe
