@@ -306,7 +306,7 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
         # detection.extract_stream
         picked_sids = {p.waveform_id.get_seed_string()}
         for sid in picked_sids:
-            _sid_picks = [p for p in family.template.event
+            _sid_picks = [p for p in family.template.event.picks
                           if p.waveform_id.get_seed_string() == sid]
             _sid_picks.sort(key=lambda p: p.time)
             if len(_sid_picks) > 1:
