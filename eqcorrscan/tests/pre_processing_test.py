@@ -269,6 +269,31 @@ class TestPreProcessing(unittest.TestCase):
                 filt_order=3, samp_rate=1, starttime=False,
                 seisan_chan_names=True, ignore_length=False)
 
+    def test_process_partial_bad_data(self):
+        """ 
+        Check that processing works as expected when we have 
+        partial bad data. Issue #592 
+        """
+        bad_data = Stream([self.st[0].slice(
+                self.st[0].stats.starttime, 
+                self.st[0].stats.starttime + 20).copy()])
+        bad_data += self.st[1].copy()
+        with self.assertRaises(NotImplementedError):
+            multi_process(
+                st=bad_data, lowcut=0.1, highcut=0.4,
+                filt_order=3, samp_rate=1, 
+                starttime=bad_data[1].stats.starttime,
+                endtime=bad_data[1].stats.endtime,
+                seisan_chan_names=True, ignore_length=False)
+        # Check that it just drops that trace with ignore_bad_data
+        st_processed = multi_process(
+            st=bad_data, lowcut=0.1, highcut=0.4,
+            filt_order=3, samp_rate=1,
+            starttime=bad_data[1].stats.starttime,
+            endtime=bad_data[1].stats.endtime,
+            seisan_chan_names=True, ignore_bad_data=True)
+        self.assertEqual(len(st_processed), 1)
+
     def test_short_data_fail(self):
         """Check that we don't allow too much missing data."""
         with self.assertRaises(NotImplementedError):

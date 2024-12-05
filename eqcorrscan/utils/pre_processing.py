@@ -301,7 +301,10 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
     # Check that we actually still have some data
     if not _stream_has_data(st):
         if tracein:
-            return st[0]
+            if len(st):
+                return st[0]
+            else:
+                return Trace()
         return st
 
     Logger.info(f"Stream after length check and padding is: {st}")
