@@ -275,6 +275,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
                     Logger.info(
                         f"{trace_id} not found in {set(tr.id for tr in st)},"
                         f" ignoring")
+    Logger.info(f"Stream after QC is: {st}")
 
     # 3. Detrend
     # ~ 2x speedup for 50 100 Hz daylong traces on 12 threads
@@ -288,14 +289,14 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         for i, _ in enumerate(st):
             if float(st[i].stats.npts / st[i].stats.sampling_rate) != length:
                 Logger.info(
-                    'Data for {0} are not long-enough, will zero pad'.format(
-                        st[i].id))
+                    'Data for {0} are not long-enough, will try to '
+                    'zero pad'.format(st[i].id))
                 st[i], padded[st[i].id] = _length_check(
                     st[i], starttime=starttime, length=length,
                     ignore_length=ignore_length,
                     ignore_bad_data=ignore_bad_data)
         # Remove None traces that might be returned from length checking
-        st.traces = [tr for tr in st if tr is not None]
+        st.traces = [tr for tr in st if tr is not None and tr.stats.npts]
 
     # Check that we actually still have some data
     if not _stream_has_data(st):
@@ -303,6 +304,8 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
             return st[0]
         return st
 
+    Logger.info(f"Stream after length check and padding is: {st}")
+    
     # 5. Resample
     # ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_resample(
@@ -802,6 +805,7 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
 
     starttime = starttimes[0]
     endtime = endtimes[-1]
+    stream_endtime = copy.deepcopy(endtime)
     data_len_samps = round((endtime - starttime) * samp_rate) + 1
     assert overlap < process_length, "Overlap must be less than process length"
     chunk_len_samps = (process_length - overlap) * samp_rate
@@ -883,11 +887,11 @@ def _group_process(filt_order, highcut, lowcut, samp_rate, process_length,
                 f" and {_endtime}")
             continue
 
-    if _endtime < stream[0].stats.endtime:
+    if _endtime < stream_endtime:
         Logger.warning(
             "Last bit of data between {0} and {1} will go unused "
             "because it is shorter than a chunk of {2} s".format(
-                _endtime, stream[0].stats.endtime, process_length))
+                _endtime, stream_endtime, process_length))
     return processed_streams
 
 
