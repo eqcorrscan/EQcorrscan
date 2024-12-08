@@ -944,7 +944,7 @@ class Party(object):
                 stream=st, pre_processed=False, shift_len=shift_len,
                 *args, **kwargs)
             Logger.debug(f"For {len(chunk)} a catalog of "
-                        f"{len(_picked_catalog)} was returned")
+                         f"{len(_picked_catalog)} was returned")
             catalog += _picked_catalog
 
             # 4. Run next group
@@ -1071,8 +1071,8 @@ class Party(object):
         for template_group in template_groups:
             family = [_f for _f in self.families
                       if _f.template == template_group[0]][0]
-            group_seed_ids = {tr.id for template in template_group
-                              for tr in template.st}
+            group_seed_ids = {tr.id for _template in template_group
+                              for tr in _template.st}
             template_stream = Stream()
             for seed_id in group_seed_ids:
                 net, sta, loc, chan = seed_id.split('.')
