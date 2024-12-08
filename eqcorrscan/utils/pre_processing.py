@@ -308,7 +308,7 @@ def multi_process(st, lowcut, highcut, filt_order, samp_rate, parallel=False,
         return st
 
     Logger.info(f"Stream after length check and padding is: {st}")
-    
+
     # 5. Resample
     # ~ 3.25x speedup for 50 100 Hz daylong traces on 12 threads
     st = _multi_resample(
