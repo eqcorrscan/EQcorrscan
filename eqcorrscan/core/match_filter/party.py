@@ -21,7 +21,6 @@ import tempfile
 import logging
 from os.path import join
 import warnings
-from tempfile import template
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
