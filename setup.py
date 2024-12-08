@@ -286,9 +286,6 @@ class CustomBuildExt(build_ext):
                 if flag.endswith(".sdk"):
                     continue
                 cflags.append(flag)
-            cflags.append("-Qunused-arguments")
-            # https://stackoverflow.com/questions/22697440/cc-failed-with-
-            # exit-status-1-error-when-install-python-library
             cfg_vars["CFLAGS"] = " ".join(cflags)
             print("Editted C-flags:")
             print(cfg_vars["CFLAGS"])
