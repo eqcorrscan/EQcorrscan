@@ -606,6 +606,18 @@ class Family(object):
         """
         from eqcorrscan.core.lag_calc import xcorr_pick_family
 
+        # We should make sure we have events calculated for all detections
+        # we should clean out anything that was there before
+        # (and warn the user)
+        _overwritten_warning = False
+        for d in self.detections:
+            if len(d.event.picks):
+                _overwritten_warning = True
+            d._calculate_event(template=self.template)
+        if _overwritten_warning:
+            Logger.warning("Old events in family have been overwritten to "
+                           "ensure lag-calc runs as expected")
+
         processed_stream = self._process_streams(
             stream=stream, pre_processed=pre_processed,
             process_cores=process_cores, parallel=parallel,
