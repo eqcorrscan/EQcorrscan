@@ -29,10 +29,10 @@ jobs:
           # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -99,10 +99,10 @@ jobs:
           # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -157,10 +157,10 @@ jobs:
           # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install fmf
         shell: bash -l {0}
