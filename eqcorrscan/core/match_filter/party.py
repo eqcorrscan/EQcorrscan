@@ -929,6 +929,14 @@ class Party(object):
                 client=client, retries=retries)
             Logger.info(f"Downloaded data for {len(st)} channels, expected "
                         f"{len(template_channel_ids)} channels")
+            if len(st) == 0:
+                Logger.warning(
+                    f"No data meeting standards available between "
+                    f"{chunk_start} and {chunk_end}, skipping {len(chunk)} "
+                    f"detections")
+                chunk_start += (chunk_length - chunk_overlap)
+                chunk_end = chunk_start + chunk_length
+                continue
 
             # 3. Run lag-calc
             catalog += chunk.lag_calc(
