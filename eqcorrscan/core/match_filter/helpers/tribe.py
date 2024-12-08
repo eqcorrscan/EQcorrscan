@@ -82,7 +82,7 @@ def _download_st(
     """
     Helper to download a stream from a client for a given start and end time.
 
-    Applies `buff` to extend download to (heopfully) ensure all data are
+    Applies `buff` to extend download to (hopefully) ensure all data are
     provided. Retries download up to `retries` times, and discards data
     with large gaps.
 
