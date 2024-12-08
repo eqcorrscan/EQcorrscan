@@ -924,7 +924,7 @@ class Party(object):
             template_channel_ids = {
                 tuple(tr.id.split('.')) for f in chunk for tr in f.template.st}
             st = _download_st(
-                starttime=chunk_start, endtime=chunk_end, buff=300.0,
+                starttime=chunk_start, endtime=chunk_end + pad, buff=300.0,
                 min_gap=min_gap, template_channel_ids=template_channel_ids,
                 client=client, retries=retries)
             Logger.info(f"Downloaded data for {len(st)} channels, expected "
@@ -936,12 +936,16 @@ class Party(object):
                     f"detections")
                 chunk_start += (chunk_length - chunk_overlap)
                 chunk_end = chunk_start + chunk_length
+                # catalog += chunk.get_catalog()
                 continue
 
             # 3. Run lag-calc
-            catalog += chunk.lag_calc(
+            _picked_catalog = chunk.lag_calc(
                 stream=st, pre_processed=False, shift_len=shift_len,
                 *args, **kwargs)
+            Logger.debug(f"For {len(chunk)} a catalog of "
+                        f"{len(_picked_catalog)} was returned")
+            catalog += _picked_catalog
 
             # 4. Run next group
             detections_run.update({d.id for f in chunk for d in f})
@@ -1075,11 +1079,13 @@ class Party(object):
                 template_stream += stream.select(
                     network=net, station=sta, location=loc, channel=chan)
             # Process once and only once for each group.
+            Logger.info("Processing stream for group")
             processed_stream = family._process_streams(
                 stream=template_stream, pre_processed=pre_processed,
                 process_cores=process_cores, parallel=parallel,
                 ignore_bad_data=ignore_bad_data, ignore_length=ignore_length,
                 select_used_chans=False)
+            Logger.info(f"Processed_stream: {processed_stream}")
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
