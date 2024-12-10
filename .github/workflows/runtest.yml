@@ -15,13 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Get conda env file
-        shell: bash -l {0}
-        run: |
-          if [ "$RUNNER_OS" == "macOS"  ]; then
-              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
-          fi
-
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2.1.1
         with:
