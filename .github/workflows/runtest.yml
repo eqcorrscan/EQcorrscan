@@ -13,26 +13,27 @@ jobs:
 #      continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get conda env file
-        shell: bash -l {0}
-        run: |
-          if [ "$RUNNER_OS" == "macOS"  ]; then
-              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
-          fi
+      # Not needed as using the generic "compilers"
+      #      - name: Get conda env file
+      #        shell: bash -l {0}
+      #        run: |
+      #          if [ "$RUNNER_OS" == "macOS"  ]; then
+      #              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
+      #          fi
 
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
+          # miniforge-variant: Miniforge
+          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -90,19 +91,19 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
+          # miniforge-variant: Mambaforge
+          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install eqcorrscan
         shell: bash -l {0}
@@ -148,19 +149,19 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
+          # miniforge-variant: Mambaforge
+          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          use-mamba: true
+          # use-mamba: true
           
       - name: Update Env
-        run: mamba env update -n eqcorrscan-test -f .github/test_conda_env.yml
+        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
       - name: install fmf
         shell: bash -l {0}
