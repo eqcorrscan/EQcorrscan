@@ -232,73 +232,19 @@ class TestPreProcessing(unittest.TestCase):
             self.assertEqual(self.instart, tr.stats.starttime)
             self.assertEqual(self.inend, tr.stats.endtime)
 
-    def test_dayproc(self):
-        """Test a straight-forward day processing implementation."""
-        processed = multi_process(
-            st=self.st.copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, parallel=True,
-            num_cores=2, daylong=True)
-        self.assertEqual(len(processed), self.nchans)
-        for tr in processed:
-            self.assertEqual(UTCDateTime(self.day_start), tr.stats.starttime)
-            self.assertEqual(tr.stats.npts, 86400)
-
-    def test_dayproc_trace(self):
-        """
-        Test a straight-forward day processing implementation with a Trace.
-        """
-        processed = multi_process(
-            st=self.st[0].copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, parallel=True,
-            num_cores=2, daylong=True)
-        self.assertTrue(isinstance(processed, Trace))
-        self.assertEqual(UTCDateTime(self.day_start),
-                         processed.stats.starttime)
-        self.assertEqual(processed.stats.npts, 86400)
-
-    def test_dayproc_nyquist_error(self):
-        """Test a failing day processing."""
-        with self.assertRaises(IOError):
-            multi_process(
-                st=self.st.copy(), lowcut=0.1, highcut=0.6, filt_order=3,
-                samp_rate=1, starttime=self.day_start,
-                parallel=True, num_cores=2, daylong=True)
-
-    def test_dayproc_serial(self):
-        """Test the serial implementation of dayproc."""
-        processed = multi_process(
-            st=self.st.copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, parallel=False,
-            num_cores=2, daylong=True)
-        self.assertEqual(len(processed), self.nchans)
-        for tr in processed:
-            self.assertEqual(UTCDateTime(self.day_start), tr.stats.starttime)
-            self.assertEqual(tr.stats.npts, 86400)
-
-    def test_dayproc_parallel_cores_unset(self):
-        """Test a straight-forward day processing implementation."""
-        processed = multi_process(
-            st=self.st.copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, parallel=True,
-            num_cores=False, daylong=True)
-        self.assertEqual(len(processed), self.nchans)
-        for tr in processed:
-            self.assertEqual(UTCDateTime(self.day_start), tr.stats.starttime)
-            self.assertEqual(tr.stats.npts, 86400)
-
     def test_process(self):
         """Test a basic process implementation."""
         processed = multi_process(
             st=self.st[0].copy(), lowcut=0.1, highcut=0.4,
             filt_order=3, samp_rate=1, starttime=False,
-            daylong=True, seisan_chan_names=True, ignore_length=False)
+            seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
     def test_process_datetime(self):
         """Test a basic process implementation."""
         processed = multi_process(
             st=self.st[0].copy(), lowcut=0.1, highcut=0.4, filt_order=3,
-            samp_rate=1, starttime=self.day_start, daylong=True,
+            samp_rate=1, starttime=self.day_start,
             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
@@ -307,7 +253,7 @@ class TestPreProcessing(unittest.TestCase):
         with self.assertRaises(IOError):
             multi_process(
                 st=self.st[0].copy(), lowcut=0.1, highcut=0.6,
-                filt_order=3, samp_rate=1, starttime=False, daylong=True,
+                filt_order=3, samp_rate=1, starttime=False,
                 seisan_chan_names=True, ignore_length=False)
 
     def test_process_bad_data(self):
@@ -320,8 +266,33 @@ class TestPreProcessing(unittest.TestCase):
         with self.assertRaises(ValueError):
             multi_process(
                 st=not_daylong, lowcut=0.1, highcut=0.4,
-                filt_order=3, samp_rate=1, starttime=False, daylong=True,
+                filt_order=3, samp_rate=1, starttime=False,
                 seisan_chan_names=True, ignore_length=False)
+
+    def test_process_partial_bad_data(self):
+        """
+        Check that processing works as expected when we have
+        partial bad data. Issue #592
+        """
+        bad_data = Stream([self.st[0].slice(
+            self.st[0].stats.starttime,
+            self.st[0].stats.starttime + 20).copy()])
+        bad_data += self.st[1].copy()
+        with self.assertRaises(NotImplementedError):
+            multi_process(
+                st=bad_data, lowcut=0.1, highcut=0.4,
+                filt_order=3, samp_rate=1,
+                starttime=bad_data[1].stats.starttime,
+                endtime=bad_data[1].stats.endtime,
+                seisan_chan_names=True, ignore_length=False)
+        # Check that it just drops that trace with ignore_bad_data
+        st_processed = multi_process(
+            st=bad_data, lowcut=0.1, highcut=0.4,
+            filt_order=3, samp_rate=1,
+            starttime=bad_data[1].stats.starttime,
+            endtime=bad_data[1].stats.endtime,
+            seisan_chan_names=True, ignore_bad_data=True)
+        self.assertEqual(len(st_processed), 1)
 
     def test_short_data_fail(self):
         """Check that we don't allow too much missing data."""
@@ -330,16 +301,18 @@ class TestPreProcessing(unittest.TestCase):
                 st=self.st[0].copy().trim(
                     endtime=self.st[0].stats.endtime - 18000),
                 lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1,
-                starttime=self.day_start, daylong=True,
+                starttime=self.day_start,
+                endtime=UTCDateTime(self.day_start) + 86400.,
                 seisan_chan_names=True, ignore_length=False)
 
     def test_short_data_pass(self):
         """Check that we do allow missing data if ignore_length is True."""
         processed = multi_process(
-            st=self.st[0].copy().trim(endtime=self.
-                                      st[0].stats.endtime - 18000), lowcut=0.1,
-            highcut=0.4, filt_order=3, samp_rate=1,
-            starttime=self.day_start, daylong=True,
+            st=self.st[0].copy().trim(
+                endtime=self.st[0].stats.endtime - 18000),
+            lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1,
+            starttime=self.day_start,
+            endtime=UTCDateTime(self.day_start) + 86400.,
             seisan_chan_names=True, ignore_length=True)
         self.assertEqual(processed.stats.npts, 86400)
 
@@ -349,10 +322,12 @@ class TestPreProcessing(unittest.TestCase):
         ignore_bad_data is True.
         """
         processed = multi_process(
-            st=self.st[0].copy().trim(endtime=self.
-                                      st[0].stats.endtime - 28000), lowcut=0.1,
+            st=self.st[0].copy().trim(
+                endtime=self.st[0].stats.endtime - 28000),
+            lowcut=0.1,
             highcut=0.4, filt_order=3, samp_rate=1,
-            starttime=self.day_start, daylong=True,
+            starttime=self.day_start,
+            endtime=UTCDateTime(self.day_start) + 86400.,
             seisan_chan_names=True, ignore_bad_data=True)
         self.assertEqual(processed.stats.npts, 0)
 
@@ -360,7 +335,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test a basic process implementation with just a highcut"""
         processed = multi_process(
             st=self.st[0].copy(), lowcut=None, highcut=0.4,
-            filt_order=3, samp_rate=1, starttime=False, daylong=True,
+            filt_order=3, samp_rate=1, starttime=False,
             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
@@ -368,7 +343,7 @@ class TestPreProcessing(unittest.TestCase):
         """Test a basic process implementation with just a highcut"""
         processed = multi_process(
             st=self.st[0].copy(), lowcut=0.1, highcut=None,
-            filt_order=3, samp_rate=1, starttime=False, daylong=True,
+            filt_order=3, samp_rate=1, starttime=False,
             seisan_chan_names=True, ignore_length=False)
         self.assertEqual(processed.stats.npts, 86400)
 
