@@ -397,7 +397,7 @@ class Detection(object):
                 pick = [p for p in pick
                         if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
-                Logger.info(
+                Logger.debug(
                     "No pick for {0}.{1}".format(station, channel))
                 continue
             elif len(pick) > 1:
@@ -430,7 +430,7 @@ class Detection(object):
                        length) < tr.stats.delta:
                     cut_stream += _tr
                 else:
-                    Logger.info(
+                    Logger.debug(
                         "Insufficient data length for {0}".format(tr.id))
         return cut_stream
 

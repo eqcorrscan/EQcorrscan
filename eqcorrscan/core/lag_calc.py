@@ -361,10 +361,10 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             phase = phase_hints.get(tr.id, None)
             if phase is None and stachan.channel[1][-1] in vertical_chans:
                 phase = 'P'
-                Logger.warning(f"Unknown phase hint for {tr.id} - assigning P")
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning P")
             elif phase is None and stachan.channel[1][-1] in horizontal_chans:
                 phase = 'S'
-                Logger.warning(f"Unknown phase hint for {tr.id} - assigning S")
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning S")
             _waveform_id = WaveformStreamID(seed_string=tr.id)
             event.picks.append(Pick(
                 waveform_id=_waveform_id, time=picktime,
