@@ -71,8 +71,8 @@ class Poison(Exception):
 
 
 def _get_and_check(
-    input_queue: Queue, 
-    poison_queue: Queue, 
+    input_queue: Queue,
+    poison_queue: Queue,
     step: float = 0.5,
     timeout: float = None,
 ):
@@ -95,7 +95,8 @@ def _get_and_check(
             time.sleep(step)
             waited += step
             if timeout and waited >= timeout:
-                return Poison(Empty(f"{input_queue} is empty after {timeout} seconds"))
+                return Poison(Empty(
+                    f"{input_queue} is empty after {timeout} seconds"))
         else:
             return input_queue.get_nowait()
 
