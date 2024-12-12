@@ -377,7 +377,7 @@ class Party(object):
         :type rate: bool
         :param rate: Whether or not to plot the daily rate of detection as
             opposed to cumulative number. Only works with plot_grouped=True.
-        :param \**kwargs: Any other arguments accepted by
+        :param kwargs: Any other arguments accepted by
             :func:`eqcorrscan.utils.plotting.cumulative_detections`
 
         .. rubric:: Examples

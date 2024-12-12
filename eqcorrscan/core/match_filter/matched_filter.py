@@ -235,7 +235,7 @@ def match_filter(template_names, template_list, st, threshold,
 
         .. math::
 
-            av\_chan\_corr\_thresh=threshold \\times (cccsum\ /\ len(template))
+            av_chan_corr_thresh=threshold \\times (cccsum\ /\ len(template))
 
         where :math:`template` is a single template from the input and the
         length is the number of channels within this template.
