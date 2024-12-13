@@ -12,6 +12,7 @@ with data and output the detections.
     (https://www.gnu.org/copyleft/lesser.html)
 """
 import os
+import inspect
 import tempfile
 import time
 import traceback
@@ -25,6 +26,7 @@ from multiprocessing import Queue
 from queue import Empty
 
 from obspy import Stream
+from obspy.clients.fdsn import Client
 
 from eqcorrscan.core.match_filter.helpers import (
     _pickle_stream, _unpickle_stream)
@@ -39,6 +41,25 @@ from eqcorrscan.utils.pre_processing import (
 
 
 Logger = logging.getLogger(__name__)
+
+# FDSN_CLIENT_ARGS = inspect.signature(Client).parameters.keys()
+# Only allow a limited subset to be parsed through - this means
+# that authenticated clients won't work.
+FDSN_CLIENT_ARGS = {"base_url", "debug", "timeout"}
+
+
+class _FDSN_parseable_Client:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    @classmethod
+    def from_client(cls, client):
+        kwargs = {key: client.__dict__.get(key, None)
+                  for key in FDSN_CLIENT_ARGS}
+        return cls(**kwargs)
+
+    def to_client(self):
+        return Client(**self.kwargs)
 
 
 ###############################################################################
@@ -242,6 +263,8 @@ def _get_detection_stream(
     :param samp_rate: See utils.pre_processing.multi_process
     :param process_length: See utils.pre_processing.multi_process
     """
+    if isinstance(client, _FDSN_parseable_Client):
+        client = client.to_client()
     while True:
         killed = _wait_on_output_to_be_available(
             poison_queue=poison_queue, output_queue=output_filename_queue,
