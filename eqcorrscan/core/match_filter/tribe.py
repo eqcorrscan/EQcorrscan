@@ -28,6 +28,7 @@ from queue import Empty
 
 from obspy import Catalog, Stream, read, read_events
 from obspy.core.event import Comment, CreationInfo
+from obspy.clients.fdsn import Client as FDSNClient
 
 from eqcorrscan.core import template_gen
 from eqcorrscan.core.match_filter.template import (
@@ -817,7 +818,7 @@ class Tribe(object):
 
             .. math::
 
-                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                av_chan_corr_thresh=threshold \\times (cccsum /
                 len(template))
 
             where :math:`template` is a single template from the input and the
@@ -1364,7 +1365,7 @@ class Tribe(object):
 
             .. math::
 
-                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                av_chan_corr_thresh=threshold \\times (cccsum /
                 len(template))
 
             where :math:`template` is a single template from the input and the
@@ -1372,7 +1373,7 @@ class Tribe(object):
         """
         from eqcorrscan.core.match_filter.helpers.tribe import _download_st
         from eqcorrscan.core.match_filter.helpers.processes import (
-            _get_detection_stream)
+            _get_detection_stream, _FDSN_parseable_Client)
 
         # This uses get_waveforms_bulk to get data - not all client types have
         # this, so we check and monkey patch here.
@@ -1456,6 +1457,11 @@ class Tribe(object):
         # Get data in advance
         time_queue = Queue()
         stream_queue = Queue(maxsize=1)
+
+        # Convert client to pickleable client if needed - issue with
+        # Python 3.12 Windows and MacOS
+        if isinstance(client, FDSNClient):
+            client = _FDSN_parseable_Client.from_client(client)
 
         downloader = Process(
             target=_get_detection_stream,
