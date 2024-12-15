@@ -45,16 +45,13 @@ class Family(object):
         if isinstance(detections, Detection):
             detections = [detections]
         self.detections = detections or []
-        self.__catalog = get_catalog(self.detections)
         if catalog:
             Logger.warning("Setting catalog directly is no-longer supported, "
                            "now generated from detections.")
 
     @property
     def catalog(self):
-        if len(self.__catalog) != len(self.detections):
-            self.__catalog = get_catalog(self.detections)
-        return self.__catalog
+        return get_catalog(self.detections)
 
     @catalog.setter
     def catalog(self, catalog):
