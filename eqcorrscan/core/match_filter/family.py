@@ -148,13 +148,11 @@ class Family(object):
         if isinstance(other, Family):
             if other.template == self.template:
                 self.detections.extend(other.detections)
-                self.__catalog.events.extend(get_catalog(other.detections))
             else:
                 raise NotImplementedError('Templates do not match')
         elif isinstance(other, Detection) and other.template_name \
                 == self.template.name:
             self.detections.append(other)
-            self.__catalog.events.extend(get_catalog([other]))
         elif isinstance(other, Detection):
             raise NotImplementedError('Templates do not match')
         else:
