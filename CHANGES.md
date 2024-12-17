@@ -21,8 +21,8 @@
   - Templates with nan channels will be considered equal to other templates with shared
   nan channels.
   - New grouping strategy to minimise nan-channels - templates are grouped by
-  similar seed-ids. This should speed up both correlations and 
-  prep_data_for_correlation. See PR #457.
+    similar seed-ids. This should speed up both correlations and 
+    prep_data_for_correlation. See PR #457.
 * utils.pre_processing
   - `_prep_data_for_correlation`: 3x speedup for filling NaN-traces in templates
   - New function ``quick_trace_select` for a very efficient selection of trace
