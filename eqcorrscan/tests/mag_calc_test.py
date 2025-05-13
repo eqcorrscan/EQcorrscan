@@ -407,6 +407,18 @@ class TestAmpPickEvent(unittest.TestCase):
         self.assertEqual(len(picked_event.amplitudes), 5)
 
 
+def ricker(points, a):
+    """ Ricker wavelet after scipy got rid. """
+    A = 2 / (np.sqrt(3 * a) * (np.pi**0.25))
+    wsq = a**2
+    vec = np.arange(0, points) - (points - 1.0) / 2
+    xsq = vec**2
+    mod = (1 - xsq / wsq)
+    gauss = np.exp(-xsq / (2 * wsq))
+    total = A * mod * gauss
+    return total
+
+
 class TestAmpPickAccuracy(unittest.TestCase):
     sampling_rate = 100.0  # Sampling-rate in Hz for synthetic
     length = 60.0  # Length in seconds for synthetic
@@ -420,8 +432,6 @@ class TestAmpPickAccuracy(unittest.TestCase):
         noise: bool = False,
     ) -> Tuple[Trace, Event, float, float]:
         """ Make a wood-anderson trace and convolve it with a response. """
-        from scipy.signal import ricker
-
         # Make dummy data in meters on Wood Anderson
         np.random.seed(42)
         if noise:
