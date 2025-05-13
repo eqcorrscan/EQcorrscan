@@ -132,7 +132,7 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
     >>> arr[40] = 20
     >>> arr[60] = 100
     >>> find_peaks2_short(arr, threshold, 3)
-    [(20.0, 40), (100.0, 60)]
+    [(np.float32(20.0), np.int64(40)), (np.float32(100.0), np.int64(60))]
     """
     # Set everything below the threshold to zero
     image = np.copy(arr)
