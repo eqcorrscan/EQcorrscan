@@ -131,8 +131,8 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
     >>> threshold = 10
     >>> arr[40] = 20
     >>> arr[60] = 100
-    >>> find_peaks2_short(arr, threshold, 3)
-    [(np.float32(20.0), np.int64(40)), (np.float32(100.0), np.int64(60))]
+    >>> out = find_peaks2_short(arr, threshold, 3)
+    [(20.0, 40), (100.0, 60)]
     """
     # Set everything below the threshold to zero
     image = np.copy(arr)
@@ -180,6 +180,8 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
                       trig_int=trig_int + 1)
     if initial_peaks:
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
+        # Convert peaks to python types
+        peaks = [(p[0].item(), p[1].item()) for p in peaks]
         return peaks
     else:
         Logger.info('No peaks for you!')
