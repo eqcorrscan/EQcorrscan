@@ -51,7 +51,9 @@ class TestMultiThreadMethods(unittest.TestCase):
                 for acc_tr, obspy_tr in zip(acc_resample, obspy_resample):
                     for head in self.headers_to_compare:
                         assert acc_tr.stats[head] == obspy_tr.stats[head]
-                    assert np.allclose(acc_tr.data, obspy_tr.data)
+                    # Changes around the numpy 2.x transition mean that accuracy between
+                    # obspy and eqcorrscan has changed.
+                    assert np.allclose(acc_tr.data, obspy_tr.data, rtol=1e-2, atol=1e-2)
 
     def test_detrend(self):
         for st in [self.real_st, self.random_st, self.short_st]:

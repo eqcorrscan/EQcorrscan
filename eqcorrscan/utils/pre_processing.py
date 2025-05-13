@@ -700,7 +700,10 @@ def _resample(data, delta, factor, sampling_rate, large_w, _id):
     d_large_f = _floater(1.0) / num * sampling_rate
 
     # Forward fft
-    x = np.fft.rfft(data)
+    # x = np.fft.rfft(data)
+    x = np.fft.rfft(data.view(data.dtype.newbyteorder("=")))
+    # obspy for numpy 2.x
+    # x = rfft(self.data.view(self.data.dtype.newbyteorder("=")))
     # Window
     x *= large_w[:npts // 2 + 1]
 
