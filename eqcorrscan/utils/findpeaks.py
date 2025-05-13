@@ -131,7 +131,7 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
     >>> threshold = 10
     >>> arr[40] = 20
     >>> arr[60] = 100
-    >>> out = find_peaks2_short(arr, threshold, 3)
+    >>> find_peaks2_short(arr, threshold, 3)
     [(20.0, 40), (100.0, 60)]
     """
     # Set everything below the threshold to zero
