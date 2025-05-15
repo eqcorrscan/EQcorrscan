@@ -21,3 +21,5 @@ dependencies:
   - pytest-mpl
   - codecov
   - boto3
+  - sqlite>=3.49.2
+  - libsqlite>=3.49.2  # Pinning temporarily to cope with mismatched version errors
