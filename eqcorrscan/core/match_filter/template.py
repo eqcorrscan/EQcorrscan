@@ -516,7 +516,7 @@ class Template(object):
 
             .. math::
 
-                av\_chan\_corr\_thresh=threshold \\times (cccsum /
+                av_chan_corr_thresh=threshold \\times (cccsum /
                 len(template))
 
             where :math:`template` is a single template from the input and the

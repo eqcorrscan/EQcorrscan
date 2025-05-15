@@ -119,7 +119,7 @@ def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False,
     # check results of fit
     if coeffs[0] >= 0:
         Logger.info("Fitted parabola opens upwards!")
-    if residual > 0.1:
+    if residual.size and residual[0] > 0.1:
         Logger.info(
             "Residual in quadratic fit to cross correlation maximum larger "
             "than 0.1: {0}".format(residual))
