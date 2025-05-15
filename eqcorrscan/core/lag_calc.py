@@ -252,11 +252,11 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     :type horizontal_chans: list
     :param horizontal_chans:
         List of channel endings for horizontal-channels, on which S-picks will
-        be made.
+        be made if no phase hint is given in the template.
     :type vertical_chans: list
     :param vertical_chans:
         List of channel endings for vertical-channels, on which P-picks will
-        be made.
+        be made if no phase hint is given in the template.
     :type cores: int
     :param cores:
         Number of cores to use in parallel processing, defaults to one.
@@ -298,6 +298,24 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
     # Correlation function needs a list of streams, we need to maintain order.
     ccc, chans = _concatenate_and_correlate(
         streams=detect_streams, template=family.template.st, cores=cores)
+    # Make dict of pick phase hints from the template
+    phase_hints = dict()
+    if family.template.event is not None:
+        # Get a set of picked trace ids, then iterate through that - take
+        # earliest pick - matches earliest trace used by
+        # detection.extract_stream
+        picked_sids = {p.waveform_id.get_seed_string()
+                       for p in family.template.event.picks}
+        for sid in picked_sids:
+            _sid_picks = [p for p in family.template.event.picks
+                          if p.waveform_id.get_seed_string() == sid]
+            _sid_picks.sort(key=lambda p: p.time)
+            if len(_sid_picks) > 1:
+                Logger.warning(f"Multiple phase hints found for {sid} - "
+                               f"using earliest ({_sid_picks[0].phase_hint} "
+                               f"at {_sid_picks[0].time})")
+            phase_hints.update({sid: _sid_picks[0].phase_hint})
+
     for i, detection_id in enumerate(detection_ids):
         detection = [d for d in family.detections if d.id == detection_id][0]
         correlations = ccc[i]
@@ -340,11 +358,13 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
                              'using'.format(cc_max))
                 continue
             cccsum += cc_max
-            phase = None
-            if stachan.channel[1][-1] in vertical_chans:
+            phase = phase_hints.get(tr.id, None)
+            if phase is None and stachan.channel[1][-1] in vertical_chans:
                 phase = 'P'
-            elif stachan.channel[1][-1] in horizontal_chans:
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning P")
+            elif phase is None and stachan.channel[1][-1] in horizontal_chans:
                 phase = 'S'
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning S")
             _waveform_id = WaveformStreamID(seed_string=tr.id)
             event.picks.append(Pick(
                 waveform_id=_waveform_id, time=picktime,

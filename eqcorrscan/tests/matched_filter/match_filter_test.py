@@ -304,7 +304,7 @@ class TestGeoNetCase(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, concurrent_processing=conc_proc)
+                plot=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 16)
 
 
@@ -722,12 +722,58 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
                 party=party, party_in=self.party, float_tol=0.05,
                 check_event=True)
+
+    def test_min_stations(self):
+        """
+        Check that minimum stations is respected and templates
+        without sufficient stations are not run.
+        """
+        local_tribe = self.tribe.copy()
+        # Drop some channels
+        local_tribe[0].st = local_tribe[0].st[0:-2]
+        for conc_proc in [False, True]:
+            party = local_tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, min_stations=5,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 3)
+
+    @pytest.mark.network
+    def test_min_stations_network(self):
+        """
+        Check that minimum stations is respected and templates
+        without sufficient stations are not run.
+        """
+        local_tribe = self.tribe.copy()
+        # Drop some channels
+        local_tribe[0].st = local_tribe[0].st[0:-2]
+        for conc_proc in [False, True]:
+            party = local_tribe.client_detect(
+                client=Client('NCEDC'), starttime=UTCDateTime(2004, 9, 28, 17),
+                endtime=UTCDateTime(2004, 9, 28, 18),
+                threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, min_stations=5,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 3)
+
+    def test_no_stations(self):
+        """
+        Check that minimum stations is respected and templates
+        without sufficient stations are not run.
+        """
+        local_tribe = self.tribe.copy()
+        for conc_proc in [False, True]:
+            party = local_tribe.detect(
+                stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
+                trig_int=6.0, plot=False, min_stations=6,
+                parallel_process=False, concurrent_processing=conc_proc)
+            self.assertEqual(len(party), 0)
 
     def test_tribe_detect_with_empty_streams(self):
         """
@@ -746,7 +792,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             # run detection with 2 templates in tribe
             party1 = tribe1.detect(
                 stream=st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plotvar=False,
+                trig_int=6.0, plotvar=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party1), 2)
             party1 = Party([f for f in party1
@@ -756,7 +802,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                             if t.name == '2004_09_28t17_19_25'])
             party2 = tribe2.detect(
                 stream=st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plotvar=False,
+                trig_int=6.0, plotvar=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party2), 1)
             # This should fail in v0.4.2
@@ -773,7 +819,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 template.process_length = 2400
             party = tribe.detect(
                 stream=short_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc,
                 ignore_bad_data=True)
             self.assertEqual(len(party), 4)
@@ -784,7 +830,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, parallel_process=True,
+                trig_int=6.0, plot=False, parallel_process=True,
                 process_cores=2, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
@@ -796,7 +842,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, save_progress=True,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
@@ -820,7 +866,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 stream[0].stats.starttime + 1900, stream[0].stats.endtime))
             party = self.tribe.detect(
                 stream=stream, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, xcorr_func='fftw',
                 concurrency='concurrent', concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
@@ -834,7 +880,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
                 template.highcut = None
             party = tribe.detect(
                 stream=self.st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 parallel_process=False, concurrent_processing=conc_proc)
             self.assertEqual(len(party), 4)
             compare_families(
@@ -850,7 +896,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1 + 2.75, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, concurrent_processing=conc_proc)
+                plot=False, concurrent_processing=conc_proc)
             compare_families(
                 party=party, party_in=self.party, float_tol=0.05,
                 check_event=False)
@@ -864,7 +910,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             party = self.tribe.copy().client_detect(
                 client=client, starttime=self.t1 + 2.75, endtime=self.t2,
                 threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=False, plot=False, save_progress=True,
+                plot=False, save_progress=True,
                 concurrent_processing=conc_proc)
             self.assertTrue(os.path.isdir(".parties"))
 
@@ -885,7 +931,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             chained_cat = self.tribe.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False,
+                trig_int=6.0, plot=False,
                 concurrent_processing=conc_proc).lag_calc(
                 stream=self.unproc_st, pre_processed=False)
             catalog = self.party.copy().lag_calc(
@@ -936,6 +982,13 @@ class TestMatchObjectHeavy(unittest.TestCase):
         """Test that the lag-calc works on pre-processed data."""
         catalog = self.party.copy().lag_calc(
             stream=self.st, pre_processed=True)
+        self.assertEqual(len(catalog), 4)
+
+    @pytest.mark.network
+    def test_party_lag_calc_from_client(self):
+        """ Test that getting data from a client works as expected. """
+        catalog = self.party.copy().client_lag_calc(
+            client=Client("NCEDC"))
         self.assertEqual(len(catalog), 4)
 
     def test_party_lag_calc_empty_families(self):
@@ -1037,7 +1090,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
             Logger.info(f"Running conc_proc={conc_proc}")
             day_party = daylong_tribe.detect(
                 stream=st, threshold=8.0, threshold_type='MAD', trig_int=6.0,
-                daylong=True, plot=False, parallel_process=False,
+                plot=False, parallel_process=False,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(day_party), 4)
             day_catalog = day_party.lag_calc(stream=st, pre_processed=False,
@@ -1058,7 +1111,7 @@ class TestMatchObjectHeavy(unittest.TestCase):
         for conc_proc in [True, False]:
             party_t = test_template.detect(
                 stream=self.unproc_st, threshold=8.0, threshold_type='MAD',
-                trig_int=6.0, daylong=False, plot=False, overlap=None,
+                trig_int=6.0, plot=False, overlap=None,
                 concurrent_processing=conc_proc)
             self.assertEqual(len(party_t), 1)
 
@@ -1559,6 +1612,52 @@ class TestMatchObjectLight(unittest.TestCase):
                          get_catalog(added_family.detections))
         family.detections.append(additional_detection)
         self.assertEqual(family.catalog, get_catalog(family.detections))
+
+    def test_detection_extract_stream(self):
+        # Create simple synthetic stream
+        traces = []
+        pick_sids = {p.waveform_id.get_seed_string() for f in self.party
+                     for d in f for p in d.event.picks}
+        pick_times = sorted([p.time for f in self.party for d in f
+                             for p in d.event.picks])
+        first_pick, last_pick = pick_times[0], pick_times[-1]
+        delta = self.party[0].template.st[0].stats.delta
+        n_samples = int(((last_pick - first_pick) + 120) / delta)
+        data = np.arange(n_samples, dtype=int)
+        for sid in pick_sids:
+            tr = Trace(data=data.copy())
+            tr.stats.starttime = first_pick - 60
+            n, s, l, c = sid.split('.')
+            tr.stats.delta = delta
+            tr.stats.network = n
+            tr.stats.station = s
+            tr.stats.location = l
+            tr.stats.channel = c
+            traces.append(tr)
+        st = Stream(traces=traces)
+
+        # Test straightforward extraction
+        detection = self.party[0][0]
+        length, pre_pick = 40.0, 1 / delta
+        for shift in range(6):
+            pre_pick -= shift * (delta / 6)  # Sub-sample shifting
+            expected_starts = {
+                p.waveform_id.get_seed_string(): p.time - pre_pick
+                for p in detection.event.picks}
+            cut_st = detection.extract_stream(
+                stream=st, length=length, prepick=pre_pick)
+            for sid, expected_start in expected_starts.items():
+                Logger.debug(f"Checking for {sid}")
+                tr = cut_st.select(id=sid)
+                # Check that we get a returned trace
+                self.assertTrue(len(tr), 1)
+                tr = tr[0]
+                # Check that start is within one sample of the expected start
+                self.assertLess(abs(tr.stats.starttime - expected_start),
+                                delta)
+                # Check that the length is correct
+                returned_length = tr.stats.endtime - tr.stats.starttime
+                self.assertEqual(length, returned_length)
 
 
 class TestTemplateGrouping(unittest.TestCase):
