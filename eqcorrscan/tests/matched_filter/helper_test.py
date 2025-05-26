@@ -23,7 +23,7 @@ from eqcorrscan.core.match_filter.helpers import (
     get_waveform_client, _test_event_similarity)
 from eqcorrscan.core.match_filter.helpers.processes import (
     _get_detection_stream, Poison, _prepper, _pre_processor,
-    _make_detections)
+    _make_detections, _FDSN_parseable_Client)
 
 try:
     from pytest_cov.embed import cleanup_on_sigterm
@@ -284,7 +284,7 @@ class TestGetDetectionStreamProcess(ProcessTests):
         process_length = 360
         cls.global_kwargs = dict(
             template_channel_ids=[("NZ", "WVZ", "10", "HHZ")],
-            client=Client("GEONET"),
+            client=_FDSN_parseable_Client.from_client(Client("GEONET")),
             retries=3,
             min_gap=0.0,
             buff=3,

@@ -119,7 +119,7 @@ def _xcorr_interp(ccc, dt, resample_factor=10, use_new_resamp_method=False,
     # check results of fit
     if coeffs[0] >= 0:
         Logger.info("Fitted parabola opens upwards!")
-    if residual > 0.1:
+    if residual.size and residual[0] > 0.1:
         Logger.info(
             "Residual in quadratic fit to cross correlation maximum larger "
             "than 0.1: {0}".format(residual))
@@ -361,10 +361,10 @@ def xcorr_pick_family(family, stream, shift_len=0.2, min_cc=0.4,
             phase = phase_hints.get(tr.id, None)
             if phase is None and stachan.channel[1][-1] in vertical_chans:
                 phase = 'P'
-                Logger.warning(f"Unknown phase hint for {tr.id} - assigning P")
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning P")
             elif phase is None and stachan.channel[1][-1] in horizontal_chans:
                 phase = 'S'
-                Logger.warning(f"Unknown phase hint for {tr.id} - assigning S")
+                Logger.debug(f"Unknown phase hint for {tr.id} - assigning S")
             _waveform_id = WaveformStreamID(seed_string=tr.id)
             event.picks.append(Pick(
                 waveform_id=_waveform_id, time=picktime,

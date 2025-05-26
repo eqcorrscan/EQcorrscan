@@ -45,16 +45,13 @@ class Family(object):
         if isinstance(detections, Detection):
             detections = [detections]
         self.detections = detections or []
-        self.__catalog = get_catalog(self.detections)
         if catalog:
             Logger.warning("Setting catalog directly is no-longer supported, "
                            "now generated from detections.")
 
     @property
     def catalog(self):
-        if len(self.__catalog) != len(self.detections):
-            self.__catalog = get_catalog(self.detections)
-        return self.__catalog
+        return get_catalog(self.detections)
 
     @catalog.setter
     def catalog(self, catalog):
@@ -151,13 +148,11 @@ class Family(object):
         if isinstance(other, Family):
             if other.template == self.template:
                 self.detections.extend(other.detections)
-                self.__catalog.events.extend(get_catalog(other.detections))
             else:
                 raise NotImplementedError('Templates do not match')
         elif isinstance(other, Detection) and other.template_name \
                 == self.template.name:
             self.detections.append(other)
-            self.__catalog.events.extend(get_catalog([other]))
         elif isinstance(other, Detection):
             raise NotImplementedError('Templates do not match')
         else:
@@ -605,6 +600,18 @@ class Family(object):
             Picks are corrected for the template pre-pick time.
         """
         from eqcorrscan.core.lag_calc import xcorr_pick_family
+
+        # We should make sure we have events calculated for all detections
+        # we should clean out anything that was there before
+        # (and warn the user)
+        _overwritten_warning = False
+        for d in self.detections:
+            if len(d.event.picks):
+                _overwritten_warning = True
+            d._calculate_event(template=self.template)
+        if _overwritten_warning:
+            Logger.warning("Old events in family have been overwritten to "
+                           "ensure lag-calc runs as expected")
 
         processed_stream = self._process_streams(
             stream=stream, pre_processed=pre_processed,

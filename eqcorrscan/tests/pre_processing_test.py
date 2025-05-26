@@ -51,7 +51,10 @@ class TestMultiThreadMethods(unittest.TestCase):
                 for acc_tr, obspy_tr in zip(acc_resample, obspy_resample):
                     for head in self.headers_to_compare:
                         assert acc_tr.stats[head] == obspy_tr.stats[head]
-                    assert np.allclose(acc_tr.data, obspy_tr.data)
+                    # Changes around the numpy 2.x transition mean that
+                    # accuracy between obspy and eqcorrscan has changed.
+                    assert np.allclose(acc_tr.data, obspy_tr.data,
+                                       rtol=1e-2, atol=1e-2)
 
     def test_detrend(self):
         for st in [self.real_st, self.random_st, self.short_st]:
@@ -269,6 +272,31 @@ class TestPreProcessing(unittest.TestCase):
                 filt_order=3, samp_rate=1, starttime=False,
                 seisan_chan_names=True, ignore_length=False)
 
+    def test_process_partial_bad_data(self):
+        """
+        Check that processing works as expected when we have
+        partial bad data. Issue #592
+        """
+        bad_data = Stream([self.st[0].slice(
+            self.st[0].stats.starttime,
+            self.st[0].stats.starttime + 20).copy()])
+        bad_data += self.st[1].copy()
+        with self.assertRaises(NotImplementedError):
+            multi_process(
+                st=bad_data, lowcut=0.1, highcut=0.4,
+                filt_order=3, samp_rate=1,
+                starttime=bad_data[1].stats.starttime,
+                endtime=bad_data[1].stats.endtime,
+                seisan_chan_names=True, ignore_length=False)
+        # Check that it just drops that trace with ignore_bad_data
+        st_processed = multi_process(
+            st=bad_data, lowcut=0.1, highcut=0.4,
+            filt_order=3, samp_rate=1,
+            starttime=bad_data[1].stats.starttime,
+            endtime=bad_data[1].stats.endtime,
+            seisan_chan_names=True, ignore_bad_data=True)
+        self.assertEqual(len(st_processed), 1)
+
     def test_short_data_fail(self):
         """Check that we don't allow too much missing data."""
         with self.assertRaises(NotImplementedError):
@@ -283,9 +311,9 @@ class TestPreProcessing(unittest.TestCase):
     def test_short_data_pass(self):
         """Check that we do allow missing data if ignore_length is True."""
         processed = multi_process(
-            st=self.st[0].copy().trim(endtime=self.
-                                      st[0].stats.endtime - 18000), lowcut=0.1,
-            highcut=0.4, filt_order=3, samp_rate=1,
+            st=self.st[0].copy().trim(
+                endtime=self.st[0].stats.endtime - 18000),
+            lowcut=0.1, highcut=0.4, filt_order=3, samp_rate=1,
             starttime=self.day_start,
             endtime=UTCDateTime(self.day_start) + 86400.,
             seisan_chan_names=True, ignore_length=True)

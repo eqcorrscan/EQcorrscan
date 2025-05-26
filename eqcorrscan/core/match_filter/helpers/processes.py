@@ -25,6 +25,7 @@ from multiprocessing import Queue
 from queue import Empty
 
 from obspy import Stream
+from obspy.clients.fdsn import Client
 
 from eqcorrscan.core.match_filter.helpers import (
     _pickle_stream, _unpickle_stream)
@@ -39,6 +40,25 @@ from eqcorrscan.utils.pre_processing import (
 
 
 Logger = logging.getLogger(__name__)
+
+# FDSN_CLIENT_ARGS = inspect.signature(Client).parameters.keys()
+# Only allow a limited subset to be parsed through - this means
+# that authenticated clients won't work.
+FDSN_CLIENT_ARGS = {"base_url", "debug", "timeout"}
+
+
+class _FDSN_parseable_Client:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    @classmethod
+    def from_client(cls, client):
+        kwargs = {key: client.__dict__.get(key, None)
+                  for key in FDSN_CLIENT_ARGS}
+        return cls(**kwargs)
+
+    def to_client(self):
+        return Client(**self.kwargs)
 
 
 ###############################################################################
@@ -70,21 +90,33 @@ class Poison(Exception):
         return self.__repr__()
 
 
-def _get_and_check(input_queue: Queue, poison_queue: Queue, step: float = 0.5):
+def _get_and_check(
+    input_queue: Queue,
+    poison_queue: Queue,
+    step: float = 0.5,
+    timeout: float = None,
+):
     """
     Get from a queue and check for poison - returns Poisoned if poisoned.
 
     :param input_queue: Queue to get something from
     :param poison_queue: Queue to check for poison
+    :param step: Time in seconds to wait until re-checking the queues
+    :param timeout: Maximum time in seconds to wait for data in the input queue.
 
     :return: Item from queue or Poison.
     """
+    waited = 0.0
     while True:
         poison = _check_for_poison(poison_queue)
         if poison:
             return poison
         if input_queue.empty():
             time.sleep(step)
+            waited += step
+            if timeout and waited >= timeout:
+                return Poison(Empty(
+                    f"{input_queue} is empty after {timeout} seconds"))
         else:
             return input_queue.get_nowait()
 
@@ -240,6 +272,8 @@ def _get_detection_stream(
     :param samp_rate: See utils.pre_processing.multi_process
     :param process_length: See utils.pre_processing.multi_process
     """
+    if isinstance(client, _FDSN_parseable_Client):
+        client = client.to_client()
     while True:
         killed = _wait_on_output_to_be_available(
             poison_queue=poison_queue, output_queue=output_filename_queue,
