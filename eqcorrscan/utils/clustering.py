@@ -12,6 +12,7 @@ import os
 import logging
 import ctypes
 from multiprocessing import cpu_count
+import concurrent.futures
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -185,7 +186,20 @@ def handle_distmat_nans(dist_mat, replace_nan_distances_with=None):
     dist_mat = (dist_mat + dist_mat.T) / 2
     return dist_mat
 
-
+# ..........................Changed code BEGIN..........................
+def process_master(args):
+    i, master, stream_list, shift_len, allow_individual_trace_shifts = args
+    dist_list, shift_list = cross_chan_correlation(
+        st1=master,
+        streams=stream_list,
+        shift_len=shift_len,
+        allow_individual_trace_shifts=allow_individual_trace_shifts,
+        xcorr_func='fftw',
+        cores=1  # Important: don't parallelize inner function!
+    )
+    return i, dist_list, shift_list
+     # ..........................Changed code END..........................
+    
 def distance_matrix(stream_list, shift_len=0.0,
                     replace_nan_distances_with=None,
                     allow_individual_trace_shifts=True, cores=1):
@@ -245,25 +259,47 @@ def distance_matrix(stream_list, shift_len=0.0,
     shift_mat = np.empty([n_streams, n_streams, n_uniq_traces])
     shift_mat[:] = np.nan
     shift_dict = dict()
-    for i, master in enumerate(stream_list):
-        dist_list, shift_list = cross_chan_correlation(
-            st1=master, streams=stream_list, shift_len=shift_len,
-            allow_individual_trace_shifts=allow_individual_trace_shifts,
-            xcorr_func='fftw', cores=cores)
-        dist_mat[i] = 1 - dist_list
-        master_ids = [tr.id for tr in master]
-        master_trace_indcs = [
-            j for j, tr_id in enumerate(uniq_traces) if tr_id in master_ids]
-        # Sort computed shifts into shift-matrix. shift_list could contain a
-        # nan-column that needs to be ignored here (only when earliest trace is
-        # missing)
-        shift_mat[np.ix_([i], list(range(n_streams)), master_trace_indcs)] = (
-            shift_list[:, ~np.all(np.isnan(shift_list), axis=0)])
-        # Add trace-id with corresponding shift-matrix to shift-dictionary
-        shift_mat_list = [shift_mat[:, :, mti] for mti in master_trace_indcs]
-        trace_shift_dict = dict(zip(master_ids, shift_mat_list))
-        shift_dict[i] = trace_shift_dict
-    if shift_len == 0:
+    # for i, master in enumerate(stream_list):
+    #     dist_list, shift_list = cross_chan_correlation(
+    #         st1=master, streams=stream_list, shift_len=shift_len,
+    #         allow_individual_trace_shifts=allow_individual_trace_shifts,
+    #         xcorr_func='fftw', cores=cores)
+    #     dist_mat[i] = 1 - dist_list
+    #     master_ids = [tr.id for tr in master]
+    #     master_trace_indcs = [
+    #         j for j, tr_id in enumerate(uniq_traces) if tr_id in master_ids]
+    #     # Sort computed shifts into shift-matrix. shift_list could contain a
+    #     # nan-column that needs to be ignored here (only when earliest trace is
+    #     # missing)
+    #     shift_mat[np.ix_([i], list(range(n_streams)), master_trace_indcs)] = (
+    #         shift_list[:, ~np.all(np.isnan(shift_list), axis=0)])
+    #     # Add trace-id with corresponding shift-matrix to shift-dictionary
+    #     shift_mat_list = [shift_mat[:, :, mti] for mti in master_trace_indcs]
+    #     trace_shift_dict = dict(zip(master_ids, shift_mat_list))
+    #     shift_dict[i] = trace_shift_dict
+
+     # ..........................Changed code BEGIN..........................
+    args = [
+        (i, master, stream_list, shift_len, allow_individual_trace_shifts)
+        for i, master in enumerate(stream_list)
+    ]
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cores) as executor:
+        results = executor.map(process_master, args)
+
+        for i, dist_list, shift_list in results:
+            dist_mat[i] = 1 - dist_list
+            master_ids = [tr.id for tr in stream_list[i]]
+            master_trace_indcs = [
+                j for j, tr_id in enumerate(uniq_traces) if tr_id in master_ids]
+            shift_mat[np.ix_([i], list(range(n_streams)), master_trace_indcs)] = (
+                shift_list[:, ~np.all(np.isnan(shift_list), axis=0)])
+            shift_mat_list = [shift_mat[:, :, mti] for mti in master_trace_indcs]
+            trace_shift_dict = dict(zip(master_ids, shift_mat_list))
+            shift_dict[i] = trace_shift_dict
+    # ..........................Changed code END..........................
+    
+                        if shift_len == 0:
         dist_mat = handle_distmat_nans(
             dist_mat, replace_nan_distances_with=replace_nan_distances_with)
     else:
