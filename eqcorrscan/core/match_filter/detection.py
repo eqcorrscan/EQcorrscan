@@ -397,7 +397,7 @@ class Detection(object):
                 pick = [p for p in pick
                         if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
-                Logger.info(
+                Logger.debug(
                     "No pick for {0}.{1}".format(station, channel))
                 continue
             elif len(pick) > 1:
@@ -419,18 +419,18 @@ class Detection(object):
                 _tr_cut_start = tr.stats.starttime + (
                     sample_offset * tr.stats.delta)
                 _tr_cut_end = _tr_cut_start + length
-                Logger.info(
+                Logger.debug(
                     f"Trimming {tr.id} between {_tr_cut_end} "
                     f"and {_tr_cut_end}.")
                 _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
-                Logger.info(
+                Logger.debug(
                     f"Length: {(_tr.stats.endtime - _tr.stats.starttime)}")
-                Logger.info(f"Requested length: {length}")
+                Logger.debug(f"Requested length: {length}")
                 if abs((_tr.stats.endtime - _tr.stats.starttime) -
                        length) < tr.stats.delta:
                     cut_stream += _tr
                 else:
-                    Logger.warning(
+                    Logger.debug(
                         "Insufficient data length for {0}".format(tr.id))
         return cut_stream
 
