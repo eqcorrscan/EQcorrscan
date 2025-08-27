@@ -380,7 +380,9 @@ class Detection(object):
         valid_chans = {
             (tr.stats.station, tr.stats.channel)
             for tr in stream}.intersection(set(self.chans))
+        Logger.debug(f"Cutting from stream: \n{stream}")
         for station, channel in valid_chans:
+            Logger.debug(f"Extracting stream for {station}.{channel}")
             _st = stream.select(station=station, channel=channel)
             pick = [
                 p for p in self.event.picks
