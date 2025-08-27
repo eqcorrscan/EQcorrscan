@@ -401,6 +401,7 @@ def _corr_and_peaks(
     else:
         # The default just uses stream xcorr funcs.
         multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+        Logger.debug(f"Calling {multichannel_normxcorr}")
         cccsums, no_chans, chans = multichannel_normxcorr(
             templates=templates, stream=stream, cores=cores, **kwargs
         )
@@ -559,7 +560,9 @@ def _detect(
         Logger.debug(f"Found {len(all_peaks[i])} detections "
                      f"for template {template_name}")
         for peak in all_peaks[i]:
+            Logger.debug(f"Peak of {peak[0]} at {peak[1]}")
             detecttime = starttime + (peak[1] * delta)
+            Logger.debug(f"Setting detect-time: {detecttime}")
             if peak[0] > no_chans[i]:
                 Logger.error(f"Correlation sum {peak[0]} exceeds "
                              f"bounds ({no_chans[i]}")

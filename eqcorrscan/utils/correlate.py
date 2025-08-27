@@ -773,11 +773,61 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    Logger.debug(seed_ids)
+    Logger.debug(chans)
+    Logger.debug(no_chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums = _cope_with_unused_earliest(cccsums, pad_dict, chans)
+
+    # Reshape to (station, channel)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
               for seed_id in _chans] for _chans in chans]
+
     return cccsums, no_chans, chans
+
+
+def _shuffle_pads(pads, sids, offset=0):
+    pad_sids = list(pads.keys())
+    pad_values = [pads[k] for k in pad_sids]
+    # Find the lowest pad in the set and get the key for it
+    min_pad_sid = pad_sids[pad_values.index(min(pad_values))]
+    Logger.info(f"Min pad: {min(pad_values)} on {min_pad_sid}")
+    # If the key is in the sids, we are done
+    if min_pad_sid in sids:
+        return offset
+    # Otherwise, we need to remove that from pads and reduce the pads
+    # by the delta between the min pad and the new min pad
+    min_pad_value = pads.pop(min_pad_sid)
+    if len(pads) == 0:
+        return offset
+    new_min_pad_value = min(pads.values())
+    # Add offset to total offset
+    offset += new_min_pad_value - min_pad_value
+    pads = {sid: v - (new_min_pad_value - min_pad_value)
+            for sid, v in pads.items()}
+    # Need to recurse
+    offset = _shuffle_pads(pads=pads, sids=sids, offset=offset)
+    return offset
+
+
+def _cope_with_unused_earliest(cccsums, pad_dict, chans):
+    for i, ccsum in enumerate(cccsums):
+        # Check if the earliest pad is in chans
+        pads = {sid: pads[i] for sid, pads in pad_dict.items()}
+        offset = _shuffle_pads(pads, chans[i])
+        if offset:
+            Logger.debug(f"Rolling cccsum array by {offset}")
+            # Roll along the axis by offset
+            cccsums[i] = np.roll(ccsum, offset)
+            # Set offset samples to zero
+            cccsums[i][0:offset] = 0
+    return cccsums
+
 
 
 def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
