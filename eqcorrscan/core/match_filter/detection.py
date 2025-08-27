@@ -263,6 +263,10 @@ class Detection(object):
         else:
             template_prepick = 0
             template_picks = []
+        # Only include channels used for detection in template_st
+        template_st = Stream(
+            [tr for tr in template_st if (tr.stats.station, tr.stats.channel)
+             in self.chans])
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
