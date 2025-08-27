@@ -407,6 +407,9 @@ class Detection(object):
                 pick.sort(key=lambda p: p.time)
             pick = pick[0]
             cut_start = pick.time - prepick
+            Logger.debug(
+                f"Cutting for {station}.{channel} to start at "
+                f"{cut_start}, {prepick} s before pick at {pick.time}")
             # Find nearest sample to avoid  to too-short length - see #573
             for tr in _st:
                 sample_offset = (cut_start -
@@ -420,7 +423,7 @@ class Detection(object):
                     sample_offset * tr.stats.delta)
                 _tr_cut_end = _tr_cut_start + length
                 Logger.debug(
-                    f"Trimming {tr.id} between {_tr_cut_end} "
+                    f"Trimming {tr.id} between {_tr_cut_start} "
                     f"and {_tr_cut_end}.")
                 _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
                 Logger.debug(
