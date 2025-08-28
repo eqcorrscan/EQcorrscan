@@ -885,12 +885,15 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
             if var_wintype:
                 if p_pick and s_pick:
                     p_time, s_time = p_pick.time, s_pick.time
+                    Logger.info(f"Using P pick at {p_time} and S pick at {s_time}")
                 elif s_pick and hypo_dist:
                     s_time = s_pick.time
                     p_time = s_time - (hypo_dist * ps_multiplier)
+                    Logger.info(f"Using estimated P pick at {p_time} and S pick at {s_time}")
                 elif p_pick and hypo_dist:
                     p_time = p_pick.time
                     s_time = p_time + (hypo_dist * ps_multiplier)
+                    Logger.info(f"Using P pick at {p_time} and estimated S pick at {s_time}")
                 elif (s_pick or p_pick) and hypo_dist is None:
                     Logger.error(
                         "No hypocentral distance and no matching P and S "
@@ -930,6 +933,7 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                     f"Trying to trim to negative length: "
                     f"{trim_start} -- {trim_end}. Skipping")
                 continue
+            Logger.info(f"Trimming {tr.id} between {trim_start} and {trim_end}")
             tr = tr.trim(trim_start, trim_end)
             if len(tr.data) <= 10:
                 Logger.warning(f'Insufficient data for {sta}')
