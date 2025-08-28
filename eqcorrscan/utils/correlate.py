@@ -796,7 +796,7 @@ def _shuffle_pads(pads, sids, offset=0):
     pad_values = [pads[k] for k in pad_sids]
     # Find the lowest pad in the set and get the key for it
     min_pad_sid = pad_sids[pad_values.index(min(pad_values))]
-    Logger.info(f"Min pad: {min(pad_values)} on {min_pad_sid}")
+    Logger.debug(f"Min pad: {min(pad_values)} on {min_pad_sid}")
     # If the key is in the sids, we are done
     if min_pad_sid in sids:
         return offset
