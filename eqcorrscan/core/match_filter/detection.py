@@ -263,6 +263,11 @@ class Detection(object):
         else:
             template_prepick = 0
             template_picks = []
+        """
+        Detection time is first used channel in template - prepick.
+        
+        """
+
         # Only include channels used for detection in template_st
         template_st = Stream(
             [tr for tr in template_st if (tr.stats.station, tr.stats.channel)
