@@ -214,6 +214,10 @@ class Template(object):
         >>> template_a == template_b
         False
         """
+        header_comparisons = [
+            'network', 'station', 'channel', 'location', 'starttime',
+            'endtime', 'sampling_rate', 'delta', 'npts', 'calib']
+        nan_ignore_headers = ['starttime', 'endtime']
         for key in self.__dict__.keys():
             if key == 'st':
                 self_is_stream = isinstance(self.st, Stream)
@@ -227,11 +231,16 @@ class Template(object):
                                 print("Template data are not equal on "
                                       "{0}".format(tr.id))
                             return False
-                        for trkey in ['network', 'station', 'channel',
-                                      'location', 'starttime', 'endtime',
-                                      'sampling_rate', 'delta', 'npts',
-                                      'calib']:
+                        nan_data = False
+                        if np.all(np.isnan(tr.data)):
+                            # If data are all nan, we can ignore some of the
+                            # stats which may be incorrrect
+                            nan_data = True
+                        for trkey in header_comparisons:
                             if tr.stats[trkey] != oth_tr.stats[trkey]:
+                                if nan_data and trkey in nan_ignore_headers:
+                                    # We can safely skip this comparison
+                                    continue
                                 if verbose:
                                     print("{0} does not match in "
                                           "template".format(trkey))

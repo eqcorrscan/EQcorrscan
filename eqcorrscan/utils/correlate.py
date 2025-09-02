@@ -206,6 +206,10 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -776,13 +780,13 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     Logger.debug(seed_ids)
     Logger.debug(chans)
     Logger.debug(no_chans)
-    if stack:
-        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
-
     # Need to cope with possibility that earliest channel is unused. In which
     # case we need to pad the ccccsums for that by the pad for that otherwise
     # we get the wrong detection time.
     cccsums = _cope_with_unused_earliest(cccsums, pad_dict, chans)
+
+    if stack:
+        cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
 
     # Reshape to (station, channel)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -791,7 +795,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     return cccsums, no_chans, chans
 
 
-def _shuffle_pads(pads, sids, offset=0):
+def _rm_unused_pads(pads, sids, offset=0):
     pad_sids = list(pads.keys())
     pad_values = [pads[k] for k in pad_sids]
     # Find the lowest pad in the set and get the key for it
@@ -811,7 +815,7 @@ def _shuffle_pads(pads, sids, offset=0):
     pads = {sid: v - (new_min_pad_value - min_pad_value)
             for sid, v in pads.items()}
     # Need to recurse
-    offset = _shuffle_pads(pads=pads, sids=sids, offset=offset)
+    offset = _rm_unused_pads(pads=pads, sids=sids, offset=offset)
     return offset
 
 
@@ -819,7 +823,8 @@ def _cope_with_unused_earliest(cccsums, pad_dict, chans):
     for i, ccsum in enumerate(cccsums):
         # Check if the earliest pad is in chans
         pads = {sid: pads[i] for sid, pads in pad_dict.items()}
-        offset = _shuffle_pads(pads, chans[i])
+        Logger.debug(f"pads {pads}")
+        offset = _rm_unused_pads(pads, chans[i])
         if offset:
             Logger.debug(f"Rolling cccsum array by {offset}")
             # Roll along the axis by offset
@@ -827,7 +832,6 @@ def _cope_with_unused_earliest(cccsums, pad_dict, chans):
             # Set offset samples to zero
             cccsums[i][0:offset] = 0
     return cccsums
-
 
 
 def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
@@ -1199,6 +1203,10 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
             if state:
                 chan.append((seed_id.split('.')[1],
                              seed_id.split('.')[-1].split('_')[0]))
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     return cccsums, no_chans, chans
 
 
