@@ -34,7 +34,8 @@ from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
 from eqcorrscan.utils.correlate import (
     get_stream_xcorr, _stabalised_fmf, fftw_multi_normxcorr,
-    _zero_invalid_correlation_sums, _set_inner_outer_threading)
+    _zero_invalid_correlation_sums, _set_inner_outer_threading,
+    _cope_with_unused_earliest)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _group_process)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
@@ -395,6 +396,10 @@ def _corr_and_peaks(
             for chan, state in zip(chans, tr_chan):
                 if state:
                     chan.append(seed_id)
+        # Need to cope with possibility that earliest channel is unused. In which
+        # case we need to pad the ccccsums for that by the pad for that otherwise
+        # we get the wrong detection time.
+        cccsums, pads = _cope_with_unused_earliest(cccsums, pads, chans)
         cccsums = _zero_invalid_correlation_sums(cccsums, pads, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
                   for seed_id in _chans] for _chans in chans]

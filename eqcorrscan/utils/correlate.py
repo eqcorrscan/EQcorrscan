@@ -765,6 +765,7 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     """
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
+    Logger.info(f"pad_dict: {pad_dict}")
     assert set(seed_ids)
     # number of threads:
     #   default to using inner threads
@@ -787,9 +788,6 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
-    Logger.debug(seed_ids)
-    Logger.debug(chans)
-    Logger.debug(no_chans)
     # Need to cope with possibility that earliest channel is unused. In which
     # case we need to pad the ccccsums for that by the pad for that otherwise
     # we get the wrong detection time.
@@ -1255,7 +1253,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
     if not hasattr(func, concur):
         msg = '%s does not support concurrency %s' % (func.__name__, concur)
         raise ValueError(msg)
-    return getattr(func, concur)
+    outfunc = getattr(func, concur)
+    Logger.info(f"Found {outfunc} for {name_or_func} - {concurrency}")
+    return outfunc
 
 
 # --------------------------- stream prep functions
