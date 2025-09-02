@@ -765,7 +765,6 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     """
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
-    Logger.info(f"pad_dict: {pad_dict}")
     assert set(seed_ids)
     # number of threads:
     #   default to using inner threads
