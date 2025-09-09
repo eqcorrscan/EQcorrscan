@@ -94,11 +94,15 @@ class TestCoreMethods(unittest.TestCase):
         image = image[0].data.astype(np.float32)
         ccc = normxcorr2(template, image)[0]
         expected_ccc = np.load(os.path.join(testing_path, 'test_ccc.npy'))
-        # We know that conda installs give a slightly different result
-        self.assertTrue(np.allclose(expected_ccc, ccc, atol=0.003))
         # Differences occur for low correlation values, peak should be the same
         self.assertTrue(expected_ccc.max(), ccc.max())
         self.assertTrue(expected_ccc.argmax(), ccc.argmax())
+        # We know that conda installs give a slightly different result
+        matching_ccc = np.allclose(expected_ccc, ccc, atol=0.003)
+        if not matching_ccc:
+            diff = expected_ccc - ccc
+            Logger.error(f"ccc's do not match. Max diff {diff.max()} at {diff.argmax()}")
+        self.assertTrue(matching_ccc)
 
     def test_failed_normxcorr(self):
         """Send it the wrong type."""
