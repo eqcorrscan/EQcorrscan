@@ -15,6 +15,13 @@ from eqcorrscan.utils.timer import time_func
 
 
 class TestDeclustering:
+    def test_unclustered_picks(self):
+        assert True == False
+
+    def test_clustered_picks(self):
+        assert True == False
+
+
     def test_unclustered_time(self):
         """ Check that nothing is lost if there aren't any clustered events."""
         peaks = np.array([100, 65, 20, 120, 300])

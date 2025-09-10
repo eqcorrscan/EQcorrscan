@@ -12,9 +12,12 @@ import random
 import logging
 import numpy as np
 
+from typing import List, Union
+
 from multiprocessing import Pool, cpu_count
 from concurrent.futures import ThreadPoolExecutor
 from scipy import ndimage
+from obpsy.core.event import Catalog, Event
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
@@ -478,6 +481,111 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
         return output
     else:
         return []
+
+
+###################### Declustering based on pick-time ############################
+
+def average_pick_time_diff_naive(ev1: Event, ev2: Event) -> float:
+    ev1_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev1.picks
+                 if p.phase_hint in "SP"}
+    ev2_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev2.picks
+                 if p.phase_hint in "SP"}
+    shared_picks = ev1_picks.intersection(ev2_picks)
+    if len(shared_picks) == 0:
+        return np.inf
+    deltas = []
+    for phase, station in shared_picks:
+        ev1_picks = [p for p in ev1.picks if p.phase_hint == phase
+                     and p.waveform_id.station_code == station]
+        ev2_picks = [p for p in ev2.picks if p.phase_hint == phase
+                     and p.waveform_id.station_code == station]
+        for ev1_pick in ev1_picks:
+            for ev2_pick in ev2_picks:
+                deltas.append(ev1_pick.time - ev2_pick.time)
+    return sum(deltas) / len(deltas)
+
+
+def average_pick_time_diff_matrix_naive(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
+    out = np.zeros((len(catalog), len(catalog)))
+    for i, ev1 in enumerate(catalog):
+        for j, ev2 in enumerate(catalog):
+            out[i, j] = average_pick_time_diff_naive(ev1, ev2)
+    return out
+
+
+def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTime) -> float:
+    picks = [p for p in event.picks
+             if p.waveform_id.station_code == station
+             and p.phase_hint == phase_hint]
+    if len(picks) == 0:
+        return np.nan
+    pick_times = [p.time - zero_time for p in picks]
+    if len(pick_times) == 1:
+        return pick_times[0]
+    return sum(pick_times) / len(pick_times)
+
+
+def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
+    # Make arrays of pick times for each phase and each station
+    sta_phases = list(
+        {f"{p.waveform_id.station_code}_{p.phase_hint}"
+         for ev in catalog for p in ev.picks if p.phase_hint in "PS"})
+    # Using a list for sta_phases to retain order
+    pick_arrays = dict()
+    zero_time = (catalog[0].preferred_origin() or catalog[0].origins[-1]).time
+    # This bit is not very fast, but gets the arrays in a shape that could be passed to C code
+    for sta_ph in sta_phases:
+        pick_arrays.update({
+            sta_ph: np.array([_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time) for ev in catalog])})
+    # This bit could be ported to C
+    out = np.zeros((len(catalog), len(catalog)))
+    for i in range(len(catalog)):
+        # Matrix is symmetric, so we can just do upper or lower half.
+        for j in range(i + 1, len(catalog)):
+            # We get occasional RuntimeWarnings about mean of empty slice
+            # when no stations are shared. nan is returned for this case.
+            pick_delta = np.nanmean(
+                [pick_arrays[sta_ph][i] - pick_arrays[sta_ph][j]
+                 for sta_ph in sta_phases])
+            out[i, j] = pick_delta
+    out -= out.T
+    return np.nan_to_num(out, nan=np.inf)
+
+
+def decluster_pick_times(catalog: Union[Catalog, List[Event]], trig_int: float) -> Catalog:
+    detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
+                            for ev in cat])
+    # Sort catalog in order of detect_vals - from largest to smallest
+    order = np.argsort(detect_vals)[::-1]
+    # detect_vals = detect_vals[order]
+    if isinstance(catalog, Catalog):
+        events = catalog.events
+    else:
+        events = catalog
+
+    events = [events[ind] for ind in order]
+
+    # This is obviously very slow at the moment
+    pick_matrix = average_pick_time_diff_matrix(catalog=events)
+    # We only care about the absolute value (+/- trig_int)
+    pick_matrix = np.abs(pick_matrix)
+
+    drop_events = np.zeros(len(events), dtype=bool)
+    # Loop through from highest detection value to lowest - this way we keep
+    # the best detections
+    for i, ev in enumerate(events):
+        # If we are dropping this event then carry on
+        if drop_events[i]:
+            continue
+        # Find any events within trig int and set their drop status to True
+        drop_mask = pick_matrix[i] <= trig_int
+        # Make sure we retain the "core" event in this loop
+        drop_mask[i] = False
+        drop_events[drop_mask] = True
+        # _dropped = [ev for j, ev in _dropped(events) if drop_mask[j]]
+
+    # Get the events that we want to keep!
+    return Catalog([ev for i, ev in enumerate(events) if not drop_events[i]])
 
 
 if __name__ == "__main__":
