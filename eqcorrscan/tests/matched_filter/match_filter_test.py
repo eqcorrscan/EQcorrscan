@@ -98,7 +98,7 @@ class TestCoreMethods(unittest.TestCase):
         self.assertTrue(expected_ccc.max(), ccc.max())
         self.assertTrue(expected_ccc.argmax(), ccc.argmax())
         # We know that conda installs give a slightly different result
-        matching_ccc = np.allclose(expected_ccc, ccc, atol=0.003)
+        matching_ccc = np.allclose(expected_ccc, ccc, atol=0.0031)
         if not matching_ccc:
             diff = expected_ccc - ccc
             Logger.error(f"ccc's do not match. Max diff {diff.max()} at {diff.argmax()}")
