@@ -289,9 +289,10 @@ def _sim_WA(trace, inventory, water_level, velocity=False):
         paz_wa['zeros'] = [0 + 0j, 0 + 0j]
     # De-trend data
     trace.detrend('simple')
-    # Remove response to Velocity
+    # Remove response to Displacement
     try:
         trace.remove_response(
+            # Looks like seiscomp applies the WA PAZ that we have here to VEL input data
             inventory=inventory, output="VEL", water_level=water_level)
     except Exception:
         Logger.error(f"No response for {trace.id} at {trace.stats.starttime}")
@@ -328,6 +329,7 @@ def _max_p2t(data, delta, return_peak_trough=False):
     for i in range(1, len(data) - 1):
         if (data[i] < data[i - 1] and data[i] < data[i + 1]) or\
            (data[i] > data[i - 1] and data[i] > data[i + 1]):
+            # Peaks and troughs
             turning_points.append((data[i], i))
     if len(turning_points) >= 1:
         amplitudes = np.empty([len(turning_points) - 1],)
@@ -340,8 +342,10 @@ def _max_p2t(data, delta, return_peak_trough=False):
     for i in range(1, len(turning_points)):
         half_periods[i - 1] = (delta * (turning_points[i][1] -
                                         turning_points[i - 1][1]))
+        # Difference between subsequent peaks and troughs
         amplitudes[i - 1] = np.abs(turning_points[i][0] -
                                    turning_points[i - 1][0])
+    # Maximum p2t or t2p amplitude
     amplitude = np.max(amplitudes)
     period = 2 * half_periods[np.argmax(amplitudes)]
     delay = delta * turning_points[np.argmax(amplitudes)][1]
@@ -839,6 +843,8 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
             # Apply the pre-filter
             if pre_filt:
                 tr = tr.split().detrend('simple').merge(fill_value=0)[0]
+                # TODO: We should taper here as well.
+                # tr = tr.taper(0.05)
                 tr.filter('bandpass', freqmin=lowcut, freqmax=highcut,
                           corners=corners)
             tr = _sim_WA(tr, inventory, water_level=water_level,
@@ -879,12 +885,15 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
             if var_wintype:
                 if p_pick and s_pick:
                     p_time, s_time = p_pick.time, s_pick.time
+                    Logger.info(f"Using P pick at {p_time} and S pick at {s_time}")
                 elif s_pick and hypo_dist:
                     s_time = s_pick.time
                     p_time = s_time - (hypo_dist * ps_multiplier)
+                    Logger.info(f"Using estimated P pick at {p_time} and S pick at {s_time}")
                 elif p_pick and hypo_dist:
                     p_time = p_pick.time
                     s_time = p_time + (hypo_dist * ps_multiplier)
+                    Logger.info(f"Using P pick at {p_time} and estimated S pick at {s_time}")
                 elif (s_pick or p_pick) and hypo_dist is None:
                     Logger.error(
                         "No hypocentral distance and no matching P and S "
@@ -924,6 +933,7 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                     f"Trying to trim to negative length: "
                     f"{trim_start} -- {trim_end}. Skipping")
                 continue
+            Logger.info(f"Trimming {tr.id} between {trim_start} and {trim_end}")
             tr = tr.trim(trim_start, trim_end)
             if len(tr.data) <= 10:
                 Logger.warning(f'Insufficient data for {sta}')
@@ -949,6 +959,8 @@ def amp_pick_event(event, st, inventory, chans=('Z',), var_wintype=True,
                 plt.scatter(tr.stats.sampling_rate * delay, peak)
                 plt.scatter(tr.stats.sampling_rate * (delay + period / 2),
                             trough)
+                plt.title(f"{tr.stats.network}.{tr.stats.station}."
+                          f"{tr.stats.location}.{tr.stats.channel}")
                 plt.show()
             Logger.info(f'Amplitude picked: {amplitude}')
             Logger.info(f'Signal-to-noise ratio is: {snr}')

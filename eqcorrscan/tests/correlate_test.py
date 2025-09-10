@@ -122,10 +122,16 @@ def read_gappy_real_data():
 def read_real_multichannel_templates():
     import glob
     tutorial_templates = glob.glob(
-        join(pytest.test_data_path, "tutorial_template_0.ms"))
+        join(pytest.test_data_path, "tutorial_template_?.ms"))
+    templates = []
+    for t in tutorial_templates:
+        template = read(t)
+        template = template.select(station="POWZ") + template.select(station="HOWZ")
+        templates.append(template)
+    return templates
 
-    t = read(tutorial_templates[0])
-    return [t.select(station="POWZ") + t.select(station="HOWZ")]
+    # t = read(tutorial_templates[0])
+    # return [t.select(station="POWZ") + t.select(station="HOWZ")]
 
 
 def get_real_multichannel_data():
@@ -358,6 +364,47 @@ def real_stream_cc_dict(real_stream_cc_output_dict):
     return {name: result[0]
             for name, result in real_stream_cc_output_dict.items()}
 
+
+@pytest.fixture(scope='module')
+def real_missing_stream_cc_output_dict(real_templates, real_multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    out = {}
+    fft_len = next_fast_len(
+        real_templates[0][0].stats.npts +
+        real_multichannel_stream[0].stats.npts + 1)
+    short_fft_len = 2 ** 8
+
+    # Drop earliest channel from one template
+    missing_templates = copy.deepcopy(real_templates)
+    dropped_template = missing_templates[-1].copy()
+    dropped_template.traces.sort(key=lambda tr:tr.stats.starttime)
+    # nan the earliest trace
+    dropped_template[0].data = np.nan * np.ones_like(dropped_template[0].data)
+    missing_templates.append(dropped_template)
+
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            log.info("Running {0} with {1} cores".format(name, cores))
+
+            cc_out = time_func(func, name, missing_templates,
+                               real_multichannel_stream, cores=cores,
+                               fft_len=short_fft_len)
+            out["{0}.{1}".format(name, cores)] = cc_out
+            if "fftw" in name:
+                log.info("Running fixed fft-len: {0}".format(fft_len))
+                # Make sure that running with a pre-defined fft-len works
+                cc_out = time_func(
+                    func, name, missing_templates, real_multichannel_stream,
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = cc_out
+    return out
+
+
+@pytest.fixture(scope="module")
+def real_missing_stream_cc_dict(real_missing_stream_cc_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0]
+            for name, result in real_missing_stream_cc_output_dict.items()}
 
 @pytest.fixture(scope='module')
 def gappy_stream_cc_output_dict(
@@ -628,6 +675,21 @@ class TestStreamCorrelateFunctions:
         # get correlation results into a list
         cc_names = list(real_stream_cc_dict.keys())
         cc_list = [real_stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol):
+                log.error("{0} does not match {1}".format(cc_names[0], cc_name))
+                np.save("cc1.npy", cc_1)
+                np.save("cc2.npy", cc)
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
+    def test_real_missing_channel_xcorr(self, real_missing_stream_cc_dict):
+        """ test various correlation methods with multiple channels and a missing channel """
+        # get correlation results into a list
+        cc_names = list(real_missing_stream_cc_dict.keys())
+        cc_list = [real_missing_stream_cc_dict[cc_name] for cc_name in cc_names]
         cc_1 = cc_list[0]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
