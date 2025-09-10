@@ -379,6 +379,7 @@ def setup_package():
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
         'license': 'LGPL',
+        'license-files': ['LICENCE.txt'],
         'classifiers': [
             'Development Status :: 4 - Beta',
             'Intended Audience :: Science/Research',

@@ -8,29 +8,17 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
       fail-fast: false
 #      continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
-
-      # Not needed as using the generic "compilers"
-      #      - name: Get conda env file
-      #        shell: bash -l {0}
-      #        run: |
-      #          if [ "$RUNNER_OS" == "macOS"  ]; then
-      #              cp .github/test_conda_env_macOS.yml .github/test_conda_env.yml
-      #          fi
-
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # miniforge-variant: Miniforge
-          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          # use-mamba: true
           
       - name: Update Env
         run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
@@ -73,7 +61,7 @@ jobs:
           py.test -v -m "slow and not serial and not network" --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -87,7 +75,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.11']
       fail-fast: false
 
     steps:
@@ -96,11 +84,8 @@ jobs:
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # miniforge-variant: Mambaforge
-          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          # use-mamba: true
           
       - name: Update Env
         run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
@@ -132,7 +117,7 @@ jobs:
           py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -145,7 +130,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.11']
       fail-fast: false
 
     steps:
@@ -154,11 +139,8 @@ jobs:
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # miniforge-variant: Mambaforge
-          # miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
-          # use-mamba: true
           
       - name: Update Env
         run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
@@ -190,7 +172,7 @@ jobs:
           py.test eqcorrscan/tests/correlate_test.py --cov-report=xml
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml

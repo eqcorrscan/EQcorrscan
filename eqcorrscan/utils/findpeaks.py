@@ -180,6 +180,8 @@ def find_peaks2_short(arr, thresh, trig_int, full_peaks=False):
                       trig_int=trig_int + 1)
     if initial_peaks:
         peaks = sorted(peaks, key=lambda time: time[1], reverse=False)
+        # Convert peaks to python types
+        peaks = [(p[0].item(), p[1].item()) for p in peaks]
         return peaks
     else:
         Logger.info('No peaks for you!')

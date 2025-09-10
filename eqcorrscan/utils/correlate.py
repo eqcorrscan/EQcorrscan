@@ -206,6 +206,10 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -257,6 +261,10 @@ def _general_serial(func):
             for chan, state in zip(chans, tr_chans):
                 if state:
                     chan.append(seed_id)
+        # Need to cope with possibility that earliest channel is unused. In which
+        # case we need to pad the ccccsums for that by the pad for that otherwise
+        # we get the wrong detection time.
+        cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
         if stack:
             cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -365,6 +373,8 @@ def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
             max_moveout = max(moveouts)
         if max_moveout:
             cccsum[-max_moveout:] = 0.0
+        Logger.debug(f"Setting the last {max_moveout} samples to "
+                     f"0 for {used_seed_ids[i]}")
     return cccsums
 
 # ------------------ array_xcorr fetching functions
@@ -715,6 +725,10 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
         for chan, state in zip(chans, tr_chans):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -773,11 +787,63 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
+
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+
+    # Reshape to (station, channel)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
               for seed_id in _chans] for _chans in chans]
+
     return cccsums, no_chans, chans
+
+
+def _rm_unused_pads(pads, sids, offset=0):
+    pad_sids = list(pads.keys())
+    pad_values = [pads[k] for k in pad_sids]
+    # Find the lowest pad in the set and get the key for it
+    min_pad_sid = pad_sids[pad_values.index(min(pad_values))]
+    # If the key is in the sids, we are done
+    if min_pad_sid in sids:
+        return offset, pads
+    Logger.debug(f"Min pad: {min(pad_values)} on {min_pad_sid}, but not "
+                 f"used, moving to next channel")
+    # Otherwise, we need to remove that from pads and reduce the pads
+    # by the delta between the min pad and the new min pad
+    min_pad_value = pads.pop(min_pad_sid)
+    if len(pads) == 0:
+        return offset, pads
+    new_min_pad_value = min(pads.values())
+    # Add offset to total offset
+    offset += new_min_pad_value - min_pad_value
+    pads = {sid: v - (new_min_pad_value - min_pad_value)
+            for sid, v in pads.items()}
+    # Need to recurse
+    offset, pads = _rm_unused_pads(pads=pads, sids=sids, offset=offset)
+    return offset, pads
+
+
+def _cope_with_unused_earliest(cccsums, pad_dict, chans):
+    pad_dict_out = {k: [] for k in pad_dict.keys()}
+    for i, ccsum in enumerate(cccsums):
+        # Check if the earliest pad is in chans
+        pads = {sid: pads[i] for sid, pads in pad_dict.items()}
+        Logger.debug(f"pads {pads}")
+        offset, edited_pads = _rm_unused_pads(pads, chans[i])
+        # Put shuffled pads back into pads out
+        for key, value in pad_dict_out.items():
+            value.append(edited_pads.get(key, 0))
+        if offset:
+            Logger.debug(f"Rolling cccsum array by {offset}")
+            # Roll along the axis by offset
+            cccsums[i] = np.roll(ccsum, offset)
+            # Set offset samples to zero
+            cccsums[i][0:offset] = 0
+    return cccsums, pad_dict_out
 
 
 def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
@@ -1144,11 +1210,17 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     # Note: FMF already returns the zeroed end of correlations - we don't
     # need to call _get_valid_correlation_sum
+    used_sids = [[] for _i in range(len(templates))]
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
-        for chan, state in zip(chans, tr_chan):
+        for chan, used_sid, state in zip(chans, used_sids, tr_chan):
             if state:
                 chan.append((seed_id.split('.')[1],
                              seed_id.split('.')[-1].split('_')[0]))
+                used_sid.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, used_sids)
     return cccsums, no_chans, chans
 
 
@@ -1180,7 +1252,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
     if not hasattr(func, concur):
         msg = '%s does not support concurrency %s' % (func.__name__, concur)
         raise ValueError(msg)
-    return getattr(func, concur)
+    outfunc = getattr(func, concur)
+    Logger.info(f"Found {outfunc} for {name_or_func} - {concurrency}")
+    return outfunc
 
 
 # --------------------------- stream prep functions
