@@ -17,7 +17,8 @@ from typing import List, Union
 from multiprocessing import Pool, cpu_count
 from concurrent.futures import ThreadPoolExecutor
 from scipy import ndimage
-from obpsy.core.event import Catalog, Event
+from obspy import UTCDateTime
+from obspy.core.event import Catalog, Event
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
@@ -551,10 +552,55 @@ def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.nd
     out -= out.T
     return np.nan_to_num(out, nan=np.inf)
 
+def get_det_val(event: Event) -> Union[float, None]:
+    """ Get the detection value for an event. Prefers sum of pick correlations. """
+    det_val = get_comment_val(value_name="detect_val", event=event)
+    pick_sum = 0
+    for pick in event.picks:
+        pick_val = get_comment_val("cc_max", event=pick)
+        if pick_val:
+            pick_sum += pick_val
+    if det_val:
+        if pick_sum > det_val:
+            return pick_sum
+        else:
+            return det_val
+    elif pick_sum:
+        return pick_sum
+    return None
+
+
+def get_comment_val(value_name: str, event: Event) -> Union[float, None]:
+    value = None
+    for comment in event.comments:
+        if value_name in comment.text:
+            if "=" in comment.text:
+                # Should be a number
+                try:
+                    value = float(comment.text.split('=')[-1])
+                except ValueError:
+                    # Leave as a string
+                    break
+                except Exception as e:
+                    Logger.exception(
+                        f"Could not get {value_name} {comment.text} due to {e}")
+                else:
+                    break
+            elif ":" in comment.text:
+                # Should be a string
+                try:
+                    value = comment.text.split(": ")[-1]
+                except Exception as e:
+                    Logger.exception(
+                        f"Could not get {value_name} from {comment.text} due to {e}")
+                else:
+                    break
+    return value
+
 
 def decluster_pick_times(catalog: Union[Catalog, List[Event]], trig_int: float) -> Catalog:
     detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
-                            for ev in cat])
+                            for ev in catalog])
     # Sort catalog in order of detect_vals - from largest to smallest
     order = np.argsort(detect_vals)[::-1]
     # detect_vals = detect_vals[order]

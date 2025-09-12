@@ -3,24 +3,38 @@ Functions for testing the utils.findpeaks functions
 """
 from os.path import join
 
+import os
 import numpy as np
 import pytest
 
+from obspy import read_events
 from obspy.core.event import Catalog, Event, Origin
 
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
-    _find_peaks_c, decluster, decluster_distance_time)
+    _find_peaks_c, decluster, decluster_distance_time, decluster_pick_times)
 from eqcorrscan.utils.timer import time_func
 
 
 class TestDeclustering:
+    @property
+    def test_cat(self):
+        cat = read_events(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "test_data", "REA", "TEST_", "*L.S*"))
+        cat.events.sort(key=lambda ev: ev.origins[-1].time)
+        return cat
+
     def test_unclustered_picks(self):
-        assert True == False
+        cat = self.test_cat.copy()
+        cat.events = [cat[0], cat[10], cat[-1]]
+        declustered = decluster_pick_times(cat, trig_int=2.0)
+        assert declustered == cat
 
     def test_clustered_picks(self):
-        assert True == False
-
+        cat = self.test_cat.copy()
+        declustered = decluster_pick_times(cat, trig_int=2.0)
+        assert len(declustered) == 39
 
     def test_unclustered_time(self):
         """ Check that nothing is lost if there aren't any clustered events."""
