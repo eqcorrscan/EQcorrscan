@@ -62,6 +62,8 @@ int decluster(float*, long*, long, float, long, unsigned int*);
 
 int findpeaks(float*, long, float, unsigned int*);
 
+int average_pick_time_diff_matrix(int, int, double*, double*);
+
 // multi_corr functions
 int running_mean_var(double*, double*, int*, float*, long, long);
 

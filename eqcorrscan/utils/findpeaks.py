@@ -10,6 +10,8 @@
 import ctypes
 import random
 import logging
+import warnings
+
 import numpy as np
 
 from typing import List, Union
@@ -486,33 +488,6 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
 
 ###################### Declustering based on pick-time ############################
 
-def average_pick_time_diff_naive(ev1: Event, ev2: Event) -> float:
-    ev1_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev1.picks
-                 if p.phase_hint in "SP"}
-    ev2_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev2.picks
-                 if p.phase_hint in "SP"}
-    shared_picks = ev1_picks.intersection(ev2_picks)
-    if len(shared_picks) == 0:
-        return np.inf
-    deltas = []
-    for phase, station in shared_picks:
-        ev1_picks = [p for p in ev1.picks if p.phase_hint == phase
-                     and p.waveform_id.station_code == station]
-        ev2_picks = [p for p in ev2.picks if p.phase_hint == phase
-                     and p.waveform_id.station_code == station]
-        for ev1_pick in ev1_picks:
-            for ev2_pick in ev2_picks:
-                deltas.append(ev1_pick.time - ev2_pick.time)
-    return sum(deltas) / len(deltas)
-
-
-def average_pick_time_diff_matrix_naive(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
-    out = np.zeros((len(catalog), len(catalog)))
-    for i, ev1 in enumerate(catalog):
-        for j, ev2 in enumerate(catalog):
-            out[i, j] = average_pick_time_diff_naive(ev1, ev2)
-    return out
-
 
 def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTime) -> float:
     picks = [p for p in event.picks
@@ -526,7 +501,10 @@ def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTi
     return sum(pick_times) / len(pick_times)
 
 
-def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
+def average_pick_time_diff_matrix(
+    catalog: Union[Catalog, List[Event]],
+    compiled: bool = True
+) -> np.ndarray:
     # Make arrays of pick times for each phase and each station
     sta_phases = list(
         {f"{p.waveform_id.station_code}_{p.phase_hint}"
@@ -537,18 +515,53 @@ def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.nd
     # This bit is not very fast, but gets the arrays in a shape that could be passed to C code
     for sta_ph in sta_phases:
         pick_arrays.update({
-            sta_ph: np.array([_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time) for ev in catalog])})
+            sta_ph: np.array(
+                [_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time)
+                 for ev in catalog])})
+    if compiled:
+        return _compute_matrix_c(pick_arrays=pick_arrays, n_events=len(catalog))
+    else:
+        return _compute_matrix(pick_arrays=pick_arrays, n_events=len(catalog))
+
+
+def _compute_matrix(pick_arrays: dict, n_events: int) -> np.ndarray:
     # This bit could be ported to C
-    out = np.zeros((len(catalog), len(catalog)))
-    for i in range(len(catalog)):
+    out = np.zeros((n_events, n_events))
+    for i in range(n_events):
         # Matrix is symmetric, so we can just do upper or lower half.
-        for j in range(i + 1, len(catalog)):
+        for j in range(i + 1, n_events):
             # We get occasional RuntimeWarnings about mean of empty slice
             # when no stations are shared. nan is returned for this case.
-            pick_delta = np.nanmean(
-                [pick_arrays[sta_ph][i] - pick_arrays[sta_ph][j]
-                 for sta_ph in sta_phases])
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                pick_delta = np.nanmean(
+                    [pick_arrays[sta_ph][i] - pick_arrays[sta_ph][j]
+                     for sta_ph in pick_arrays.keys()])
             out[i, j] = pick_delta
+    out -= out.T
+    return np.nan_to_num(out, nan=np.inf)
+
+
+def _compute_matrix_c(pick_arrays: dict, n_events: int) -> np.ndarray:
+    out = np.ascontiguousarray(
+        np.zeros(n_events * n_events), np.float64)
+    pick_array = np.ascontiguousarray(
+        np.concatenate([value for value in pick_arrays.values()]), np.float64)
+
+    utilslib = _load_cdll("libutils")
+    utilslib.average_pick_time_diff_matrix.argtypes = [
+        ctypes.c_int, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, shape=(len(pick_array), ),
+                               flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float64, shape=(len(out), ),
+                               flags='C_CONTIGUOUS')]
+    utilslib.average_pick_time_diff_matrix.restype = ctypes.c_int
+
+    ret = utilslib.average_pick_time_diff_matrix(
+        ctypes.c_int(len(pick_arrays.keys())), ctypes.c_int(n_events),
+        pick_array, out)
+
+    out = out.reshape(n_events, n_events)
     out -= out.T
     return np.nan_to_num(out, nan=np.inf)
 

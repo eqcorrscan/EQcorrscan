@@ -1,6 +1,7 @@
 """
 Functions for testing the utils.findpeaks functions
 """
+import time
 from os.path import join
 
 import os
@@ -13,7 +14,8 @@ from obspy.core.event import Catalog, Event, Origin
 
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
-    _find_peaks_c, decluster, decluster_distance_time, decluster_pick_times)
+    _find_peaks_c, decluster, decluster_distance_time, decluster_pick_times,
+    average_pick_time_diff_matrix, get_det_val)
 from eqcorrscan.utils.timer import time_func
 
 
@@ -27,6 +29,35 @@ class TestDeclustering:
                 "test_data", "REA", "TEST_", "*L.S*"))
         cat.events.sort(key=lambda ev: ev.origins[-1].time)
         return cat
+
+    def test_compiled_peak_mat(self):
+        catalog = self.test_cat.copy()
+        detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
+                                for ev in catalog])
+        # Sort catalog in order of detect_vals - from largest to smallest
+        order = np.argsort(detect_vals)[::-1]
+        # detect_vals = detect_vals[order]
+        if isinstance(catalog, Catalog):
+            events = catalog.events
+        else:
+            events = catalog
+
+        catalog = [events[ind] for ind in order]
+
+        tic = time.perf_counter()
+        py_mat = average_pick_time_diff_matrix(catalog=catalog, compiled=False)
+        toc = time.perf_counter()
+        c_mat = average_pick_time_diff_matrix(catalog=catalog, compiled=True)
+        toc2 = time.perf_counter()
+        if not np.allclose(c_mat, py_mat):
+            print(f"C:\n{c_mat}")
+            print(f"Py:\n{py_mat}")
+        # Timers
+        print(f"Python time: {toc - tic:.3f} s")
+        print(f"C time: {toc2 - toc:.3f} s")
+
+        assert np.allclose(c_mat, py_mat)
+
 
     def test_unclustered_picks(self):
         cat = self.test_cat.copy()
