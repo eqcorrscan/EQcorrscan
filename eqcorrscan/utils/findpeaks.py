@@ -495,6 +495,17 @@ def _pick_time(
     phase_hint: str,
     zero_time: UTCDateTime
 ) -> float:
+    """
+    Get the average pick time for a station for an event,
+    relative to a reference time.
+
+    :param event: Event to read picks from
+    :station: Station to get picks for
+    :phase_hint: Phase hint to get picks for
+    :zero_time: Reference time to compare to
+
+    :returns: Pick time relative to zero-time in seconds.
+    """
     picks = [p for p in event.picks
              if p.waveform_id.station_code == station
              and p.phase_hint == phase_hint]
@@ -510,6 +521,14 @@ def average_pick_time_diff_matrix(
     catalog: Union[Catalog, List[Event]],
     compiled: bool = True
 ) -> np.ndarray:
+    """
+    Compute the average pick time difference matrix for events vs events
+
+    :param catalog: Catalog of events to compare pick times for
+    :compiled: Whether to use internal compiled code (faster) or not.
+
+    :returns: Pick time difference matrix - square.
+    """
     # Make arrays of pick times for each phase and each station
     sta_phases = list(
         {f"{p.waveform_id.station_code}_{p.phase_hint}"
@@ -532,7 +551,6 @@ def average_pick_time_diff_matrix(
 
 
 def _compute_matrix(pick_arrays: dict, n_events: int) -> np.ndarray:
-    # This bit could be ported to C
     out = np.zeros((n_events, n_events))
     for i in range(n_events):
         # Matrix is symmetric, so we can just do upper or lower half.
@@ -568,6 +586,9 @@ def _compute_matrix_c(pick_arrays: dict, n_events: int) -> np.ndarray:
         ctypes.c_int(len(pick_arrays.keys())), ctypes.c_int(n_events),
         pick_array, out)
 
+    if ret != 0:
+        raise Exception("Error in internal C code.")
+
     out = out.reshape(n_events, n_events)
     out -= out.T
     return np.nan_to_num(out, nan=np.inf)
@@ -577,7 +598,9 @@ def get_det_val(event: Event) -> Union[float, None]:
     """
     Get the detection value for an event. Prefers sum of pick correlations.
 
+    :param event: Event to get detection value for.
 
+    :returns: Detection value.
     """
     det_val = get_comment_val(value_name="detect_val", event=event)
     pick_sum = 0
@@ -596,6 +619,14 @@ def get_det_val(event: Event) -> Union[float, None]:
 
 
 def get_comment_val(value_name: str, event: Event) -> Union[float, None]:
+    """
+    Get value from EQcorrscan-style comment.
+
+    :param value_name: Comment string before value
+    :param event: Event to search comments for
+
+    :returns: Comment value.
+    """
     value = None
     for comment in event.comments:
         if value_name in comment.text:
@@ -629,6 +660,22 @@ def decluster_pick_times(
     catalog: Union[Catalog, List[Event]],
     trig_int: float
 ) -> Catalog:
+    """
+    Decluster a catalog based on average pick-time similarity.
+
+    If two events have (on average) pick-times within trig_int seconds of
+    each other, then the event with the highest detection value, or number
+    of picks (if detection values are not found) will be retained and the other
+    event discarded.
+
+    Useful for after lag-calc to remove events that have different template
+    locations, but stem from similar pick-times.
+
+    :param catalog: Catalog of events to decluster
+    :trig_int: Minimum inter-event time in seconds
+
+    :returns: Declustered catalog.
+    """
     detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
                             for ev in catalog])
     # Sort catalog in order of detect_vals - from largest to smallest
