@@ -238,3 +238,40 @@ int find_peaks(float *arr, long len, float thresh, unsigned int *peak_positions)
     }
     return 0;
 }
+
+
+int average_pick_time_diff_matrix(int n_stations, int n_events, double *pick_array, double *out){
+    // Make a matrix of average pick-time differences in seconds from input
+    // pick-time arrays
+    // Pick-time arrays should be a single array of pick-times for each station for each event:
+    // [sta_1-ev_1, sta_1-ev_2, sta_2-ev_1, sta_2-ev_2, ...]
+    // out should be a zero-initialised array of length n_events ** 2.
+    int i, j, sta, offset, out_offset, used_stations;
+    double delta;
+
+    // printf("Looping over %d events and %d stations.\n", n_events, n_stations);
+
+    for (i = 0; i < n_events; ++i){
+        for (j = i + 1; j < n_events; ++j){
+            used_stations = 0;
+            out_offset = i * n_events;
+            for (sta = 0; sta < n_stations; ++sta){
+                offset = sta * n_events;
+                delta = pick_array[offset + i] - pick_array[offset + j];
+                if (!isnanf(delta)){
+                    // printf("\t(%d, %d) = {%d, %d}\tdelta=%f\n", i, j, offset + i, offset + j, delta);
+                    out[out_offset + j] += delta;
+                    used_stations += 1;
+                }
+            }
+            if (used_stations == 0){
+                out[out_offset + j] = NAN;
+            } else {
+                out[out_offset + j] /= used_stations;
+            }
+            // printf("Index (%d, %d) used %d stations. Mean difference: %f\n", i, j, used_stations, out[out_offset + j]);
+        }
+    }
+
+    return 0;
+}

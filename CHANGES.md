@@ -8,6 +8,8 @@
   - Set detect-time correctly when earliest channel is unused in correlation
 - core.lag_calc
   - More stable extraction of data for correlation
+- utils.findpeaks
+  - Added pick-time declustering.
 
 ## 0.5.0
 * core.match_filter.tribe
