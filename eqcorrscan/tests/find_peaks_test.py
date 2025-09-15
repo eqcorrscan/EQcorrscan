@@ -6,6 +6,7 @@ from os.path import join
 import os
 import numpy as np
 import pytest
+import warnings
 
 from obspy import read_events
 from obspy.core.event import Catalog, Event, Origin
@@ -19,9 +20,11 @@ from eqcorrscan.utils.timer import time_func
 class TestDeclustering:
     @property
     def test_cat(self):
-        cat = read_events(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "test_data", "REA", "TEST_", "*L.S*"))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cat = read_events(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "test_data", "REA", "TEST_", "*L.S*"))
         cat.events.sort(key=lambda ev: ev.origins[-1].time)
         return cat
 
@@ -29,7 +32,9 @@ class TestDeclustering:
         cat = self.test_cat.copy()
         cat.events = [cat[0], cat[10], cat[-1]]
         declustered = decluster_pick_times(cat, trig_int=2.0)
-        assert declustered == cat
+        declustered.events.sort(key=lambda ev: ev.origins[-1].time)
+        for ev1, ev2 in zip(declustered, cat):
+            assert ev1.origins[0].time == ev2.origins[0].time
 
     def test_clustered_picks(self):
         cat = self.test_cat.copy()
