@@ -10,6 +10,8 @@
 import ctypes
 import random
 import logging
+import warnings
+
 import numpy as np
 
 from typing import List, Union
@@ -17,7 +19,8 @@ from typing import List, Union
 from multiprocessing import Pool, cpu_count
 from concurrent.futures import ThreadPoolExecutor
 from scipy import ndimage
-from obpsy.core.event import Catalog, Event
+from obspy import UTCDateTime
+from obspy.core.event import Catalog, Event
 
 from eqcorrscan.utils.correlate import pool_boy
 from eqcorrscan.utils.libnames import _load_cdll
@@ -485,33 +488,6 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
 
 ###################### Declustering based on pick-time ############################
 
-def average_pick_time_diff_naive(ev1: Event, ev2: Event) -> float:
-    ev1_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev1.picks
-                 if p.phase_hint in "SP"}
-    ev2_picks = {(p.phase_hint, p.waveform_id.station_code) for p in ev2.picks
-                 if p.phase_hint in "SP"}
-    shared_picks = ev1_picks.intersection(ev2_picks)
-    if len(shared_picks) == 0:
-        return np.inf
-    deltas = []
-    for phase, station in shared_picks:
-        ev1_picks = [p for p in ev1.picks if p.phase_hint == phase
-                     and p.waveform_id.station_code == station]
-        ev2_picks = [p for p in ev2.picks if p.phase_hint == phase
-                     and p.waveform_id.station_code == station]
-        for ev1_pick in ev1_picks:
-            for ev2_pick in ev2_picks:
-                deltas.append(ev1_pick.time - ev2_pick.time)
-    return sum(deltas) / len(deltas)
-
-
-def average_pick_time_diff_matrix_naive(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
-    out = np.zeros((len(catalog), len(catalog)))
-    for i, ev1 in enumerate(catalog):
-        for j, ev2 in enumerate(catalog):
-            out[i, j] = average_pick_time_diff_naive(ev1, ev2)
-    return out
-
 
 def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTime) -> float:
     picks = [p for p in event.picks
@@ -525,7 +501,10 @@ def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTi
     return sum(pick_times) / len(pick_times)
 
 
-def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.ndarray:
+def average_pick_time_diff_matrix(
+    catalog: Union[Catalog, List[Event]],
+    compiled: bool = True
+) -> np.ndarray:
     # Make arrays of pick times for each phase and each station
     sta_phases = list(
         {f"{p.waveform_id.station_code}_{p.phase_hint}"
@@ -536,25 +515,105 @@ def average_pick_time_diff_matrix(catalog: Union[Catalog, List[Event]]) -> np.nd
     # This bit is not very fast, but gets the arrays in a shape that could be passed to C code
     for sta_ph in sta_phases:
         pick_arrays.update({
-            sta_ph: np.array([_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time) for ev in catalog])})
+            sta_ph: np.array(
+                [_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time)
+                 for ev in catalog])})
+    if compiled:
+        return _compute_matrix_c(pick_arrays=pick_arrays, n_events=len(catalog))
+    else:
+        return _compute_matrix(pick_arrays=pick_arrays, n_events=len(catalog))
+
+
+def _compute_matrix(pick_arrays: dict, n_events: int) -> np.ndarray:
     # This bit could be ported to C
-    out = np.zeros((len(catalog), len(catalog)))
-    for i in range(len(catalog)):
+    out = np.zeros((n_events, n_events))
+    for i in range(n_events):
         # Matrix is symmetric, so we can just do upper or lower half.
-        for j in range(i + 1, len(catalog)):
+        for j in range(i + 1, n_events):
             # We get occasional RuntimeWarnings about mean of empty slice
             # when no stations are shared. nan is returned for this case.
-            pick_delta = np.nanmean(
-                [pick_arrays[sta_ph][i] - pick_arrays[sta_ph][j]
-                 for sta_ph in sta_phases])
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                pick_delta = np.nanmean(
+                    [pick_arrays[sta_ph][i] - pick_arrays[sta_ph][j]
+                     for sta_ph in pick_arrays.keys()])
             out[i, j] = pick_delta
     out -= out.T
     return np.nan_to_num(out, nan=np.inf)
 
 
+def _compute_matrix_c(pick_arrays: dict, n_events: int) -> np.ndarray:
+    out = np.ascontiguousarray(
+        np.zeros(n_events * n_events), np.float64)
+    pick_array = np.ascontiguousarray(
+        np.concatenate([value for value in pick_arrays.values()]), np.float64)
+
+    utilslib = _load_cdll("libutils")
+    utilslib.average_pick_time_diff_matrix.argtypes = [
+        ctypes.c_int, ctypes.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, shape=(len(pick_array), ),
+                               flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float64, shape=(len(out), ),
+                               flags='C_CONTIGUOUS')]
+    utilslib.average_pick_time_diff_matrix.restype = ctypes.c_int
+
+    ret = utilslib.average_pick_time_diff_matrix(
+        ctypes.c_int(len(pick_arrays.keys())), ctypes.c_int(n_events),
+        pick_array, out)
+
+    out = out.reshape(n_events, n_events)
+    out -= out.T
+    return np.nan_to_num(out, nan=np.inf)
+
+def get_det_val(event: Event) -> Union[float, None]:
+    """ Get the detection value for an event. Prefers sum of pick correlations. """
+    det_val = get_comment_val(value_name="detect_val", event=event)
+    pick_sum = 0
+    for pick in event.picks:
+        pick_val = get_comment_val("cc_max", event=pick)
+        if pick_val:
+            pick_sum += pick_val
+    if det_val:
+        if pick_sum > det_val:
+            return pick_sum
+        else:
+            return det_val
+    elif pick_sum:
+        return pick_sum
+    return None
+
+
+def get_comment_val(value_name: str, event: Event) -> Union[float, None]:
+    value = None
+    for comment in event.comments:
+        if value_name in comment.text:
+            if "=" in comment.text:
+                # Should be a number
+                try:
+                    value = float(comment.text.split('=')[-1])
+                except ValueError:
+                    # Leave as a string
+                    break
+                except Exception as e:
+                    Logger.exception(
+                        f"Could not get {value_name} {comment.text} due to {e}")
+                else:
+                    break
+            elif ":" in comment.text:
+                # Should be a string
+                try:
+                    value = comment.text.split(": ")[-1]
+                except Exception as e:
+                    Logger.exception(
+                        f"Could not get {value_name} from {comment.text} due to {e}")
+                else:
+                    break
+    return value
+
+
 def decluster_pick_times(catalog: Union[Catalog, List[Event]], trig_int: float) -> Catalog:
     detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
-                            for ev in cat])
+                            for ev in catalog])
     # Sort catalog in order of detect_vals - from largest to smallest
     order = np.argsort(detect_vals)[::-1]
     # detect_vals = detect_vals[order]

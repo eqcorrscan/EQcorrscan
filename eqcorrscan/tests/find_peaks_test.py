@@ -1,26 +1,76 @@
 """
 Functions for testing the utils.findpeaks functions
 """
+import time
 from os.path import join
 
+import os
 import numpy as np
 import pytest
+import warnings
 
+from obspy import read_events
 from obspy.core.event import Catalog, Event, Origin
 
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
-    _find_peaks_c, decluster, decluster_distance_time)
+    _find_peaks_c, decluster, decluster_distance_time, decluster_pick_times,
+    average_pick_time_diff_matrix, get_det_val)
 from eqcorrscan.utils.timer import time_func
 
 
 class TestDeclustering:
+    @property
+    def test_cat(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cat = read_events(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "test_data", "REA", "TEST_", "*L.S*"))
+        cat.events.sort(key=lambda ev: ev.origins[-1].time)
+        return cat
+
+    def test_compiled_peak_mat(self):
+        catalog = self.test_cat.copy()
+        detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
+                                for ev in catalog])
+        # Sort catalog in order of detect_vals - from largest to smallest
+        order = np.argsort(detect_vals)[::-1]
+        # detect_vals = detect_vals[order]
+        if isinstance(catalog, Catalog):
+            events = catalog.events
+        else:
+            events = catalog
+
+        catalog = [events[ind] for ind in order]
+
+        tic = time.perf_counter()
+        py_mat = average_pick_time_diff_matrix(catalog=catalog, compiled=False)
+        toc = time.perf_counter()
+        c_mat = average_pick_time_diff_matrix(catalog=catalog, compiled=True)
+        toc2 = time.perf_counter()
+        if not np.allclose(c_mat, py_mat):
+            print(f"C:\n{c_mat}")
+            print(f"Py:\n{py_mat}")
+        # Timers
+        print(f"Python time: {toc - tic:.3f} s")
+        print(f"C time: {toc2 - toc:.3f} s")
+
+        assert np.allclose(c_mat, py_mat)
+
+
     def test_unclustered_picks(self):
-        assert True == False
+        cat = self.test_cat.copy()
+        cat.events = [cat[0], cat[10], cat[-1]]
+        declustered = decluster_pick_times(cat, trig_int=2.0)
+        declustered.events.sort(key=lambda ev: ev.origins[-1].time)
+        for ev1, ev2 in zip(declustered, cat):
+            assert ev1.origins[0].time == ev2.origins[0].time
 
     def test_clustered_picks(self):
-        assert True == False
-
+        cat = self.test_cat.copy()
+        declustered = decluster_pick_times(cat, trig_int=2.0)
+        assert len(declustered) == 39
 
     def test_unclustered_time(self):
         """ Check that nothing is lost if there aren't any clustered events."""
