@@ -486,10 +486,15 @@ def coin_trig(peaks, stachans, samp_rate, moveout, min_trig, trig_int):
         return []
 
 
-###################### Declustering based on pick-time ############################
+# ##################### Declustering based on pick-time #######################
 
 
-def _pick_time(event: Event, station: str, phase_hint: str, zero_time: UTCDateTime) -> float:
+def _pick_time(
+    event: Event,
+    station: str,
+    phase_hint: str,
+    zero_time: UTCDateTime
+) -> float:
     picks = [p for p in event.picks
              if p.waveform_id.station_code == station
              and p.phase_hint == phase_hint]
@@ -512,16 +517,18 @@ def average_pick_time_diff_matrix(
     # Using a list for sta_phases to retain order
     pick_arrays = dict()
     zero_time = (catalog[0].preferred_origin() or catalog[0].origins[-1]).time
-    # This bit is not very fast, but gets the arrays in a shape that could be passed to C code
+    # This bit is not very fast, but gets the arrays in C shape
     for sta_ph in sta_phases:
         pick_arrays.update({
             sta_ph: np.array(
                 [_pick_time(ev, *sta_ph.split('_'), zero_time=zero_time)
                  for ev in catalog])})
     if compiled:
-        return _compute_matrix_c(pick_arrays=pick_arrays, n_events=len(catalog))
+        return _compute_matrix_c(
+            pick_arrays=pick_arrays, n_events=len(catalog))
     else:
-        return _compute_matrix(pick_arrays=pick_arrays, n_events=len(catalog))
+        return _compute_matrix(
+            pick_arrays=pick_arrays, n_events=len(catalog))
 
 
 def _compute_matrix(pick_arrays: dict, n_events: int) -> np.ndarray:
@@ -565,8 +572,13 @@ def _compute_matrix_c(pick_arrays: dict, n_events: int) -> np.ndarray:
     out -= out.T
     return np.nan_to_num(out, nan=np.inf)
 
+
 def get_det_val(event: Event) -> Union[float, None]:
-    """ Get the detection value for an event. Prefers sum of pick correlations. """
+    """
+    Get the detection value for an event. Prefers sum of pick correlations.
+
+
+    """
     det_val = get_comment_val(value_name="detect_val", event=event)
     pick_sum = 0
     for pick in event.picks:
@@ -596,7 +608,8 @@ def get_comment_val(value_name: str, event: Event) -> Union[float, None]:
                     break
                 except Exception as e:
                     Logger.exception(
-                        f"Could not get {value_name} {comment.text} due to {e}")
+                        f"Could not get {value_name} {comment.text} "
+                        f"due to {e}")
                 else:
                     break
             elif ":" in comment.text:
@@ -605,13 +618,17 @@ def get_comment_val(value_name: str, event: Event) -> Union[float, None]:
                     value = comment.text.split(": ")[-1]
                 except Exception as e:
                     Logger.exception(
-                        f"Could not get {value_name} from {comment.text} due to {e}")
+                        f"Could not get {value_name} from {comment.text} "
+                        f"due to {e}")
                 else:
                     break
     return value
 
 
-def decluster_pick_times(catalog: Union[Catalog, List[Event]], trig_int: float) -> Catalog:
+def decluster_pick_times(
+    catalog: Union[Catalog, List[Event]],
+    trig_int: float
+) -> Catalog:
     detect_vals = np.array([abs(get_det_val(ev) or len(ev.picks))
                             for ev in catalog])
     # Sort catalog in order of detect_vals - from largest to smallest

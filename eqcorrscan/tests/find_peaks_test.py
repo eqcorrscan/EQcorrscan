@@ -58,7 +58,6 @@ class TestDeclustering:
 
         assert np.allclose(c_mat, py_mat)
 
-
     def test_unclustered_picks(self):
         cat = self.test_cat.copy()
         cat.events = [cat[0], cat[10], cat[-1]]
