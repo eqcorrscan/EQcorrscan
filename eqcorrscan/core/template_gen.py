@@ -560,6 +560,8 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
+            # Correct after #573
+            tr.stats.starttime += tr.stats.delta
         if tr.stats.endtime - tr.stats.starttime < 0.8 * process_len:
             Logger.warning(
                 "Data for {0}.{1} is {2} hours long, which is less than 80 "

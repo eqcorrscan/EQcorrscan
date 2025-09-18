@@ -978,6 +978,7 @@ class Tribe(object):
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
                     plot_format=plot_format, prepped=False, **kwargs)
+                Logger.debug(chans)
 
                 detections = _detect(
                     template_names=template_names,
