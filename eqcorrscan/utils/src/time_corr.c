@@ -102,7 +102,7 @@ int multi_normxcorr_time(float *templates, int template_len, int n_templates, fl
 	return 0;
 }
 
-int multi_normxcorr_time_threaded(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int num_threads, int cc_squared_option){
+int multi_normxcorr_time_threaded(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int cc_squared_option, int num_threads){
 	int i;
 	for (i = 0; i < n_templates; ++i){
 		normxcorr_time_threaded(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i], num_threads, cc_squared_option);
