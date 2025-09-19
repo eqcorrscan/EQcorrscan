@@ -420,7 +420,7 @@ def get_array_xcorr(name_or_func=None):
 
 
 @register_array_xcorr('numpy')
-def numpy_normxcorr(templates, stream, pads, cc_squared, *args, **kwargs):
+def numpy_normxcorr(templates, stream, pads, cc_squared=False, *args, **kwargs):
     """
     Compute the normalized cross-correlation using numpy and bottleneck.
 
@@ -490,7 +490,7 @@ def _centered(arr, newshape):
 
 
 @register_array_xcorr('time_domain')
-def time_multi_normxcorr(templates, stream, pads, cc_squared,
+def time_multi_normxcorr(templates, stream, pads, cc_squared=False,
                          threaded=False, *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
@@ -542,7 +542,7 @@ def time_multi_normxcorr(templates, stream, pads, cc_squared,
     ccc_length = image_len - template_len + 1
     assert ccc_length > 0, "Template must be shorter than stream"
     ccc = np.ascontiguousarray(
-        np.empty(ccc_length * n_templates), np.float32)
+        np.empty(ccc_length * n_templates, dtype=np.float32), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
     time_args = [t_array, template_len, n_templates,
                  np.ascontiguousarray(stream, np.float32), image_len, ccc, int(cc_squared)]
@@ -559,7 +559,7 @@ def time_multi_normxcorr(templates, stream, pads, cc_squared,
 
 
 @register_array_xcorr('fftw', is_default=True)
-def fftw_normxcorr(templates, stream, pads, cc_squared,
+def fftw_normxcorr(templates, stream, pads, cc_squared=False,
                    threaded=False, *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
@@ -1158,7 +1158,7 @@ def _fmf_gpu(templates, stream, cc_squared=False, *args, **kwargs):
     if not GPU_LOADED:
         Logger.warning("FMF reports GPU not loaded, reverting to CPU")
         return _fmf_cpu(templates=templates, stream=stream,
-                        cc_squared=cc_squared*args, **kwargs)
+                        cc_squared=cc_squared, *args, **kwargs)
     return _fmf_multi_xcorr(templates, stream, cc_squared=cc_squared, arch="gpu")
 
 
@@ -1222,6 +1222,10 @@ def _fmf_multi_xcorr(templates, stream, cc_squared=False, *args, **kwargs):
         raise NotImplementedError(
             "FMF does not support unstacked correlations, use a different "
             "backend")
+    if kwargs.get("cc_squared", True):
+        raise NotImplementedError(
+            "FMF does not support correlation squared, use a different backend"
+        )
     arch = kwargs.get("arch", "gpu")
     Logger.info(f"Running FMF targeting the {arch}")
 
@@ -1254,8 +1258,6 @@ def _fmf_multi_xcorr(templates, stream, cc_squared=False, *args, **kwargs):
     # case we need to pad the ccccsums for that by the pad for that otherwise
     # we get the wrong detection time.
     cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, used_sids)
-    if cc_squared:
-        cccsums *= np.abs(cccsums)
     return cccsums, no_chans, chans
 
 

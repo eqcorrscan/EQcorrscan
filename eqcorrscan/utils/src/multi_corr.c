@@ -489,7 +489,7 @@ static inline int set_ncc(
             value = -1.0;
         }
         if (cc_squared_option == 1){
-            value *= fabsf(value)  // Follow Gubbins advice and multiply by abs to retain sign.
+            value *= fabsf(value); // Follow Gubbins advice and multiply by abs to retain sign.
         }
         if (stack_option == 1){
             #pragma omp atomic
