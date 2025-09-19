@@ -19,7 +19,7 @@
  */
 #include <libutils.h>
 
-int normxcorr_time_threaded(float *template, int template_len, float *image, int image_len, float *ccc, int num_threads){
+int normxcorr_time_threaded(float *template, int template_len, float *image, int image_len, float *ccc, int num_threads, int cc_squared_option){
     // Time domain cross-correlation - requires zero-mean template
 	int p, k;
 	int steps = image_len - template_len + 1;
@@ -49,12 +49,15 @@ int normxcorr_time_threaded(float *template, int template_len, float *image, int
 		}
 		denom = sqrt(auto_a * auto_b);
 		ccc[k] = (float) (numerator / denom);
+		if (cc_squared_option == 1){
+		    ccc[k] *= fabsf(ccc[k])
+		}
 	}
 	free(mean);
 	return 0;
 }
 
-int normxcorr_time(float *template, int template_len, float *image, int image_len, float *ccc){
+int normxcorr_time(float *template, int template_len, float *image, int image_len, float *ccc, int cc_squared_option){
     // Time domain cross-correlation - requires zero-mean template
 	int p, k;
 	int steps = image_len - template_len + 1;
@@ -83,23 +86,26 @@ int normxcorr_time(float *template, int template_len, float *image, int image_le
 		}
 		denom = sqrt(auto_a * auto_b);
 		ccc[k] = (float) (numerator / denom);
+		if (cc_squared_option == 1){
+		    ccc[k] *= fabsf(ccc[k])
+		}
 	}
 	free(mean);
 	return 0;
 }
 
-int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc){
+int multi_normxcorr_time(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int cc_squared_option){
 	int i;
 	for (i = 0; i < n_templates; ++i){
-		normxcorr_time(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i]);
+		normxcorr_time(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i], cc_squared_option);
 	}
 	return 0;
 }
 
-int multi_normxcorr_time_threaded(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int num_threads){
+int multi_normxcorr_time_threaded(float *templates, int template_len, int n_templates, float *image, int image_len, float *ccc, int num_threads, int cc_squared_option){
 	int i;
 	for (i = 0; i < n_templates; ++i){
-		normxcorr_time_threaded(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i], num_threads);
+		normxcorr_time_threaded(&templates[template_len * i], template_len, image, image_len, &ccc[(image_len - template_len + 1) * i], num_threads, cc_squared_option);
 	}
 	return 0;
 }

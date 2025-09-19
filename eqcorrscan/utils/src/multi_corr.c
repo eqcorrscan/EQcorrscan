@@ -23,7 +23,8 @@
 
 static inline int set_ncc(
     long t, long i, int chan, int n_chans, long template_len, long image_len,
-    float value, int *used_chans, int *pad_array, float *ncc, int stack_option);
+    float value, int *used_chans, int *pad_array, float *ncc, int stack_option,
+    int cc_squared_option);
 
 // Functions
 
@@ -31,7 +32,7 @@ static inline int set_ncc(
 int normxcorr_fftw_threaded(float *templates, long template_len, long n_templates,
                             float *image, long image_len, float *ncc, long fft_len,
                             int *used_chans, int *pad_array, int *variance_warning,
-                            int *missed_corr) {
+                            int *missed_corr, int cc_squared_option) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -115,7 +116,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
     if (var >= ACCEPTED_DIFF) {
         for (t = 0; t < n_templates; ++t){
             float c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean) / stdev;
-            status += set_ncc(t, 0, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0);
+            status += set_ncc(t, 0, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0, cc_squared_option);
         }
         if (var <= WARN_DIFF){
             variance_warning[0] = 1;
@@ -140,7 +141,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
         if (var >= ACCEPTED_DIFF && flatline_count < template_len - 1 && stdev * mean >= ACCEPTED_DIFF) {
             for (t = 0; t < n_templates; ++t){
                 float c = ((ccc[(t * fft_len) + i + startind] / (fft_len * n_templates)) - norm_sums[t] * mean ) / stdev;
-                status += set_ncc(t, i, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0);
+                status += set_ncc(t, i, 0, 1, template_len, image_len, (float) c, used_chans, pad_array, ncc, 0, cc_squared_option);
             }
             if (var <= WARN_DIFF){
                 variance_warning[0] += 1;
@@ -171,7 +172,7 @@ int normxcorr_fftw_threaded(float *templates, long template_len, long n_template
 int normxcorr_fftw(float *templates, long template_len, long n_templates,
                    float *image, long image_len, float *ncc, long fft_len,
                    int *used_chans, int *pad_array, int *variance_warning,
-                   int *missed_corr){
+                   int *missed_corr, int cc_squared_option){
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   Author: Calum J. Chamberlain
@@ -213,7 +214,7 @@ int normxcorr_fftw(float *templates, long template_len, long n_templates,
     status = normxcorr_fftw_main(
         templates, template_len, n_templates, image, image_len, 0, 1, ncc,
         fft_len, template_ext, image_ext, ccc, outa, outb, out, pa, pb, px,
-        used_chans, pad_array, 1, variance_warning, missed_corr, 0);
+        used_chans, pad_array, 1, variance_warning, missed_corr, 0, cc_squared_option);
 
     // free memory and plans
     fftwf_destroy_plan(pa);
@@ -241,7 +242,7 @@ int normxcorr_fftw_main(
     float *template_ext, float *image_ext, float *ccc, fftwf_complex *outa,
     fftwf_complex *outb, fftwf_complex *out, fftwf_plan pa, fftwf_plan pb,
     fftwf_plan px, int *used_chans, int *pad_array, int num_threads,
-    int *variance_warning, int *missed_corr, int stack_option) {
+    int *variance_warning, int *missed_corr, int stack_option, int cc_squared_option) {
   /*
   Purpose: compute frequency domain normalised cross-correlation of real data using fftw
   for a single-channel
@@ -372,7 +373,7 @@ int normxcorr_fftw_main(
                 double c = ((ccc[(t * fft_len) + startind] / (fft_len * n_templates)) - norm_sums[t] * mean[offset]);
                 c /= stdev;
                 status += set_ncc(t, offset, chan, n_chans, template_len, image_len,
-                                  (float) c, used_chans, pad_array, ncc, stack_option);
+                                  (float) c, used_chans, pad_array, ncc, stack_option, cc_squared_option);
             }
             if (var[offset] <= WARN_DIFF){
                 variance_warning[0] = 1;
@@ -393,7 +394,7 @@ int normxcorr_fftw_main(
                         c /= stdev;
                         status += set_ncc(t, i + offset, chan, n_chans, template_len,
                                           image_len, (float) c, used_chans,
-                                          pad_array, ncc, stack_option);
+                                          pad_array, ncc, stack_option, cc_squared_option);
                     }
                 }
                 else {
@@ -462,7 +463,7 @@ int running_mean_var(
 
 static inline int set_ncc(
     long t, long i, int chan, int n_chans, long template_len, long image_len,
-    float value, int *used_chans, int *pad_array, float *ncc, int stack_option){
+    float value, int *used_chans, int *pad_array, float *ncc, int stack_option, int cc_squared_option){
 
     int status = 0;
 
@@ -486,6 +487,9 @@ static inline int set_ncc(
         }
         else if (value < -1.0) {
             value = -1.0;
+        }
+        if (cc_squared_option == 1){
+            value *= fabsf(value)  // Follow Gubbins advice and multiply by abs to retain sign.
         }
         if (stack_option == 1){
             #pragma omp atomic
@@ -541,7 +545,7 @@ void free_fftw_arrays(int size, double **template_ext, double **image_ext, doubl
 int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, long n_channels,
                          float *image, long image_len, float *ncc, long fft_len, int *used_chans,
                          int *pad_array, int num_threads_inner, int num_threads_outer,
-                         int *variance_warning, int *missed_corr, int stack_option)
+                         int *variance_warning, int *missed_corr, int stack_option, int cc_squared_option)
     {
     int i, chan, n_chans;
     int r = 0;
@@ -729,7 +733,7 @@ int multi_normxcorr_fftw(float *templates, long n_templates, long template_len, 
                                  template_ext[tid], image_ext[tid], ccc[tid], outa[tid], outb[tid], out[tid],
                                  pa, pb, px, &used_chans[(size_t) i * n_templates],
                                  &pad_array[(size_t) i * n_templates], num_threads_inner, &variance_warning[i],
-                                 &missed_corr[i], stack_option);
+                                 &missed_corr[i], stack_option, cc_squared_option);
         if (results[i] != 0){
             printf("WARNING: %i out-of-range correlations on channel %i\n", results[i], i);
         }
