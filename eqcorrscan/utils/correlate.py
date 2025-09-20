@@ -1192,7 +1192,7 @@ def _fmf_reshape(template_dict, stream_dict, pad_dict, seed_ids):
     return t_arr, d_arr, weights, pads
 
 
-def _fmf_multi_xcorr(templates, stream, cc_squared=False, *args, **kwargs):
+def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     """
     Apply FastMatchedFilter routine concurrently.
 
@@ -1204,8 +1204,6 @@ def _fmf_multi_xcorr(templates, stream, cc_squared=False, *args, **kwargs):
     :type stream: obspy.core.stream.Stream
     :param stream:
         A single Stream object to be correlated with the templates.
-    :param cc_squared: Whether to output cc-squared or not
-    :type cc_squared: bool
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -1222,7 +1220,7 @@ def _fmf_multi_xcorr(templates, stream, cc_squared=False, *args, **kwargs):
         raise NotImplementedError(
             "FMF does not support unstacked correlations, use a different "
             "backend")
-    if kwargs.get("cc_squared", True):
+    if kwargs.get("cc_squared", False):
         raise NotImplementedError(
             "FMF does not support correlation squared, use a different backend"
         )
