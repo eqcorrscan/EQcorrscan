@@ -10,6 +10,8 @@
   - More stable extraction of data for correlation
 - utils.findpeaks
   - Added pick-time declustering.
+- utils.correlate
+  - Added option to produce "cc-squared" (cc * abs(cc)) detection statistic
 
 ## 0.5.0
 * core.match_filter.tribe

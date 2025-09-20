@@ -518,7 +518,7 @@ def stream_cc_output_dict_corrsq(
                 # result
                 cc_out = time_func(
                     func, name, multichannel_templates, multichannel_stream,
-                    cores=1, cores_outer=cores, stack=False)
+                    cores=1, cores_outer=cores, stack=True, cc_squared=True)
                 out["{0}.{1}_outer".format(name, cores)] = cc_out
     return out
 
@@ -799,7 +799,7 @@ class TestStreamCorrelateFunctions:
 
 
 @pytest.mark.serial
-class TestStreamCorrelateFunctionsCorrS :
+class TestStreamCorrelateFunctionsCorrSq:
     """ same thing as TestArrayCorrelateFunction but for stream interface """
     atol = TestArrayCorrelateFunctions.atol
 
