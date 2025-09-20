@@ -311,6 +311,7 @@ def _corr_and_peaks(
     concurrency: str,
     cores: int,
     i: int,
+    cc_squared: bool,
     export_cccsums: bool,
     parallel: bool,
     peak_cores: int,
@@ -336,6 +337,9 @@ def _corr_and_peaks(
     :param concurrency: Concurrency of cross-correlation function
     :param cores: Cores (threads) to use for cross-correlation
     :param i: Group-id (internal book-keeping)
+    :param cc_squared:
+        Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+        just using cc.
     :param export_cccsums: Whether to export the raw cross-correlation sums
     :param parallel: Whether to compute peaks in parallel
     :param peak_cores: Number of cores (threads) to use for peak finding
@@ -358,6 +362,7 @@ def _corr_and_peaks(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
     if prepped and xcorr_func == "fmf":
+        assert cc_squared == False, "FMF does not support squared correlation"
         assert isinstance(templates, np.ndarray)
         assert isinstance(stream, np.ndarray)
         # These need to be passed from queues.
@@ -387,7 +392,8 @@ def _corr_and_peaks(
         cccsums, tr_chans = fftw_multi_normxcorr(
             template_array=templates, stream_array=stream,
             pad_array=pads, seed_ids=seed_ids, cores_inner=num_cores_inner,
-            cores_outer=num_cores_outer, stack=True, **kwargs)
+            cores_outer=num_cores_outer, stack=True, cc_squared=cc_squared,
+            **kwargs)
         n_templates = len(cccsums)
         # Post processing
         no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
@@ -408,7 +414,8 @@ def _corr_and_peaks(
         multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
         Logger.debug(f"Calling {multichannel_normxcorr}")
         cccsums, no_chans, chans = multichannel_normxcorr(
-            templates=templates, stream=stream, cores=cores, **kwargs
+            templates=templates, stream=stream, cores=cores,
+            cc_squared=cc_squared, **kwargs
         )
     if len(cccsums[0]) == 0:
         raise MatchFilterError(
