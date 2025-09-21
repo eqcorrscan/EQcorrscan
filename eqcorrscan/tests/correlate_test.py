@@ -410,6 +410,7 @@ def real_missing_stream_cc_dict(real_missing_stream_cc_output_dict):
     return {name: result[0]
             for name, result in real_missing_stream_cc_output_dict.items()}
 
+
 @pytest.fixture(scope='module')
 def gappy_stream_cc_output_dict(
     multichannel_templates,
@@ -726,7 +727,8 @@ class TestStreamCorrelateFunctions:
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             if not np.allclose(cc_1, cc, atol=self.atol):
-                log.error("{0} does not match {1}".format(cc_names[0], cc_name))
+                log.error("{0} does not match {1}".format(
+                    cc_names[0], cc_name))
                 np.save("cc1.npy", cc_1)
                 np.save("cc2.npy", cc)
             assert np.allclose(cc_1, cc, atol=self.atol)
@@ -738,7 +740,8 @@ class TestStreamCorrelateFunctions:
         """
         # get correlation results into a list
         cc_names = list(real_missing_stream_cc_dict.keys())
-        cc_list = [real_missing_stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_list = [real_missing_stream_cc_dict[cc_name]
+                   for cc_name in cc_names]
         cc_1 = cc_list[0]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"

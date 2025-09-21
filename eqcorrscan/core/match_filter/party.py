@@ -869,7 +869,8 @@ class Party(object):
         min_gap=None,
         retries=3,
         *args,
-        **kwargs):
+        **kwargs
+    ):
         """
         Compute picks based on cross-correlation using data from a Client.
 
