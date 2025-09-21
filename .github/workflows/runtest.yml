@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: eqcorrscan-test
+          miniforge-version: latest
           
       - name: Update Env
         run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
