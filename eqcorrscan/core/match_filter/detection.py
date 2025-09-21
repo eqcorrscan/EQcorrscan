@@ -263,6 +263,15 @@ class Detection(object):
         else:
             template_prepick = 0
             template_picks = []
+        """
+        Detection time is first used channel in template - prepick.
+        
+        """
+
+        # Only include channels used for detection in template_st
+        template_st = Stream(
+            [tr for tr in template_st if (tr.stats.station, tr.stats.channel)
+             in self.chans])
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
@@ -380,7 +389,9 @@ class Detection(object):
         valid_chans = {
             (tr.stats.station, tr.stats.channel)
             for tr in stream}.intersection(set(self.chans))
+        Logger.debug(f"Cutting from stream: \n{stream}")
         for station, channel in valid_chans:
+            Logger.debug(f"Extracting stream for {station}.{channel}")
             _st = stream.select(station=station, channel=channel)
             pick = [
                 p for p in self.event.picks
@@ -407,6 +418,9 @@ class Detection(object):
                 pick.sort(key=lambda p: p.time)
             pick = pick[0]
             cut_start = pick.time - prepick
+            Logger.debug(
+                f"Cutting for {station}.{channel} to start at "
+                f"{cut_start}, {prepick} s before pick at {pick.time}")
             # Find nearest sample to avoid  to too-short length - see #573
             for tr in _st:
                 sample_offset = (cut_start -
@@ -420,7 +434,7 @@ class Detection(object):
                     sample_offset * tr.stats.delta)
                 _tr_cut_end = _tr_cut_start + length
                 Logger.debug(
-                    f"Trimming {tr.id} between {_tr_cut_end} "
+                    f"Trimming {tr.id} between {_tr_cut_start} "
                     f"and {_tr_cut_end}.")
                 _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
                 Logger.debug(

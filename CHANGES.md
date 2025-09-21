@@ -4,6 +4,14 @@
     (`min_stations` kwarg)
 - core.match_filter.party
   - Add client_lag_calc method to run lag-calc using data from a client.
+- core.match_filter.detection
+  - Set detect-time correctly when earliest channel is unused in correlation
+- core.lag_calc
+  - More stable extraction of data for correlation
+- utils.findpeaks
+  - Added pick-time declustering.
+- utils.correlate
+  - Added option to produce "cc-squared" (cc * abs(cc)) detection statistic
 
 ## 0.5.0
 * core.match_filter.tribe

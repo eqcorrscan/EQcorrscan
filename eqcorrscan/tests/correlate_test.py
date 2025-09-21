@@ -122,10 +122,16 @@ def read_gappy_real_data():
 def read_real_multichannel_templates():
     import glob
     tutorial_templates = glob.glob(
-        join(pytest.test_data_path, "tutorial_template_0.ms"))
+        join(pytest.test_data_path, "tutorial_template_?.ms"))
+    templates = []
+    for t in tutorial_templates:
+        template = read(t)
+        template = template.select(station="POWZ") + template.select(station="HOWZ")
+        templates.append(template)
+    return templates
 
-    t = read(tutorial_templates[0])
-    return [t.select(station="POWZ") + t.select(station="HOWZ")]
+    # t = read(tutorial_templates[0])
+    # return [t.select(station="POWZ") + t.select(station="HOWZ")]
 
 
 def get_real_multichannel_data():
@@ -360,6 +366,47 @@ def real_stream_cc_dict(real_stream_cc_output_dict):
 
 
 @pytest.fixture(scope='module')
+def real_missing_stream_cc_output_dict(real_templates, real_multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    out = {}
+    fft_len = next_fast_len(
+        real_templates[0][0].stats.npts +
+        real_multichannel_stream[0].stats.npts + 1)
+    short_fft_len = 2 ** 8
+
+    # Drop earliest channel from one template
+    missing_templates = copy.deepcopy(real_templates)
+    dropped_template = missing_templates[-1].copy()
+    dropped_template.traces.sort(key=lambda tr:tr.stats.starttime)
+    # nan the earliest trace
+    dropped_template[0].data = np.nan * np.ones_like(dropped_template[0].data)
+    missing_templates.append(dropped_template)
+
+    for name, func in stream_funcs.items():
+        for cores in [1, cpu_count()]:
+            log.info("Running {0} with {1} cores".format(name, cores))
+
+            cc_out = time_func(func, name, missing_templates,
+                               real_multichannel_stream, cores=cores,
+                               fft_len=short_fft_len)
+            out["{0}.{1}".format(name, cores)] = cc_out
+            if "fftw" in name:
+                log.info("Running fixed fft-len: {0}".format(fft_len))
+                # Make sure that running with a pre-defined fft-len works
+                cc_out = time_func(
+                    func, name, missing_templates, real_multichannel_stream,
+                    cores=cores, fft_len=fft_len)
+                out["{0}.{1}_fixed_fft".format(name, cores)] = cc_out
+    return out
+
+
+@pytest.fixture(scope="module")
+def real_missing_stream_cc_dict(real_missing_stream_cc_output_dict):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0]
+            for name, result in real_missing_stream_cc_output_dict.items()}
+
+@pytest.fixture(scope='module')
 def gappy_stream_cc_output_dict(
         multichannel_templates, gappy_multichannel_stream):
     """ return a dict of outputs from all stream_xcorr functions """
@@ -442,6 +489,45 @@ def gappy_real_cc_dict(gappy_real_cc_output_dict):
     """ return just the cc arrays from the stream_cc functions """
     return {name: (result[0][0], result[1])
             for name, result in gappy_real_cc_output_dict.items()}
+
+# ------------------------------------ correlation ** abs(correlation)
+
+@pytest.fixture(scope='module')
+def stream_cc_output_dict_corrsq(
+        multichannel_templates, multichannel_stream):
+    """ return a dict of outputs from all stream_xcorr functions """
+    # corr._get_array_dicts(multichannel_templates, multichannel_stream)
+    for tr in multichannel_stream:
+        tr.data = tr.data[0:unstacked_stream_len]
+    multichannel_templates = multichannel_templates[0:5]
+    out = {}
+    for name, func in stream_funcs.items():
+        if name.startswith("fmf"):
+            print("Skipping fmf - unstacked not implemented")
+            continue
+        for cores in [1, cpu_count()]:
+            print("Running {0} with {1} cores".format(name, cores))
+
+            cc_out = time_func(func, name, multichannel_templates,
+                               multichannel_stream, cores=cores, stack=True,
+                               cc_squared=True)
+            out["{0}.{1}".format(name, cores)] = cc_out
+            if "fftw" in name and cores > 1:
+                print("Running outer core parallel")
+                # Make sure that using both parallel methods gives the same
+                # result
+                cc_out = time_func(
+                    func, name, multichannel_templates, multichannel_stream,
+                    cores=1, cores_outer=cores, stack=True, cc_squared=True)
+                out["{0}.{1}_outer".format(name, cores)] = cc_out
+    return out
+
+
+@pytest.fixture(scope='module')
+def stream_cc_dict_corrsq(stream_cc_output_dict_corrsq):
+    """ return just the cc arrays from the stream_cc functions """
+    return {name: result[0]
+            for name, result in stream_cc_output_dict_corrsq.items()}
 
 
 # ------------------------------------ unstacked setup
@@ -633,6 +719,21 @@ class TestStreamCorrelateFunctions:
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             if not np.allclose(cc_1, cc, atol=self.atol):
+                log.error("{0} does not match {1}".format(cc_names[0], cc_name))
+                np.save("cc1.npy", cc_1)
+                np.save("cc2.npy", cc)
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
+    def test_real_missing_channel_xcorr(self, real_missing_stream_cc_dict):
+        """ test various correlation methods with multiple channels and a missing channel """
+        # get correlation results into a list
+        cc_names = list(real_missing_stream_cc_dict.keys())
+        cc_list = [real_missing_stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            if not np.allclose(cc_1, cc, atol=self.atol):
                 print("{0} does not match {1}".format(cc_names[0], cc_name))
                 np.save("cc1.npy", cc_1)
                 np.save("cc2.npy", cc)
@@ -695,6 +796,24 @@ class TestStreamCorrelateFunctions:
                 np.save("cc.npy", cc)
                 np.save("cc_1.npy", cc_1)
                 assert np.allclose(cc_1, cc, atol=self.atol * 100)
+
+
+@pytest.mark.serial
+class TestStreamCorrelateFunctionsCorrSq:
+    """ same thing as TestArrayCorrelateFunction but for stream interface """
+    atol = TestArrayCorrelateFunctions.atol
+
+    def test_multi_channel_xcorr(self, stream_cc_dict_corrsq):
+        """ test various correlation methods with multiple channels """
+        # get correlation results into a list
+        cc_names = list(stream_cc_dict_corrsq.keys())
+        cc_list = [stream_cc_dict_corrsq[cc_name] for cc_name in cc_names]
+        cc_1 = cc_list[0]
+        # loop over correlations and compare each with the first in the list
+        # this will ensure all cc are "close enough"
+        for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
+            assert np.allclose(cc_1, cc, atol=self.atol)
+
 
 
 @pytest.mark.serial
@@ -838,10 +957,10 @@ class TestGenericStreamXcorr:
         """ ensure a callable can be registered """
         small_count = {}
 
-        def some_callable(template_array, stream_array, pad_array):
+        def some_callable(template_array, stream_array, pad_array, cc_squared):
             small_count['name'] = 1
             return corr.numpy_normxcorr(template_array, stream_array,
-                                        pad_array)
+                                        pad_array, cc_squared)
 
         func = corr.get_stream_xcorr(some_callable)
         func(multichannel_templates, multichannel_stream)
@@ -867,7 +986,7 @@ class TestGenericStreamXcorr:
     def test_using_custom_function_doesnt_change_default(self):
         """ ensure a custom function will not change the default """
 
-        def func(templates, streams, pads):
+        def func(templates, streams, pads, cc_squared):
             pass
 
         default = corr.get_array_xcorr(None)

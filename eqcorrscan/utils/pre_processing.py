@@ -1157,7 +1157,11 @@ def _prep_data_for_correlation(stream, templates, template_names=None,
     # Fill out the templates with nan channels
     for template_name in incomplete_templates:
         template = _out[template_name]
-        template_starttime = min(tr.stats.starttime for tr in template)
+        # change here from min to max - if nan-channels are first in the order
+        # then the detection time may be calculated from that channel, which
+        # actually wasn't used in the original template, resulting in incorrect
+        # detection times
+        template_starttime = max(tr.stats.starttime for tr in template)
         out_template = _quick_copy_stream(nan_template, deepcopy_data=False)
 
         # Select traces very quickly: assume that trace order does not change,

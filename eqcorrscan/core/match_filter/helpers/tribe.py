@@ -34,7 +34,8 @@ from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
 from eqcorrscan.utils.correlate import (
     get_stream_xcorr, _stabalised_fmf, fftw_multi_normxcorr,
-    _zero_invalid_correlation_sums, _set_inner_outer_threading)
+    _zero_invalid_correlation_sums, _set_inner_outer_threading,
+    _cope_with_unused_earliest)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _group_process)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
@@ -310,6 +311,7 @@ def _corr_and_peaks(
     concurrency: str,
     cores: int,
     i: int,
+    cc_squared: bool,
     export_cccsums: bool,
     parallel: bool,
     peak_cores: int,
@@ -335,6 +337,9 @@ def _corr_and_peaks(
     :param concurrency: Concurrency of cross-correlation function
     :param cores: Cores (threads) to use for cross-correlation
     :param i: Group-id (internal book-keeping)
+    :param cc_squared:
+        Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+        just using cc.
     :param export_cccsums: Whether to export the raw cross-correlation sums
     :param parallel: Whether to compute peaks in parallel
     :param peak_cores: Number of cores (threads) to use for peak finding
@@ -357,6 +362,7 @@ def _corr_and_peaks(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
     if prepped and xcorr_func == "fmf":
+        assert cc_squared == False, "FMF does not support squared correlation"
         assert isinstance(templates, np.ndarray)
         assert isinstance(stream, np.ndarray)
         # These need to be passed from queues.
@@ -386,7 +392,8 @@ def _corr_and_peaks(
         cccsums, tr_chans = fftw_multi_normxcorr(
             template_array=templates, stream_array=stream,
             pad_array=pads, seed_ids=seed_ids, cores_inner=num_cores_inner,
-            cores_outer=num_cores_outer, stack=True, **kwargs)
+            cores_outer=num_cores_outer, stack=True, cc_squared=cc_squared,
+            **kwargs)
         n_templates = len(cccsums)
         # Post processing
         no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
@@ -395,14 +402,20 @@ def _corr_and_peaks(
             for chan, state in zip(chans, tr_chan):
                 if state:
                     chan.append(seed_id)
+        # Need to cope with possibility that earliest channel is unused. In which
+        # case we need to pad the ccccsums for that by the pad for that otherwise
+        # we get the wrong detection time.
+        cccsums, pads = _cope_with_unused_earliest(cccsums, pads, chans)
         cccsums = _zero_invalid_correlation_sums(cccsums, pads, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
                   for seed_id in _chans] for _chans in chans]
     else:
         # The default just uses stream xcorr funcs.
         multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+        Logger.debug(f"Calling {multichannel_normxcorr}")
         cccsums, no_chans, chans = multichannel_normxcorr(
-            templates=templates, stream=stream, cores=cores, **kwargs
+            templates=templates, stream=stream, cores=cores,
+            cc_squared=cc_squared, **kwargs
         )
     if len(cccsums[0]) == 0:
         raise MatchFilterError(
@@ -559,7 +572,9 @@ def _detect(
         Logger.debug(f"Found {len(all_peaks[i])} detections "
                      f"for template {template_name}")
         for peak in all_peaks[i]:
+            Logger.debug(f"Peak of {peak[0]} at {peak[1]}")
             detecttime = starttime + (peak[1] * delta)
+            Logger.debug(f"Setting detect-time: {detecttime}")
             if peak[0] > no_chans[i]:
                 Logger.error(f"Correlation sum {peak[0]} exceeds "
                              f"bounds ({no_chans[i]}")

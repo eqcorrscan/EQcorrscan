@@ -183,12 +183,12 @@ def pool_boy(Pool, traces, **kwargs):
     pool.join()
 
 
-def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
+def _pool_normxcorr(templates, stream, stack, cc_squared, pool, func, *args, **kwargs):
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
     # get parameter iterator
-    params = ((template_dict[sid], stream_dict[sid], pad_dict[sid])
+    params = ((template_dict[sid], stream_dict[sid], pad_dict[sid], cc_squared)
               for sid in seed_ids)
     # get cc results and used chans into their own lists
     results = [pool.apply_async(func, param) for param in params]
@@ -206,6 +206,10 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -216,25 +220,27 @@ def _pool_normxcorr(templates, stream, stack, pool, func, *args, **kwargs):
 def _general_multithread(func):
     """ return the general multithreading function using func """
 
-    def multithread(templates, stream, stack=True, *args, **kwargs):
+    def multithread(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(
-                templates, stream, stack=stack, pool=pool, func=func)
+                templates, stream, stack=stack, pool=pool, cc_squared=cc_squared,
+                func=func)
 
     return multithread
 
 
 def _general_multiprocess(func):
-    def multiproc(templates, stream, stack=True, *args, **kwargs):
+    def multiproc(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(
-                templates, stream, stack=stack, pool=pool, func=func)
+                templates, stream, stack=stack, pool=pool, cc_squared=cc_squared,
+                func=func)
 
     return multiproc
 
 
 def _general_serial(func):
-    def stream_xcorr(templates, stream, stack=True, *args, **kwargs):
+    def stream_xcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
         no_chans = np.zeros(len(templates))
         chans = [[] for _ in range(len(templates))]
         array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
@@ -248,7 +254,8 @@ def _general_serial(func):
         for chan_no, seed_id in enumerate(seed_ids):
             tr_cc, tr_chans = func(template_dict[seed_id],
                                    stream_dict[seed_id],
-                                   pad_dict[seed_id])
+                                   pad_dict[seed_id],
+                                   cc_squared)
             if stack:
                 cccsums = np.sum([cccsums, tr_cc], axis=0)
             else:
@@ -257,6 +264,10 @@ def _general_serial(func):
             for chan, state in zip(chans, tr_chans):
                 if state:
                     chan.append(seed_id)
+        # Need to cope with possibility that earliest channel is unused. In which
+        # case we need to pad the ccccsums for that by the pad for that otherwise
+        # we get the wrong detection time.
+        cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
         if stack:
             cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -365,6 +376,8 @@ def _zero_invalid_correlation_sums(cccsums, pad_dict, used_seed_ids):
             max_moveout = max(moveouts)
         if max_moveout:
             cccsum[-max_moveout:] = 0.0
+        Logger.debug(f"Setting the last {max_moveout} samples to "
+                     f"0 for {used_seed_ids[i]}")
     return cccsums
 
 # ------------------ array_xcorr fetching functions
@@ -407,7 +420,7 @@ def get_array_xcorr(name_or_func=None):
 
 
 @register_array_xcorr('numpy')
-def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
+def numpy_normxcorr(templates, stream, pads, cc_squared=False, *args, **kwargs):
     """
     Compute the normalized cross-correlation using numpy and bottleneck.
 
@@ -417,6 +430,8 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
@@ -454,6 +469,9 @@ def numpy_normxcorr(templates, stream, pads, *args, **kwargs):
            norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
 
+    if cc_squared:
+        res *= np.abs(res)
+
     for i, pad in enumerate(pads):
         res[i] = np.append(res[i], np.zeros(pad))[pad:]
     return res.astype(np.float32), used_chans
@@ -472,8 +490,8 @@ def _centered(arr, newshape):
 
 
 @register_array_xcorr('time_domain')
-def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
-                         **kwargs):
+def time_multi_normxcorr(templates, stream, pads, cc_squared=False,
+                         threaded=False, *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using C routine.
 
@@ -483,6 +501,8 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
     :param threaded: Whether to use the threaded routine or not
     :type threaded: bool
 
@@ -501,7 +521,8 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
                                flags='C_CONTIGUOUS'),
         ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float32, ndim=1,
-                               flags='C_CONTIGUOUS')]
+                               flags='C_CONTIGUOUS'),
+        ctypes.c_int]
     restype = ctypes.c_int
     if threaded:
         func = utilslib.multi_normxcorr_time_threaded
@@ -521,10 +542,10 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
     ccc_length = image_len - template_len + 1
     assert ccc_length > 0, "Template must be shorter than stream"
     ccc = np.ascontiguousarray(
-        np.empty(ccc_length * n_templates), np.float32)
+        np.empty(ccc_length * n_templates, dtype=np.float32), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
     time_args = [t_array, template_len, n_templates,
-                 np.ascontiguousarray(stream, np.float32), image_len, ccc]
+                 np.ascontiguousarray(stream, np.float32), image_len, ccc, int(cc_squared)]
     if threaded:
         time_args.append(kwargs.get('cores', cpu_count()))
     func(*time_args)
@@ -538,7 +559,8 @@ def time_multi_normxcorr(templates, stream, pads, threaded=False, *args,
 
 
 @register_array_xcorr('fftw', is_default=True)
-def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
+def fftw_normxcorr(templates, stream, pads, cc_squared=False,
+                   threaded=False, *args, **kwargs):
     """
     Normalised cross-correlation using the fftw library.
 
@@ -558,6 +580,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
     :type stream: np.ndarray
     :param pads: List of ints of pad lengths in the same order as templates
     :type pads: list
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
     :param threaded:
         Whether to use the threaded routine or not - note openMP and python
         multiprocessing don't seem to play nice for this.
@@ -585,7 +609,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
-                               flags='C_CONTIGUOUS')]
+                               flags='C_CONTIGUOUS'),
+        ctypes.c_int]
     restype = ctypes.c_int
 
     if threaded:
@@ -640,7 +665,8 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
         template_length, n_templates,
         np.ascontiguousarray(stream, np.float32), stream_length,
         np.ascontiguousarray(ccc, np.float32), fftshape,
-        used_chans_np, pads_np, variance_warning, missed_corr)
+        used_chans_np, pads_np, variance_warning, missed_corr,
+        int(cc_squared))
     if ret < 0:
         raise MemoryError()
     elif ret > 0:
@@ -668,7 +694,7 @@ def fftw_normxcorr(templates, stream, pads, threaded=False, *args, **kwargs):
 # threads) using the openMP threaded functions.
 
 @time_multi_normxcorr.register('concurrent')
-def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
+def _time_threaded_normxcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
     """
     Use the threaded time-domain routine for concurrency
 
@@ -680,6 +706,8 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     :type stream: obspy.core.stream.Stream
     :param stream:
         A single Stream object to be correlated with the templates.
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -706,7 +734,7 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
     for chan_no, seed_id in enumerate(seed_ids):
         tr_cc, tr_chans = time_multi_normxcorr(
             template_dict[seed_id], stream_dict[seed_id], pad_dict[seed_id],
-            True)
+            cc_squared=cc_squared, threaded=True)
         if stack:
             cccsums = np.sum([cccsums, tr_cc], axis=0)
         else:
@@ -715,6 +743,10 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
         for chan, state in zip(chans, tr_chans):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -725,7 +757,7 @@ def _time_threaded_normxcorr(templates, stream, stack=True, *args, **kwargs):
 @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
-def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
+def _fftw_stream_xcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
     """
     Apply fftw normxcorr routine concurrently.
 
@@ -737,6 +769,8 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     :type stream: obspy.core.stream.Stream
     :param stream:
         A single Stream object to be correlated with the templates.
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
 
     :returns:
         New list of :class:`numpy.ndarray` objects.  These will contain
@@ -767,17 +801,70 @@ def _fftw_stream_xcorr(templates, stream, stack=True, *args, **kwargs):
     cccsums, tr_chans = fftw_multi_normxcorr(
         template_array=template_dict, stream_array=stream_dict,
         pad_array=pad_dict, seed_ids=seed_ids, cores_inner=num_cores_inner,
-        cores_outer=num_cores_outer, stack=stack, *args, **inner_kwargs)
+        cores_outer=num_cores_outer, stack=stack, cc_squared=cc_squared,
+        *args, **inner_kwargs)
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
         for chan, state in zip(chans, tr_chan):
             if state:
                 chan.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
+
     if stack:
         cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
+
+    # Reshape to (station, channel)
     chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
               for seed_id in _chans] for _chans in chans]
+
     return cccsums, no_chans, chans
+
+
+def _rm_unused_pads(pads, sids, offset=0):
+    pad_sids = list(pads.keys())
+    pad_values = [pads[k] for k in pad_sids]
+    # Find the lowest pad in the set and get the key for it
+    min_pad_sid = pad_sids[pad_values.index(min(pad_values))]
+    # If the key is in the sids, we are done
+    if min_pad_sid in sids:
+        return offset, pads
+    Logger.debug(f"Min pad: {min(pad_values)} on {min_pad_sid}, but not "
+                 f"used, moving to next channel")
+    # Otherwise, we need to remove that from pads and reduce the pads
+    # by the delta between the min pad and the new min pad
+    min_pad_value = pads.pop(min_pad_sid)
+    if len(pads) == 0:
+        return offset, pads
+    new_min_pad_value = min(pads.values())
+    # Add offset to total offset
+    offset += new_min_pad_value - min_pad_value
+    pads = {sid: v - (new_min_pad_value - min_pad_value)
+            for sid, v in pads.items()}
+    # Need to recurse
+    offset, pads = _rm_unused_pads(pads=pads, sids=sids, offset=offset)
+    return offset, pads
+
+
+def _cope_with_unused_earliest(cccsums, pad_dict, chans):
+    pad_dict_out = {k: [] for k in pad_dict.keys()}
+    for i, ccsum in enumerate(cccsums):
+        # Check if the earliest pad is in chans
+        pads = {sid: pads[i] for sid, pads in pad_dict.items()}
+        Logger.debug(f"pads {pads}")
+        offset, edited_pads = _rm_unused_pads(pads, chans[i])
+        # Put shuffled pads back into pads out
+        for key, value in pad_dict_out.items():
+            value.append(edited_pads.get(key, 0))
+        if offset:
+            Logger.debug(f"Rolling cccsum array by {offset}")
+            # Roll along the axis by offset
+            cccsums[i] = np.roll(ccsum, offset)
+            # Set offset samples to zero
+            cccsums[i][0:offset] = 0
+    return cccsums, pad_dict_out
 
 
 def _set_inner_outer_threading(num_cores_inner, num_cores_outer, n_chans):
@@ -810,6 +897,7 @@ def fftw_multi_normxcorr(
     cores_inner,
     cores_outer,
     stack=True,
+    cc_squared=False,
     *args,
     **kwargs
 ):
@@ -824,6 +912,8 @@ def fftw_multi_normxcorr(
     :param pad_array:
     :type seed_ids: list
     :param seed_ids:
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
 
     rtype: np.ndarray, list
     :return: 3D Array of cross-correlations and list of used channels.
@@ -849,7 +939,7 @@ def fftw_multi_normxcorr(
                                flags='C_CONTIGUOUS'),
         np.ctypeslib.ndpointer(dtype=np.intc,
                                flags='C_CONTIGUOUS'),
-        ctypes.c_int]
+        ctypes.c_int, ctypes.c_int]
     utilslib.multi_normxcorr_fftw.restype = ctypes.c_int
     '''
     Arguments are:
@@ -868,6 +958,7 @@ def fftw_multi_normxcorr(
         variance warnings
         missed correlation warnings (usually due to gaps)
         stack option
+        cc squared option
     '''
 
     # pre processing
@@ -930,7 +1021,7 @@ def fftw_multi_normxcorr(
         template_array, n_templates, template_len, n_channels, stream_array,
         image_len, cccs, fft_len, used_chans_np, pad_array_np,
         cores_inner, cores_outer, variance_warnings, missed_correlations,
-        int(stack))
+        int(stack), int(cc_squared))
     if ret < 0:
         raise MemoryError("Memory allocation failed in correlation C-code")
     elif ret > 0:
@@ -1020,7 +1111,7 @@ def _fmf_stabilisation(template_arr, data_arr):
 
 
 @register_array_xcorr("fmf")
-def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
+def fmf_xcorr(templates, stream, pads, arch="precise", cc_squared=False, *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using the FMF routine.
 
@@ -1032,6 +1123,8 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
     :type pads: list
     :param arch: "gpu" or "precise" to run on GPU or CPU respectively
     type arch: str
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
 
     :return: np.ndarray of cross-correlations
     :return: np.ndarray channels used
@@ -1049,26 +1142,29 @@ def fmf_xcorr(templates, stream, pads, arch="precise", *args, **kwargs):
         weights=np.ones((1, templates.shape[0])),
         pads=np.array([pads]),
         arch=arch.lower())
+    if cc_squared:
+        ccc *= np.abs(ccc)
 
     return ccc, used_chans
 
 
 @fmf_xcorr.register("stream_xcorr")
 @fmf_xcorr.register("concurrent")
-def _fmf_gpu(templates, stream, *args, **kwargs):
+def _fmf_gpu(templates, stream, cc_squared=False, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to gpu.
     """
     from fast_matched_filter import GPU_LOADED
     if not GPU_LOADED:
         Logger.warning("FMF reports GPU not loaded, reverting to CPU")
-        return _fmf_cpu(templates=templates, stream=stream, *args, **kwargs)
-    return _fmf_multi_xcorr(templates, stream, arch="gpu")
+        return _fmf_cpu(templates=templates, stream=stream,
+                        cc_squared=cc_squared, *args, **kwargs)
+    return _fmf_multi_xcorr(templates, stream, cc_squared=cc_squared, arch="gpu")
 
 
 @fmf_xcorr.register("multithread")
 @fmf_xcorr.register("multiprocess")
-def _fmf_cpu(templates, stream, *args, **kwargs):
+def _fmf_cpu(templates, stream, cc_squared=False, *args, **kwargs):
     """
     Thin wrapper of fmf_multi_xcorr setting arch to cpu.
     """
@@ -1076,7 +1172,8 @@ def _fmf_cpu(templates, stream, *args, **kwargs):
     if not CPU_LOADED:
         raise NotImplementedError(
             "FMF reports CPU not loaded - try rebuilding FMF")
-    return _fmf_multi_xcorr(templates, stream, arch="precise")
+    return _fmf_multi_xcorr(templates, stream, cc_squared=cc_squared,
+                            arch="precise")
 
 
 def _fmf_reshape(template_dict, stream_dict, pad_dict, seed_ids):
@@ -1123,6 +1220,10 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
         raise NotImplementedError(
             "FMF does not support unstacked correlations, use a different "
             "backend")
+    if kwargs.get("cc_squared", False):
+        raise NotImplementedError(
+            "FMF does not support correlation squared, use a different backend"
+        )
     arch = kwargs.get("arch", "gpu")
     Logger.info(f"Running FMF targeting the {arch}")
 
@@ -1144,11 +1245,17 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
     # Note: FMF already returns the zeroed end of correlations - we don't
     # need to call _get_valid_correlation_sum
+    used_sids = [[] for _i in range(len(templates))]
     for seed_id, tr_chan in zip(seed_ids, tr_chans):
-        for chan, state in zip(chans, tr_chan):
+        for chan, used_sid, state in zip(chans, used_sids, tr_chan):
             if state:
                 chan.append((seed_id.split('.')[1],
                              seed_id.split('.')[-1].split('_')[0]))
+                used_sid.append(seed_id)
+    # Need to cope with possibility that earliest channel is unused. In which
+    # case we need to pad the ccccsums for that by the pad for that otherwise
+    # we get the wrong detection time.
+    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, used_sids)
     return cccsums, no_chans, chans
 
 
@@ -1180,7 +1287,9 @@ def get_stream_xcorr(name_or_func=None, concurrency=None):
     if not hasattr(func, concur):
         msg = '%s does not support concurrency %s' % (func.__name__, concur)
         raise ValueError(msg)
-    return getattr(func, concur)
+    outfunc = getattr(func, concur)
+    Logger.info(f"Found {outfunc} for {name_or_func} - {concurrency}")
+    return outfunc
 
 
 # --------------------------- stream prep functions

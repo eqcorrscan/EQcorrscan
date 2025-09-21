@@ -16,3 +16,4 @@ EXPORTS
     distance_array
     distance_matrix
     remove_unclustered
+    average_pick_time_diff_matrix

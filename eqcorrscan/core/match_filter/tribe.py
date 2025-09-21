@@ -675,11 +675,11 @@ class Tribe(object):
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
                plotdir=None, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               concurrent_processing=False, ignore_length=False,
-               ignore_bad_data=False, group_size=None, overlap="calculate",
-               full_peaks=False, save_progress=False, process_cores=None,
-               pre_processed=False, check_processing=True, make_events=True,
-               min_stations=0, **kwargs):
+               cc_squared=False, concurrent_processing=False,
+               ignore_length=False, ignore_bad_data=False, group_size=None,
+               overlap="calculate", full_peaks=False, save_progress=False,
+               process_cores=None, pre_processed=False, check_processing=True,
+               make_events=True, min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -720,6 +720,10 @@ class Tribe(object):
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
         :param cores: Number of workers for processing and detection.
+        :type cc_squared: bool
+        :param cc_squared:
+            Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+            just using cc.
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
@@ -895,8 +899,9 @@ class Tribe(object):
                 process_cores, ignore_length, overlap,
                 ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
-                export_cccsums, parallel, peak_cores, trig_int, full_peaks,
-                plot, plotdir, plot_format, make_events, min_stations,)
+                cc_squared, export_cccsums, parallel, peak_cores, trig_int,
+                full_peaks, plot, plotdir, plot_format, make_events,
+                min_stations,)
 
         if concurrent_processing:
             party = self._detect_concurrent(*args, **inner_kwargs)
@@ -922,9 +927,9 @@ class Tribe(object):
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, ignore_length, overlap, ignore_bad_data,
         group_size, groups, sampling_rate, threshold, threshold_type,
-        save_progress, xcorr_func, concurrency, cores, export_cccsums,
-        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        make_events, min_stations, **kwargs
+        save_progress, xcorr_func, concurrency, cores, cc_squared,
+        export_cccsums, parallel, peak_cores, trig_int, full_peaks, plot,
+        plotdir, plot_format, make_events, min_stations, **kwargs
     ):
         """ Internal serial detect workflow. """
         from eqcorrscan.core.match_filter.helpers.tribe import (
@@ -977,7 +982,9 @@ class Tribe(object):
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, prepped=False, **kwargs)
+                    plot_format=plot_format, prepped=False,
+                    cc_squared=cc_squared, **kwargs)
+                Logger.debug(chans)
 
                 detections = _detect(
                     template_names=template_names,
@@ -1013,9 +1020,9 @@ class Tribe(object):
         self, stream, template_ids, pre_processed, parallel_process,
         process_cores, ignore_length, overlap, ignore_bad_data,
         group_size, groups, sampling_rate, threshold, threshold_type,
-        save_progress, xcorr_func, concurrency, cores, export_cccsums,
-        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        make_events, min_stations, **kwargs
+        save_progress, xcorr_func, concurrency, cores, cc_squared,
+        export_cccsums, parallel, peak_cores, trig_int, full_peaks, plot,
+        plotdir, plot_format, make_events, min_stations, **kwargs
     ):
         """ Internal concurrent detect workflow. """
         from eqcorrscan.core.match_filter.helpers.processes import (
@@ -1179,7 +1186,8 @@ class Tribe(object):
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, **inner_kwargs
+                    plot_format=plot_format, cc_squared=cc_squared,
+                    **inner_kwargs
                 )
                 peaks_queue.put(
                     (starttime, all_peaks, thresholds, no_chans, chans,
@@ -1250,9 +1258,9 @@ class Tribe(object):
                       threshold_type, trig_int, plot=False, plotdir=None,
                       min_gap=None, parallel_process=True,
                       xcorr_func=None, concurrency=None, cores=None,
-                      concurrent_processing=False, ignore_length=False,
-                      ignore_bad_data=False, group_size=None,
-                      return_stream=False, full_peaks=False,
+                      cc_squared=False, concurrent_processing=False,
+                      ignore_length=False, ignore_bad_data=False,
+                      group_size=None, return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
                       check_processing=True, make_events=True,
                       min_stations=0, **kwargs):
@@ -1303,6 +1311,10 @@ class Tribe(object):
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
         :param cores: Number of workers for processing and detection.
+        :type cc_squared: bool
+        :param cc_squared:
+            Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+            just using cc.
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
@@ -1461,7 +1473,8 @@ class Tribe(object):
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
             concurrent_processing=concurrent_processing, groups=groups,
-            make_events=make_events, min_stations=min_stations)
+            make_events=make_events, min_stations=min_stations,
+            cc_squared=cc_squared)
         detector_kwargs.update(kwargs)
 
         if not concurrent_processing:
