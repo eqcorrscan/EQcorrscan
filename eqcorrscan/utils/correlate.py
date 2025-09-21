@@ -183,7 +183,8 @@ def pool_boy(Pool, traces, **kwargs):
     pool.join()
 
 
-def _pool_normxcorr(templates, stream, stack, cc_squared, pool, func, *args, **kwargs):
+def _pool_normxcorr(templates, stream, stack, cc_squared, pool, func,
+                    *args, **kwargs):
     chans = [[] for _i in range(len(templates))]
     array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
     stream_dict, template_dict, pad_dict, seed_ids = array_dict_tuple
@@ -220,27 +221,30 @@ def _pool_normxcorr(templates, stream, stack, cc_squared, pool, func, *args, **k
 def _general_multithread(func):
     """ return the general multithreading function using func """
 
-    def multithread(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
+    def multithread(templates, stream, stack=True, cc_squared=False,
+                    *args, **kwargs):
         with pool_boy(ThreadPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(
-                templates, stream, stack=stack, pool=pool, cc_squared=cc_squared,
-                func=func)
+                templates, stream, stack=stack, pool=pool,
+                cc_squared=cc_squared, func=func)
 
     return multithread
 
 
 def _general_multiprocess(func):
-    def multiproc(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
+    def multiproc(templates, stream, stack=True, cc_squared=False,
+                  *args, **kwargs):
         with pool_boy(ProcessPool, len(stream), **kwargs) as pool:
             return _pool_normxcorr(
-                templates, stream, stack=stack, pool=pool, cc_squared=cc_squared,
-                func=func)
+                templates, stream, stack=stack, pool=pool,
+                cc_squared=cc_squared, func=func)
 
     return multiproc
 
 
 def _general_serial(func):
-    def stream_xcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
+    def stream_xcorr(templates, stream, stack=True, cc_squared=False,
+                     *args, **kwargs):
         no_chans = np.zeros(len(templates))
         chans = [[] for _ in range(len(templates))]
         array_dict_tuple = _get_array_dicts(templates, stream, stack=stack)
@@ -264,10 +268,11 @@ def _general_serial(func):
             for chan, state in zip(chans, tr_chans):
                 if state:
                     chan.append(seed_id)
-        # Need to cope with possibility that earliest channel is unused. In which
-        # case we need to pad the ccccsums for that by the pad for that otherwise
-        # we get the wrong detection time.
-        cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, chans)
+        # Need to cope with possibility that earliest channel is unused.
+        # In which case we need to pad the ccccsums for that by the pad for
+        # that otherwise we get the wrong detection time.
+        cccsums, pad_dict = _cope_with_unused_earliest(
+            cccsums, pad_dict, chans)
         if stack:
             cccsums = _zero_invalid_correlation_sums(cccsums, pad_dict, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
@@ -420,7 +425,8 @@ def get_array_xcorr(name_or_func=None):
 
 
 @register_array_xcorr('numpy')
-def numpy_normxcorr(templates, stream, pads, cc_squared=False, *args, **kwargs):
+def numpy_normxcorr(templates, stream, pads, cc_squared=False,
+                    *args, **kwargs):
     """
     Compute the normalized cross-correlation using numpy and bottleneck.
 
@@ -545,7 +551,8 @@ def time_multi_normxcorr(templates, stream, pads, cc_squared=False,
         np.empty(ccc_length * n_templates, dtype=np.float32), np.float32)
     t_array = np.ascontiguousarray(templates.flatten(), np.float32)
     time_args = [t_array, template_len, n_templates,
-                 np.ascontiguousarray(stream, np.float32), image_len, ccc, int(cc_squared)]
+                 np.ascontiguousarray(stream, np.float32),
+                 image_len, ccc, int(cc_squared)]
     if threaded:
         time_args.append(kwargs.get('cores', cpu_count()))
     func(*time_args)
@@ -636,7 +643,8 @@ def fftw_normxcorr(templates, stream, pads, cc_squared=False,
         Logger.warning(
             "FFT length of {0} is shorter than the template, setting to "
             "{1}".format(
-                fftshape, next_fast_len(template_length + stream_length - 1)))
+                fftshape,
+                next_fast_len(template_length + stream_length - 1)))
         fftshape = next_fast_len(template_length + stream_length - 1)
     # Normalize and flip the templates
     norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
@@ -694,7 +702,8 @@ def fftw_normxcorr(templates, stream, pads, cc_squared=False,
 # threads) using the openMP threaded functions.
 
 @time_multi_normxcorr.register('concurrent')
-def _time_threaded_normxcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
+def _time_threaded_normxcorr(templates, stream, stack=True, cc_squared=False,
+                             *args, **kwargs):
     """
     Use the threaded time-domain routine for concurrency
 
@@ -757,7 +766,8 @@ def _time_threaded_normxcorr(templates, stream, stack=True, cc_squared=False, *a
 @fftw_normxcorr.register('stream_xcorr')
 @fftw_normxcorr.register('multithread')
 @fftw_normxcorr.register('concurrent')
-def _fftw_stream_xcorr(templates, stream, stack=True, cc_squared=False, *args, **kwargs):
+def _fftw_stream_xcorr(templates, stream, stack=True, cc_squared=False,
+                       *args, **kwargs):
     """
     Apply fftw normxcorr routine concurrently.
 
@@ -1111,7 +1121,8 @@ def _fmf_stabilisation(template_arr, data_arr):
 
 
 @register_array_xcorr("fmf")
-def fmf_xcorr(templates, stream, pads, arch="precise", cc_squared=False, *args, **kwargs):
+def fmf_xcorr(templates, stream, pads, arch="precise", cc_squared=False,
+              *args, **kwargs):
     """
     Compute cross-correlations in the time-domain using the FMF routine.
 
@@ -1159,7 +1170,8 @@ def _fmf_gpu(templates, stream, cc_squared=False, *args, **kwargs):
         Logger.warning("FMF reports GPU not loaded, reverting to CPU")
         return _fmf_cpu(templates=templates, stream=stream,
                         cc_squared=cc_squared, *args, **kwargs)
-    return _fmf_multi_xcorr(templates, stream, cc_squared=cc_squared, arch="gpu")
+    return _fmf_multi_xcorr(templates, stream, cc_squared=cc_squared,
+                            arch="gpu")
 
 
 @fmf_xcorr.register("multithread")
@@ -1255,7 +1267,8 @@ def _fmf_multi_xcorr(templates, stream, *args, **kwargs):
     # Need to cope with possibility that earliest channel is unused. In which
     # case we need to pad the ccccsums for that by the pad for that otherwise
     # we get the wrong detection time.
-    cccsums, pad_dict = _cope_with_unused_earliest(cccsums, pad_dict, used_sids)
+    cccsums, pad_dict = _cope_with_unused_earliest(
+        cccsums, pad_dict, used_sids)
     return cccsums, no_chans, chans
 
 

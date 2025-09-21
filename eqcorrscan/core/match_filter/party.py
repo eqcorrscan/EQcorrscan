@@ -868,7 +868,8 @@ class Party(object):
         shift_len=0.2,
         min_gap=None,
         retries=3,
-        *args, **kwargs):
+        *args,
+        **kwargs):
         """
         Compute picks based on cross-correlation using data from a Client.
 
@@ -955,7 +956,6 @@ class Party(object):
             chunk_start += (chunk_length - chunk_overlap)
             chunk_end = chunk_start + chunk_length
         return catalog
-
 
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],

@@ -41,7 +41,6 @@ class SparseResourceID(object):
         return f"SparseResourceID(id={self.id})"
 
 
-
 class SparseOrigin(object):
     def __init__(self, resource_id, latitude, longitude, depth, time):
         self.resource_id = SparseResourceID(resource_id)
@@ -794,11 +793,13 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         if max_workers > 1:
             with pool_boy(
                     Pool, len(sparse_catalog), cores=max_workers) as pool:
-                results = [pool.apply_async(
-                    _compute_dt,
-                    args=(sub_catalog, master), kwds=additional_args)
-                           for master, sub_catalog in zip(
-                               sparse_catalog, sub_catalogs)]
+                results = [
+                    pool.apply_async(
+                        _compute_dt,
+                        args=(sub_catalog, master),
+                        kwds=additional_args)
+                    for master, sub_catalog in zip(
+                        sparse_catalog, sub_catalogs)]
                 differential_times = {
                     master.resource_id.id: result.get()
                     for master, result in zip(sparse_catalog, results)}

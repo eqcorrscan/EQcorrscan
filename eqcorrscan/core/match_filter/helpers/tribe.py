@@ -362,7 +362,7 @@ def _corr_and_peaks(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
     if prepped and xcorr_func == "fmf":
-        assert cc_squared == False, "FMF does not support squared correlation"
+        assert not cc_squared, "FMF does not support squared correlation"
         assert isinstance(templates, np.ndarray)
         assert isinstance(stream, np.ndarray)
         # These need to be passed from queues.
@@ -402,9 +402,9 @@ def _corr_and_peaks(
             for chan, state in zip(chans, tr_chan):
                 if state:
                     chan.append(seed_id)
-        # Need to cope with possibility that earliest channel is unused. In which
-        # case we need to pad the ccccsums for that by the pad for that otherwise
-        # we get the wrong detection time.
+        # Need to cope with possibility that earliest channel is unused.
+        # In which case we need to pad the ccccsums for that by the pad for
+        # that otherwise we get the wrong detection time.
         cccsums, pads = _cope_with_unused_earliest(cccsums, pads, chans)
         cccsums = _zero_invalid_correlation_sums(cccsums, pads, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
