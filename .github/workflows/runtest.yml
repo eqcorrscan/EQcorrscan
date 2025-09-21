@@ -30,7 +30,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -v -e . --no-deps
+          pip install --no-deps -v -e .
 
       - name: print package info
         shell: bash -l {0}
