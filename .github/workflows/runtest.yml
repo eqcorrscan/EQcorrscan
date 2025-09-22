@@ -97,7 +97,8 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e . --no-deps
+          pip install --no-deps --no-build-isolation -v -e .
+
 
       - name: print package info
         shell: bash -l {0}
@@ -108,17 +109,17 @@ jobs:
       - name: run network tests
         shell: bash -l {0}
         run: |
-          py.test -n 2 -m "network and not superslow" --cov-report=xml
+          pytest -n 2 -m "network and not superslow" --cov-report=xml
       - name: run tutorials
         if: always()
         shell: bash -l {0}
         run: |
-          py.test eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-report=xml --cov-append
+          pytest eqcorrscan/doc/tutorials/*.rst eqcorrscan/doc/submodules/*.rst --cov-report=xml --cov-append
       - name: run superslow tests
         if: always()
         shell: bash -l {0}
         run: |
-          py.test -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
+          pytest -m "superslow" -s eqcorrscan/tests/tutorials_test.py eqcorrscan/tests/subspace_test.py --cov-report=xml --cov-append
 
       - name: upload coverage
         uses: codecov/codecov-action@v4
@@ -161,7 +162,7 @@ jobs:
       - name: install eqcorrscan
         shell: bash -l {0}
         run: |
-          pip install -e .
+          pip install --no-deps --no-build-isolation -v -e .
 
       - name: print package info
         shell: bash -l {0}
@@ -173,7 +174,7 @@ jobs:
         shell: bash -l {0}
         run: |
           export OMP_NUM_THREADS=2
-          py.test eqcorrscan/tests/correlate_test.py --cov-report=xml
+          pytest eqcorrscan/tests/correlate_test.py --cov-report=xml
 
       - name: upload coverage
         uses: codecov/codecov-action@v4
