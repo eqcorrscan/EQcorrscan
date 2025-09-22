@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from collections import defaultdict
-from typing import List, Set
+from typing import List, Set, Union
 from timeit import default_timer
 
 from concurrent.futures import ThreadPoolExecutor
@@ -34,7 +34,8 @@ from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
 
 from eqcorrscan.utils.correlate import (
     get_stream_xcorr, _stabalised_fmf, fftw_multi_normxcorr,
-    _zero_invalid_correlation_sums, _set_inner_outer_threading)
+    _zero_invalid_correlation_sums, _set_inner_outer_threading,
+    _cope_with_unused_earliest)
 from eqcorrscan.utils.pre_processing import (
     _check_daylong, _group_process)
 from eqcorrscan.utils.findpeaks import multi_find_peaks
@@ -82,7 +83,7 @@ def _download_st(
     """
     Helper to download a stream from a client for a given start and end time.
 
-    Applies `buff` to extend download to (heopfully) ensure all data are
+    Applies `buff` to extend download to (hopefully) ensure all data are
     provided. Retries download up to `retries` times, and discards data
     with large gaps.
 
@@ -198,7 +199,6 @@ def _pre_process(
     process_length: float,
     parallel: bool,
     cores: int,
-    daylong: bool,
     ignore_length: bool,
     ignore_bad_data: bool,
     overlap: float, **kwargs
@@ -218,7 +218,6 @@ def _pre_process(
     :param process_length: See utils.pre_processing.multi_process
     :param parallel: See utils.pre_processing.multi_process
     :param cores: See utils.pre_processing.multi_process
-    :param daylong: See utils.pre_processing.multi_process
     :param ignore_length: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -247,7 +246,6 @@ def _pre_process(
             parallel=parallel,
             cores=cores,
             stream=st,
-            daylong=daylong,
             ignore_length=ignore_length,
             overlap=overlap,
             ignore_bad_data=ignore_bad_data)
@@ -261,8 +259,9 @@ def _group(
     sids: Set[str],
     templates: List[Template],
     group_size: int,
-    groups: List[List[str]] = None
-) -> List[List[Template]]:
+    groups: List[List[str]] = None,
+    min_stations: int = 0,
+) -> Union[List[List[Template]], None]:
     """
     Group templates either by seed id, or using pre-computed groups
 
@@ -270,27 +269,37 @@ def _group(
     :param templates: Templates to group
     :param group_size: Maximum group size
     :param groups: [Optional] List of List of template names in groups
-    :return: Groups of templates.
+    :param min_stations: Minimum number of stations to run a template.
+
+    :return: Groups of templates. None if no templates meet criteria
     """
     Logger.info(f"Grouping for {sids}")
     if groups:
         Logger.info("Using pre-computed groups")
         t_dict = {t.name: t for t in templates}
+        stations = {sid.split('.')[1] for sid in sids}
         template_groups = []
         for grp in groups:
             template_group = [
                 t_dict.get(t_name) for t_name in grp
-                if t_name in t_dict.keys()]
+                if t_name in t_dict.keys() and
+                len({tr.stats.station for tr in
+                     t_dict.get(t_name).st}.intersection(stations)
+                    ) >= max(1, min_stations)]
+            Logger.info(f"Dropping {len(grp) - len(template_group)} templates "
+                        f"due to fewer than {min_stations} matched channels")
             if len(template_group):
                 template_groups.append(template_group)
         return template_groups
     template_groups = group_templates_by_seedid(
         templates=templates,
         st_seed_ids=sids,
-        group_size=group_size)
+        group_size=group_size,
+        min_stations=min_stations)
     if len(template_groups) == 1 and len(template_groups[0]) == 0:
         Logger.error("No matching ids between stream and templates")
-        raise IndexError("No matching ids between stream and templates")
+        return None
+        # raise IndexError("No matching ids between stream and templates")
     return template_groups
 
 
@@ -302,6 +311,7 @@ def _corr_and_peaks(
     concurrency: str,
     cores: int,
     i: int,
+    cc_squared: bool,
     export_cccsums: bool,
     parallel: bool,
     peak_cores: int,
@@ -327,6 +337,9 @@ def _corr_and_peaks(
     :param concurrency: Concurrency of cross-correlation function
     :param cores: Cores (threads) to use for cross-correlation
     :param i: Group-id (internal book-keeping)
+    :param cc_squared:
+        Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+        just using cc.
     :param export_cccsums: Whether to export the raw cross-correlation sums
     :param parallel: Whether to compute peaks in parallel
     :param peak_cores: Number of cores (threads) to use for peak finding
@@ -349,6 +362,7 @@ def _corr_and_peaks(
         f"Starting correlation run for template group {i}")
     tic = default_timer()
     if prepped and xcorr_func == "fmf":
+        assert not cc_squared, "FMF does not support squared correlation"
         assert isinstance(templates, np.ndarray)
         assert isinstance(stream, np.ndarray)
         # These need to be passed from queues.
@@ -378,7 +392,8 @@ def _corr_and_peaks(
         cccsums, tr_chans = fftw_multi_normxcorr(
             template_array=templates, stream_array=stream,
             pad_array=pads, seed_ids=seed_ids, cores_inner=num_cores_inner,
-            cores_outer=num_cores_outer, stack=True, **kwargs)
+            cores_outer=num_cores_outer, stack=True, cc_squared=cc_squared,
+            **kwargs)
         n_templates = len(cccsums)
         # Post processing
         no_chans = np.sum(np.array(tr_chans).astype(int), axis=0)
@@ -387,14 +402,20 @@ def _corr_and_peaks(
             for chan, state in zip(chans, tr_chan):
                 if state:
                     chan.append(seed_id)
+        # Need to cope with possibility that earliest channel is unused.
+        # In which case we need to pad the ccccsums for that by the pad for
+        # that otherwise we get the wrong detection time.
+        cccsums, pads = _cope_with_unused_earliest(cccsums, pads, chans)
         cccsums = _zero_invalid_correlation_sums(cccsums, pads, chans)
         chans = [[(seed_id.split('.')[1], seed_id.split('.')[-1].split('_')[0])
                   for seed_id in _chans] for _chans in chans]
     else:
         # The default just uses stream xcorr funcs.
         multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+        Logger.debug(f"Calling {multichannel_normxcorr}")
         cccsums, no_chans, chans = multichannel_normxcorr(
-            templates=templates, stream=stream, cores=cores, **kwargs
+            templates=templates, stream=stream, cores=cores,
+            cc_squared=cc_squared, **kwargs
         )
     if len(cccsums[0]) == 0:
         raise MatchFilterError(
@@ -551,7 +572,9 @@ def _detect(
         Logger.debug(f"Found {len(all_peaks[i])} detections "
                      f"for template {template_name}")
         for peak in all_peaks[i]:
+            Logger.debug(f"Peak of {peak[0]} at {peak[1]}")
             detecttime = starttime + (peak[1] * delta)
+            Logger.debug(f"Setting detect-time: {detecttime}")
             if peak[0] > no_chans[i]:
                 Logger.error(f"Correlation sum {peak[0]} exceeds "
                              f"bounds ({no_chans[i]}")
@@ -606,7 +629,8 @@ def _make_party(
     templates: List[Template],
     chunk_start: UTCDateTime,
     chunk_id: int,
-    save_progress: bool
+    save_progress: bool,
+    make_events: bool,
 ) -> str:
     """
     Construct a Party from Detections.
@@ -618,6 +642,7 @@ def _make_party(
     :param chunk_start: Starttime of party epoch
     :param chunk_id: Internal index for party epoch
     :param save_progress: Whether to save progress or not
+    :param make_events: Whether to make events for all detections or not
 
     :return: The filename the party has been pickled to.
     """
@@ -646,7 +671,10 @@ def _make_party(
         detection_idx_dict[detection.template_name].append(n)
 
     # Convert to Families and build party.
-    Logger.info("Converting to party and making events")
+    if not make_events:
+        Logger.info("Converting to party")
+    else:
+        Logger.info("Converting to party and making events")
     chunk_party = Party()
 
     # Make a dictionary of templates keyed by name - we could be passed a dict
@@ -665,7 +693,8 @@ def _make_party(
                 with open(template, "rb") as f:
                     template = pickle.load(f)
             for d in family_detections:
-                d._calculate_event(template=template)
+                if make_events:
+                    d._calculate_event(template=template)
             family = Family(
                 template=template, detections=family_detections)
             chunk_party += family

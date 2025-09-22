@@ -27,17 +27,74 @@ SeedPickID = namedtuple("SeedPickID", ["seed_id", "phase_hint"])
 
 
 # Some hypoDD specific event holders - classes were faster than named-tuples
-
-class SparseEvent(object):
-    def __init__(self, resource_id, picks, origin_time):
-        self.resource_id = resource_id
-        self.picks = picks
-        self.origin_time = origin_time
+class SparseResourceID(object):
+    def __init__(self, id):
+        if isinstance(id, str):
+            self.id = id
+        elif hasattr(id, "id"):
+            self.id = id.id
+        else:
+            NotImplementedError(
+                f"{id} is neither a string nor something with an id.")
 
     def __repr__(self):
-        return ("SparseEvent(resource_id={0}, origin_time={1}, picks=[{2} "
+        return f"SparseResourceID(id={self.id})"
+
+
+class SparseOrigin(object):
+    def __init__(self, resource_id, latitude, longitude, depth, time):
+        self.resource_id = SparseResourceID(resource_id)
+        self.latitude = latitude
+        self.longitude = longitude
+        self.depth = depth
+        self.time = time
+
+    def __repr__(self):
+        return (f"SparseOrigin(resource_id={self.resource_id}, "
+                f"latitude={self.latitude}, longitude={self.longitude}, "
+                f"depth={self.depth}, time={self.time})")
+
+    @classmethod
+    def from_origin(cls, origin: Origin):
+        return cls(resource_id=origin.resource_id.id,
+                   latitude=origin.latitude,
+                   longitude=origin.longitude,
+                   depth=origin.depth,
+                   time=origin.time)
+
+
+class SparseEvent(object):
+    def __init__(self, resource_id, picks, origin):
+        self.resource_id = SparseResourceID(resource_id)
+        self.picks = picks
+        self.origin = origin
+
+    def __repr__(self):
+        return ("SparseEvent(resource_id={0}, origin={1}, picks=[{2} "
                 "picks])".format(
-                    self.resource_id, self.origin_time, len(self.picks)))
+                    self.resource_id, self.origin, len(self.picks)))
+
+    @property
+    def origin_time(self):
+        return self.origin.time
+
+    def preferred_origin(self):
+        return self.origin
+
+    @classmethod
+    def from_event(cls, event: Event):
+        origin = SparseOrigin.from_origin(
+            event.preferred_origin() or event.origins[0])
+        time_weight_dict = {
+            arr.pick_id: arr.time_weight or 1.0 for origin in event.origins
+            for arr in origin.arrivals}
+        picks = [
+            SparsePick.from_pick(
+                pick=pick, origin_time=origin.time,
+                time_weight=time_weight_dict.get(pick.resource_id, 1.0)
+            ) for pick in event.picks]
+        return cls(resource_id=event.resource_id.id, origin=origin,
+                   picks=picks)
 
 
 class SparsePick(object):
@@ -62,6 +119,29 @@ class SparsePick(object):
     @property
     def channel(self):
         return self.seed_id.split('.')[-1]
+
+    @property
+    def network(self):
+        return self.seed_id.split('.')[0]
+
+    @property
+    def location(self):
+        return self.seed_id.split('.')[2]
+
+    @classmethod
+    def from_pick(
+        cls,
+        pick: Pick,
+        origin_time: UTCDateTime,
+        time_weight: float = 1.0
+    ):
+        return cls(
+            tt=pick.time - origin_time,
+            time=pick.time,
+            seed_id=pick.waveform_id.get_seed_string(),
+            phase_hint=pick.phase_hint[0],  # Note, only using P or S hints
+            time_weight=time_weight,
+            waveform_id=pick.waveform_id)
 
 
 # Generic helpers
@@ -97,7 +177,7 @@ class _DTObs(object):
 
 
 class _EventPair(object):
-    """ Holder for event paid observations. """
+    """ Holder for event pair observations. """
 
     def __init__(self, event_id_1, event_id_2, obs=None):
         self.event_id_1 = event_id_1
@@ -137,31 +217,16 @@ def _generate_event_id_mapper(catalog, event_id_mapper=None):
     except ValueError:
         largest_event_id = 0
     for event in catalog:
-        if str(event.resource_id) not in event_id_mapper.keys():
+        if str(event.resource_id.id) not in event_id_mapper.keys():
             event_id = largest_event_id + 1
             largest_event_id = event_id
-            event_id_mapper.update({str(event.resource_id): event_id})
+            event_id_mapper.update({str(event.resource_id.id): event_id})
     return event_id_mapper
 
 
 def _make_sparse_event(event):
     """ Make a sparse event with just the info hypoDD needs. """
-    origin_time = (event.preferred_origin() or event.origins[0]).time
-    time_weight_dict = {
-        arr.pick_id: arr.time_weight or 1.0 for origin in event.origins
-        for arr in origin.arrivals}
-    sparse_event = SparseEvent(
-        resource_id=event.resource_id.id,
-        origin_time=origin_time,
-        picks=[SparsePick(
-            tt=pick.time - origin_time,
-            time=pick.time,
-            seed_id=pick.waveform_id.get_seed_string(),
-            phase_hint=pick.phase_hint[0],  # Only use P or S hints.
-            time_weight=time_weight_dict.get(pick.resource_id, 1.0),
-            waveform_id=pick.waveform_id)
-            for pick in event.picks])
-    return sparse_event
+    return SparseEvent.from_event(event=event)
 
 
 def _prepare_stream(stream, event, extract_len, pre_pick, seed_pick_ids=None):
@@ -238,7 +303,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     """ Compute cross-correlation delay times. """
     max_workers = max_workers or 1
     Logger.info(
-        f"Correlating {str(master.resource_id)} with {len(catalog)} events")
+        f"Correlating {str(master.resource_id.id)} with {len(catalog)} events")
     differential_times_dict = dict()
     # Assign trace data from shared memory
     for (key, stream) in stream_dict.items():
@@ -253,7 +318,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                 tr.data[:] = sm_data[:]
 
     master_stream = _prepare_stream(
-        stream=stream_dict[str(master.resource_id)], event=master,
+        stream=stream_dict[str(master.resource_id.id)], event=master,
         extract_len=extract_len, pre_pick=pre_pick)
     available_seed_ids = {tr.id for st in master_stream.values() for tr in st}
     Logger.debug(f"The channels provided are: {available_seed_ids}")
@@ -281,7 +346,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
     matched_length = extract_len + (2 * shift_len)
     matched_pre_pick = pre_pick + shift_len
     # We will use this to maintain order
-    event_dict = {str(event.resource_id): event for event in catalog}
+    event_dict = {str(event.resource_id.id): event for event in catalog}
     event_ids = set(event_dict.keys())
     # Check for overlap
     _stream_event_ids = set(stream_dict.keys())
@@ -327,7 +392,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     _matched_streams.update({key: _st})
             if len(_matched_streams) == 0:
                 Logger.info("No matching data for {0}, {1} phase".format(
-                    str(master.resource_id), phase_hint))
+                    str(master.resource_id.id), phase_hint))
                 continue
             # Check lengths
             master_length = [tr.stats.npts for tr in _master_stream]
@@ -402,7 +467,7 @@ def _compute_dt_correlations(catalog, master, min_link, event_id_mapper,
                     if diff_time is None:
                         diff_time = _EventPair(
                             event_id_1=event_id_mapper[
-                                str(master.resource_id)],
+                                str(master.resource_id.id)],
                             event_id_2=event_id_mapper[used_event_id])
                     weight = cc_max
                     if weight_by_square:
@@ -435,8 +500,8 @@ def _make_event_pair(sparse_event, master, event_id_mapper, min_link):
     Make an event pair for a given event and master event.
     """
     differential_times = _EventPair(
-        event_id_1=event_id_mapper[master.resource_id],
-        event_id_2=event_id_mapper[sparse_event.resource_id])
+        event_id_1=event_id_mapper[master.resource_id.id],
+        event_id_2=event_id_mapper[sparse_event.resource_id.id])
     for master_pick in master.picks:
         if master_pick.phase_hint and \
                 master_pick.phase_hint not in "PS":  # pragma: no cover
@@ -467,7 +532,7 @@ def _prep_horiz_picks(catalog, stream_dict, event_id_mapper):
         event_S_picks = [
             pick for pick in event.picks if pick.phase_hint.upper().startswith(
                 'S') and pick.waveform_id.get_seed_string()[-1] in 'EN12XY']
-        st = stream_dict[str(event.resource_id)]
+        st = stream_dict[str(event.resource_id.id)]
         st = Stream([tr for tr in st if tr.stats.channel[-1] in 'EN12XY'])
         for tr in st:
             tr_picks = [
@@ -667,7 +732,7 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
             max_trace_workers = max_trace_workers or cpu_count()
             additional_args.update(dict(max_workers=max_trace_workers))
             for i, master in enumerate(sparse_catalog):
-                master_id = str(master.resource_id)
+                master_id = str(master.resource_id.id)
                 sub_catalog = [ev for j, ev in enumerate(sparse_catalog)
                                if distance_filter[i][j]]
                 if master_id not in additional_args["stream_dict"].keys():
@@ -705,13 +770,13 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
                         args=(sub_catalog, master), kwds=additional_args)
                     for sub_catalog, master in zip(sub_catalogs,
                                                    sparse_catalog)
-                    if str(master.resource_id) in additional_args[
+                    if str(master.resource_id.id) in additional_args[
                         "stream_dict"].keys()]
                 Logger.info('Submitted asynchronous jobs to workers.')
                 differential_times = {
-                    master.resource_id: result.get()
+                    master.resource_id.id: result.get()
                     for master, result in zip(sparse_catalog, results)
-                    if str(master.resource_id) in additional_args[
+                    if str(master.resource_id.id) in additional_args[
                         "stream_dict"].keys()}
                 Logger.debug('Got results from workers.')
                 # Destroy shared memory
@@ -728,17 +793,19 @@ def compute_differential_times(catalog, correlation, stream_dict=None,
         if max_workers > 1:
             with pool_boy(
                     Pool, len(sparse_catalog), cores=max_workers) as pool:
-                results = [pool.apply_async(
-                    _compute_dt,
-                    args=(sub_catalog, master), kwds=additional_args)
-                           for master, sub_catalog in zip(
-                               sparse_catalog, sub_catalogs)]
+                results = [
+                    pool.apply_async(
+                        _compute_dt,
+                        args=(sub_catalog, master),
+                        kwds=additional_args)
+                    for master, sub_catalog in zip(
+                        sparse_catalog, sub_catalogs)]
                 differential_times = {
-                    master.resource_id: result.get()
+                    master.resource_id.id: result.get()
                     for master, result in zip(sparse_catalog, results)}
         else:
             differential_times = {
-                master.resource_id: _compute_dt(
+                master.resource_id.id: _compute_dt(
                     sub_catalog, master, **additional_args)
                 for master, sub_catalog in zip(sparse_catalog, sub_catalogs)}
 

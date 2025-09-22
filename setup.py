@@ -1,20 +1,15 @@
-try:
-    # use setuptools if we can
-    from setuptools import setup, Command, Extension
-    from setuptools.command.build_ext import build_ext
-    using_setuptools = True
-except ImportError:
-    from distutils.core import setup, Command, Extension
-    from distutils.command.build_ext import build_ext
-    using_setuptools = False
 
-from distutils import sysconfig
+from setuptools import setup, Command, Extension
+from setuptools.command.build_ext import build_ext
+using_setuptools = True
+
 from distutils.ccompiler import get_default_compiler
 from pkg_resources import get_build_platform
 
 import os
 import sys
 import shutil
+import sysconfig
 import glob
 
 with open("eqcorrscan/__init__.py", "r") as init_file:
@@ -359,11 +354,11 @@ def setup_package():
     try:
         import numpy
     except ImportError:
-        build_requires = ['numpy>=1.6, <2.0']
+        build_requires = ['numpy']
 
     if not READ_THE_DOCS:
         install_requires = ['matplotlib>=1.3.0', 'scipy>=1.10',
-                            'bottleneck', 'obspy>=1.0.3', 'numpy>=1.12',
+                            'bottleneck', 'obspy>=1.3.0', 'numpy>=1.22.2',
                             'h5py']
     else:
         install_requires = ['matplotlib>=1.3.0', 'obspy>=1.0.3', 'mock']
@@ -378,16 +373,16 @@ def setup_package():
         'url': 'https://github.com/eqcorrscan/EQcorrscan',
         'author': 'Calum Chamberlain',
         'author_email': 'calum.chamberlain@vuw.ac.nz',
-        'license': 'LGPL',
+        'license': 'LGPL-3.0-or-later',
+        'license-files': ['LICENCE.txt'],
         'classifiers': [
             'Development Status :: 4 - Beta',
             'Intended Audience :: Science/Research',
             'Topic :: Scientific/Engineering',
-            'License :: OSI Approved :: GNU Library or Lesser General Public '
-            'License (LGPL)',
-            'Programming Language :: Python :: 3.8',
-            'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
+            'Programming Language :: Python :: 3.13',
         ],
         'keywords': 'earthquake correlation detection match-filter',
         'scripts': scriptfiles,

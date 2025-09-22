@@ -119,7 +119,7 @@ class TestCatalogMethods(unittest.TestCase):
     def test_sparse_event(self):
         for event in self.catalog:
             sparse_event = _make_sparse_event(event)
-            self.assertEqual(sparse_event.resource_id, event.resource_id.id)
+            self.assertEqual(sparse_event.resource_id.id, event.resource_id.id)
             self.assertEqual(
                 sparse_event.origin_time, event.preferred_origin().time)
             self.assertEqual(len(sparse_event.picks), len(event.picks))

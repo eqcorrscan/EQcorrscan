@@ -32,6 +32,8 @@
 
 float dist_calc(float, float, float, float, float, float);
 
+int distance_array(float, float, float, float*, float*, float*, long, float*, int);
+
 int distance_matrix(float*, float*, float*, long, float*, int);
 
 int remove_unclustered(float*, float*, float*, long, unsigned char*, float, int);
@@ -66,6 +68,32 @@ float dist_calc(float lat1, float lon1, float depth1, float lat2, float lon2, fl
     distance = sqrt(pow(distance, 2) + pow(ddepth, 2));
     return distance;
 }
+
+int distance_array(float lat1, float lon1, float depth1, float *latitudes,
+                   float *longitudes, float *depths, long n_locs,
+                   float *dist_array, int n_threads){
+    /* Calculate the distances of all locations relative to one location.
+    *
+    *  :type lat1: Latitude of core location in radians
+    *  :type lon1: Longitude of core location in radians
+    *  :type depth1: Depth of core location in km (positive down)
+    *  :type latitudes: Array of floats of latitudes in radians
+    *  :type longitudes: Array of floats of longitudes in radians
+    *  :type depths: Array of floats of depths in km (positive down)
+    *  :type n_locs: Number of locations
+    *  :type dist_array: Array of floats of for output - should be initialized as zeros, and should be n_locs long
+    */
+    int out = 0;
+    long n;
+
+    #pragma omp parallel for num_threads(n_threads)
+    for (n = 0; n < n_locs; ++n){
+        dist_array[n] = dist_calc(
+            lat1, lon1, depth1, latitudes[n], longitudes[n], depths[n]);
+    }
+    return out;
+}
+
 
 int distance_matrix(float *latitudes, float *longitudes, float *depths, long n_locs,
                     float *dist_mat, int n_threads){

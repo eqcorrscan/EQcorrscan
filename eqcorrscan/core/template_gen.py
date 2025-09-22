@@ -246,6 +246,12 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
     >>> print(len(templates[0]))
     15
     """
+    # Cope with daylong deprecation
+    daylong = kwargs.pop("daylong", None)
+    if daylong:
+        warnings.warn(
+            "daylong argument deprecated - process-len will be set to 86400")
+        process_len = 86400.0
     client_map = {'from_client': 'fdsn'}
     assert method in ('from_client', 'from_meta_file', 'from_sac')
     if not isinstance(swin, list):
@@ -319,22 +325,6 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             Logger.info("No data")
             continue
         if process:
-            data_len = max([len(tr.data) / tr.stats.sampling_rate
-                            for tr in st])
-            if 80000 < data_len < 90000:
-                daylong = True
-                starttime = min([tr.stats.starttime for tr in st])
-                min_delta = min([tr.stats.delta for tr in st])
-                # Cope with the common starttime less than 1 sample before the
-                #  start of day.
-                if (starttime + min_delta).date > starttime.date:
-                    starttime = (starttime + min_delta)
-                # Check if this is stupid:
-                if abs(starttime - UTCDateTime(starttime.date)) > 600:
-                    daylong = False
-                starttime = starttime.date
-            else:
-                daylong = False
             # Check if the required amount of data have been downloaded - skip
             # channels if arg set.
             for tr in st:
@@ -356,9 +346,7 @@ def template_gen(method, lowcut, highcut, samp_rate, filt_order,
             kwargs = dict(
                 st=st, lowcut=lowcut, highcut=highcut,
                 filt_order=filt_order, samp_rate=samp_rate,
-                parallel=parallel, num_cores=num_cores, daylong=daylong)
-            if daylong:
-                kwargs.update(dict(starttime=UTCDateTime(starttime)))
+                parallel=parallel, num_cores=num_cores)
             st = pre_processing.multi_process(**kwargs)
         data_start = min([tr.stats.starttime for tr in st])
         data_end = max([tr.stats.endtime for tr in st])
@@ -521,6 +509,12 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
                     "Pick not associated with waveforms, will not use:"
                     " {0}".format(pick))
                 continue
+            if pick.waveform_id.channel_code is None:
+                Logger.error(
+                    f"Missing waveform_id.channel_code for Pick {pick}.")
+                raise TemplateGenError(
+                    "Ensure that all picks have complete "
+                    "waveform_id attributes")
             if all_channels:
                 channel_code = pick.waveform_id.channel_code[0:2] + "?"
             else:
@@ -566,6 +560,8 @@ def _download_from_client(client, client_type, catalog, data_pad, process_len,
         tr.trim(starttime, endtime)
         if len(tr.data) == (process_len * tr.stats.sampling_rate) + 1:
             tr.data = tr.data[1:len(tr.data)]
+            # Correct after #573
+            tr.stats.starttime += tr.stats.delta
         if tr.stats.endtime - tr.stats.starttime < 0.8 * process_len:
             Logger.warning(
                 "Data for {0}.{1} is {2} hours long, which is less than 80 "

@@ -18,7 +18,7 @@ from eqcorrscan.utils import clustering
 from eqcorrscan.utils.clustering import (
     cross_chan_correlation, distance_matrix, cluster, group_delays, svd,
     empirical_svd, svd_to_stream, corr_cluster, dist_mat_km, catalog_cluster,
-    space_time_cluster, remove_unclustered)
+    space_time_cluster, remove_unclustered, dist_array_km)
 from eqcorrscan.helpers.mock_logger import MockLoggingHandler
 
 
@@ -380,6 +380,12 @@ class DistanceClusterTests(unittest.TestCase):
                          master_ori.depth / 1000),
                         (slave_ori.latitude, slave_ori.longitude,
                          slave_ori.depth / 1000)), 6)
+
+    def test_dist_array_km(self):
+        """ Test that just computing one array works as expected """
+        dist_array = dist_array_km(master=self.cat[0], catalog=self.cat)
+        self.assertEqual(len(dist_array), len(self.cat))
+        self.assertEqual(dist_array[0], 0)
 
     def test_space_cluster(self):
         """Test the wrapper around dist_mat_km."""

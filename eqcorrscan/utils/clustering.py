@@ -11,6 +11,7 @@ Functions to cluster seismograms by a range of constraints.
 import os
 import logging
 import ctypes
+from math import radians
 from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
@@ -961,6 +962,65 @@ def remove_unclustered(catalog, distance_cutoff, num_threads=None):
             _events.append(event)
     catalog.events = _events
     return catalog
+
+
+def dist_array_km(master, catalog, num_threads=None):
+    """
+    Compute an array of distances relative to one core event.
+
+    Will give phyiscal hypocentral distances in km.
+
+    :type master: obspy.core.event.Event
+    :param master: Master event to compute distances relative to
+    :type catalog: obspy.core.event.Catalog
+    :param catalog: Catalog for which to compute the distance matrix
+
+    :returns: distance array
+    :rtype: :class:`numpy.ndarray`
+    """
+    utilslib = _load_cdll('libutils')
+
+    utilslib.distance_array.argtypes = [
+        ctypes.c_float, ctypes.c_float, ctypes.c_float,
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags='C_CONTIGUOUS'),
+        ctypes.c_long,
+        np.ctypeslib.ndpointer(dtype=np.float32,
+                               flags='C_CONTIGUOUS'),
+        ctypes.c_int]
+    utilslib.distance_array.restype = ctypes.c_int
+
+    # Initialize empty array
+    dist_array = np.zeros(len(catalog), dtype=np.float32)
+    latitudes, longitudes, depths = (
+        np.empty(len(catalog)), np.empty(len(catalog)), np.empty(len(catalog)))
+    for i, event in enumerate(catalog):
+        origin = event.preferred_origin() or event.origins[0]
+        latitudes[i] = origin.latitude
+        longitudes[i] = origin.longitude
+        depths[i] = origin.depth
+    depths /= 1000.0
+    depths = np.ascontiguousarray(depths, dtype=np.float32)
+    latitudes = np.ascontiguousarray(np.radians(latitudes), dtype=np.float32)
+    longitudes = np.ascontiguousarray(np.radians(longitudes), dtype=np.float32)
+
+    # Generally this is better single threaded
+    num_threads = num_threads or 1
+
+    master_origin = master.preferred_origin() or master.origins[0]
+
+    ret = utilslib.distance_array(
+        radians(master_origin.latitude), radians(master_origin.longitude),
+        master_origin.depth / 1000., latitudes, longitudes, depths,
+        len(catalog), dist_array, num_threads)
+
+    if ret != 0:  # pragma: no cover
+        raise Exception("Internal error while computing distance matrix")
+    return dist_array
 
 
 def dist_mat_km(catalog, num_threads=None):

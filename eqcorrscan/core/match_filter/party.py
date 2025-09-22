@@ -20,9 +20,11 @@ import tarfile
 import tempfile
 import logging
 from os.path import join
+import warnings
 
 import numpy as np
 from obspy import Catalog, read_events, Stream
+from obspy.core.event import Comment
 
 from eqcorrscan.core.match_filter.family import _write_family, _read_family
 from eqcorrscan.core.match_filter.matched_filter import MatchFilterError
@@ -493,6 +495,13 @@ class Party(object):
                     d.threshold = new_thresh
                     d.threshold_input = new_threshold
                     d.threshold_type = new_threshold_type
+                    if d.event:
+                        d.event.comments = [
+                            c for c in d.event.comments
+                            if not c.text.lower().startswith("threshold=")]
+                        d.event.comments.append(Comment(
+                            text=f"threshold={new_thresh}"))
+
                     rethresh_detections.append(d)
             family.detections = rethresh_detections
         return self
@@ -853,6 +862,102 @@ class Party(object):
         self.families = families
         return self
 
+    def client_lag_calc(
+        self,
+        client,
+        shift_len=0.2,
+        min_gap=None,
+        retries=3,
+        *args,
+        **kwargs
+    ):
+        """
+        Compute picks based on cross-correlation using data from a Client.
+
+        Works in-place on events in Party.
+
+        :param client:
+            obspy FDSN-like client with at least a .get_waveforms method
+
+        All other arguments are passed to party.lag_calc. For documentation
+        see that method.
+        """
+        from eqcorrscan.core.match_filter.helpers.tribe import _download_st
+
+        # 1. Group detections into chunks of process-len
+        det_times = [d.detect_time for f in self for d in f]
+        # Work out when our data need to start and end incorporating data pads
+        det_start, det_end = min(det_times), max(det_times)
+        pad = shift_len * 2
+        max_template_length = max(tr.stats.endtime - tr.stats.starttime
+                                  for f in self for tr in f.template.st)
+        det_start -= pad
+        chunk_overlap = pad + max_template_length
+        chunk_length = max(f.template.process_length for f in self)
+        det_end += chunk_overlap
+
+        # Loop over groups
+        chunk_start, chunk_end = det_start, det_start + chunk_length
+        detections_run = set()  # Keep track of what we have done
+        catalog = Catalog()
+        Logger.info(f"Running in chunks of {chunk_length} s between "
+                    f"{det_start} and {det_end}")
+        while chunk_start <= det_end:
+            # Make a party of just those detections in this chunk of data
+            chunk = Party()
+            for family in self:
+                chunk_detections = [
+                    d for d in family
+                    if d.detect_time <= (chunk_end - chunk_overlap)
+                    and d.detect_time >= (chunk_start + pad)
+                    and d.id not in detections_run]
+                if len(chunk_detections):
+                    chunk_family = Family(
+                        template=family.template, detections=chunk_detections)
+                    chunk += chunk_family
+            if len(chunk) == 0:
+                Logger.info(f"No detections between {chunk_start} and "
+                            f"{chunk_end}, skipping")
+                chunk_start += (chunk_length - chunk_overlap)
+                chunk_end = chunk_start + chunk_length
+                continue
+            Logger.info(f"Working on {len(chunk)} detections")
+
+            # 2. Download stream for those detections
+            Logger.info(
+                f"Downloading data between {chunk_start} and {chunk_end}")
+            template_channel_ids = {
+                tuple(tr.id.split('.')) for f in chunk for tr in f.template.st}
+            st = _download_st(
+                starttime=chunk_start, endtime=chunk_end + pad, buff=300.0,
+                min_gap=min_gap, template_channel_ids=template_channel_ids,
+                client=client, retries=retries)
+            Logger.info(f"Downloaded data for {len(st)} channels, expected "
+                        f"{len(template_channel_ids)} channels")
+            if len(st) == 0:
+                Logger.warning(
+                    f"No data meeting standards available between "
+                    f"{chunk_start} and {chunk_end}, skipping {len(chunk)} "
+                    f"detections")
+                chunk_start += (chunk_length - chunk_overlap)
+                chunk_end = chunk_start + chunk_length
+                # catalog += chunk.get_catalog()
+                continue
+
+            # 3. Run lag-calc
+            _picked_catalog = chunk.lag_calc(
+                stream=st, pre_processed=False, shift_len=shift_len,
+                *args, **kwargs)
+            Logger.debug(f"For {len(chunk)} a catalog of "
+                         f"{len(_picked_catalog)} was returned")
+            catalog += _picked_catalog
+
+            # 4. Run next group
+            detections_run.update({d.id for f in chunk for d in f})
+            chunk_start += (chunk_length - chunk_overlap)
+            chunk_end = chunk_start + chunk_length
+        return catalog
+
     def lag_calc(self, stream, pre_processed, shift_len=0.2, min_cc=0.4,
                  min_cc_from_mean_cc_factor=None, vertical_chans=['Z'],
                  horizontal_chans=['E', 'N', '1', '2'],
@@ -923,8 +1028,9 @@ class Party(object):
             `cores`).
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -957,6 +1063,10 @@ class Party(object):
         .. Note::
             Picks are corrected for the template pre-pick time.
         """
+        # Cope with daylong deprecation
+        daylong = kwargs.pop("daylong", None)
+        if daylong:
+            warnings.warn("daylong argument deprecated - will be ignored")
         process_cores = process_cores or cores
         template_groups = group_templates(
             [_f.template for _f in self.families
@@ -965,19 +1075,21 @@ class Party(object):
         for template_group in template_groups:
             family = [_f for _f in self.families
                       if _f.template == template_group[0]][0]
-            group_seed_ids = {tr.id for template in template_group
-                              for tr in template.st}
+            group_seed_ids = {tr.id for _template in template_group
+                              for tr in _template.st}
             template_stream = Stream()
             for seed_id in group_seed_ids:
                 net, sta, loc, chan = seed_id.split('.')
                 template_stream += stream.select(
                     network=net, station=sta, location=loc, channel=chan)
             # Process once and only once for each group.
+            Logger.info("Processing stream for group")
             processed_stream = family._process_streams(
                 stream=template_stream, pre_processed=pre_processed,
                 process_cores=process_cores, parallel=parallel,
                 ignore_bad_data=ignore_bad_data, ignore_length=ignore_length,
                 select_used_chans=False)
+            Logger.info(f"Processed_stream: {processed_stream}")
             for template in template_group:
                 family = [_f for _f in self.families
                           if _f.template == template][0]
