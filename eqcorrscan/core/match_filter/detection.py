@@ -263,6 +263,14 @@ class Detection(object):
         else:
             template_prepick = 0
             template_picks = []
+        """
+        Detection time is first used channel in template - prepick.
+        """
+
+        # Only include channels used for detection in template_st
+        template_st = Stream(
+            [tr for tr in template_st if (tr.stats.station, tr.stats.channel)
+             in self.chans])
         min_template_tm = min(
             [tr.stats.starttime for tr in template_st])
         for tr in template_st:
@@ -301,7 +309,7 @@ class Detection(object):
                             template_pick,
                             key=lambda p: p.time)[_index].phase_hint
                     except IndexError:
-                        Logger.error(f"No pick for trace: {tr.id}")
+                        Logger.debug(f"No pick for trace: {tr.id}")
                 ev.picks.append(new_pick)
         if estimate_origin and template is not None\
                 and template.event is not None:
@@ -380,7 +388,9 @@ class Detection(object):
         valid_chans = {
             (tr.stats.station, tr.stats.channel)
             for tr in stream}.intersection(set(self.chans))
+        Logger.debug(f"Cutting from stream: \n{stream}")
         for station, channel in valid_chans:
+            Logger.debug(f"Extracting stream for {station}.{channel}")
             _st = stream.select(station=station, channel=channel)
             pick = [
                 p for p in self.event.picks
@@ -397,7 +407,8 @@ class Detection(object):
                 pick = [p for p in pick
                         if p.waveform_id.channel_code == channel]
             if len(pick) == 0:
-                Logger.info("No pick for {0}.{1}".format(station, channel))
+                Logger.debug(
+                    "No pick for {0}.{1}".format(station, channel))
                 continue
             elif len(pick) > 1:
                 Logger.info(
@@ -406,15 +417,33 @@ class Detection(object):
                 pick.sort(key=lambda p: p.time)
             pick = pick[0]
             cut_start = pick.time - prepick
-            cut_end = cut_start + length
-            _st = _st.slice(starttime=cut_start, endtime=cut_end).copy()
-            # Minimum length check
+            Logger.debug(
+                f"Cutting for {station}.{channel} to start at "
+                f"{cut_start}, {prepick} s before pick at {pick.time}")
+            # Find nearest sample to avoid  to too-short length - see #573
             for tr in _st:
-                if abs((tr.stats.endtime - tr.stats.starttime) -
+                sample_offset = (cut_start -
+                                 tr.stats.starttime) * tr.stats.sampling_rate
+                Logger.debug(
+                    f"Sample offset for slice on {tr.id}: {sample_offset}")
+                sample_offset //= 1
+                # If the sample offset is not a whole number, always take the
+                # sample before that requested
+                _tr_cut_start = tr.stats.starttime + (
+                    sample_offset * tr.stats.delta)
+                _tr_cut_end = _tr_cut_start + length
+                Logger.debug(
+                    f"Trimming {tr.id} between {_tr_cut_start} "
+                    f"and {_tr_cut_end}.")
+                _tr = tr.slice(_tr_cut_start, _tr_cut_end).copy()
+                Logger.debug(
+                    f"Length: {(_tr.stats.endtime - _tr.stats.starttime)}")
+                Logger.debug(f"Requested length: {length}")
+                if abs((_tr.stats.endtime - _tr.stats.starttime) -
                        length) < tr.stats.delta:
-                    cut_stream += tr
+                    cut_stream += _tr
                 else:
-                    Logger.info(
+                    Logger.debug(
                         "Insufficient data length for {0}".format(tr.id))
         return cut_stream
 

@@ -90,21 +90,33 @@ class Poison(Exception):
         return self.__repr__()
 
 
-def _get_and_check(input_queue: Queue, poison_queue: Queue, step: float = 0.5):
+def _get_and_check(
+    input_queue: Queue,
+    poison_queue: Queue,
+    step: float = 0.5,
+    timeout: float = None,
+):
     """
     Get from a queue and check for poison - returns Poisoned if poisoned.
 
     :param input_queue: Queue to get something from
     :param poison_queue: Queue to check for poison
+    :param step: Time in seconds to wait until re-checking the queues
+    :param timeout: Maximum time in seconds to wait for data in the input queue.
 
     :return: Item from queue or Poison.
     """
+    waited = 0.0
     while True:
         poison = _check_for_poison(poison_queue)
         if poison:
             return poison
         if input_queue.empty():
             time.sleep(step)
+            waited += step
+            if timeout and waited >= timeout:
+                return Poison(Empty(
+                    f"{input_queue} is empty after {timeout} seconds"))
         else:
             return input_queue.get_nowait()
 
@@ -197,7 +209,6 @@ def _get_detection_stream(
     pre_process: bool = False,
     parallel_process: bool = True,
     process_cores: int = None,
-    daylong: bool = False,
     overlap: Union[str, float] = "calculate",
     ignore_length: bool = False,
     ignore_bad_data: bool = False,
@@ -252,7 +263,6 @@ def _get_detection_stream(
         Whether to process data in parallel (uses multi-threading)
     :param process_cores:
         Maximum number of cores to use for parallel processing
-    :param daylong: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_length: See utils.pre_processing.multi_process
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -311,7 +321,7 @@ def _get_detection_stream(
                     lowcut=lowcut, samp_rate=samp_rate,
                     process_length=process_length,
                     parallel=parallel_process, cores=process_cores,
-                    daylong=daylong, ignore_length=ignore_length,
+                    ignore_length=ignore_length,
                     overlap=overlap, ignore_bad_data=ignore_bad_data)
                 # We don't need to hold on to st!
                 del st
@@ -363,7 +373,6 @@ def _pre_processor(
     process_length: float,
     parallel: bool,
     cores: int,
-    daylong: bool,
     ignore_length: bool,
     overlap: float,
     ignore_bad_data: bool,
@@ -395,7 +404,6 @@ def _pre_processor(
     :param process_length: See utils.pre_processing.multi_process
     :param parallel: See utils.pre_processing.multi_process
     :param cores: See utils.pre_processing.multi_process
-    :param daylong: See utils.pre_processing.multi_process
     :param ignore_length: See utils.pre_processing.multi_process
     :param overlap: See core.match_filter.tribe.detect
     :param ignore_bad_data: See utils.pre_processing.multi_process
@@ -410,21 +418,25 @@ def _pre_processor(
             break
         Logger.debug("Getting stream from queue")
         st = _get_and_check(input_stream_queue, poison_queue)
+        Logger.warning(st)
         if st is None:
             Logger.info("Ran out of streams, stopping processing")
             break
         elif isinstance(st, Poison):
             Logger.error("Killed")
             break
-        if len(st) == 0:
-            break
+        # if len(st) == 0:
+        #     Logger.error("Empty stream provided")
+        #     poison_queue.put_nowait(Poison(IndexError
+        #           ("No matching channels between stream and ")))
+        #     break
         Logger.info(f"Processing stream:\n{st}")
 
         # Process stream
         try:
             st_chunks = _pre_process(
                 st, template_ids, pre_processed, filt_order, highcut, lowcut,
-                samp_rate, process_length, parallel, cores, daylong,
+                samp_rate, process_length, parallel, cores,
                 ignore_length, ignore_bad_data, overlap)
             for chunk in st_chunks:
                 if not os.path.isdir(temp_stream_dir):
@@ -467,6 +479,7 @@ def _prepper(
     output_queue: Queue,
     poison_queue: Queue,
     xcorr_func: str = None,
+    min_stations: int = 0,
 ):
     """
     Prepare templates and stream for correlation.
@@ -494,6 +507,8 @@ def _prepper(
         Queue to check for poison, or put poison into if something goes awry
     :param xcorr_func:
         Name of correlation function backend to be used.
+    :param min_stations:
+        Minimum number of stations to run a template.
     """
     if isinstance(templates, dict):
         # We have been passed a db of template files on disk
@@ -547,16 +562,25 @@ def _prepper(
                 f"Multiple channels in continuous data for "
                 f"{', '.join(_duplicate_sids)}")))
             break
+        template_sids = {tr.id for template in templates for tr in template.st}
+        if len(template_sids.intersection(st_sids)) == 0:
+            poison_queue.put_nowait(Poison(
+                IndexError("No matching channels between templates and data")))
         # Do the grouping for this stream
         Logger.info(f"Grouping {len(templates)} templates into groups "
                     f"of {group_size} templates")
         try:
             template_groups = _group(sids=st_sids, templates=templates,
-                                     group_size=group_size, groups=groups)
+                                     group_size=group_size, groups=groups,
+                                     min_stations=min_stations)
         except Exception as e:
             Logger.error(e)
             poison_queue.put_nowait(Poison(e))
             break
+        if template_groups is None:
+            output_queue.put_nowait(None)
+            return
+
         Logger.info(f"Grouped into {len(template_groups)} groups")
         for i, template_group in enumerate(template_groups):
             killed = _check_for_poison(poison_queue)
@@ -660,6 +684,7 @@ def _make_detections(
     threshold: float,
     threshold_type: str,
     save_progress: bool,
+    make_events: bool,
     output_queue: Queue,
     poison_queue: Queue,
 ):
@@ -683,6 +708,8 @@ def _make_detections(
     :param save_progress:
         Whether to save progress or not: If true, individual Party files will
         be written each time this is run.
+    :param make_events:
+        Whether to make events for all detections or not.
     :param output_queue:
         Queue of output Party filenames.
     :param poison_queue:
@@ -712,7 +739,7 @@ def _make_detections(
                 detections=detections, threshold=threshold,
                 threshold_type=threshold_type, templates=templates,
                 chunk_start=starttime, chunk_id=chunk_id,
-                save_progress=save_progress)
+                save_progress=save_progress, make_events=make_events)
             chunk_id += 1
             output_queue.put_nowait(chunk_file)
         except Exception as e:

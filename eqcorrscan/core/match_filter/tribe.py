@@ -22,6 +22,7 @@ import tempfile
 import traceback
 import uuid
 import logging
+import warnings
 
 from multiprocessing import Process, Queue, cpu_count
 from queue import Empty
@@ -590,6 +591,8 @@ class Tribe(object):
             delayed=delayed, plot=plot, min_snr=min_snr, parallel=parallel,
             num_cores=num_cores, skip_short_chans=skip_short_chans,
             **kwargs)
+        # Templates need unique names - keep track of used ones
+        template_names = set()
         for template, event, process_len in zip(templates, catalog,
                                                 process_lengths):
             t = Template()
@@ -597,8 +600,25 @@ class Tribe(object):
                 Logger.error('Empty Template')
                 continue
             t.st = template
-            t.name = template.sort(['starttime'])[0]. \
-                stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            # Name templates by the start of a the earliest trace - we do this
+            # to cope with events possibly not having attributes (e.g. we don't
+            # require an origin or an event id, so we can't use that by
+            # default).
+            template_name = template.sort(
+                ['starttime'])[0].stats.starttime.strftime('%Y_%m_%dt%H_%M_%S')
+            template_name_base = template_name
+            _i = 0
+            while template_name in template_names:
+                Logger.info(
+                    f"Template with name {template_name} already exists")
+                _i += 1
+                template_name = f"{template_name_base}_{_i}"
+            else:
+                if _i > 0:
+                    Logger.info(
+                        f"Chaning template name from {template_name_base} to "
+                        f"{template_name}")
+            t.name = template_name
             t.lowcut = lowcut
             t.highcut = highcut
             t.filt_order = filt_order
@@ -653,13 +673,13 @@ class Tribe(object):
         return tribes
 
     def detect(self, stream, threshold, threshold_type, trig_int, plot=False,
-               plotdir=None, daylong=False, parallel_process=True,
+               plotdir=None, parallel_process=True,
                xcorr_func=None, concurrency=None, cores=None,
-               concurrent_processing=False, ignore_length=False,
-               ignore_bad_data=False, group_size=None, overlap="calculate",
-               full_peaks=False, save_progress=False, process_cores=None,
-               pre_processed=False, check_processing=True,
-               **kwargs):
+               cc_squared=False, concurrent_processing=False,
+               ignore_length=False, ignore_bad_data=False, group_size=None,
+               overlap="calculate", full_peaks=False, save_progress=False,
+               process_cores=None, pre_processed=False, check_processing=True,
+               make_events=True, min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -686,12 +706,6 @@ class Tribe(object):
         :param plotdir:
             The path to save plots to. If `plotdir=None` (default) then the
             figure will be shown on screen.
-        :type daylong: bool
-        :param daylong:
-            Set to True to use the
-            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
-            preforms additional checks and is more efficient for day-long data
-            over other methods.
         :type parallel_process: bool
         :param parallel_process:
         :type xcorr_func: str or callable
@@ -706,6 +720,10 @@ class Tribe(object):
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
         :param cores: Number of workers for processing and detection.
+        :type cc_squared: bool
+        :param cc_squared:
+            Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+            just using cc.
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
@@ -713,8 +731,9 @@ class Tribe(object):
             benchmarking.
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if the data
+            are not long enough. if you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -750,6 +769,10 @@ class Tribe(object):
         :type check_processing: bool
         :param check_processing:
             Whether to check that all templates were processed the same.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -829,6 +852,11 @@ class Tribe(object):
         # We should not need to copy the stream, it is copied in chunks by
         # _group_process
 
+        # Cope with daylong deprecation
+        daylong = kwargs.pop("daylong", None)
+        if daylong:
+            warnings.warn("daylong argument deprecated - will be ignored")
+
         # Argument handling
         if overlap is None:
             overlap = 0.0
@@ -868,11 +896,12 @@ class Tribe(object):
             tr.id for template in self.templates for tr in template.st)
 
         args = (stream, template_ids, pre_processed, parallel_process,
-                process_cores, daylong, ignore_length, overlap,
+                process_cores, ignore_length, overlap,
                 ignore_bad_data, group_size, groups, sampling_rate, threshold,
                 threshold_type, save_progress, xcorr_func, concurrency, cores,
-                export_cccsums, parallel, peak_cores, trig_int, full_peaks,
-                plot, plotdir, plot_format,)
+                cc_squared, export_cccsums, parallel, peak_cores, trig_int,
+                full_peaks, plot, plotdir, plot_format, make_events,
+                min_stations,)
 
         if concurrent_processing:
             party = self._detect_concurrent(*args, **inner_kwargs)
@@ -896,11 +925,11 @@ class Tribe(object):
 
     def _detect_serial(
         self, stream, template_ids, pre_processed, parallel_process,
-        process_cores, daylong, ignore_length, overlap, ignore_bad_data,
+        process_cores, ignore_length, overlap, ignore_bad_data,
         group_size, groups, sampling_rate, threshold, threshold_type,
-        save_progress, xcorr_func, concurrency, cores, export_cccsums,
-        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        **kwargs
+        save_progress, xcorr_func, concurrency, cores, cc_squared,
+        export_cccsums, parallel, peak_cores, trig_int, full_peaks, plot,
+        plotdir, plot_format, make_events, min_stations, **kwargs
     ):
         """ Internal serial detect workflow. """
         from eqcorrscan.core.match_filter.helpers.tribe import (
@@ -920,7 +949,7 @@ class Tribe(object):
             lowcut=self.templates[0].lowcut,
             samp_rate=self.templates[0].samp_rate,
             process_length=self.templates[0].process_length,
-            parallel=parallel_process, cores=process_cores, daylong=daylong,
+            parallel=parallel_process, cores=process_cores,
             ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
             overlap=overlap, **kwargs)
 
@@ -930,7 +959,10 @@ class Tribe(object):
             delta = st_chunk[0].stats.delta
             template_groups = _group(
                 sids={tr.id for tr in st_chunk},
-                templates=self.templates, group_size=group_size, groups=groups)
+                templates=self.templates, group_size=group_size, groups=groups,
+                min_stations=min_stations)
+            if template_groups is None:
+                continue
             for i, template_group in enumerate(template_groups):
                 templates = [_quick_copy_stream(t.st) for t in template_group]
                 template_names = [t.name for t in template_group]
@@ -950,7 +982,9 @@ class Tribe(object):
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, prepped=False, **kwargs)
+                    plot_format=plot_format, prepped=False,
+                    cc_squared=cc_squared, **kwargs)
+                Logger.debug(chans)
 
                 detections = _detect(
                     template_names=template_names,
@@ -962,7 +996,8 @@ class Tribe(object):
                     detections=detections, threshold=threshold,
                     threshold_type=threshold_type,
                     templates=self.templates, chunk_start=starttime,
-                    chunk_id=i, save_progress=save_progress)
+                    chunk_id=i, save_progress=save_progress,
+                    make_events=make_events)
                 chunk_files.append(chunk_file)
         # Rebuild
         for _chunk_file in chunk_files:
@@ -983,11 +1018,11 @@ class Tribe(object):
 
     def _detect_concurrent(
         self, stream, template_ids, pre_processed, parallel_process,
-        process_cores, daylong, ignore_length, overlap, ignore_bad_data,
+        process_cores, ignore_length, overlap, ignore_bad_data,
         group_size, groups, sampling_rate, threshold, threshold_type,
-        save_progress, xcorr_func, concurrency, cores, export_cccsums,
-        parallel, peak_cores, trig_int, full_peaks, plot, plotdir, plot_format,
-        **kwargs
+        save_progress, xcorr_func, concurrency, cores, cc_squared,
+        export_cccsums, parallel, peak_cores, trig_int, full_peaks, plot,
+        plotdir, plot_format, make_events, min_stations, **kwargs
     ):
         """ Internal concurrent detect workflow. """
         from eqcorrscan.core.match_filter.helpers.processes import (
@@ -1043,7 +1078,6 @@ class Tribe(object):
                     process_length=self.templates[0].process_length,
                     parallel=parallel_process,
                     cores=process_cores,
-                    daylong=daylong,
                     ignore_length=ignore_length,
                     overlap=overlap,
                     ignore_bad_data=ignore_bad_data,
@@ -1063,6 +1097,7 @@ class Tribe(object):
                 output_queue=prepped_queue,
                 poison_queue=poison_queue,
                 xcorr_func=xcorr_func,
+                min_stations=min_stations,
             ),
             name="PrepProcess"
         )
@@ -1075,6 +1110,7 @@ class Tribe(object):
                 threshold=threshold,
                 threshold_type=threshold_type,
                 save_progress=save_progress,
+                make_events=make_events,
                 output_queue=party_file_queue,
                 poison_queue=poison_queue,
             ),
@@ -1150,7 +1186,8 @@ class Tribe(object):
                     threshold=threshold, threshold_type=threshold_type,
                     trig_int=trig_int, sampling_rate=sampling_rate,
                     full_peaks=full_peaks, plot=plot, plotdir=plotdir,
-                    plot_format=plot_format, **inner_kwargs
+                    plot_format=plot_format, cc_squared=cc_squared,
+                    **inner_kwargs
                 )
                 peaks_queue.put(
                     (starttime, all_peaks, thresholds, no_chans, chans,
@@ -1219,13 +1256,14 @@ class Tribe(object):
 
     def client_detect(self, client, starttime, endtime, threshold,
                       threshold_type, trig_int, plot=False, plotdir=None,
-                      min_gap=None, daylong=False, parallel_process=True,
+                      min_gap=None, parallel_process=True,
                       xcorr_func=None, concurrency=None, cores=None,
-                      concurrent_processing=False, ignore_length=False,
-                      ignore_bad_data=False, group_size=None,
-                      return_stream=False, full_peaks=False,
+                      cc_squared=False, concurrent_processing=False,
+                      ignore_length=False, ignore_bad_data=False,
+                      group_size=None, return_stream=False, full_peaks=False,
                       save_progress=False, process_cores=None, retries=3,
-                      check_processing=True, **kwargs):
+                      check_processing=True, make_events=True,
+                      min_stations=0, **kwargs):
         """
         Detect using a Tribe of templates within a continuous stream.
 
@@ -1259,12 +1297,6 @@ class Tribe(object):
         :param min_gap:
             Minimum gap allowed in data - use to remove traces with known
             issues
-        :type daylong: bool
-        :param daylong:
-            Set to True to use the
-            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
-            preforms additional checks and is more efficient for day-long data
-            over other methods.
         :type parallel_process: bool
         :param parallel_process:
         :type xcorr_func: str or callable
@@ -1279,6 +1311,10 @@ class Tribe(object):
             :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
         :type cores: int
         :param cores: Number of workers for processing and detection.
+        :type cc_squared: bool
+        :param cc_squared:
+            Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+            just using cc.
         :type concurrent_processing: bool
         :param concurrent_processing:
             Whether to process steps in detection workflow concurrently or not.
@@ -1286,8 +1322,9 @@ class Tribe(object):
             benchmarking.
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type ignore_bad_data: bool
@@ -1317,6 +1354,10 @@ class Tribe(object):
         :param retries:
             Number of attempts allowed for downloading - allows for transient
             server issues.
+        :type min_stations: int
+        :param min_stations:
+            Minimum number of overlapping stations between template
+            and stream to use the template for detection.
 
         :return:
             :class:`eqcorrscan.core.match_filter.Party` of Families of
@@ -1375,6 +1416,11 @@ class Tribe(object):
         from eqcorrscan.core.match_filter.helpers.processes import (
             _get_detection_stream, _FDSN_parseable_Client)
 
+        # Cope with daylong deprecation
+        daylong = kwargs.pop("daylong", None)
+        if daylong:
+            warnings.warn("daylong argument deprecated - will be ignored")
+
         # This uses get_waveforms_bulk to get data - not all client types have
         # this, so we check and monkey patch here.
         if not hasattr(client, "get_waveforms_bulk"):
@@ -1419,14 +1465,17 @@ class Tribe(object):
         detector_kwargs = dict(
             threshold=threshold, threshold_type=threshold_type,
             trig_int=trig_int, plot=plot, plotdir=plotdir,
-            daylong=daylong, parallel_process=parallel_process,
+            parallel_process=parallel_process,
             xcorr_func=xcorr_func, concurrency=concurrency, cores=cores,
             ignore_length=ignore_length, ignore_bad_data=ignore_bad_data,
             group_size=group_size, overlap=None, full_peaks=full_peaks,
             process_cores=process_cores, save_progress=save_progress,
             return_stream=return_stream, check_processing=False,
             poison_queue=poison_queue, shutdown=False,
-            concurrent_processing=concurrent_processing, groups=groups)
+            concurrent_processing=concurrent_processing, groups=groups,
+            make_events=make_events, min_stations=min_stations,
+            cc_squared=cc_squared)
+        detector_kwargs.update(kwargs)
 
         if not concurrent_processing:
             Logger.warning("Using concurrent_processing=True can be faster if"
@@ -1476,7 +1525,7 @@ class Tribe(object):
                 temp_stream_dir=self._stream_dir,
                 full_stream_dir=full_stream_dir,
                 pre_process=True, parallel_process=parallel_process,
-                process_cores=process_cores, daylong=daylong,
+                process_cores=process_cores,
                 overlap=0.0, ignore_length=ignore_length,
                 ignore_bad_data=ignore_bad_data,
                 filt_order=self.templates[0].filt_order,

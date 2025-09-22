@@ -214,6 +214,10 @@ class Template(object):
         >>> template_a == template_b
         False
         """
+        header_comparisons = [
+            'network', 'station', 'channel', 'location', 'starttime',
+            'endtime', 'sampling_rate', 'delta', 'npts', 'calib']
+        nan_ignore_headers = ['starttime', 'endtime']
         for key in self.__dict__.keys():
             if key == 'st':
                 self_is_stream = isinstance(self.st, Stream)
@@ -227,11 +231,16 @@ class Template(object):
                                 print("Template data are not equal on "
                                       "{0}".format(tr.id))
                             return False
-                        for trkey in ['network', 'station', 'channel',
-                                      'location', 'starttime', 'endtime',
-                                      'sampling_rate', 'delta', 'npts',
-                                      'calib']:
+                        nan_data = False
+                        if np.all(np.isnan(tr.data)):
+                            # If data are all nan, we can ignore some of the
+                            # stats which may be incorrrect
+                            nan_data = True
+                        for trkey in header_comparisons:
                             if tr.stats[trkey] != oth_tr.stats[trkey]:
+                                if nan_data and trkey in nan_ignore_headers:
+                                    # We can safely skip this comparison
+                                    continue
                                 if verbose:
                                     print("{0} does not match in "
                                           "template".format(trkey))
@@ -393,7 +402,7 @@ class Template(object):
         return self
 
     def detect(self, stream, threshold, threshold_type, trig_int,
-               plot=False, plotdir=None, pre_processed=False, daylong=False,
+               plot=False, plotdir=None, pre_processed=False,
                parallel_process=True, xcorr_func=None, concurrency=None,
                cores=None, ignore_length=False, overlap="calculate",
                full_peaks=False, **kwargs):
@@ -428,12 +437,6 @@ class Template(object):
             Defaults to False, which will use the
             :mod:`eqcorrscan.utils.pre_processing` routines to resample and
             filter the continuous data.
-        :type daylong: bool
-        :param daylong:
-            Set to True to use the
-            :func:`eqcorrscan.utils.pre_processing.dayproc` routine, which
-            preforms additional checks and is more efficient for day-long data
-            over other methods.
         :type parallel_process: bool
         :param parallel_process:
         :type xcorr_func: str or callable
@@ -450,8 +453,9 @@ class Template(object):
         :param cores: Number of workers for processing and detection.
         :type ignore_length: bool
         :param ignore_length:
-            If using daylong=True, then dayproc will try check that the data
-            are there for at least 80% of the day, if you don't want this check
+            Processing functions will check that the data are there for at
+            least 80% of the required length and raise an error if not.
+            If you don't want this check
             (which will raise an error if too much data are missing) then set
             ignore_length=True.  This is not recommended!
         :type overlap: float
@@ -537,7 +541,7 @@ class Template(object):
         party = Tribe(templates=[self]).detect(
             stream=stream, threshold=threshold,
             threshold_type=threshold_type, trig_int=trig_int, plotdir=plotdir,
-            plot=plot, pre_processed=pre_processed, daylong=daylong,
+            plot=plot, pre_processed=pre_processed,
             parallel_process=parallel_process, xcorr_func=xcorr_func,
             concurrency=concurrency, cores=cores, ignore_length=ignore_length,
             overlap=overlap, full_peaks=full_peaks, **kwargs)
@@ -761,6 +765,7 @@ def group_templates_by_seedid(
         templates: List[Template],
         st_seed_ids: Set[str],
         group_size: int,
+        min_stations: int = 0,
 ) -> List[List[Template]]:
     """
     Group templates to reduce dissimilar traces
@@ -771,6 +776,9 @@ def group_templates_by_seedid(
         Seed ids in the stream to be matched with
     :param group_size:
         Maximum group size - will not exceed this size
+    :param min_stations:
+        Minimum number of overlapping stations between template
+        and stream to use the template for detection.
 
     :return:
         List of lists of templates grouped.
@@ -788,9 +796,9 @@ def group_templates_by_seedid(
     # Don't use templates that don't have any overlap with the stream
     template_seed_ids = tuple(
         (t_name, t_chans) for t_name, t_chans in template_seed_ids
-        if len(t_chans))
+        if len({sid.split('.')[1] for sid in t_chans}) >= max(1, min_stations))
     Logger.info(f"Dropping {len(templates) - len(template_seed_ids)} "
-                f"templates due to no matched channels")
+                f"templates due to fewer than {min_stations} matched channels")
     # We will need this dictionary at the end for getting the templates by id
     template_dict = {t.name: t for t in templates}
     # group_size can be None, in which case we don't actually need to group

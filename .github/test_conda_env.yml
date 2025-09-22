@@ -1,7 +1,6 @@
 name: eqcorrscan-test
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - conda-forge::compilers
   - numpy>=1.12

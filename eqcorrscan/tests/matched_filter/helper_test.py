@@ -243,7 +243,6 @@ class TestPreProcessor(ProcessTests):
             process_length=process_length,
             parallel=False,
             cores=1,
-            daylong=False,
             overlap=3.0,
         )
 
@@ -293,7 +292,6 @@ class TestGetDetectionStreamProcess(ProcessTests):
             pre_process=False,
             parallel_process=True,
             process_cores=1,
-            daylong=False,
             overlap=3.0,
             ignore_length=False,
             ignore_bad_data=False,

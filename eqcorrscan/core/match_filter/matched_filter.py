@@ -61,8 +61,8 @@ class MatchFilterError(Exception):
 # Note: maintained for backwards compatability. All efforts now in tribes
 def match_filter(template_names, template_list, st, threshold,
                  threshold_type, trig_int, plot=False, plotdir=None,
-                 xcorr_func=None, concurrency=None, cores=None,
-                 plot_format='png', output_cat=False,
+                 xcorr_func=None, concurrency=None, cc_squared=False,
+                 cores=None, plot_format='png', output_cat=False,
                  extract_detections=False, arg_check=True, full_peaks=False,
                  peak_cores=None, export_cccsums=False, **kwargs):
     """
@@ -115,6 +115,10 @@ def match_filter(template_names, template_list, st, threshold,
         The type of concurrency to apply to the xcorr function. Options are
         'multithread', 'multiprocess', 'concurrent'. For more details see
         :func:`eqcorrscan.utils.correlate.get_stream_xcorr`
+    :type cc_squared: bool
+    :param cc_squared:
+        Whether to detect using "cc_squared" (actually cc * abs(cc)) or
+        just using cc.
     :type cores: int
     :param cores: Number of cores to use
     :type plot_format: str
@@ -313,13 +317,15 @@ def match_filter(template_names, template_list, st, threshold,
     # Data must be pre-processed
     party = tribe.detect(
         stream=st, threshold=threshold, threshold_type=threshold_type,
-        trig_int=trig_int, plot=plot, plotdir=plotdir, daylong=False,
+        trig_int=trig_int, plot=plot, plotdir=plotdir,
         parallel_process=False, xcorr_func=xcorr_func, concurrency=concurrency,
         cores=cores, ignore_length=True, ignore_bad_data=True, group_size=None,
         overlap="calculate", full_peaks=full_peaks, save_progress=False,
         process_cores=None, pre_processed=True, check_processing=False,
         return_stream=False, plot_format=plot_format,
-        peak_cores=peak_cores, export_cccsums=export_cccsums, **kwargs
+        peak_cores=peak_cores, export_cccsums=export_cccsums,
+        cc_squared=cc_squared,
+        **kwargs
     )
     detections = [d for f in party for d in f]
 
