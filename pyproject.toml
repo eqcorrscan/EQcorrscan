@@ -1,0 +1,13 @@
+[build-system]
+requires = [
+    "setuptools",
+    "numpy",
+    "pkg-resources",
+    "os",
+    "sys",
+    "glob",
+    "shutil",
+    "distutils",
+    "sysconfig",
+]
+build-backend = "setuptools.build_meta"
