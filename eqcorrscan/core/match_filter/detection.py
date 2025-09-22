@@ -265,7 +265,6 @@ class Detection(object):
             template_picks = []
         """
         Detection time is first used channel in template - prepick.
-        
         """
 
         # Only include channels used for detection in template_st

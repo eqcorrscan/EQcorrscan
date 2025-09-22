@@ -101,7 +101,9 @@ class TestCoreMethods(unittest.TestCase):
         matching_ccc = np.allclose(expected_ccc, ccc, atol=0.0031)
         if not matching_ccc:
             diff = expected_ccc - ccc
-            Logger.error(f"ccc's do not match. Max diff {diff.max()} at {diff.argmax()}")
+            Logger.error(
+                f"ccc's do not match. Max diff {diff.max()} at "
+                f"{diff.argmax()}")
         self.assertTrue(matching_ccc)
 
     def test_failed_normxcorr(self):

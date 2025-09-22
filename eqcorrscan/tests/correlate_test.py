@@ -126,7 +126,8 @@ def read_real_multichannel_templates():
     templates = []
     for t in tutorial_templates:
         template = read(t)
-        template = template.select(station="POWZ") + template.select(station="HOWZ")
+        template = (template.select(station="POWZ") +
+                    template.select(station="HOWZ"))
         templates.append(template)
     return templates
 
@@ -366,7 +367,10 @@ def real_stream_cc_dict(real_stream_cc_output_dict):
 
 
 @pytest.fixture(scope='module')
-def real_missing_stream_cc_output_dict(real_templates, real_multichannel_stream):
+def real_missing_stream_cc_output_dict(
+    real_templates,
+    real_multichannel_stream
+):
     """ return a dict of outputs from all stream_xcorr functions """
     out = {}
     fft_len = next_fast_len(
@@ -377,7 +381,7 @@ def real_missing_stream_cc_output_dict(real_templates, real_multichannel_stream)
     # Drop earliest channel from one template
     missing_templates = copy.deepcopy(real_templates)
     dropped_template = missing_templates[-1].copy()
-    dropped_template.traces.sort(key=lambda tr:tr.stats.starttime)
+    dropped_template.traces.sort(key=lambda tr: tr.stats.starttime)
     # nan the earliest trace
     dropped_template[0].data = np.nan * np.ones_like(dropped_template[0].data)
     missing_templates.append(dropped_template)
@@ -406,9 +410,12 @@ def real_missing_stream_cc_dict(real_missing_stream_cc_output_dict):
     return {name: result[0]
             for name, result in real_missing_stream_cc_output_dict.items()}
 
+
 @pytest.fixture(scope='module')
 def gappy_stream_cc_output_dict(
-        multichannel_templates, gappy_multichannel_stream):
+    multichannel_templates,
+    gappy_multichannel_stream
+):
     """ return a dict of outputs from all stream_xcorr functions """
     # corr._get_array_dicts(multichannel_templates, multichannel_stream)
     out = {}
@@ -491,6 +498,7 @@ def gappy_real_cc_dict(gappy_real_cc_output_dict):
             for name, result in gappy_real_cc_output_dict.items()}
 
 # ------------------------------------ correlation ** abs(correlation)
+
 
 @pytest.fixture(scope='module')
 def stream_cc_output_dict_corrsq(
@@ -719,16 +727,21 @@ class TestStreamCorrelateFunctions:
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             if not np.allclose(cc_1, cc, atol=self.atol):
-                log.error("{0} does not match {1}".format(cc_names[0], cc_name))
+                log.error("{0} does not match {1}".format(
+                    cc_names[0], cc_name))
                 np.save("cc1.npy", cc_1)
                 np.save("cc2.npy", cc)
             assert np.allclose(cc_1, cc, atol=self.atol)
 
     def test_real_missing_channel_xcorr(self, real_missing_stream_cc_dict):
-        """ test various correlation methods with multiple channels and a missing channel """
+        """
+        test various correlation methods with multiple channels and a
+        missing channel.
+        """
         # get correlation results into a list
         cc_names = list(real_missing_stream_cc_dict.keys())
-        cc_list = [real_missing_stream_cc_dict[cc_name] for cc_name in cc_names]
+        cc_list = [real_missing_stream_cc_dict[cc_name]
+                   for cc_name in cc_names]
         cc_1 = cc_list[0]
         # loop over correlations and compare each with the first in the list
         # this will ensure all cc are "close enough"
@@ -813,7 +826,6 @@ class TestStreamCorrelateFunctionsCorrSq:
         # this will ensure all cc are "close enough"
         for cc_name, cc in zip(cc_names[2:], cc_list[2:]):
             assert np.allclose(cc_1, cc, atol=self.atol)
-
 
 
 @pytest.mark.serial
