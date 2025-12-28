@@ -1,0 +1,16 @@
+event_id,date,time,latitude,longitude,depth_km,magnitude,magnitude_type,location_quality,notes
+# Template for aftershock data entry
+# Fill in each aftershock event with the following columns:
+# event_id: unique identifier (e.g., AS001)
+# date: YYYY-MM-DD
+# time: HH:MM:SS (UTC)
+# latitude: decimal degrees north
+# longitude: decimal degrees east
+# depth_km: depth in kilometers
+# magnitude: Richter or moment magnitude
+# magnitude_type: e.g., ML, Mw, Mb
+# location_quality: qualitative assessment (good/fair/poor) or uncertainty
+# notes: any additional observations or source references
+
+AS001,1979-06-??,??:??:??,??.????,-??.????,??.?,?.?,ML,good,Example row - replace with actual data
+AS002,,,,,,,,,
