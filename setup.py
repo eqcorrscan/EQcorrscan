@@ -48,11 +48,9 @@ def get_package_data():
     Get the library files for appveyor - this shouldn't make any difference
     for install with system libraries.
     """
-    from pkg_resources import get_build_platform
-
     package_data = {}
 
-    if get_build_platform() in ('win32', 'win-amd64'):
+    if sys.platform in ('win32', 'win-amd64'):
         package_data['eqcorrscan.utils.lib'] = [
             'libfftw3-3.dll', 'libfftw3f-3.dll', 'libfftw3l-3.dll']
 
@@ -60,10 +58,8 @@ def get_package_data():
 
 
 def get_package_dir():
-    from pkg_resources import get_build_platform
-
     package_dir = {}
-    if get_build_platform() in ('win32', 'win-amd64'):
+    if sys.platform in ('win32', 'win-amd64'):
         package_dir['eqcorrscan.utils.lib'] = os.path.join(
             'eqcorrscan', 'utils', 'lib')
 
@@ -89,28 +85,24 @@ def get_include_dirs():
 
 
 def get_library_dirs():
-    from pkg_resources import get_build_platform
-
     library_dirs = []
-    if get_build_platform() in ('win32', 'win-amd64'):
+    if sys.platform in ('win32', 'win-amd64'):
         library_dirs.append(os.path.join(os.getcwd(), 'eqcorrscan', 'utils',
                                          'lib'))
         library_dirs.append(os.path.join(sys.prefix, 'lib'))
         library_dirs.append(os.path.join(sys.prefix, 'Library', 'lib'))
 
     library_dirs.append(os.path.join(sys.prefix, 'lib'))
-    if get_build_platform().startswith('freebsd'):
+    if sys.platform.startswith('freebsd'):
         library_dirs.append('/usr/local/lib')
 
     return library_dirs
 
 
 def get_mkl():
-    from pkg_resources import get_build_platform
-
     mkl_found = False
     # TODO: not sure about windows so ignoring for now
-    if not get_build_platform() in ('win32', 'win-amd64'):
+    if not sys.platform in ('win32', 'win-amd64'):
         # look for MKL
         mklroot = os.getenv("MKLROOT")
         if mklroot is not None and os.path.isdir(mklroot):
@@ -166,9 +158,7 @@ def get_mkl():
 
 
 def get_libraries():
-    from pkg_resources import get_build_platform
-
-    if get_build_platform() in ('win32', 'win-amd64'):
+    if sys.platform in ('win32', 'win-amd64'):
         # libraries = ['libfftw3-3', 'libfftw3f-3']
         libraries = ['fftw3', 'fftw3f']
     else:
