@@ -22,8 +22,7 @@ jobs:
           miniforge-version: latest
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
-          auto-activate-base: false
-          
+
 #      - name: Update Env
 #        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
@@ -93,7 +92,6 @@ jobs:
           miniforge-version: latest
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
-          auto-activate-base: false
 
 #      - name: Update Env
 #        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
@@ -153,8 +151,7 @@ jobs:
           miniforge-version: latest
           environment-file: .github/test_conda_env.yml
           condarc-file: .github/test_condarc.yml
-          auto-activate-base: false
-          
+
 #      - name: Update Env
 #        run: conda env update -n eqcorrscan-test -f .github/test_conda_env.yml
 
