@@ -925,7 +925,7 @@ def _quick_copy_trace(trace, deepcopy_data=True):
             for key_2, value_2 in value.__dict__.items():
                 if isinstance(value_2, UTCDateTime):
                     new_stats.__dict__[key_2] = UTCDateTime(
-                        ns=value_2.__dict__['_UTCDateTime__ns'])
+                        ns=value_2.ns)
                 else:
                     new_stats.__dict__[key_2] = value_2
         elif deepcopy_data:
