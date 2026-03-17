@@ -4,13 +4,13 @@ from setuptools.command.build_ext import build_ext
 using_setuptools = True
 
 from distutils.ccompiler import get_default_compiler
-from pkg_resources import get_build_platform
 
 import os
 import sys
 import shutil
 import sysconfig
 import glob
+import platform
 
 with open("eqcorrscan/__init__.py", "r") as init_file:
     version_line = [line for line in init_file
@@ -72,18 +72,17 @@ def get_package_dir():
 
 def get_include_dirs():
     import numpy
-    from pkg_resources import get_build_platform
 
     include_dirs = [os.path.join(os.getcwd(), 'include'),
                     os.path.join(os.getcwd(), 'eqcorrscan', 'utils', 'src'),
                     numpy.get_include(),
                     os.path.join(sys.prefix, 'include')]
 
-    if get_build_platform() in ('win32', 'win-amd64'):
+    if sys.platform in ('win32', 'win-amd64'):
         # Add the Library dir
         include_dirs.append(os.path.join(sys.prefix, 'Library', 'include'))
 
-    if get_build_platform().startswith('freebsd'):
+    if sys.platform.startswith('freebsd'):
         include_dirs.append('/usr/local/include')
 
     return include_dirs
@@ -206,14 +205,14 @@ def get_extensions(no_mkl=False):
                             'distance_cluster.c')]
     exp_symbols = export_symbols("eqcorrscan/utils/src/libutils.def")
 
-    if get_build_platform() not in ('win32', 'win-amd64'):
-        if get_build_platform().startswith('freebsd'):
+    if sys.platform not in ('win32', 'win-amd64'):
+        if sys.platform.startswith('freebsd'):
             # Clang uses libomp, not libgomp
             extra_link_args = ['-lm', '-lomp']
         else:
             extra_link_args = ['-lm', '-lgomp']
         extra_compile_args = ['-fopenmp']
-        if all(arch not in get_build_platform()
+        if all(arch not in platform.machine().lower()
                for arch in ['arm', 'aarch']):
             extra_compile_args.extend(['-msse2', '-ftree-vectorize'])
     else:
@@ -222,7 +221,7 @@ def get_extensions(no_mkl=False):
 
     libraries = get_libraries()
     if link_static_fftw:
-        if get_build_platform() in ('win32', 'win-amd64'):
+        if sys.platform in ('win32', 'win-amd64'):
             lib_pre = ''
             lib_ext = '.lib'
         else:
@@ -270,7 +269,7 @@ class CustomBuildExt(build_ext):
 
         cfg_vars = sysconfig.get_config_vars()
         # Hack around OSX setting a -m flag
-        if "macosx" in get_build_platform() and "CFLAGS" in cfg_vars:
+        if "macosx" in sys.platform and "CFLAGS" in cfg_vars:
             print("System C-flags:")
             print(cfg_vars["CFLAGS"])
             cflags = []
