@@ -247,16 +247,10 @@ def distance_matrix(stream_list, shift_len=0.0,
     shift_mat[:] = np.nan
     shift_dict = dict()
     for i, master in enumerate(stream_list):
-        Logger.info(f"Working on {i:05d} of {n_streams}")
-        if len(master) == 0:
-            Logger.warning(f"No stream for master {i}")
-            dist_list = np.nan * np.ones(len(stream_list))
-            shift_list = np.nan * np.ones(len(stream_list))
-        else:
-            dist_list, shift_list = cross_chan_correlation(
-                st1=master, streams=stream_list, shift_len=shift_len,
-                allow_individual_trace_shifts=allow_individual_trace_shifts,
-                xcorr_func='fftw', cores=cores)
+        dist_list, shift_list = cross_chan_correlation(
+            st1=master, streams=stream_list, shift_len=shift_len,
+            allow_individual_trace_shifts=allow_individual_trace_shifts,
+            xcorr_func='fftw', cores=cores)
         dist_mat[i] = 1 - dist_list
         master_ids = [tr.id for tr in master]
         master_trace_indcs = [
