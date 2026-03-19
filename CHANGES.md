@@ -1,4 +1,7 @@
 ## Current
+- Bug-fixes
+  - Change from accessing the UTCDateTime dict to direct ns access to cope with
+    obspy 1.5.0 change to slots.
 - core.match_filter.tribe
   - Add option to set minimum number of stations required to use a template in detect
     (`min_stations` kwarg)
