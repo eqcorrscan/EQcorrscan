@@ -24,11 +24,118 @@ from eqcorrscan.utils import stacking
 from eqcorrscan.utils.archive_read import read_data
 from eqcorrscan.utils.correlate import (
     get_array_xcorr, get_stream_xcorr, CorrelationError)
-from eqcorrscan.utils.pre_processing import _prep_data_for_correlation
+from eqcorrscan.utils.pre_processing import (
+    _prep_data_for_correlation, _stream_quick_select, _quick_copy_stream,
+    _multi_detrend)
 from eqcorrscan.utils.libnames import _load_cdll
 
 
 Logger = logging.getLogger(__name__)
+
+
+def correlate_many_to_many(
+        streams, shift_len=0.0, allow_individual_trace_shifts=False,
+        xcorr_func="fftw", concurrency="concurrent", cores=1, **kwargs):
+    """
+
+    """
+    if allow_individual_trace_shifts:
+        print("Individual trace shifts not yet supported")
+        allow_individual_trace_shifts = False
+    # Make one big stream with everything in it.
+    # Check some things first
+    sids, trace_length, sampling_rate, dtype = set(), set(), set(), set()
+    _streams = []  # we alter them, so we have to work on copies
+    for stream in streams:
+        stream_sids = set()
+        for tr in stream:
+            trace_length.add(tr.stats.npts)
+            assert tr.id not in stream_sids, f"Does not support multiple version of one seed-id:  {tr.id}"
+            stream_sids.add(tr.id)
+            sampling_rate.add(tr.stats.sampling_rate)
+            dtype.add(tr.data.dtype)
+        sids.update(stream_sids)
+        _stream = _multi_detrend(_quick_copy_stream(stream))
+        _streams.append(_stream)
+    streams = _streams
+    assert len(trace_length) == 1, "Multiple trace lengths found. Fix."
+    trace_length = trace_length.pop()
+    assert len(sampling_rate) == 1, "Multiple sampling rates found. Fix."
+    sampling_rate = sampling_rate.pop()
+    assert len(dtype) == 1, "Multiple dtypes found. Fix"
+    dtype = dtype.pop()
+
+    shift_samples = int(sampling_rate * shift_len)
+    multi_trace_length = int(
+        (trace_length + shift_samples) * len(streams))
+    Logger.info("Making multi-stream of all streams for correlation.")
+    multi_stream, gaps = Stream(), dict()
+    for sid in sids:
+        n, s, l, c, = sid.split('.')
+        multi_trace = Trace(
+            header=dict(
+                starttime=UTCDateTime(0), sampling_rate=sampling_rate,
+                network=n, station=s, location=l, channel=c),
+            data=np.ma.MaskedArray(
+                data=np.empty(multi_trace_length),
+                mask=np.ones(multi_trace_length),
+                dtype=dtype)
+        )
+        # This bit could probably be made a lot faster
+        for i, stream in enumerate(streams):
+            tr = _stream_quick_select(stream, sid)
+            if len(tr) == 0:
+                continue
+            assert len(tr) == 1, f"Multiple traces for {sid} found. Should not have happened."
+            offset = i * (trace_length + shift_samples)
+            offset += shift_samples // 2
+            multi_trace.data[offset:offset + trace_length] = tr[0].data
+            if np.ma.is_masked(tr[0].data):
+                multi_trace.data.mask[offset:offset + trace_length] = \
+                    tr[0].data.mask
+            else:
+                multi_trace.data.mask[offset:offset + trace_length] = \
+                    np.zeros_like(tr[0].data)
+        tr_mask = multi_trace.data.mask
+        multi_trace.data = multi_trace.data.filled(0)
+        gaps.update({multi_trace.id: tr_mask})
+        multi_stream += multi_trace
+    # TODO: What happens to the gaps?
+    Logger.info("Preparing data for correlation")
+    multi_stream, templates, stream_indices = _prep_data_for_correlation(
+        stream=multi_stream,
+        templates=[_quick_copy_stream(stream) for stream in streams],
+        template_names=np.arange(len(streams)),
+        force_stream_epoch=False)
+    multichannel_normxcorr = get_stream_xcorr(xcorr_func, concurrency)
+    Logger.info('Running correlations')
+    if xcorr_func == "fmf":
+        # Run individual channels alone
+        cccsums, no_chans, sta_chans = [], [], []
+        for sid in sids:
+            cccsum, no_chan, sta_chan = multichannel_normxcorr(
+                templates=[_stream_quick_select(template, sid) for template in templates],
+                stream=_stream_quick_select(multi_stream, sid),
+                cores=cores)
+            cccsums.append(cccsum)
+            no_chans.append(no_chan)
+            sta_chans.append(sta_chan)
+    else:
+        cccsums, no_chans, sta_chans = multichannel_normxcorr(
+             templates=templates, stream=multi_stream, cores=cores, stack=False)
+    # Extract the relevant correlations
+    peak_correlations, peak_positions = [], []
+    for i in range(len(templates)):
+        # Get the relevant correlations
+
+        # Find maxima in correlations - if shift is 0, then this is just the only value
+        if allow_individual_trace_shifts:
+            # Find maxima in each trace
+        else:
+            # Find maxima in stack of correlations
+        # Need to associate to traces - use sta_chans
+    return peak_correlations, peak_positions
+
 
 
 def cross_chan_correlation(
