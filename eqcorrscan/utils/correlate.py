@@ -470,9 +470,13 @@ def numpy_normxcorr(templates, stream, pads, cc_squared=False,
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
                        fftshape)[:, 0:template_length + stream_length - 1]
-    res = ((_centered(res, (templates.shape[0],
-                            stream_length - template_length + 1))) -
-           norm_sum * stream_mean_array) / stream_std_array
+
+    # Centering - do it all in numpy
+    currlen, newlen = res.shape[-1], stream_length - template_length + 1
+    startind = (currlen - newlen) // 2
+    res = res[:, startind:startind + newlen]
+    # res = _centered(res, (templates.shape[0], stream_length - template_length + 1))
+    res = (res - norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
 
     if cc_squared:
@@ -493,6 +497,75 @@ def _centered(arr, newshape):
     endind = startind + newshape
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
+
+
+@register_array_xcorr('cupy')
+def cupy_normxcorr(templates, stream, pads, cc_squared=False,
+                   *args, **kwargs):
+    """
+    Compute the normalized cross-correlation using numpy and bottleneck.
+
+    :param templates: 2D Array of templates
+    :type templates: np.ndarray
+    :param stream: 1D array of continuous data
+    :type stream: np.ndarray
+    :param pads: List of ints of pad lengths in the same order as templates
+    :type pads: list
+    :param cc_squared: Whether to output cc-squared or not
+    :type cc_squared: bool
+
+    :return: np.ndarray of cross-correlations
+    :return: np.ndarray channels used
+    """
+    try:
+        import cupy as cp
+    except ImportError:
+        Logger.error("Could not import cupy, defaulting to numpy")
+        return numpy_normxcorr(
+            templates, stream, pads, cc_squared, args, kwargs)
+
+    templates = cp.array(templates, dtype=cp.float32)
+    stream = cp.array(stream, dtype=cp.float32)
+    # Generate a template mask
+    used_chans = ~cp.isnan(templates).astype(int).sum(axis=1).astype(bool)
+    template_length = templates.shape[1]
+    stream_length = len(stream)
+    assert stream_length >= template_length, "Template must be same length or" \
+                                              " shorter than stream"
+    fftshape = next_fast_len(template_length + stream_length - 1)
+    # Set up normalizers
+    windowed = cp.lib.stride_tricks.sliding_window_view(
+        stream, window_shape=template_length, axis=-1)
+    stream_mean_array = windowed.mean(axis=-1)
+    stream_std_array = windowed.std(axis=-1)
+    # because stream_std_array is in denominator or res, nan all 0s
+    stream_std_array[stream_std_array == 0] = cp.nan
+    # Normalize and flip the templates
+    norm = ((templates - templates.mean(axis=-1, keepdims=True)) / (
+        templates.std(axis=-1, keepdims=True) * template_length))
+    norm_sum = norm.sum(axis=-1, keepdims=True)
+    stream_fft = cp.fft.rfft(stream, fftshape)
+    template_fft = cp.fft.rfft(cp.flip(norm, axis=-1), fftshape, axis=-1)
+    res = cp.fft.irfft(template_fft * stream_fft,
+                       fftshape)[:, 0:template_length + stream_length - 1]
+
+    # Centering - do it all in numpy
+    currlen, newlen = res.shape[-1], stream_length - template_length + 1
+    startind = (currlen - newlen) // 2
+    res = res[:, startind:startind + newlen]
+    # res = _centered(res, (templates.shape[0], stream_length - template_length + 1))
+    res = (res - norm_sum * stream_mean_array) / stream_std_array
+    res[cp.isnan(res)] = 0.0
+
+    if cc_squared:
+        res *= cp.abs(res)
+
+    for i, pad in enumerate(pads):
+        res[i] = cp.append(res[i], cp.zeros(pad))[pad:]
+    return res.get().astype(np.float32), used_chans.get()
+
+# cupy doesn't work with multiprocessing
+cupy_normxcorr.multiprocess = cupy_normxcorr.multithread
 
 
 @register_array_xcorr('time_domain')

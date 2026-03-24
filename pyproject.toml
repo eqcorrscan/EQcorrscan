@@ -4,3 +4,17 @@ requires = [
     "numpy",
 ]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.optional-dependencies]
+cupy = [
+    "cupy",
+]
+fmf = [
+    "fmf@git+https://github.com/beridel/fast_matched_filter",
+]
