@@ -1322,7 +1322,7 @@ def _get_array_dicts(templates, stream, stack, *args, **kwargs):
     for template in templates:
         template.sort(['network', 'station', 'location', 'channel'])
         t_starts.append(
-            UTCDateTime(ns=min([tr.stats.starttime.__dict__['_UTCDateTime__ns']
+            UTCDateTime(ns=min([tr.stats.starttime.ns
                                 for tr in template])))
     stream_start = min([tr.stats.starttime for tr in stream])
     # get seed ids, make sure these are collected on sorted streams
@@ -1348,9 +1348,8 @@ def _get_array_dicts(templates, stream, stack, *args, **kwargs):
             pad_list = [
                 int(round(
                     template.traces[i].stats.__dict__['sampling_rate'] *
-                    (template.traces[i].stats.starttime.__dict__[
-                        '_UTCDateTime__ns'] -
-                     t_starts[j].__dict__['_UTCDateTime__ns']) / 1e9)) -
+                    (template.traces[i].stats.starttime.ns -
+                     t_starts[j].ns) / 1e9)) -
                 stream_offset
                 for j, template in enumerate(templates)]
         else:
