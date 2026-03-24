@@ -452,7 +452,7 @@ def numpy_normxcorr(templates, stream, pads, cc_squared=False,
     templates = templates.astype(np.float64)
     template_length = templates.shape[1]
     stream_length = len(stream)
-    assert stream_length > template_length, "Template must be shorter than " \
+    assert stream_length >= template_length, "Template must be shorter than " \
                                             "stream"
     fftshape = next_fast_len(template_length + stream_length - 1)
     # Set up normalizers
@@ -470,9 +470,9 @@ def numpy_normxcorr(templates, stream, pads, cc_squared=False,
     template_fft = np.fft.rfft(np.flip(norm, axis=-1), fftshape, axis=-1)
     res = np.fft.irfft(template_fft * stream_fft,
                        fftshape)[:, 0:template_length + stream_length - 1]
-    res = ((_centered(res, (templates.shape[0],
-                            stream_length - template_length + 1))) -
-           norm_sum * stream_mean_array) / stream_std_array
+    res = _centered(res, (templates.shape[0],
+                          stream_length - template_length + 1))
+    res = (res - norm_sum * stream_mean_array) / stream_std_array
     res[np.isnan(res)] = 0.0
 
     if cc_squared:

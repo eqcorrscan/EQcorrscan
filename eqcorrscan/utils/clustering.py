@@ -125,15 +125,15 @@ def correlate_many_to_many(
              templates=templates, stream=multi_stream, cores=cores, stack=False)
     # Extract the relevant correlations
     peak_correlations, peak_positions = [], []
-    for i in range(len(templates)):
-        # Get the relevant correlations
-
-        # Find maxima in correlations - if shift is 0, then this is just the only value
-        if allow_individual_trace_shifts:
-            # Find maxima in each trace
-        else:
-            # Find maxima in stack of correlations
-        # Need to associate to traces - use sta_chans
+    # for i in range(len(templates)):
+    #     # Get the relevant correlations
+    #
+    #     # Find maxima in correlations - if shift is 0, then this is just the only value
+    #     if allow_individual_trace_shifts:
+    #         # Find maxima in each trace
+    #     else:
+    #         # Find maxima in stack of correlations
+    #     # Need to associate to traces - use sta_chans
     return peak_correlations, peak_positions
 
 
