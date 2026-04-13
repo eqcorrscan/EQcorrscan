@@ -1074,8 +1074,8 @@ def dist_mat_km(catalog, num_threads=None):
 
     if ret != 0:  # pragma: no cover
         raise Exception("Internal error while computing distance matrix")
-    # Fill distance matrix
-    out = dist_mat.T + dist_mat
+    # Fill distance matrix - this is now done in the C code.
+    # out = dist_mat.T + dist_mat
     return out
 
 

@@ -106,7 +106,7 @@ int distance_matrix(float *latitudes, float *longitudes, float *depths, long n_l
     *  :type dist_mat: Array of floats of for output - should be initialized as zeros, and should be n_locs * n_locs
     */
     int out = 0;
-    long n;
+    long n, index, index_2;
 
     #pragma omp parallel for num_threads(n_threads)
     for (n = 0; n < n_locs * (n_locs + 1) / 2; ++n){
@@ -115,8 +115,12 @@ int distance_matrix(float *latitudes, float *longitudes, float *depths, long n_l
             j = n_locs - j - 1;
             i = n_locs - i;
         }
-        dist_mat[(i * n_locs) + j] = dist_calc(
+        index = (i * n_locs) + j;
+        index_2 = (j * n_locs) + i;
+
+        dist_mat[index] = dist_calc(
             latitudes[i], longitudes[i], depths[i], latitudes[j], longitudes[j], depths[j]);
+        dist_mat[index_2] = dist_mat[index];
     }
     return out;
 }
