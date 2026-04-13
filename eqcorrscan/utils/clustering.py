@@ -1096,7 +1096,7 @@ def dist_mat_time(catalog):
                         len(catalog))
     # Calculate distance vector for each event
     for i, core in enumerate(catalog):
-        mast_list = []
+        core_list = []
         if core.preferred_origin():
             core_ori = core.preferred_origin()
         else:
