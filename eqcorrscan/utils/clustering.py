@@ -1095,25 +1095,22 @@ def dist_mat_time(catalog):
     dist_mat = np.array([np.array([0.0] * len(catalog))] *
                         len(catalog))
     # Calculate distance vector for each event
-    for i, master in enumerate(catalog):
+    for i, core in enumerate(catalog):
         mast_list = []
-        if master.preferred_origin():
-            master_ori = master.preferred_origin()
+        if core.preferred_origin():
+            core_ori = core.preferred_origin()
         else:
-            master_ori = master.origins[-1]
-        for slave in catalog:
-            if slave.preferred_origin():
-                slave_ori = slave.preferred_origin()
+            core_ori = core.origins[-1]
+        for linked in catalog:
+            if linked.preferred_origin():
+                linked_ori = linked.preferred_origin()
             else:
-                slave_ori = slave.origins[-1]
-            mast_list.append(abs(master_ori.time - slave_ori.time))
+                linked_ori = linked.origins[-1]
+            core_list.append(abs(core_ori.time - linked_ori.time))
         # Sort the list into the dist_mat structure
         for j in range(i, len(catalog)):
-            dist_mat[i, j] = mast_list[j]
-    # Reshape the distance matrix
-    for i in range(1, len(catalog)):
-        for j in range(i):
-            dist_mat[i, j] = dist_mat.T[i, j]
+            dist_mat[i, j] = core_list[j]
+            dist_mat[j, i] = core_list[j]
     return dist_mat
 
 
