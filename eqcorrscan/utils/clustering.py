@@ -1076,7 +1076,7 @@ def dist_mat_km(catalog, num_threads=None):
         raise Exception("Internal error while computing distance matrix")
     # Fill distance matrix - this is now done in the C code.
     # out = dist_mat.T + dist_mat
-    return out
+    return dist_mat
 
 
 def dist_mat_time(catalog):
