@@ -108,7 +108,7 @@ int distance_matrix(float *latitudes, float *longitudes, float *depths, long n_l
     int out = 0;
     long n, index, index_2;
 
-    #pragma omp parallel for num_threads(n_threads)
+    #pragma omp parallel for num_threads(n_threads) private(index, index_2)
     for (n = 0; n < n_locs * (n_locs + 1) / 2; ++n){
         long j = n / (n_locs + 1), i = n % (n_locs + 1);
         if (i > j){
