@@ -13,6 +13,9 @@
   - More stable extraction of data for correlation
 - utils.findpeaks
   - Added pick-time declustering.
+  - Fix integer-overflow in `decluster`/`decluster_distance_time` where a large
+    `index.max()` could be silently downgraded to a 32-bit `c_long` routine by a
+    small `trig_int`, corrupting declustering on 32-bit-long platforms (#546).
 - utils.correlate
   - Added option to produce "cc-squared" (cc * abs(cc)) detection statistic
 

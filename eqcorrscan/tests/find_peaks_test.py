@@ -12,10 +12,13 @@ import warnings
 from obspy import read_events
 from obspy.core.event import Catalog, Event, Origin
 
+import types
+
 from eqcorrscan.utils.findpeaks import (
     find_peaks2_short, coin_trig, multi_find_peaks, find_peaks_compiled,
     _find_peaks_c, decluster, decluster_distance_time, decluster_pick_times,
-    average_pick_time_diff_matrix, get_det_val)
+    average_pick_time_diff_matrix, get_det_val, _get_func_and_type)
+from eqcorrscan.utils import findpeaks
 from eqcorrscan.utils.timer import time_func
 
 
@@ -155,6 +158,57 @@ class TestDeclustering:
             peaks, index, trig_int, catalog, hypocentral_separation,
             threshold=0)
         assert len(peaks) == len(peaks_out)
+
+    def test_dispatch_picks_widest_type(self, monkeypatch):
+        """Regression test for issue #546.
+
+        The integer type / C-routine selection must use a type wide enough
+        for *every* value (notably ``index.max()``), not just whichever
+        value happens to be checked last. Previously a large ``index.max()``
+        followed by a small ``trig_int`` selected the narrow ``c_long``
+        routine, so on platforms where ``c_long`` is 32-bit (e.g. Windows)
+        the index array was truncated and declustering produced corrupt
+        results.
+
+        This is checked independently of the host platform by injecting a
+        32-bit ``c_long`` and a 64-bit ``c_longlong`` (the Windows layout),
+        so the regression is exercised even where ``c_long`` is natively
+        64-bit.
+        """
+        def make_int(bits):
+            """A minimal ctypes-int stand-in doing signed `bits`-wide wrap."""
+            class _CInt:
+                def __init__(self, v):
+                    v = int(v)
+                    self.value = ((v + (1 << (bits - 1))) % (1 << bits)
+                                  ) - (1 << (bits - 1))
+            return _CInt
+
+        fake_ctypes = types.SimpleNamespace(
+            c_long=make_int(32), c_longlong=make_int(64))
+        monkeypatch.setattr(findpeaks, "ctypes", fake_ctypes)
+
+        utilslib = types.SimpleNamespace(
+            decluster="long", decluster_ll="longlong")
+
+        # Small values fit the narrow (c_long) type.
+        _, func = _get_func_and_type(utilslib, (2000, 100), "decluster")
+        assert func == "long"
+
+        # Large index.max() (> 2**31) with a small trig_int checked last must
+        # still select the wide (longlong) routine -- the bug in #546.
+        _, func = _get_func_and_type(
+            utilslib, (5 * 10 ** 13, 100), "decluster")
+        assert func == "longlong"
+
+        # Order independence: small value first, large value last.
+        _, func = _get_func_and_type(
+            utilslib, (100, 5 * 10 ** 13), "decluster")
+        assert func == "longlong"
+
+        # Beyond 64-bit overflows even longlong.
+        with pytest.raises(OverflowError):
+            _get_func_and_type(utilslib, (2 ** 100, 1), "decluster")
 
 
 class TestStandardPeakFinding:
