@@ -251,6 +251,38 @@ def multi_find_peaks(arr, thresh, trig_int, parallel=True, full_peaks=False,
     return peaks
 
 
+def _get_func_and_type(utilslib, values, base_name):
+    """Select a C routine and integer type wide enough for *all* values.
+
+    Returns the narrowest available integer type -- ``ctypes.c_long`` and
+    then ``ctypes.c_longlong`` -- that can represent every value in *values*
+    without overflow, together with the matching routine on *utilslib*
+    (``base_name`` for ``c_long`` or ``base_name + "_ll"`` for
+    ``c_longlong``).
+
+    The previous implementation looped over the values and let the *last*
+    one decide the type, so a large ``index.max()`` could be silently
+    downgraded back to ``c_long`` by a small ``trig_int`` that happened to
+    be checked last. On platforms where ``c_long`` is 32-bit (e.g. Windows)
+    this truncated the index array and produced corrupt declustering
+    results (see GitHub issue #546).
+
+    :type utilslib: ctypes.CDLL
+    :param utilslib: Loaded EQcorrscan C library.
+    :type values: iterable of int
+    :param values: Integer values that must fit in the chosen type.
+    :type base_name: str
+    :param base_name: Name of the ``c_long`` routine on *utilslib*; the
+        ``c_longlong`` variant is assumed to be ``base_name + "_ll"``.
+
+    :return: tuple of (integer ctype, C routine)
+    """
+    for long_type, suffix in ((ctypes.c_long, ""), (ctypes.c_longlong, "_ll")):
+        if all(val == long_type(val).value for val in values):
+            return long_type, getattr(utilslib, base_name + suffix)
+    raise OverflowError("Maximum index larger than internal long long")
+
+
 def decluster_distance_time(peaks, index, trig_int, catalog,
                             hypocentral_separation, threshold=0,
                             num_threads=None):
@@ -286,15 +318,8 @@ def decluster_distance_time(peaks, index, trig_int, catalog,
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
-    for var in [index.max(), trig_int]:
-        if var == ctypes.c_long(var).value:
-            long_type = ctypes.c_long
-            func = utilslib.decluster_dist_time
-        elif var == ctypes.c_longlong(var).value:
-            long_type = ctypes.c_longlong
-            func = utilslib.decluster_dist_time_ll
-        else:
-            raise OverflowError("Maximum index larger than internal long long")
+    long_type, func = _get_func_and_type(
+        utilslib, (index.max(), trig_int), "decluster_dist_time")
 
     func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
@@ -351,15 +376,8 @@ def decluster(peaks, index, trig_int, threshold=0):
     length = peaks.shape[0]
     trig_int = int(trig_int)
 
-    for var in [index.max(), trig_int]:
-        if var == ctypes.c_long(var).value:
-            long_type = ctypes.c_long
-            func = utilslib.decluster
-        elif var == ctypes.c_longlong(var).value:
-            long_type = ctypes.c_longlong
-            func = utilslib.decluster_ll
-        else:
-            raise OverflowError("Maximum index larger than internal long long")
+    long_type, func = _get_func_and_type(
+        utilslib, (index.max(), trig_int), "decluster")
 
     func.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float32, shape=(length,),
